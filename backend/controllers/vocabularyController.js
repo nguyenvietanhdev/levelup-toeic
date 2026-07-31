@@ -462,7 +462,7 @@ exports.createVocabulary = async (req, res, next) => {
             word: newVocab[pk],
             part: newVocab.part,
             type: newVocab.type
-        });
+        }, activityLogger.actorOf(req));
 
         res.status(201).json({
             success: true,
@@ -522,7 +522,7 @@ exports.updateVocabulary = async (req, res, next) => {
             word: word[pk],
             part: word.part,
             type: word.type
-        });
+        }, activityLogger.actorOf(req));
 
         res.json({
             success: true,
@@ -558,7 +558,7 @@ exports.deleteVocabulary = async (req, res, next) => {
         await activityLogger.logActivity('vocabulary', 'delete', {
             word: word[pk],
             part: word.part,
-        });
+        }, activityLogger.actorOf(req));
 
         res.json({
             success: true,
@@ -671,7 +671,7 @@ exports.bulkImportVocabulary = async (req, res, next) => {
             }
         }
 
-        await activityLogger.logActivity('vocabulary', 'bulk-import', { inserted, skipped });
+        await activityLogger.logActivity('vocabulary', 'bulk-import', { inserted, skipped }, activityLogger.actorOf(req));
 
         res.json({
             success: true,
@@ -697,7 +697,7 @@ exports.bulkDeleteVocabulary = async (req, res, next) => {
             return res.status(400).json({ success: false, message: 'ens array is required' });
         }
         const result = await getVocabModel(req).deleteMany({ ...PUBLIC_FILTER, [pkField(req)]: { $in: ens } });
-        await activityLogger.logActivity('vocabulary', 'bulk-delete', { count: result.deletedCount });
+        await activityLogger.logActivity('vocabulary', 'bulk-delete', { count: result.deletedCount }, activityLogger.actorOf(req));
         res.json({ success: true, deleted: result.deletedCount });
     } catch (error) {
         next(error);
@@ -738,7 +738,7 @@ exports.filterDeleteVocabulary = async (req, res, next) => {
         const Model = getVocabModel(req);
         const count = await Model.countDocuments(filter);
         const result = await Model.deleteMany(filter);
-        await activityLogger.logActivity('vocabulary', 'filter-delete', { conditions, deleted: result.deletedCount });
+        await activityLogger.logActivity('vocabulary', 'filter-delete', { conditions, deleted: result.deletedCount }, activityLogger.actorOf(req));
         res.json({ success: true, deleted: result.deletedCount, matched: count });
     } catch (error) {
         next(error);
@@ -752,7 +752,7 @@ exports.filterDeleteVocabulary = async (req, res, next) => {
 exports.deleteAllVocabulary = async (req, res, next) => {
     try {
         const result = await getVocabModel(req).deleteMany(PUBLIC_FILTER);
-        await activityLogger.logActivity('vocabulary', 'delete-all', { deleted: result.deletedCount });
+        await activityLogger.logActivity('vocabulary', 'delete-all', { deleted: result.deletedCount }, activityLogger.actorOf(req));
         res.json({ success: true, deleted: result.deletedCount });
     } catch (error) {
         next(error);
@@ -808,7 +808,7 @@ exports.replaceVocabulary = async (req, res, next) => {
 
         await Model.insertMany(docs, { ordered: false });
 
-        await activityLogger.logActivity('vocabulary', 'replace', { count: docs.length, source });
+        await activityLogger.logActivity('vocabulary', 'replace', { count: docs.length, source }, activityLogger.actorOf(req));
 
         res.json({
             success: true,

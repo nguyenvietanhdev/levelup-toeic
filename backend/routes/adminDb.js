@@ -4,6 +4,22 @@ const mongoose = require('mongoose');
 const bodyParser = require('body-parser');
 const { EJSON } = require('bson');
 const { protect, authorize } = require('../middleware/auth');
+const logger = require('../utils/logger');
+
+/**
+ * Ghi lại một thao tác GHI/XOÁ trên trình quản lý DB.
+ *
+ * Sáu route ở file này đọc, ghi đè, xoá sạch hoặc drop được bất kỳ collection
+ * nào, và trước đây KHÔNG route nào ghi lại ai đã làm — trong khi router
+ * Cloudinary ngay bên cạnh log đủ actor trên mọi lần xoá (adminCloudinary.js).
+ * `req.user.id` vẫn luôn có sẵn ở đây, chỉ là chưa từng được dùng.
+ *
+ * Cố ý KHÔNG log nội dung document: audit trail của collection `users` mà chứa
+ * luôn dữ liệu users thì nó thành bản sao thứ hai của đúng thứ nó đang mô tả.
+ * Chỉ ghi collection, id, và số lượng ảnh hưởng.
+ */
+const audit = (req, action, detail) =>
+    logger.info(`[admin-db] ${action}`, { ...detail, by: String(req.user?.id || 'unknown') });
 
 const admin = [protect, authorize('admin')];
 
@@ -143,6 +159,12 @@ router.post('/import', admin, bodyParser.text({ limit: '50mb', type: 'text/plain
             report.push({ collection: name, cleared, written, total: docs.length });
         }
 
+        audit(req, 'import', {
+            mode,
+            collections: report.length,
+            cleared: report.reduce((n, r) => n + r.cleared, 0),
+            written: report.reduce((n, r) => n + r.written, 0),
+        });
         res.json({ success: true, mode, report });
     } catch (err) {
         res.status(500).json({ success: false, message: err.message });
@@ -228,6 +250,7 @@ router.post('/collections/:name', admin, async (req, res) => {
         const doc = req.body;
         delete doc._id; // không cho client chỉ định _id
         const result = await col.insertOne(doc);
+        audit(req, 'insert', { collection: req.params.name, id: String(result.insertedId) });
         res.status(201).json({ success: true, data: { _id: result.insertedId } });
     } catch (err) {
         res.status(400).json({ success: false, message: err.message });
@@ -249,6 +272,8 @@ router.put('/collections/:name/:id', admin, async (req, res) => {
         if (result.matchedCount === 0)
             return res.status(404).json({ success: false, message: 'Document không tồn tại' });
 
+        // Chỉ ghi TÊN field bị đổi, không ghi giá trị — xem ghi chú ở audit().
+        audit(req, 'update', { collection: name, id: String(id), fields: Object.keys(update) });
         res.json({ success: true, message: 'Đã cập nhật' });
     } catch (err) {
         res.status(400).json({ success: false, message: err.message });
@@ -265,6 +290,7 @@ router.delete('/collections/:name/all', admin, async (req, res) => {
             return res.status(403).json({ success: false, message: `Collection "${name}" được bảo vệ, không thể xóa` });
         const col = mongoose.connection.db.collection(name);
         const result = await col.deleteMany({});
+        audit(req, 'delete-all', { collection: name, deleted: result.deletedCount });
         res.json({ success: true, message: `Đã xóa ${result.deletedCount} documents khỏi "${name}"` });
     } catch (err) {
         res.status(500).json({ success: false, message: err.message });
@@ -284,6 +310,7 @@ router.delete('/collections/:name/:id', admin, async (req, res) => {
         if (result.deletedCount === 0)
             return res.status(404).json({ success: false, message: 'Document không tồn tại' });
 
+        audit(req, 'delete-one', { collection: name, id: String(id) });
         res.json({ success: true, message: 'Đã xóa document' });
     } catch (err) {
         res.status(500).json({ success: false, message: err.message });
@@ -298,6 +325,7 @@ router.delete('/collections/:name', admin, async (req, res) => {
             return res.status(403).json({ success: false, message: `Collection "${name}" được bảo vệ, không thể xóa` });
 
         await mongoose.connection.db.collection(name).drop();
+        audit(req, 'drop', { collection: name });
         res.json({ success: true, message: `Đã drop collection "${name}"` });
     } catch (err) {
         // MongoDB trả lỗi ns not found nếu collection rỗng/không tồn tại

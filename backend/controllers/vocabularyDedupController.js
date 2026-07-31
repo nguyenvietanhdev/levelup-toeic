@@ -98,7 +98,7 @@ exports.removeDuplicates = async (req, res, next) => {
             removed += idsToRemove.length;
         }
 
-        await activityLogger.logActivity('vocabulary', 'remove-duplicates', { removed, source });
+        await activityLogger.logActivity('vocabulary', 'remove-duplicates', { removed, source }, activityLogger.actorOf(req));
 
         res.json({
             success: true,

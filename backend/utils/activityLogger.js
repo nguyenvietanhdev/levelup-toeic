@@ -35,13 +35,30 @@ async function readLogs() {
 }
 
 /**
+ * Ai thực hiện request này — dùng làm tham số `actor` của logActivity.
+ *
+ * `protect` chỉ gắn { id, role } vào req.user (middleware/auth.js), không có
+ * email, và tra thêm một lượt DB chỉ để lấy email là trả giá cho mỗi lần ghi.
+ * Nên actor là ObjectId dạng hex: kém thân thiện hơn nhưng tra ngược được, và
+ * an toàn khi dashboard render nó ra HTML.
+ */
+const actorOf = (req) => (req?.user?.id ? String(req.user.id) : 'system');
+
+/**
  * Ghi activity log mới
  * @param {string} type - Loại hoạt động: 'vocabulary' hoặc 'user'
  * @param {string} action - Hành động: 'add', 'update', 'delete'
  * @param {object} data - Dữ liệu liên quan
- * @param {string} admin - Tên admin thực hiện (optional)
+ * @param {string} actor - Ai làm. Mặc định 'system' — xem ghi chú bên dưới.
+ *
+ * Mặc định trước đây là chuỗi 'Admin', và KHÔNG call site nào truyền tham số
+ * thứ tư. Hệ quả: hồi `routes/vocabulary.js` còn để trần, một cú `DELETE /all`
+ * ẩn danh từ internet cũng được ghi là "Admin đã xoá N từ" — người điều tra đọc
+ * bản ghi đó sẽ kết luận là chính mình lỡ tay hoặc tài khoản admin bị chiếm.
+ * Log ghi sai thủ phạm tệ hơn không có log, vì nó tạo ra kết luận sai một cách
+ * tự tin. 'system' thì hiển thị đúng bản chất: không quy được cho ai.
  */
-async function logActivity(type, action, data, admin = 'Admin') {
+async function logActivity(type, action, data, actor = 'system') {
     try {
         const logs = await readLogs();
 
@@ -50,7 +67,7 @@ async function logActivity(type, action, data, admin = 'Admin') {
             timestamp: new Date().toISOString(),
             type, // 'vocabulary' | 'user'
             action, // 'add' | 'update' | 'delete'
-            admin,
+            admin: actor, // giữ tên field 'admin' vì dashboard đang đọc nó
             data
         };
 
@@ -106,6 +123,7 @@ async function clearLogs() {
 
 module.exports = {
     logActivity,
+    actorOf,
     getLogs,
     clearLogs,
     readLogs

@@ -14,7 +14,12 @@
  */
 jest.mock('../models/Vocabulary', () => ({ deleteMany: jest.fn(), insertMany: jest.fn() }));
 jest.mock('../models/VocabularyZh', () => ({ deleteMany: jest.fn(), insertMany: jest.fn() }));
-jest.mock('../utils/activityLogger', () => ({ logActivity: jest.fn() }));
+jest.mock('../utils/activityLogger', () => ({
+    logActivity: jest.fn(),
+    // Controller truyền actorOf(req) làm tham số thứ tư — thiếu nó ở mock là
+    // handler ném TypeError rồi rơi vào next(), không phải res.json().
+    actorOf: jest.fn(() => 'test-actor'),
+}));
 jest.mock('../utils/logger', () => ({ error: jest.fn(), info: jest.fn(), warn: jest.fn() }));
 
 const Vocabulary = require('../models/Vocabulary');

@@ -19,6 +19,7 @@ jest.mock('../middleware/auth', () => ({
     protect: (req, res, next) => next(),
     authorize: () => (req, res, next) => next(),
 }));
+jest.mock('../utils/logger', () => ({ info: jest.fn(), error: jest.fn(), warn: jest.fn() }));
 
 const mongoose = require('mongoose');
 const router = require('../routes/adminDb');
