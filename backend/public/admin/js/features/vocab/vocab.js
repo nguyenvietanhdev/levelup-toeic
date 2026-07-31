@@ -332,6 +332,7 @@ function attachDeleteWordListeners() {
             try {
                 const res = await fetch(withVocabLang(`${API_URL}/vocabulary/${encodeURIComponent(wordEn)}`), {
                     method: "DELETE",
+                    headers: adminHeaders(),
                 });
 
                 const data = await res.json();
@@ -395,6 +396,7 @@ async function deleteWord(wordEn) {
     try {
         const res = await fetch(withVocabLang(`${API_URL}/vocabulary/${encodeURIComponent(wordEn)}`), {
             method: "DELETE",
+            headers: adminHeaders(),
         });
 
         const data = await res.json();
@@ -667,7 +669,7 @@ function showDbDuplicateModal(groups, summary, filterSrc, filterPart) {
         try {
             const response = await fetch(withVocabLang(`/api/vocabulary/remove-duplicates/${encodeURIComponent(removeScope)}`), {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: adminHeaders({ 'Content-Type': 'application/json' }),
             });
             const result = await response.json();
             if (result.success) {
@@ -762,7 +764,7 @@ function showDuplicateModal(duplicates) {
                 // Gọi API để xóa duplicates trong file JSON thực sự
                 const response = await fetch(withVocabLang(`/api/vocabulary/remove-duplicates/${encodeURIComponent(currentLocalFile)}`), {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' }
+                    headers: adminHeaders({ 'Content-Type': 'application/json' })
                 });
 
                 const result = await response.json();
@@ -858,7 +860,8 @@ async function removeDuplicates(duplicates) {
 
         try {
             const res = await fetch(withVocabLang(`${API_URL}/vocabulary/${encodeURIComponent(dup.duplicate.en)}`), {
-                method: 'DELETE'
+                method: 'DELETE',
+                headers: adminHeaders()
             });
             const data = await res.json();
 
@@ -1037,7 +1040,7 @@ async function deleteSelectedVocab() {
     try {
         const res = await fetch(withVocabLang(`${API_URL}/vocabulary/bulk`), {
             method: 'DELETE',
-            headers: { 'Content-Type': 'application/json' },
+            headers: adminHeaders({ 'Content-Type': 'application/json' }),
             body: JSON.stringify({ ens }),
         });
         const data = await res.json();
@@ -1135,7 +1138,7 @@ function showFilterDeleteVocabModal() {
         try {
             const res = await fetch(withVocabLang(`${API_URL}/vocabulary/filter-delete`), {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: adminHeaders({ 'Content-Type': 'application/json' }),
                 body: JSON.stringify({ filters }),
             });
             const data = await res.json();
@@ -1216,7 +1219,10 @@ function deleteAllVocabulary() {
         confirmBtn.disabled = true;
         confirmBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Đang xóa...';
         try {
-            const res = await fetch(withVocabLang(`${API_URL}/vocabulary/all`), { method: 'DELETE' });
+            const res = await fetch(withVocabLang(`${API_URL}/vocabulary/all`), {
+                method: 'DELETE',
+                headers: adminHeaders(),
+            });
             const data = await res.json();
             if (data.success) {
                 showToast(`✅ Đã xóa ${data.deleted} từ vựng khỏi database`, 'success');

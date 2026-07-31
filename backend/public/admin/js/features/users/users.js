@@ -440,7 +440,7 @@ document.addEventListener("DOMContentLoaded", () => {
         btn.disabled = true;
         const response = await fetch(`${API_URL}/ai/lookup-word`, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: adminHeaders({ "Content-Type": "application/json" }),
           body: JSON.stringify({ word }),
         });
         const result = await response.json();

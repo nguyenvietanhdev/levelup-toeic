@@ -4,6 +4,16 @@
 // 2. UTILITY FUNCTIONS
 // ===================================
 
+/**
+ * Header cho các API admin (kho từ vựng…). Gom một chỗ thay vì gõ lại Bearer ở
+ * từng call site — thiếu một chỗ là hỏng đúng một nút, và đó chính là cách các
+ * đường XOÁ từ vựng đi thẳng ra internet không kèm token trước đây.
+ * @param {object} [extra] header thêm, vd { 'Content-Type': 'application/json' }
+ */
+function adminHeaders(extra) {
+    return Object.assign({ Authorization: 'Bearer ' + getToken() }, extra || {});
+}
+
 const debounce = (func, delay) => {
     let timeout;
     return function(...args) {

@@ -777,8 +777,9 @@ exports.replaceVocabulary = async (req, res, next) => {
             });
         }
 
-        await Model.deleteMany(source ? { source } : {});
-
+        // Validate TRƯỚC khi xoá. Trước đây deleteMany chạy trước bước này, nên
+        // body rác (vd `{words:[{}]}`) vẫn xoá sạch collection rồi mới trả 400:
+        // người gửi thấy request hỏng, dữ liệu thì đã mất.
         const invalid = words.find(word => validateVocabularyPayloadForLang(req, word) || !primaryValue(req, word));
         if (invalid) {
             return res.status(400).json({
@@ -786,6 +787,10 @@ exports.replaceVocabulary = async (req, res, next) => {
                 message: validateVocabularyPayloadForLang(req, invalid) || `Missing "${pk}"`,
             });
         }
+
+        // PUBLIC_FILTER để không đụng vào bản ghi scope:'private' — mọi chỗ xoá
+        // khác trong file này đều áp, riêng chỗ này trước đây bỏ sót.
+        await Model.deleteMany({ ...PUBLIC_FILTER, ...(source ? { source } : {}) });
 
         const docs = words.map(word => ({
             ...(word.en !== undefined && { en: word.en }),

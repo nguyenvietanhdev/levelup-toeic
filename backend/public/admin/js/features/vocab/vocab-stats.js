@@ -102,6 +102,7 @@ async function handleQuickDeleteRemove(wordEn) {
     try {
         const res = await fetch(withVocabLang(`${API_URL}/vocabulary/${encodeURIComponent(wordEn)}`), {
             method: "DELETE",
+            headers: adminHeaders(),
         });
 
         const data = await res.json();
@@ -275,7 +276,7 @@ async function switchVocabularyFile(filename) {
         try {
             const res = await fetch(withVocabLang(`${API_URL}/vocabulary/switch/${encodeURIComponent(filename)}`), {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' }
+                headers: adminHeaders({ 'Content-Type': 'application/json' })
             });
 
             const data = await res.json();

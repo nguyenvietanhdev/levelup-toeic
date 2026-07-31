@@ -14,7 +14,13 @@ const {
 const { scanDuplicates, removeDuplicates } = require('../controllers/vocabularyDedupController');
 const { getFavorites, addFavorite, removeFavorite } = require('../controllers/favoritesController');
 const { requireLevel } = require('../services/featureUnlock');
-const { protect } = require('../middleware/auth');
+const { protect, authorize } = require('../middleware/auth');
+
+// Mọi route GHI kho từ vựng dùng chung đều là admin. Trước đây nhóm này để trần
+// hoàn toàn: DELETE /all và POST /replace xoá sạch corpus bằng 1 request ẩn danh,
+// còn POST / thì cho người lạ ghi dữ liệu mà admin panel render thẳng vào innerHTML.
+// Các route GET bên dưới vẫn công khai có chủ ý (Swagger đánh dấu `security: []`).
+const admin = [protect, authorize('admin')];
 
 /**
  * @swagger
@@ -211,8 +217,8 @@ router.get('/:id', getVocabularyById);
  *       201:
  *         description: Tạo thành công
  */
-router.post('/', createVocabulary);
-router.post('/upsert', upsertVocabulary);
+router.post('/', ...admin, createVocabulary);
+router.post('/upsert', ...admin, upsertVocabulary);
 
 /**
  * @swagger
@@ -235,7 +241,7 @@ router.post('/upsert', upsertVocabulary);
  *       200:
  *         description: Import thành công
  */
-router.post('/bulk', bulkImportVocabulary);
+router.post('/bulk', ...admin, bulkImportVocabulary);
 
 /**
  * @swagger
@@ -247,7 +253,7 @@ router.post('/bulk', bulkImportVocabulary);
  *       200:
  *         description: Thay thế thành công
  */
-router.post('/replace', replaceVocabulary);
+router.post('/replace', ...admin, replaceVocabulary);
 
 /**
  * @swagger
@@ -264,7 +270,7 @@ router.post('/replace', replaceVocabulary);
  *       200:
  *         description: Chuyển file thành công
  */
-router.post('/switch/:filename', switchVocabularyFile);
+router.post('/switch/:filename', ...admin, switchVocabularyFile);
 
 /**
  * @swagger
@@ -281,7 +287,7 @@ router.post('/switch/:filename', switchVocabularyFile);
  *       200:
  *         description: Đã xoá trùng lặp
  */
-router.post('/remove-duplicates/:filename', removeDuplicates);
+router.post('/remove-duplicates/:filename', ...admin, removeDuplicates);
 
 /**
  * @swagger
@@ -314,11 +320,13 @@ router.post('/remove-duplicates/:filename', removeDuplicates);
  *       200:
  *         description: Xoá thành công
  */
-router.delete('/bulk', bulkDeleteVocabulary);
-router.delete('/all', deleteAllVocabulary);
-router.post('/filter-delete', filterDeleteVocabulary);
+// Thứ tự quan trọng: 3 path chữ (/bulk, /all, /filter-delete) phải đứng TRƯỚC /:id,
+// nếu không '/:id' nuốt mất chúng.
+router.delete('/bulk', ...admin, bulkDeleteVocabulary);
+router.delete('/all', ...admin, deleteAllVocabulary);
+router.post('/filter-delete', ...admin, filterDeleteVocabulary);
 
-router.put('/:id', updateVocabulary);
-router.delete('/:id', deleteVocabulary);
+router.put('/:id', ...admin, updateVocabulary);
+router.delete('/:id', ...admin, deleteVocabulary);
 
 module.exports = router;

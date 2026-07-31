@@ -400,11 +400,16 @@ function renderPartFilter(partList) {
     btn.dataset.part = part;
     btn.className =
       "part-pill" + (currentVal === part ? " part-pill--active" : "");
-    const countHtml =
-      typeof count === "number"
-        ? ` <span style="opacity:.55;font-size:10px;">${count}</span>`
-        : "";
-    btn.innerHTML = `${part}${countHtml}`;
+    // `part` là dữ liệu từ DB, KHÔNG được nội suy vào innerHTML: một từ vựng có
+    // part chứa thẻ HTML sẽ chạy script ngay trong phiên admin (token nằm ở
+    // localStorage). Dựng bằng textContent + createElement để nội dung luôn là chữ.
+    btn.textContent = part;
+    if (typeof count === "number") {
+      const badge = document.createElement("span");
+      badge.style.cssText = "opacity:.55;font-size:10px";
+      badge.textContent = ` ${count}`;
+      btn.appendChild(badge);
+    }
     pills.appendChild(btn);
   });
 
