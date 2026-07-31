@@ -1,0 +1,169 @@
+          <!-- ===== ACTIVITY TAB (Hoạt động người dùng) ===== -->
+          <div id="main-tab-activity" class="main-tab-content">
+
+            <!-- Sub-tab navigation -->
+            <div class="activity-subtab-nav">
+              <button class="activity-subtab-btn active" data-subtab="user-stats">
+                <i class="fas fa-chart-line"></i> Tổng quan
+              </button>
+              <button class="activity-subtab-btn" data-subtab="practice-history">
+                <i class="fas fa-gamepad"></i> Luyện tập
+              </button>
+              <button class="activity-subtab-btn" data-subtab="toeic-history">
+                <i class="fas fa-file-alt"></i> Thi TOEIC
+              </button>
+              <button class="activity-subtab-btn" data-subtab="user-achievements">
+                <i class="fas fa-medal"></i> Thành tích
+              </button>
+            </div>
+
+            <!-- Panel: Tổng quan (User Stats) -->
+            <div class="activity-panel active" id="activity-panel-user-stats">
+              <div class="card">
+                <div class="card-header">
+                  <h2><i class="fas fa-chart-line"></i> Thống kê người dùng</h2>
+                </div>
+                <div style="padding: 0 0 12px; display: flex; gap: 8px; align-items: center">
+                  <input type="text" id="us-search" class="card-search" placeholder="Tìm theo email..." style="flex: 1; margin: 0; max-width: 480px;">
+                  <button class="btn btn-primary" id="us-search-btn" style="white-space:nowrap"><i class="fas fa-search"></i> Tìm</button>
+                  <button class="btn btn-ghost" id="us-reset-btn"><i class="fas fa-sync"></i> Sync tất cả</button>
+                </div>
+                <div style="display: flex; justify-content: space-between; align-items: center; padding-bottom: 12px">
+                  <span id="us-total" class="filter-results-text" style="font-size: 13px; color: var(--text-secondary); margin: 0"></span>
+                </div>
+                <div id="us-pagination" class="pagination-row"></div>
+                <div class="table-container">
+                  <table class="data-table">
+                    <thead><tr>
+                      <th>Email</th><th>Tên đăng nhập</th><th>Level</th>
+                      <th>XP</th><th>Coins</th><th>Gems</th>
+                      <th>Streak</th><th>Sessions</th><th>Đúng</th>
+                      <th>Vai trò</th><th>Đăng ký</th><th>Thao tác</th>
+                    </tr></thead>
+                    <tbody id="us-tbody"><tr><td colspan="12" class="loading"><i class="fas fa-spinner fa-spin"></i> Đang tải...</td></tr></tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+
+            <!-- Panel: Luyện tập (Practice History) -->
+            <div class="activity-panel" id="activity-panel-practice-history">
+              <div class="card">
+                <div class="card-header">
+                  <h2><i class="fas fa-gamepad"></i> Lịch sử luyện tập</h2>
+                </div>
+                <div style="padding: 0 0 12px; display: flex; gap: 8px; align-items: center">
+                  <input type="text" id="ph-search" class="card-search" placeholder="Tìm theo email..." style="flex: 1; margin: 0">
+                  <select id="ph-mode" class="filter-select" style="width: auto; min-width: 150px; flex-shrink: 0">
+                    <option value="">Tất cả chế độ</option>
+                    <option value="multiple-choice">Trắc nghiệm</option>
+                    <option value="fill-blank">Điền vào chỗ trống</option>
+                    <option value="listening">Nghe</option>
+                    <option value="matching">Ghép đôi</option>
+                    <option value="speed-quiz">Kiểm tra nhanh</option>
+                    <option value="flashcard">Thẻ ghi nhớ</option>
+                    <option value="synonym-check">Từ đồng nghĩa</option>
+                    <option value="word-type-check">Loại từ</option>
+                    <option value="word-scramble">Xếp chữ</option>
+                  </select>
+                  <button class="btn btn-primary" id="ph-search-btn" style="white-space:nowrap"><i class="fas fa-search"></i> Tìm</button>
+                  <button class="btn btn-ghost" id="ph-reset-btn"><i class="fas fa-sync"></i> Sync tất cả</button>
+                </div>
+                <div style="display: flex; justify-content: space-between; align-items: center; padding-bottom: 12px">
+                  <span id="ph-total" class="filter-results-text" style="font-size: 13px; color: var(--text-secondary); margin: 0"></span>
+                </div>
+                <div id="ph-pagination" class="pagination-row"></div>
+                <div class="table-container">
+                  <table class="data-table">
+                    <thead><tr>
+                      <th>Email</th><th>Chế độ</th><th>Điểm</th>
+                      <th>Đúng</th><th>Sai</th><th>XP</th><th>Coins</th>
+                      <th>Thời gian</th><th>Ngày</th><th>Thao tác</th>
+                    </tr></thead>
+                    <tbody id="ph-tbody"><tr><td colspan="10" class="loading"><i class="fas fa-spinner fa-spin"></i> Đang tải...</td></tr></tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+
+            <!-- Panel: Thi TOEIC (TOEIC History) -->
+            <div class="activity-panel" id="activity-panel-toeic-history">
+              <div class="card">
+                <div class="card-header">
+                  <h2><i class="fas fa-file-alt"></i> Lịch sử luyện thi TOEIC</h2>
+                  <div class="card-header-actions">
+                    <button class="btn btn-ghost btn-sm" id="btn-refresh-history">
+                      <i class="fas fa-sync-alt"></i> Sync tất cả
+                    </button>
+                    <button class="btn btn-danger btn-sm" id="btn-delete-user-history" style="display:none">
+                      <i class="fas fa-user-times"></i> Xóa user này
+                    </button>
+                    <button class="btn btn-danger btn-sm" id="btn-delete-all-history">
+                      <i class="fas fa-trash-alt"></i> Xóa tất cả
+                    </button>
+                  </div>
+                </div>
+                <div style="padding: 0 0 12px; display: flex; gap: 8px; align-items: center">
+                  <input type="text" id="history-search" class="card-search" placeholder="Tìm theo username..." style="flex: 1; margin: 0" />
+                  <select id="history-filter-user" class="filter-select" style="width: auto; min-width: 150px; flex-shrink: 0">
+                    <option value="">-- Tất cả user --</option>
+                  </select>
+                </div>
+                <div id="history-pagination" class="pagination-row"></div>
+                <div class="table-container">
+                  <table id="history-table" class="data-table">
+                    <thead>
+                      <tr>
+                        <th style="width:5%">#</th>
+                        <th style="width:15%">Người dùng</th>
+                        <th style="width:10%">Loại đề</th>
+                        <th style="width:10%">Tổng điểm</th>
+                        <th style="width:10%">Nghe</th>
+                        <th style="width:10%">Đọc</th>
+                        <th style="width:10%">Chính xác</th>
+                        <th style="width:15%">Ngày thi</th>
+                        <th style="width:10%">Thời gian</th>
+                        <th style="width:5%">Thao tác</th>
+                      </tr>
+                    </thead>
+                    <tbody id="history-table-body">
+                      <tr><td colspan="10" class="loading"><i class="fas fa-spinner fa-spin"></i> Đang tải...</td></tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+
+            <!-- Panel: Thành tích (User Achievements) -->
+            <div class="activity-panel" id="activity-panel-user-achievements">
+              <div class="card">
+                <div class="card-header">
+                  <h2><i class="fas fa-medal"></i> Thành tích người dùng</h2>
+                </div>
+                <div style="padding: 0 0 12px; display: flex; gap: 8px; align-items: center">
+                  <input type="text" id="ua-search-input" class="card-search" placeholder="Tìm email hoặc username..." autocomplete="off" style="flex: 1; margin: 0" />
+                </div>
+                <div style="display: flex; justify-content: space-between; align-items: center; padding-bottom: 12px">
+                  <span id="ua-total" class="filter-results-text" style="font-size: 13px; color: var(--text-secondary); margin: 0"></span>
+                </div>
+                <div id="ua-pagination" class="pagination-row"></div>
+                <div class="table-container">
+                  <table id="ua-table" class="data-table">
+                    <thead>
+                      <tr>
+                        <th style="width:40px">#</th>
+                        <th>Tên đăng nhập</th>
+                        <th>Email</th>
+                        <th style="width:130px">Ngày đăng ký</th>
+                        <th style="width:40px"></th>
+                      </tr>
+                    </thead>
+                    <tbody id="ua-tbody">
+                      <tr><td colspan="5" class="loading"><i class="fas fa-spinner fa-spin"></i> Đang tải...</td></tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+
+          </div>

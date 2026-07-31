@@ -1,0 +1,61 @@
+        <!-- Topbar -->
+        <div class="admin-topbar">
+          <div class="topbar-left">
+            <button
+              class="sidebar-toggle-btn"
+              id="sidebar-toggle"
+              title="Ẩn/hiện menu"
+            >
+              <i class="fas fa-bars"></i>
+            </button>
+            <h1 class="topbar-title" id="topbar-title">Tổng quan</h1>
+          </div>
+          <div class="topbar-right">
+            <span id="season-countdown" class="season-countdown" title="Thời gian còn lại của mùa">SS1: --</span>
+
+            <div class="topbar-divider"></div>
+
+            <span
+              class="status-dot online"
+              id="topbar-server-status"
+              title="Trạng thái máy chủ"
+              >Online</span
+            >
+
+            <div class="topbar-divider"></div>
+
+
+            <button
+              class="theme-toggle topbar-icon-btn"
+              id="theme-toggle"
+              title="Đổi giao diện"
+            >
+              <i class="fas fa-moon"></i>
+            </button>
+
+            <div class="topbar-divider"></div>
+
+            <!-- Avatar dropdown -->
+            <div style="position: relative">
+              <button class="avatar-btn" id="avatar-btn" type="button">
+                <div class="avatar-circle" id="topbar-avatar-initials">A</div>
+                <span class="avatar-btn-name" id="admin-name-topbar"
+                  >Admin</span
+                >
+                <i class="fas fa-chevron-down avatar-btn-chevron"></i>
+              </button>
+              <div class="avatar-dropdown" id="avatar-dropdown">
+                <div class="avatar-dropdown-header">
+                  <div class="avatar-dropdown-name" id="avatar-dropdown-name">
+                    Admin
+                  </div>
+                  <div class="avatar-dropdown-role">Quản trị viên</div>
+                </div>
+                <button class="avatar-dropdown-item" id="btn-logout">
+                  <i class="fas fa-sign-out-alt"></i>
+                  Đăng xuất
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>

@@ -1,0 +1,2979 @@
+/* ==================================
+   TOEIC SCREEN STYLES
+   ================================== */
+
+.toeic-container {
+  padding: 0;
+}
+
+/* TOEIC Intro */
+.toeic-intro {
+  text-align: center;
+  margin-bottom: var(--spacing-md);
+  padding: var(--spacing-md) var(--spacing-lg);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+  border: none;
+  border-radius: var(--border-radius-large);
+  color: #fff;
+}
+
+.toeic-intro h3 {
+  font-size: 1.25rem;
+  margin-bottom: 2px;
+  font-weight: 700;
+  color: #fff;
+}
+
+.toeic-intro p {
+  font-size: 0.9rem;
+  color: rgba(255, 255, 255, 0.85);
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+/* Tab content area */
+#toeic-tab-content {
+  min-height: 60vh;
+}
+
+/* Hàng lọc dưới thanh tab: HAI CỤM tách bạch — pill chọn Part bên trái, ô lọc
+   và sắp xếp bên phải. Trước đây 8 pill và 3 select xếp chung một dãy, cao thấp
+   so le nên đọc ra như một chuỗi dài không đầu không cuối. */
+.toeic-part-filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: var(--spacing-lg);
+}
+
+/* Khối pill Part: nền chìm ôm cả cụm, giống thanh tab ngay phía trên để hai
+   hàng đọc ra cùng một hệ. */
+.toeic-part-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 4px;
+  background: var(--bg-secondary);
+  border-radius: 999px;
+}
+/* Trong khối thì pill bỏ viền/nền riêng — nền của khối đã đủ, giữ viền nữa
+   thành ra hộp lồng hộp. Cao 30px + 4px đệm của khối = đúng 38px, bằng chiều
+   cao ô select bên phải nên hai cụm nằm ngang nhau. */
+.toeic-part-group .toeic-part-btn {
+  height: 30px;
+  padding: 0 13px;
+  display: inline-flex;
+  align-items: center;
+  border-color: transparent;
+  background: transparent;
+  color: var(--text-secondary);
+}
+.toeic-part-group .toeic-part-btn:hover {
+  background: var(--bg-primary);
+  color: var(--text-primary);
+}
+.toeic-part-group .toeic-part-btn.active {
+  background: var(--primary-color);
+  color: #fff;
+}
+
+.toeic-filter-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+}
+
+/* Mũi tên tự vẽ bằng border thay cho mũi tên mặc định của trình duyệt: nó ăn
+   theo currentColor nên đổi màu đúng ở cả trạng thái "đang lọc" lẫn dark mode,
+   thứ mà ảnh nền data-URI không làm được. */
+.toeic-filter {
+  position: relative;
+  display: inline-flex;
+  color: var(--text-primary);
+}
+.toeic-filter::after {
+  content: '';
+  position: absolute;
+  right: 13px;
+  top: calc(50% - 4px);
+  width: 6px;
+  height: 6px;
+  border-right: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  transform: rotate(45deg);
+  opacity: 0.55;
+  pointer-events: none;
+}
+
+.toeic-sort-select {
+  appearance: none;
+  -webkit-appearance: none;
+  height: 38px;
+  max-width: 168px;
+  padding: 0 30px 0 14px;
+  border: 1px solid var(--border-color);
+  border-radius: 999px;
+  background: var(--bg-secondary);
+  color: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  line-height: 1;
+  cursor: pointer;
+  /* Select rộng theo option dài nhất ("Nhiều lượt thi nhất") — chặn lại để ba ô
+     không so le nhau. */
+  text-overflow: ellipsis;
+  transition: border-color 0.15s ease, background 0.15s ease, color 0.15s ease;
+}
+.toeic-sort-select:hover { border-color: var(--primary-color); }
+.toeic-sort-select:focus-visible {
+  outline: 2px solid var(--primary-color);
+  outline-offset: 1px;
+}
+/* Danh sách xổ ra là <option> của trình duyệt: nó ăn theo màu chữ/nền của chính
+   thẻ select. Trạng thái "đang lọc" bên dưới tô chữ màu primary, không ghi đè ở
+   đây thì cả danh sách thành chữ hồng trên nền hồng — dark mode gần như không
+   đọc nổi. Ép màu đặc, đúng cho cả hai theme. */
+.toeic-sort-select option {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  font-weight: 500;
+}
+
+/* Đang khác mặc định → tô sáng, để danh sách ngắn đi là biết do mình lọc.
+   Nền pha ĐẶC với bg-secondary chứ không pha với transparent: nền trong suốt
+   khiến trình duyệt lấy nhầm nền cho khung xổ xuống. */
+.toeic-filter.is-set { color: var(--primary-color); }
+.toeic-filter.is-set .toeic-sort-select {
+  border-color: var(--primary-color);
+  background: color-mix(in srgb, var(--primary-color) 14%, var(--bg-secondary));
+}
+.toeic-filter.is-set::after { opacity: 0.9; }
+
+/* Màn hẹp: pill Part chiếm trọn dòng, ba ô lọc xuống dưới chia đôi — hai ô đầu
+   ngắn nằm cạnh nhau, ô sắp xếp (chữ dài nhất) ăn trọn dòng dưới. */
+@media (max-width: 560px) {
+  .toeic-part-filters { gap: 8px; }
+  .toeic-part-group { width: 100%; justify-content: center; }
+  .toeic-filter-group {
+    width: 100%;
+    margin-left: 0;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+  .toeic-filter:last-child { grid-column: 1 / -1; }
+  .toeic-filter,
+  .toeic-sort-select { width: 100%; max-width: none; }
+}
+/* Khi đặt trên thanh header (cạnh tiêu đề) thay vì dưới tabs */
+.toeic-part-filters.in-header {
+  margin: 0 0 0 16px;
+}
+.toeic-part-btn {
+  padding: 6px 14px;
+  border: 1px solid var(--border-color);
+  border-radius: 999px;
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+.toeic-part-btn:hover { border-color: var(--primary-color); }
+.toeic-part-btn.active {
+  background: var(--primary-color);
+  color: #fff;
+  border-color: var(--primary-color);
+}
+
+/* Nút "Lịch sử" / "Phân tích" trên header (thay cho tab) — nền gradient */
+.toeic-header-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border: none;
+  border-radius: 10px;
+  background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+  color: #fff;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: filter 0.15s ease, box-shadow 0.15s ease;
+}
+.toeic-header-btn:hover { filter: brightness(1.07); }
+/* Đang xem mục đó → viền trắng bên trong để biết nút đang active */
+.toeic-header-btn.active {
+  box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.85);
+}
+
+/* TOEIC Tabs */
+.toeic-tabs {
+  display: flex;
+  gap: var(--spacing-sm);
+  margin-bottom: var(--spacing-xl);
+  overflow-x: auto;
+  padding-bottom: var(--spacing-xs);
+}
+
+.toeic-tab {
+  flex: 1;
+  min-width: 150px;
+  padding: var(--spacing-md) var(--spacing-lg);
+  background-color: var(--bg-secondary);
+  border: 2px solid var(--border-color);
+  border-radius: var(--border-radius-large);
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 0.95rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-xs);
+}
+
+.toeic-tab i {
+  font-size: 1.1rem;
+}
+
+.toeic-tab:hover {
+  background-color: var(--bg-primary);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-small);
+}
+
+.toeic-tab.active {
+  background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+  color: white;
+  border-color: var(--primary-color);
+}
+
+/* Test Cards Grid */
+.toeic-tests-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: var(--spacing-lg);
+  margin-bottom: var(--spacing-xl);
+}
+
+.toeic-test-card {
+  background-color: var(--bg-primary);
+  border-radius: var(--border-radius-large);
+  padding: var(--spacing-lg);
+  border: 2px solid var(--border-color);
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.toeic-test-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 4px;
+  background: linear-gradient(90deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+  transform: scaleX(0);
+  transition: transform 0.3s ease;
+}
+
+.toeic-test-card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-large);
+  border-color: var(--primary-color);
+}
+
+.toeic-test-card:hover::before {
+  transform: scaleX(1);
+}
+
+.toeic-test-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: var(--spacing-md);
+}
+
+.toeic-test-icon {
+  width: 50px;
+  height: 50px;
+  border-radius: var(--border-radius-large);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  color: white;
+  background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+}
+
+.toeic-test-badge {
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.toeic-test-badge.full {
+  background-color: #e3f2fd;
+  color: #1976d2;
+}
+
+.toeic-test-badge.mini {
+  background-color: #f3e5f5;
+  color: #7b1fa2;
+}
+
+.toeic-test-badge.easy {
+  background-color: #e8f5e9;
+  color: #388e3c;
+}
+
+.toeic-test-badge.medium {
+  background-color: #fff3e0;
+  color: #f57c00;
+}
+
+.toeic-test-badge.hard {
+  background-color: #ffebee;
+  color: #d32f2f;
+}
+
+.toeic-test-title {
+  font-size: 1.2rem;
+  font-weight: 700;
+  margin-bottom: var(--spacing-xs);
+  color: var(--text-primary);
+}
+
+.toeic-test-description {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  margin-bottom: var(--spacing-md);
+  line-height: 1.5;
+}
+
+.toeic-test-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--spacing-sm);
+  margin-bottom: var(--spacing-md);
+  padding: var(--spacing-md);
+  background-color: var(--bg-secondary);
+  border-radius: var(--border-radius-large);
+}
+
+.toeic-stat {
+  text-align: center;
+}
+
+.toeic-stat-value {
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: var(--primary-color);
+  display: block;
+}
+
+.toeic-stat-label {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.toeic-test-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: var(--spacing-md);
+  border-top: 1px solid var(--border-color);
+}
+
+.toeic-test-attempts {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+
+.toeic-test-attempts i {
+  color: var(--primary-color);
+  margin-right: 4px;
+}
+
+.toeic-start-btn {
+  padding: var(--spacing-sm) var(--spacing-lg);
+  background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+  color: white;
+  border: none;
+  border-radius: var(--border-radius-large);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.toeic-start-btn:hover {
+  transform: scale(1.05);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.toeic-start-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Mini Test Parts Grid */
+.toeic-parts-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: var(--spacing-md);
+}
+
+.toeic-part-card {
+  background-color: var(--bg-primary);
+  border-radius: var(--border-radius-large);
+  padding: var(--spacing-lg);
+  border: 2px solid var(--border-color);
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-align: center;
+}
+
+.toeic-part-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-medium);
+  border-color: var(--primary-color);
+}
+
+.toeic-part-number {
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--primary-color);
+  margin-bottom: var(--spacing-xs);
+}
+
+.toeic-part-name {
+  font-size: 1rem;
+  font-weight: 600;
+  margin-bottom: var(--spacing-xs);
+}
+
+.toeic-part-type {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  margin-bottom: var(--spacing-sm);
+}
+
+.toeic-part-questions {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  margin-bottom: var(--spacing-md);
+}
+
+/* Empty State */
+.toeic-empty-state {
+  text-align: center;
+  padding: var(--spacing-xxl) var(--spacing-lg);
+}
+
+.toeic-empty-icon {
+  font-size: 4rem;
+  color: var(--text-secondary);
+  opacity: 0.3;
+  margin-bottom: var(--spacing-md);
+}
+
+.toeic-empty-title {
+  font-size: 1.3rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-bottom: var(--spacing-sm);
+}
+
+.toeic-empty-text {
+  font-size: 0.95rem;
+  color: var(--text-secondary);
+  opacity: 0.8;
+}
+
+/* ==================================
+   TOEIC TEST INTERFACE
+   ================================== */
+
+.toeic-test-header-bar {
+  /* Dính khi cuộn → đồng hồ + nút Nộp bài luôn nhìn thấy.
+     Neo NGAY DƯỚI hai thanh chung của app (.top-nav + .status-bar, cũng
+     sticky). Để top:0 thì header này chui xuống dưới chúng và mất hút đúng
+     lúc cuộn xem ảnh đề. --app-sticky-offset do TestRunner đo lúc chạy;
+     96px chỉ là dự phòng khi biến chưa kịp đặt. */
+  position: sticky;
+  top: var(--app-sticky-offset, 96px);
+  z-index: 30;
+  background-color: var(--bg-primary);
+  /* Header này DÍNH nên chiều cao của nó bị trừ khỏi vùng đọc suốt cả bài thi —
+     mỗi pixel thừa ở đây là pixel mất vĩnh viễn, không phải chỉ mất một lần khi
+     cuộn qua. Bản cũ cao ~93px mà chỉ 37px là nội dung: 32px đệm + 24px lề dưới
+     là khoảng trắng thuần. */
+  padding: 9px 14px;
+  border-radius: var(--border-radius-large);
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--spacing-md);
+  box-shadow: var(--shadow-small);
+  transition: transform 0.25s ease, opacity 0.2s ease;
+}
+/* Cuộn xuống → trượt lên khỏi tầm nhìn (chui dưới hai thanh app che nó). */
+.toeic-test-header-bar.is-hidden {
+  transform: translateY(-140%);
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* 3 vùng header: trái (back + tên) · giữa (nav câu + đồng hồ) · phải (nút) */
+.toeic-header-left {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  min-width: 0;
+}
+.toeic-header-center {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+/* Hàng đầu trong câu hỏi: badge "Câu X" trái — nút Câu hỏi + đồng hồ căn phải */
+.toeic-q-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-md);
+  margin-bottom: var(--spacing-md);
+}
+.toeic-q-row-right {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.toeic-back-btn {
+  background: none;
+  border: none;
+  color: var(--text-primary);
+  /* Nút này to nhất hàng nên chính nó định chiều cao header, không phải tên đề. */
+  font-size: 1.05rem;
+  cursor: pointer;
+  padding: 5px 7px;
+  border-radius: var(--border-radius-large);
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+}
+
+.toeic-back-btn:hover {
+  background-color: var(--bg-secondary);
+  color: var(--primary-color);
+}
+
+.toeic-back-btn:active {
+  transform: scale(0.95);
+}
+
+.toeic-test-info {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+}
+
+.toeic-test-name {
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.toeic-progress-info {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+}
+
+.toeic-timer {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  padding: 6px 12px;
+  background-color: var(--bg-secondary);
+  border-radius: var(--border-radius-large);
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--primary-color);
+}
+
+.toeic-timer.warning {
+  color: var(--warning-color);
+  animation: pulse 1s infinite;
+}
+
+/* Nhãn chặng của Full Test (Nghe / Đọc) đứng trước đồng hồ — chữ nhỏ, mờ hơn
+   để con số vẫn là thứ đọc trước. */
+.toeic-timer-section {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: color-mix(in srgb, currentColor 16%, transparent);
+  opacity: 0.9;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}
+
+.toeic-test-actions {
+  display: flex;
+  gap: var(--spacing-sm);
+}
+
+/* Nut hanh dong tren header de thi: nen gon lai — day la thanh dieu huong,
+   khong phai nut hanh dong chinh cua trang. */
+.toeic-action-btn {
+  padding: 6px 12px;
+  border: 1px solid var(--border-color);
+  background-color: var(--bg-secondary);
+  border-radius: var(--border-radius-large);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-weight: 600;
+  font-size: 0.85rem;
+  white-space: nowrap;
+}
+
+.toeic-action-btn:hover {
+  background-color: var(--bg-primary);
+  transform: translateY(-1px);
+}
+
+.toeic-action-btn.primary {
+  background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+  color: white;
+  border-color: var(--primary-color);
+}
+
+/* Nút "Đánh dấu" khi câu hiện tại đang được đánh dấu → đổi màu cam rõ ràng */
+.toeic-action-btn.active {
+  background: var(--warning-color, #f59e0b);
+  color: #fff;
+  border-color: var(--warning-color, #f59e0b);
+}
+
+/* Question Container */
+.toeic-question-container {
+  background-color: var(--bg-primary);
+  border-radius: var(--border-radius-large);
+  padding: var(--spacing-xl);
+  margin-bottom: var(--spacing-lg);
+  box-shadow: var(--shadow-medium);
+}
+
+/* Nút mũi tên Câu trước / Câu sau — nằm trong header (cạnh "Câu X/N") */
+.toeic-progress-info {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.toeic-qnav-arrow {
+  width: 30px;
+  height: 30px;
+  flex-shrink: 0;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+}
+.toeic-qnav-arrow:hover:not(:disabled) {
+  border-color: var(--primary-color);
+  color: var(--primary-color);
+}
+.toeic-qnav-arrow:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+.toeic-action-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.toeic-question-number {
+  display: inline-block;
+  padding: 4px 12px;
+  background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+  color: white;
+  border-radius: var(--border-radius-large);
+  font-weight: 700;
+  margin-bottom: var(--spacing-md);
+}
+
+.toeic-question-image {
+  width: 100%;
+  max-width: 500px;
+  max-height: 400px;
+  margin: 0 auto var(--spacing-lg);
+  border-radius: var(--border-radius-large);
+  display: block;
+  object-fit: contain;
+  box-shadow: var(--shadow-medium);
+}
+
+/* Khung chỗ ảnh khi câu (Part 1) chưa có ảnh */
+.toeic-image-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  max-width: 500px;
+  min-height: 180px;
+  margin: 0 auto var(--spacing-lg);
+  border: 2px dashed var(--border-color);
+  border-radius: var(--border-radius-large);
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+}
+.toeic-image-placeholder i { font-size: 34px; opacity: 0.45; }
+
+.toeic-audio-player {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: var(--spacing-sm);
+  padding: var(--spacing-sm) var(--spacing-md);
+  background-color: var(--bg-secondary);
+  border-radius: var(--border-radius-large);
+}
+.toeic-audio-hint {
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+}
+
+.toeic-question-text {
+  font-size: 1.1rem;
+  line-height: 1.8;
+  margin-bottom: var(--spacing-lg);
+  color: var(--text-primary);
+}
+
+.toeic-passage {
+  padding: var(--spacing-lg);
+  background-color: var(--bg-secondary);
+  border-radius: var(--border-radius-large);
+  margin-bottom: var(--spacing-lg);
+  line-height: 1.8;
+  border-left: 4px solid var(--primary-color);
+}
+
+.toeic-options {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+}
+
+.toeic-option {
+  padding: var(--spacing-md) var(--spacing-lg);
+  background-color: var(--bg-secondary);
+  border: 2px solid var(--border-color);
+  border-radius: var(--border-radius-large);
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+}
+
+.toeic-option:hover {
+  background-color: var(--bg-primary);
+  border-color: var(--primary-color);
+  transform: translateX(4px);
+}
+
+.toeic-option.selected {
+  background-color: var(--primary-color);
+  color: white;
+  border-color: var(--primary-color);
+}
+
+.toeic-option-label {
+  font-weight: 700;
+  font-size: 1.1rem;
+  min-width: 30px;
+}
+
+.toeic-option-text {
+  flex: 1;
+  font-size: 1rem;
+}
+
+/* Part 1-2: Options horizontal layout - giống thi thật TOEIC */
+.toeic-options-listening {
+  flex-direction: column;
+  gap: 10px;
+}
+
+.toeic-option-label-only {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  padding: 14px 18px;
+  border-radius: 10px;
+}
+
+.toeic-option-label-only .toeic-option-label {
+  font-size: 1.25rem;
+  font-weight: 700;
+  min-width: 32px;
+  text-align: center;
+}
+
+.toeic-option-label-only:hover {
+  transform: translateX(4px);
+}
+
+.toeic-option-label-only.selected {
+  transform: translateX(6px);
+}
+
+/* Question Navigation */
+.toeic-question-nav {
+  background-color: var(--bg-primary);
+  border-radius: var(--border-radius-large);
+  padding: var(--spacing-lg);
+  margin-bottom: var(--spacing-lg);
+}
+
+.toeic-nav-title {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-bottom: var(--spacing-md);
+  text-transform: uppercase;
+}
+
+.toeic-nav-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr); /* tối đa 5 câu mỗi dòng */
+  gap: var(--spacing-xs);
+}
+
+/* Lưới điều hướng TÁCH THEO PART — mỗi Part một cụm có nhãn riêng. */
+.toeic-nav-groups {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-lg);
+}
+
+.toeic-nav-part-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+.toeic-nav-part-label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-sm);
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--primary-color);
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  padding-bottom: 4px;
+  border-bottom: 2px solid var(--border-color);
+  position: sticky;
+  top: 0;
+  background: var(--bg-primary);
+  z-index: 1;
+}
+
+.toeic-nav-part-count {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: none;
+}
+
+.toeic-nav-preview-part {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+/* Hàng chip lọc theo Part — nằm ở header, lấp khoảng trống giữa tiêu đề và X. */
+.toeic-nav-partfilter {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-xs);
+  flex: 1;
+  justify-content: flex-end;
+  margin: 0 var(--spacing-md);
+}
+
+.toeic-nav-partchip {
+  padding: 4px 10px;
+  border: 2px solid var(--border-color);
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.toeic-nav-partchip:hover {
+  border-color: var(--primary-color);
+  color: var(--primary-color);
+}
+
+.toeic-nav-partchip.active {
+  background: var(--primary-color);
+  border-color: var(--primary-color);
+  color: #fff;
+}
+
+.toeic-nav-btn {
+  width: 40px;
+  height: 40px;
+  border: 2px solid var(--border-color);
+  background-color: var(--bg-secondary);
+  border-radius: var(--border-radius-small);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.toeic-nav-btn:hover {
+  background-color: var(--bg-primary);
+  transform: scale(1.05);
+}
+
+.toeic-nav-btn.answered {
+  background-color: var(--success-color);
+  color: white;
+  border-color: var(--success-color);
+}
+
+/* Lưới câu ở màn XEM LẠI: tô theo đúng/sai (câu bỏ qua giữ nền mặc định). */
+.toeic-nav-btn.res-correct,
+.toeic-legend-dot.res-correct {
+  background-color: var(--success-color);
+  color: white;
+  border-color: var(--success-color);
+}
+
+.toeic-nav-btn.res-wrong,
+.toeic-legend-dot.res-wrong {
+  background-color: var(--danger-color, #ef4444);
+  color: white;
+  border-color: var(--danger-color, #ef4444);
+}
+
+/* Số câu thật (101, 147…) rộng hơn ô 40px của lưới lúc làm bài. */
+.toeic-nav-btn {
+  min-width: 40px;
+  width: auto;
+  padding: 0 6px;
+}
+
+.toeic-nav-btn.marked {
+  background-color: var(--warning-color);
+  color: white;
+  border-color: var(--warning-color);
+}
+
+.toeic-nav-btn.current {
+  background-color: var(--primary-color);
+  color: white;
+  border-color: var(--primary-color);
+  transform: scale(1.1);
+}
+
+/* ==================================
+   TOEIC RESULTS SCREEN
+   ================================== */
+
+.toeic-results-header {
+  text-align: center;
+  margin-bottom: var(--spacing-xl);
+}
+
+.toeic-results-header h2 {
+  font-size: 2rem;
+  color: var(--success-color);
+}
+
+.toeic-score-card {
+  background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+  color: white;
+  border-radius: var(--border-radius-large);
+  padding: var(--spacing-lg);
+  text-align: center;
+  margin-bottom: var(--spacing-md);
+  box-shadow: var(--shadow-large);
+}
+
+.main-score {
+  margin-bottom: var(--spacing-sm);
+}
+
+.toeic-score-card .score-label {
+  font-size: 0.85rem;
+  opacity: 0.9;
+  margin-bottom: 2px;
+}
+
+.toeic-score-card .score-value {
+  font-size: 2.6rem;
+  font-weight: 700;
+  line-height: 1;
+  margin: 4px 0 2px;
+}
+
+.toeic-score-card .score-max {
+  font-size: 1rem;
+  opacity: 0.8;
+  margin-bottom: 2px;
+}
+
+.sub-scores {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--spacing-md);
+  max-width: 460px;
+  margin: 0 auto;
+  padding-top: var(--spacing-md);
+  border-top: 2px solid rgba(255, 255, 255, 0.3);
+}
+
+.sub-score-label {
+  font-size: 0.82rem;
+  opacity: 0.9;
+  margin-bottom: 2px;
+}
+
+.sub-score-value {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin: 2px 0;
+}
+
+.sub-score-max {
+  font-size: 1rem;
+  opacity: 0.8;
+  margin-top: 2px;
+}
+
+.toeic-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--spacing-sm);
+  margin-bottom: var(--spacing-md);
+}
+
+.stat-card {
+  background-color: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius);
+  padding: 10px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  box-shadow: var(--shadow-small);
+}
+
+.stat-icon {
+  font-size: 1.15rem;
+  margin: 0;
+}
+
+.stat-icon i {
+  color: var(--primary-color);
+}
+
+.stat-value {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.stat-label {
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+.toeic-actions {
+  display: flex;
+  gap: var(--spacing-md);
+  justify-content: center;
+}
+
+/* History List */
+.toeic-history-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+}
+
+.toeic-history-item {
+  background-color: var(--bg-primary);
+  border-radius: var(--border-radius-large);
+  padding: var(--spacing-lg);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border: 2px solid var(--border-color);
+  transition: all 0.3s ease;
+}
+
+.toeic-history-item:hover {
+  border-color: var(--primary-color);
+  transform: translateX(4px);
+  box-shadow: var(--shadow-medium);
+}
+
+.history-left h4 {
+  font-size: 1.1rem;
+  margin: 0;
+}
+
+.history-left p {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+}
+
+.history-title-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 6px;
+}
+.history-type-badge {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--primary-color);
+  color: #fff;
+  white-space: nowrap;
+}
+.history-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+.history-meta span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+.history-meta i { opacity: 0.7; }
+
+.history-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* Hai ô % và điểm: CÙNG kích thước, căn giữa, bo góc đồng nhất → hài hòa */
+.history-percent,
+.history-score {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-width: 82px;
+  height: 56px;
+  padding: 0 12px;
+  border-radius: 12px;
+  text-align: center;
+  line-height: 1.1;
+}
+.history-score {
+  background-color: var(--bg-secondary);
+  color: var(--text-primary);
+}
+.history-percent.success { background-color: #e8f5e9; color: #2e7d32; }
+.history-percent.warning { background-color: #fff3e0; color: #f57c00; }
+.history-percent.error   { background-color: #ffebee; color: #c62828; }
+.percent-value { font-size: 1.4rem; font-weight: 800; line-height: 1; }
+.percent-label { font-size: 0.68rem; opacity: 0.75; margin-top: 3px; }
+
+.score-value {
+  font-size: 1.8rem;
+  font-weight: 700;
+}
+
+.score-label {
+  font-size: 0.8rem;
+  opacity: 0.7;
+}
+
+.history-score .score-value {
+  font-size: 1.4rem;
+  font-weight: 700;
+  line-height: 1;
+}
+.history-score .score-value small {
+  font-size: 0.72rem;
+  font-weight: 600;
+  opacity: 0.6;
+}
+
+/* Analytics */
+.toeic-analytics-container {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xl);
+}
+
+/* ===================================================================
+   "NẾU THI THẬT BÂY GIỜ" — điểm ước lượng + đối chiếu mục tiêu.
+   Hiện một KHOẢNG chứ không một con số: dữ liệu chỉ đủ để nói "quanh
+   quanh chỗ này", còn một con số trần trụi sẽ bị đọc thành lời hứa.
+   =================================================================== */
+.score-prediction {
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-large);
+  padding: var(--spacing-lg);
+}
+.score-prediction h3 {
+  margin: 0 0 var(--spacing-md);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  font-size: 1.1rem;
+}
+.score-prediction-main { text-align: center; }
+
+/* Hai cận mờ và nhỏ, mức giữa nổi hẳn — đọc lướt vẫn ra ngay con số chính,
+   nhưng vẫn thấy nó nằm trong một dải chứ không phải điểm cố định. */
+.score-prediction-range {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 14px;
+}
+.score-prediction-range .spr-edge {
+  font-size: 1.1rem;
+  color: var(--text-secondary);
+  opacity: 0.75;
+}
+.score-prediction-range .spr-mid {
+  font-size: 2.6rem;
+  font-weight: 800;
+  line-height: 1;
+  background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.score-prediction-caption {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  margin-top: 4px;
+}
+.score-prediction-badges {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+.spr-badge {
+  border: 1px solid var(--border-color);
+  border-radius: 999px;
+  padding: 2px 10px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.score-prediction-sections {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+  gap: 10px;
+  margin-top: var(--spacing-md);
+}
+.score-prediction-sections > div {
+  background: var(--bg-secondary);
+  border-radius: 10px;
+  padding: 8px 10px;
+  text-align: center;
+}
+.score-prediction-sections span {
+  display: block;
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+}
+.score-prediction-sections strong { font-size: 1.25rem; }
+.score-prediction-sections small { color: var(--text-secondary); font-size: 0.72rem; }
+
+.score-prediction-target {
+  margin-top: var(--spacing-md);
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: var(--bg-secondary);
+  border-left: 3px solid var(--primary-color);
+  font-size: 0.9rem;
+}
+.score-prediction-target.reached {
+  border-left-color: var(--success-color, #16a34a);
+}
+
+.score-prediction-note,
+.score-prediction-empty {
+  margin: var(--spacing-md) 0 0;
+  font-size: 0.8rem;
+  line-height: 1.5;
+  color: var(--text-secondary);
+}
+.score-prediction-empty { font-size: 0.9rem; }
+
+.analytics-overview,
+.analytics-progress,
+.analytics-parts {
+  background-color: var(--bg-primary);
+  border-radius: var(--border-radius-large);
+  padding: var(--spacing-xl);
+  box-shadow: var(--shadow-small);
+}
+
+.analytics-overview h3,
+.analytics-progress h3,
+.analytics-parts h3 {
+  margin-bottom: var(--spacing-lg);
+}
+
+.analytics-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--spacing-md);
+}
+
+.analytics-card {
+  text-align: center;
+  padding: var(--spacing-lg);
+  background-color: var(--bg-secondary);
+  border-radius: var(--border-radius-large);
+  border: 1px solid var(--border-color);
+}
+[data-theme="light"] .analytics-card {
+  background-color: var(--bg-primary);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+
+.analytics-value {
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: var(--primary-color);
+  margin-bottom: var(--spacing-xs);
+}
+
+.analytics-label {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+}
+
+.simple-chart {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+.chart-bar {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.chart-label {
+  min-width: 30px;
+  font-weight: 600;
+}
+
+.chart-value {
+  background: linear-gradient(90deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+  color: white;
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border-radius: var(--border-radius-small);
+  font-weight: 600;
+  text-align: right;
+}
+
+.parts-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: var(--spacing-md);
+}
+
+.part-stats-card {
+  background-color: var(--bg-secondary);
+  border-radius: var(--border-radius-large);
+  padding: var(--spacing-md);
+  text-align: center;
+}
+
+.part-stats-card h4 {
+  margin-bottom: var(--spacing-sm);
+  color: var(--primary-color);
+}
+
+.part-accuracy {
+  font-size: 2rem;
+  font-weight: 700;
+  margin-bottom: var(--spacing-xs);
+}
+
+.part-attempts {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .toeic-tabs {
+    flex-wrap: wrap;
+  }
+
+  .toeic-tab {
+    flex: 1 1 calc(50% - var(--spacing-sm));
+    min-width: 120px;
+  }
+
+  .toeic-tests-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .toeic-test-header-bar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .toeic-test-info,
+  .toeic-test-actions {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .toeic-stats-grid,
+  .analytics-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .score-value {
+    font-size: 3.5rem;
+  }
+
+  .sub-scores {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ==================================
+   REVIEW QUESTIONS SECTION
+   ================================== */
+
+.review-questions-section {
+  margin-top: var(--spacing-xl);
+  padding: var(--spacing-lg);
+  background: var(--bg-secondary);
+  border-radius: var(--border-radius-large);
+}
+
+.review-questions-section h3 {
+  margin-bottom: var(--spacing-lg);
+  color: var(--text-primary);
+  font-size: 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.review-questions-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+}
+
+.review-question-item {
+  background: var(--bg-primary);
+  border-radius: var(--border-radius-large);
+  border: 2px solid var(--border-color);
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+.review-question-item.correct {
+  border-left: 4px solid var(--success-color);
+}
+
+.review-question-item.wrong {
+  border-left: 4px solid var(--error-color);
+}
+
+.review-question-header {
+  padding: var(--spacing-md);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.review-question-header:hover {
+  background: var(--bg-secondary);
+}
+
+.review-question-number {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  font-weight: 600;
+  font-size: 1.1rem;
+}
+
+.review-question-item.correct .review-question-number i {
+  color: var(--success-color);
+}
+
+.review-question-item.wrong .review-question-number i {
+  color: var(--error-color);
+}
+
+.review-answers {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  flex-wrap: wrap;
+}
+
+.answer-label {
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+}
+
+.answer-value {
+  font-weight: 700;
+  font-size: 1.1rem;
+  padding: 2px 8px;
+  border-radius: 4px;
+}
+
+.answer-value.correct-answer {
+  color: var(--success-color);
+  background: rgba(76, 175, 80, 0.1);
+}
+
+.answer-value.user-answer.correct {
+  color: var(--success-color);
+  background: rgba(76, 175, 80, 0.1);
+}
+
+.answer-value.user-answer.wrong {
+  color: var(--error-color);
+  background: rgba(244, 67, 54, 0.1);
+}
+
+.answer-separator {
+  color: var(--text-tertiary);
+  font-weight: 300;
+}
+
+.toggle-icon {
+  color: var(--text-secondary);
+  transition: transform 0.3s ease;
+}
+
+.review-question-detail {
+  padding: var(--spacing-lg);
+  border-top: 1px solid var(--border-color);
+  background: var(--bg-secondary);
+}
+
+.question-text {
+  margin-bottom: var(--spacing-md);
+  font-size: 1.05rem;
+  line-height: 1.6;
+}
+
+.question-passage {
+  margin-bottom: var(--spacing-md);
+  padding: var(--spacing-md);
+  background: var(--bg-primary);
+  border-left: 3px solid var(--primary-color);
+  border-radius: var(--border-radius-small);
+  line-height: 1.8;
+}
+
+.question-options {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+  margin-bottom: var(--spacing-md);
+}
+
+.option-item {
+  display: flex;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-sm) var(--spacing-md);
+  background: var(--bg-primary);
+  border-radius: var(--border-radius-small);
+  border: 1px solid var(--border-color);
+  transition: all 0.2s ease;
+}
+
+.option-item.option-correct {
+  background: rgba(76, 175, 80, 0.1);
+  border-color: var(--success-color);
+}
+
+.option-item.option-wrong {
+  background: rgba(244, 67, 54, 0.1);
+  border-color: var(--error-color);
+}
+
+.option-label {
+  font-weight: 700;
+  min-width: 30px;
+}
+
+.option-item.option-correct .option-label {
+  color: var(--success-color);
+}
+
+.option-item.option-wrong .option-label {
+  color: var(--error-color);
+}
+
+.option-text {
+  flex: 1;
+  line-height: 1.6;
+}
+
+.question-explanation {
+  padding: var(--spacing-md);
+  background: rgba(33, 150, 243, 0.1);
+  border-left: 3px solid var(--primary-color);
+  border-radius: var(--border-radius-small);
+  margin-top: var(--spacing-md);
+}
+
+.question-explanation strong {
+  color: var(--primary-color);
+}
+
+/* History Pagination */
+.history-page-btn {
+  padding: var(--spacing-sm) var(--spacing-md);
+  background-color: var(--bg-secondary);
+  border: 2px solid var(--border-color);
+  border-radius: var(--border-radius-small);
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.history-page-btn:hover:not(:disabled) {
+  background-color: var(--primary-color);
+  color: white;
+  border-color: var(--primary-color);
+  transform: translateY(-2px);
+}
+
+.history-page-btn.active {
+  background-color: var(--primary-color);
+  color: white;
+  border-color: var(--primary-color);
+}
+
+.history-page-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* TOEIC Results Modal - Wide Layout */
+.toeic-results-modal.modal {
+  max-width: 1400px !important;
+  width: 95vw !important;
+  max-height: 90vh !important;
+}
+
+.toeic-results-modal .modal-body {
+  max-height: 75vh !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  padding: 0 !important;
+}
+
+.toeic-results-modal .modal-body > div {
+  padding: var(--spacing-lg);
+}
+
+/* Analytics Charts Styling */
+.analytics-charts-row {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--spacing-lg);
+  margin-bottom: var(--spacing-lg);
+}
+
+.analytics-chart-card {
+  background-color: var(--bg-secondary);
+  border-radius: var(--border-radius);
+  padding: var(--spacing-lg);
+  box-shadow: var(--shadow-light);
+  border: 1px solid var(--border-color);
+}
+[data-theme="light"] .analytics-chart-card {
+  background-color: var(--bg-primary);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+
+.analytics-chart-card.full-width {
+  grid-column: 1 / -1;
+}
+
+.analytics-chart-card h3 {
+  margin: 0 0 var(--spacing-md) 0;
+  font-size: 1.2rem;
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.analytics-chart-card canvas {
+  max-width: 100%;
+  height: auto !important;
+}
+
+/* Mobile responsive */
+@media (max-width: 768px) {
+  .review-answers {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .review-question-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--spacing-sm);
+  }
+
+  .analytics-charts-row {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ==================================
+   FILL-IN-BLANK (ĐỤC LỖ) STYLES
+   ================================== */
+
+.keyword-blank-input {
+  display: inline-block;
+  padding: 4px 12px;
+  margin: 0 4px;
+  border: none;
+  border-radius: 4px;
+  background-color: #2196F3;
+  color: white;
+  font-size: inherit;
+  font-family: inherit;
+  text-align: center;
+  outline: none;
+  transition: all 0.3s ease;
+  min-width: 80px;
+  font-weight: 500;
+}
+
+.keyword-blank-input::placeholder {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.keyword-blank-input:focus {
+  background-color: #1976D2;
+  box-shadow: 0 0 0 3px rgba(33, 150, 243, 0.3);
+}
+
+.keyword-blank-input.keyword-correct {
+  background-color: #4CAF50;
+  color: white;
+}
+
+.keyword-blank-input.keyword-wrong {
+  background-color: #f44336;
+  color: white;
+}
+
+/* Fill-blank actions */
+.fill-blank-actions {
+  padding: var(--spacing-md);
+  background-color: var(--bg-secondary);
+  border-radius: var(--border-radius-large);
+  margin-top: var(--spacing-md);
+}
+
+/* Fill-blank transcript styling */
+.fill-blank-transcript {
+  padding: var(--spacing-lg);
+  background-color: var(--bg-secondary);
+  border-radius: var(--border-radius-large);
+  margin: var(--spacing-md) 0;
+  line-height: 2;
+  font-size: 1.05rem;
+}
+
+.fill-blank-transcript .speaker {
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.fill-blank-transcript .question-number {
+  color: #e65100;
+  font-weight: 700;
+}
+
+/* Fill-blank mode: Options display (no selection) */
+.toeic-options-display {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+  margin-top: var(--spacing-md);
+}
+
+.toeic-option-row {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--spacing-md);
+  padding: var(--spacing-md);
+  background-color: var(--bg-secondary);
+  border-radius: var(--border-radius-large);
+  font-size: 1rem;
+  line-height: 1.6;
+}
+
+.toeic-option-row .toeic-option-label {
+  font-weight: 700;
+  min-width: 30px;
+  color: var(--text-primary);
+}
+
+.toeic-option-row .toeic-option-text {
+  flex: 1;
+  color: var(--text-primary);
+}
+
+/* Correct answer styling in fill-blank mode */
+.toeic-option-row.correct-answer {
+  background-color: rgba(230, 81, 0, 0.08);
+}
+
+.toeic-option-row.correct-answer .toeic-option-label {
+  color: #e65100;
+}
+
+.toeic-option-row.correct-answer .toeic-option-text {
+  color: #e65100;
+}
+
+/* Dark mode support */
+[data-theme="dark"] .keyword-blank-input {
+  background-color: #1565C0;
+  color: white;
+}
+
+[data-theme="dark"] .keyword-blank-input:focus {
+  background-color: #0D47A1;
+}
+
+[data-theme="dark"] .keyword-blank-input.keyword-correct {
+  background-color: #388E3C;
+}
+
+[data-theme="dark"] .keyword-blank-input.keyword-wrong {
+  background-color: #D32F2F;
+}
+
+/* ===== 2-column layout for listening ===== */
+.toeic-two-col-layout {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  align-items: start;
+}
+
+.toeic-left-panel {
+  background: var(--bg-secondary, #f8fafc);
+  border-radius: 14px;
+  border: 1px solid var(--border-color, rgba(0,0,0,.07));
+  min-height: 220px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* Header cột trái — đồng bộ với header cột phải (bar màu) */
+/* .toeic-left-header đã bỏ — khung trái giờ không có thanh tiêu đề. */
+
+/* Điều hướng câu nằm ngay trên thanh tiêu đề khung nội dung. */
+.toeic-inline-qnav {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+.toeic-inline-qnav-label {
+  font-size: 0.9rem;
+  font-weight: 600;
+  white-space: nowrap;
+  color: var(--text-primary);
+  min-width: 74px;
+  text-align: center;
+}
+/* "(Part n)" nhạt hơn để không tranh sự chú ý với số câu */
+.toeic-inline-qnav-part {
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+.toeic-inline-qnav .toeic-qnav-arrow {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+  width: 26px;
+  height: 26px;
+  border-radius: 6px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.toeic-inline-qnav .toeic-qnav-arrow:hover:not(:disabled) {
+  background: var(--primary-color);
+  border-color: var(--primary-color);
+  color: #fff;
+}
+.toeic-inline-qnav .toeic-qnav-arrow:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+.toeic-left-body {
+  padding: 16px;
+  flex: 1;
+}
+
+/* Khung trái đã bỏ thanh tiêu đề → bo góc trên cho liền khối. */
+.toeic-left-panel { border-radius: var(--border-radius-large); }
+
+/* Ảnh đoạn đọc (Part 6/7) là NỘI DUNG CHÍNH, không phải minh hoạ → không bó
+   500x400 như ảnh Part 1. Tràn hết bề ngang khung để đọc được chữ. */
+.toeic-passage-image {
+  width: 100%;
+  max-height: 78vh;
+  display: block;
+  margin: 0 auto var(--spacing-md);
+  object-fit: contain;
+  border-radius: var(--border-radius-large);
+  box-shadow: var(--shadow-medium);
+  cursor: zoom-in;
+  background: #fff;
+}
+.toeic-passage-image:hover {
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.25);
+}
+
+/* Phần ĐỌC: đoạn văn cần nhiều chỗ hơn danh sách đáp án → cột trái rộng hơn,
+   và bớt đệm để ảnh sát mép. */
+.toeic-two-col-layout.reading {
+  grid-template-columns: 1.25fr 1fr;
+}
+.toeic-two-col-layout.reading .toeic-left-body {
+  padding: 10px;
+}
+
+.toeic-right-panel {
+  background: var(--bg-secondary, #f8fafc);
+  border-radius: 14px;
+  border: 1px solid var(--border-color, rgba(0,0,0,.07));
+  min-height: 220px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  overflow: hidden;
+}
+
+/* .toeic-right-header đã bỏ — hai khung không còn thanh tiêu đề. */
+
+/* Không còn thanh tiêu đề che phía trên → phải tự chừa đệm trên. */
+.toeic-right-panel .toeic-options-listening,
+.toeic-right-panel .toeic-options {
+  padding: 14px 16px 16px;
+}
+
+/* Đề bài (Part 5-7) trong cột phải — nới khoảng cách, không sát mép */
+.toeic-right-panel .toeic-question-text {
+  padding: 14px 16px 0;
+  margin-bottom: 4px;
+  font-size: 0.95rem;
+  line-height: 1.55;
+}
+
+@media (max-width: 700px) {
+  /* Phải kể cả .reading — rule 2 class có độ ưu tiên cao hơn, không ghi rõ ở đây
+     thì màn hẹp vẫn chia 2 cột. */
+  .toeic-two-col-layout,
+  .toeic-two-col-layout.reading {
+    grid-template-columns: 1fr;
+  }
+  .toeic-passage-image { max-height: none; }
+}
+
+/* Chữ đáp án trong khung 2 cột nhỏ lại một nhịp — cột hẹp nên cỡ mặc định
+   (1rem) hay vỡ xuống 2 dòng, đọc mệt. */
+.toeic-right-panel .toeic-option {
+  padding: 10px 14px;
+}
+.toeic-right-panel .toeic-option-text {
+  font-size: 0.9rem;
+  line-height: 1.45;
+}
+.toeic-right-panel .toeic-option-label {
+  font-size: 0.95rem;
+  min-width: 24px;
+}
+
+/* ===== Nhóm câu hỏi hiển thị cùng màn (Part 3/4/6/7) ===== */
+.toeic-group-questions {
+  display: flex;
+  flex-direction: column;
+  /* Nới khoảng cách giữa các câu: 4 đáp án của câu này nằm sát câu kế thì lúc
+     lướt nhanh rất dễ tick nhầm sang câu bên cạnh. */
+  gap: 22px;
+  padding: 14px 16px 16px;
+}
+.toeic-group-question {
+  border: 1.5px solid var(--border-color, #e0e0e0);
+  border-radius: 10px;
+  /* Đáp án cuối chừa thêm chút đáy, khỏi dán vào viền dưới của thẻ. */
+  padding: 10px 12px 14px;
+}
+/* Số câu + đề bài trên CÙNG một hàng. baseline chứ không phải center: đề bài
+   dài xuống 2-3 dòng thì số câu phải thẳng hàng chữ ĐẦU TIÊN, không trôi ra
+   giữa khối. */
+.toeic-group-q-head {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.toeic-group-question .toeic-question-text {
+  padding: 0;
+  flex: 1;
+  min-width: 0;
+}
+.toeic-group-question .toeic-options {
+  padding: 0;
+}
+.toeic-group-q-num {
+  flex: none;
+  font-weight: 700;
+  color: var(--primary-color, #e11d48);
+  font-size: 0.85rem;
+}
+/* Số câu thật cho câu ĐƠN (Part 1·2·5). Cột phải là flex có gap 12px và các
+   con thụt 16px — nhãn số phải cùng padding ngang mới thẳng hàng với đề bài,
+   và bỏ margin dưới (gap của flex đã lo khoảng cách) kẻo hở gấp đôi. */
+.toeic-right-panel .toeic-q-number {
+  padding: 14px 16px 0;
+  margin: 0;
+  font-weight: 700;
+  color: var(--primary-color, #e11d48);
+  font-size: 0.9rem;
+}
+/* Số câu + đề bài CÙNG HÀNG (câu đơn Part 1·2·5).
+   Đệm chuyển hết lên khung bọc: để nguyên trên từng con thì hai cái cùng thụt
+   16px và cộng dồn thành 32px. baseline để số câu thẳng hàng chữ ĐẦU TIÊN khi
+   đề bài dài xuống nhiều dòng. */
+.toeic-q-head {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 12px 16px 0;
+}
+/* Part 1·2 (nghe) không có cả số lẫn đề bài → khung bọc rỗng, ẩn đi kẻo hở
+   thêm một khoảng đệm chẳng vì cái gì. */
+.toeic-q-head:empty { display: none; }
+.toeic-right-panel .toeic-q-head .toeic-q-number {
+  flex: none;
+  padding: 0;
+}
+.toeic-right-panel .toeic-q-head .toeic-question-text {
+  flex: 1;
+  min-width: 0;
+  padding: 0;
+  margin-bottom: 0;
+}
+[data-theme="dark"] .toeic-group-question {
+  border-color: rgba(255, 255, 255, 0.12);
+}
+
+/* ===== Nav toggle button ===== */
+.toeic-timer-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.toeic-nav-toggle-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--primary-color, #E11D48);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 7px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background .15s;
+}
+
+.toeic-nav-toggle-btn:hover {
+  background: var(--primary-dark, #BE123C);
+}
+
+/* ===== Nav popup ===== */
+.toeic-nav-popup {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.35);
+  z-index: 950;
+  display: flex;
+  align-items: stretch;
+  justify-content: flex-start; /* panel trượt sang TRÁI */
+}
+
+.toeic-nav-popup-inner {
+  background: var(--bg-primary, #fff);
+  border-radius: 0 16px 16px 0;
+  padding: 20px;
+  width: min(680px, 96vw);
+  height: 100%;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 4px 0 28px rgba(0,0,0,.22);
+}
+
+/* 2 cột: lưới số câu (trái) | preview (phải) — mỗi cột cuộn riêng */
+.toeic-nav-body {
+  display: flex;
+  gap: 18px;
+  flex: 1;
+  min-height: 0;
+  margin-top: 12px;
+}
+.toeic-nav-left {
+  flex: 0 0 280px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+.toeic-nav-right {
+  flex: 1;
+  min-width: 0;
+  overflow-y: auto;
+}
+@media (max-width: 560px) {
+  .toeic-nav-body { flex-direction: column; }
+  .toeic-nav-left { flex: 0 0 auto; max-height: 40vh; }
+}
+
+/* Preview câu hỏi + đáp án trong panel điều hướng */
+.toeic-nav-preview {
+  margin-top: 0;
+  padding: 12px 14px;
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  background: var(--bg-secondary);
+}
+.toeic-nav-preview-title {
+  font-weight: 700;
+  color: var(--primary-color);
+  margin-bottom: 6px;
+}
+.toeic-nav-preview-q { font-size: 0.92rem; margin-bottom: 10px; line-height: 1.45; }
+.toeic-nav-preview-muted { color: var(--text-secondary); font-style: italic; }
+.toeic-nav-preview-opts { display: flex; flex-direction: column; gap: 5px; }
+.toeic-nav-preview-opt {
+  font-size: 0.85rem;
+  padding: 6px 10px;
+  border-radius: 6px;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+}
+.toeic-nav-preview-opt.chosen {
+  background: var(--success-color);
+  color: #fff;
+  border-color: var(--success-color);
+}
+
+.toeic-nav-popup-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.toeic-nav-popup-close {
+  background: none;
+  border: none;
+  font-size: 18px;
+  cursor: pointer;
+  color: var(--text-secondary);
+  padding: 4px 8px;
+  border-radius: 6px;
+}
+
+.toeic-nav-popup-close:hover {
+  background: var(--bg-secondary, #f1f5f9);
+}
+
+.toeic-nav-legend {
+  display: flex;
+  gap: 14px;
+  margin-bottom: 14px;
+  font-size: 12px;
+  color: var(--text-secondary);
+  flex-wrap: wrap;
+}
+
+.toeic-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.toeic-legend-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+  display: inline-block;
+}
+
+.toeic-legend-dot.current  { background: var(--primary-color, #E11D48); }
+.toeic-legend-dot.answered { background: #22c55e; }
+.toeic-legend-dot.marked   { background: #f59e0b; }
+
+[data-theme="dark"] .toeic-nav-popup-inner {
+  background: var(--card-bg, #1e293b);
+}
+
+[data-theme="dark"] .toeic-left-panel,
+[data-theme="dark"] .toeic-right-panel {
+  background: var(--bg-secondary, #1e293b);
+  border-color: var(--border-color);
+}
+
+/* Kết quả chi tiết: LUÔN 2 cột — trái "Câu hỏi"(ảnh/đoạn) | phải câu hỏi+đáp án */
+.review-detail-2col {
+  display: flex;
+  gap: 18px;
+  align-items: stretch;
+}
+.review-detail-left {
+  flex: 0 0 40%;
+  max-width: 40%;
+  border-right: 1px solid var(--border-color);
+  padding-right: 16px;
+}
+.review-detail-left-title {
+  display: flex;
+  align-items: center;
+  font-weight: 700;
+  color: var(--text-secondary);
+  margin-bottom: 8px;
+  gap: 10px; /* Khoảng cách giữa chữ "Câu hỏi" và thanh audio */
+}
+.review-detail-audio {
+  flex: 1; /* Co giãn theo chiều ngang */
+  min-width: 100px; /* Chiều rộng tối thiểu để không bị quá nhỏ */
+  height: 32px;
+}
+.review-detail-left-empty {
+  color: var(--text-tertiary, #94a3b8);
+  font-style: italic;
+  font-size: 0.9rem;
+}
+.review-detail-img {
+  width: 100%;
+  border-radius: 8px;
+  display: block;
+}
+.review-detail-content { flex: 1; min-width: 0; }
+/* Không có ngữ cảnh (Part 5) → câu hỏi + đáp án ăn trọn bề ngang, số dòng phải
+   xuống giảm hẳn. Đây là chỗ tiết kiệm chiều cao lớn nhất. */
+.review-detail-2col.no-context { display: block; }
+@media (max-width: 640px) {
+  .review-detail-2col { flex-direction: column; }
+  .review-detail-left {
+    flex: 0 0 auto;
+    max-width: 100%;
+    border-right: none;
+    border-bottom: 1px solid var(--border-color);
+    padding-right: 0;
+    padding-bottom: 12px;
+
+  }
+}
+
+
+/* Badge Part trên thẻ đề (Mini Test) */
+.toeic-test-badge.part {
+  background-color: #e0e7ff;
+  color: #4f46e5;
+}
+
+/* Hàng chip gợi ý tìm kiếm (ETS 2026, 2025...) */
+.toeic-suggest-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: var(--spacing-md);
+}
+.toeic-suggest-label {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  font-weight: 600;
+}
+.toeic-suggest-chip {
+  padding: 5px 12px;
+  border: 1px solid var(--border-color);
+  border-radius: 999px;
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.toeic-suggest-chip:hover { border-color: var(--primary-color); color: var(--primary-color); }
+.toeic-suggest-chip.active {
+  background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+  color: #fff;
+  border-color: transparent;
+}
+
+/* Trang Kết quả: thanh tiêu đề + lọc đúng/sai */
+.review-questions-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: var(--spacing-md);
+}
+.review-questions-bar h3 { margin: 0; }
+.review-filter { display: flex; gap: 8px; flex-wrap: wrap; }
+.toeic-results-content { max-width: 1200px; margin: 0 auto; }
+
+/* ===================================================================
+   XEM LẠI: lưới câu DÍNH bên trái | chi tiết bên phải.
+   Bản cũ là popup phủ màn hình và tự đóng sau mỗi lần chọn, nên xem 7
+   câu sai là 7 vòng "cuộn lên → mở panel → bấm → đọc → cuộn lên lại".
+   Ở đây lưới luôn nằm đó, một cú bấm đổi thẳng nội dung bên phải.
+   =================================================================== */
+/* Cả khu xem lại KHOÁ vào khung nhìn: cuộn qua phần điểm số thì khối này ghim
+   lại, mọi thứ bên trong (lưới, nội dung, thanh điều hướng) đứng yên một chỗ.
+   Phải ghim ở CẤP KHỐI, không ghim từng cột: sticky chỉ dính trong phạm vi
+   `cao khung cha − cao phần tử`, mà hai cột cao đúng bằng khung cha nên phạm vi
+   đó bằng 0 → ghim từng cột thì chẳng dính được tí nào. Khối này thì có phạm vi
+   thật, bằng đúng chiều cao phần điểm số phía trên. */
+.review-questions-section {
+  /* Mốc ghim: dưới header dính của app (.top-nav 56px + .status-bar ~36px) rồi
+     thở 8px. Một biến duy nhất cho cả mốc ghim lẫn chiều cao — hai số đó lệch
+     nhau chính là thứ làm thanh điều hướng tụt quá mép màn hình. */
+  --review-top: 100px;
+  --review-gap-bottom: 14px;
+
+  position: sticky;
+  top: var(--review-top);
+  height: calc(100vh - var(--review-top) - var(--review-gap-bottom));
+  display: flex;
+  flex-direction: column;
+
+  /* Ngân sách chiều cao ở đây là cố định (một màn hình), nên mọi pixel dành cho
+     khung viền là pixel cướp của nội dung. Nén lại toàn bộ phần trang trí. */
+  padding: 12px 14px;
+  margin-top: var(--spacing-md);
+}
+.review-questions-bar { flex: none; margin-bottom: 10px; }
+.review-questions-section h3 { font-size: 1.15rem; margin-bottom: 0; }
+
+/* Thanh mang danh tính câu: [số câu · Part] — [đáp án đúng/của bạn] — [bộ lọc].
+   Phần đáp án ở GIỮA và co giãn, hai đầu giữ nguyên kích thước. */
+.review-questions-bar.has-question .review-question-number {
+  flex: none;
+  font-size: 1rem;
+}
+.review-questions-bar.has-question .review-answers {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-width: 0;
+  flex-wrap: wrap;
+}
+@media (max-width: 1100px) {
+  /* Hẹp thì bỏ chữ "Đáp án đúng:/Của bạn:", giữ lại hai ô chữ cái — màu sắc
+     và vị trí đã nói đủ nghĩa, mà chỗ thì không còn. */
+  .review-questions-bar.has-question .answer-label,
+  .review-questions-bar.has-question .answer-separator { display: none; }
+}
+
+/* Thẻ câu hỏi trong khung phải: bỏ viền + nền riêng, nó đã nằm trong khung của
+   chính nó rồi — hai lớp viền lồng nhau vừa rối vừa ăn 4 pixel mỗi cạnh. */
+.review-detail-scroll .review-question-item {
+  border: none;
+  background: transparent;
+}
+/* Ảnh ngữ cảnh (Part 1/3/4): bó vào đúng chiều cao cột và giữ tỉ lệ, thay vì
+   để nguyên khổ rồi bị cắt ngang — cắt ngang một sơ đồ thì phần khuất mới là
+   phần cần nhìn. Bấm vào để xem to. */
+.review-detail-scroll .review-detail-img {
+  flex: 0 1 auto;
+  min-height: 0;
+  width: auto;
+  max-width: 100%;
+  margin: 0 auto;
+  object-fit: contain;
+  cursor: zoom-in;
+}
+.review-detail-scroll .review-detail-audio { flex: none; }
+.review-detail-scroll .review-detail-left-title { flex: none; }
+.review-detail-scroll .review-question-header:hover { background: var(--bg-primary); }
+.review-detail-scroll .option-item { padding: 7px 12px; }
+.review-detail-scroll .option-text { line-height: 1.45; }
+.review-detail-scroll .question-text { margin-bottom: 8px; }
+.review-stepper { padding: 7px 10px; width: 680px; margin-left: auto;;}
+
+/* Khung chi tiết ăn TRỌN bề ngang. Lưới câu là ngăn kéo NỔI (absolute) nên
+   không chiếm cột nào — bật/tắt không làm nội dung co giãn nhảy chỗ. */
+.review-workspace {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+}
+
+/* sticky: cuộn đọc lời giải dài vẫn thấy lưới, khỏi cuộn ngược lên chọn câu kế. */
+/* Ngăn kéo trượt từ PHẢI, nổi đè lên nội dung, không đẩy gì cả.
+   Bật ra cùng phía với nút "Lưới câu" (góc phải thanh trên): mở panel ở trái
+   thì mỗi lần dùng là chuột phải chạy ngang cả màn hình rồi chạy ngược lại.
+   Đóng thì trượt hẳn ra ngoài chứ không display:none — có ở lại trong luồng vẽ
+   thì mới có cái để chạy hoạt ảnh. */
+.results-nav-sidebar {
+  position: absolute;
+  z-index: 6;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  width: 250px;
+  max-width: 82%;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 12px;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-large);
+  box-shadow: -10px 0 34px rgba(0, 0, 0, 0.34);
+  transform: translateX(calc(100% + 14px));
+  opacity: 0;
+  visibility: hidden;
+  transition: transform 0.22s ease, opacity 0.18s ease, visibility 0.22s;
+}
+.results-nav-sidebar.open {
+  transform: none;
+  opacity: 1;
+  visibility: visible;
+}
+@media (prefers-reduced-motion: reduce) {
+  .results-nav-sidebar { transition: none; }
+}
+
+.results-nav-sidebar-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-weight: 700;
+  font-size: 0.9rem;
+  color: var(--text-primary);
+}
+.results-nav-sidebar-close {
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 6px;
+  font-size: 0.95rem;
+}
+.results-nav-sidebar-close:hover {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+}
+/* Cột hẹp → ô số phải nhỏ lại, không thì số 3 chữ số (147…) tràn hàng. */
+.results-nav-sidebar .toeic-nav-btn {
+  min-width: 34px;
+  height: 34px;
+  font-size: 0.82rem;
+  padding: 0 4px;
+}
+.results-nav-sidebar .toeic-nav-groups { gap: var(--spacing-md); }
+
+/* Câu ĐANG XEM: viền nổi thay vì đổi nền — nền đang mang nghĩa đúng/sai,
+   ghi đè nó là mất thông tin quan trọng hơn vị trí con trỏ. */
+.toeic-nav-btn.res-current {
+  outline: 3px solid var(--primary-color, #e11d48);
+  outline-offset: 1px;
+  transform: scale(1.06);
+}
+
+/* Khung chi tiết tự cuộn RIÊNG, thanh điều hướng nằm NGOÀI vùng cuộn đó.
+   Nhờ vậy thanh luôn ở trong tầm mắt mà không bao giờ đè lên chữ —
+   `position:sticky;bottom:0` thì vẫn đè: nó chỉ chừa chỗ ở vị trí nghỉ,
+   lúc đang dính thì nội dung trôi ngay bên dưới nó. */
+.review-detail-pane {
+  min-width: 0;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+/* Chiều cao chảy xuyên suốt xuống tận HAI CỘT, để mỗi cột tự cuộn phần thừa
+   của riêng nó. Nhờ vậy đoạn văn Part 7 dài bao nhiêu cũng được mà cột đáp án
+   bên phải vẫn hiện trọn — không phải cuộn cả khối đi tìm đáp án D. */
+.review-detail-scroll {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.review-detail-scroll > .review-question-item {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+.review-detail-scroll .review-question-detail {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 12px;
+}
+.review-detail-scroll .review-detail-2col {
+  flex: 1;
+  min-height: 0;
+}
+.review-detail-scroll .review-detail-content {
+  overflow-y: auto;
+  min-height: 0;
+}
+/* Cột ngữ cảnh là flex dọc để ẢNH nhận đúng phần chiều cao còn lại rồi tự co
+   theo tỉ lệ. Trước đây ảnh giữ nguyên khổ nên bị cắt ngang — mà phần khuất
+   của một sơ đồ mới là phần cần nhìn. Đoạn văn dài thì cuộn trong cột này. */
+.review-detail-scroll .review-detail-left {
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  overflow-y: auto;
+}
+.review-detail-scroll .review-detail-left > .question-passage { min-height: 0; }
+/* Chút khoảng thở để dòng cuối không dán vào mép dưới. */
+.review-detail-scroll .review-detail-left > *:last-child,
+.review-detail-scroll .review-detail-content > *:last-child { margin-bottom: 10px; }
+
+.review-detail-empty {
+  padding: 28px;
+  text-align: center;
+  color: var(--text-secondary);
+}
+/* Nhãn Part cạnh số câu — lưới bên trái đã nhóm theo Part, khung phải cũng
+   phải nói rõ đang ở Part nào để hai bên khớp nhau. */
+.review-question-part {
+  margin-left: 8px;
+  padding: 1px 7px;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
+}
+
+/* Chân khung: không co lại, không cuộn theo nội dung. */
+.review-stepper {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-large);
+  background: var(--bg-primary);
+}
+.review-stepper-pos {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  font-weight: 600;
+}
+/* Gợi ý phím tắt — chỉ hiện trên máy có bàn phím. */
+.review-stepper-hint {
+  padding: 1px 6px;
+  border: 1px solid var(--border-color);
+  border-radius: 5px;
+  font-size: 0.72rem;
+  opacity: 0.7;
+}
+.review-stepper .toeic-part-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+@media (max-width: 900px) {
+  /* Điện thoại: khoá vào 100vh thì còn vài dòng, đọc không nổi. Trả về cuộn cả
+     trang, thanh điều hướng nằm cuối nội dung. Ngăn kéo vẫn nổi nhưng bám theo
+     KHUNG NHÌN (fixed) — khung cha lúc này cao bằng cả trang, bám theo nó thì
+     ngăn kéo dài vô tận. */
+  .review-questions-section {
+    position: static;
+    height: auto;
+    display: block;
+  }
+  .review-detail-pane { height: auto; }
+  .review-stepper-hint { display: none; }
+  /* Gỡ hết ràng buộc chiều cao: trên màn nhỏ, cuộn một mạch cả trang dễ chịu
+     hơn nhiều so với ba vùng cuộn lồng nhau, mỗi vùng cao vài dòng. */
+  .review-detail-scroll,
+  .review-detail-scroll > .review-question-item,
+  .review-detail-scroll .review-question-detail,
+  .review-detail-scroll .review-detail-2col {
+    display: block;
+    flex: none;
+    min-height: 0;
+    overflow: visible;
+  }
+  .review-detail-scroll .review-detail-left,
+  .review-detail-scroll .review-detail-content { overflow: visible; }
+
+  .results-nav-sidebar {
+    position: fixed;
+    top: var(--review-top);
+    bottom: 14px;
+    right: 8px;
+  }
+}
+
+/* Thu gọn chiều cao thẻ đề thi (~1/2) */
+.toeic-test-card { padding: 14px 16px; }
+.toeic-test-header { margin-bottom: 8px; }
+.toeic-test-icon { width: 38px; height: 38px; font-size: 1.05rem; }
+.toeic-test-title { font-size: 1.05rem; margin-bottom: 2px; }
+.toeic-test-description { font-size: 0.82rem; margin-bottom: 10px; }
+.toeic-test-stats { padding: 8px 10px; margin-bottom: 10px; }
+.toeic-test-stats .toeic-stat-value { font-size: 1.1rem; }
+.toeic-test-stats .toeic-stat-label { font-size: 0.66rem; }
+.toeic-test-footer { padding-top: 8px; }
+.toeic-test-footer .toeic-start-btn { padding: 6px 16px; }
+
+/* Tab TOEIC kiểu pill gọn — đồng bộ với tab Nhiệm vụ (.quest-tabs) */
+.toeic-tabs {
+  gap: var(--spacing-xs);
+  background: var(--bg-secondary);
+  padding: 4px;
+  border-radius: var(--border-radius-lg);
+  margin-bottom: var(--spacing-md);
+}
+.toeic-tab {
+  min-width: max-content;
+  padding: 8px 16px;
+  border: none;
+  border-radius: var(--border-radius);
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+}
+.toeic-tab i { font-size: 0.95rem; }
+.toeic-tab:hover {
+  background: transparent;
+  transform: none;
+  box-shadow: none;
+  color: var(--text-primary);
+}
+.toeic-tab.active {
+  background: var(--primary-color);
+  color: #fff;
+  font-weight: 600;
+  border-color: transparent;
+  transform: none;
+}
+.toeic-tab.active:hover { color: #fff; }
+
+/* Ép thấp thẻ đề thêm (bỏ mô tả) để 2 hàng hiện trọn vẹn */
+.toeic-tests-grid { gap: 12px; }
+.toeic-test-card { padding: 12px 14px; }
+.toeic-test-header { margin-bottom: 6px; }
+.toeic-test-title { font-size: 1rem; margin-bottom: 0; }
+.toeic-test-description { margin-bottom: 8px; }
+.toeic-test-stats { padding: 6px 8px; margin-bottom: 8px; }
+.toeic-test-footer { padding-top: 6px; }
+
+/* 2 cột cuộn ĐỘC LẬP (đoạn văn Part 7 dài) — header panel ghim trên */
+.toeic-left-panel,
+.toeic-right-panel {
+  /* 165 → 135: header màn thi vừa thấp đi ~33px. Không hạ con số này thì phần
+     tiết kiệm được biến thành một dải trống ở đáy chứ không thành chỗ đọc. */
+  max-height: calc(100vh - 135px);
+  overflow-y: auto;
+}
+/* Chừa khoảng chạy cuối cột: không có nó thì đáp án D của câu cuối nằm sát mép
+   dưới, trông y như bị cắt. Người thi không đoán được là phải cuộn thanh TRONG
+   (cột) chứ không phải thanh ngoài (trang) → tưởng mất đáp án. Khoảng trống này
+   cũng kéo câu cuối lên giữa tầm mắt thay vì đáy màn hình.
+   Đặt trên CON CUỐI chứ không trên panel: panel là flex + overflow, đệm dưới
+   của nó không phải trình duyệt nào cũng tính vào vùng cuộn. */
+.toeic-left-panel > *:last-child,
+.toeic-right-panel > *:last-child {
+  padding-bottom: 25vh;
+}
+@media (max-width: 700px) {
+  .toeic-left-panel,
+  .toeic-right-panel { max-height: none; overflow: visible; }
+  /* Điện thoại cuộn cả trang nên không cần khoảng chạy — thêm vào chỉ tổ có
+     một mảng trống dài ở cuối bài. */
+  .toeic-left-panel > *:last-child,
+  .toeic-right-panel > *:last-child { padding-bottom: 0; }
+}
+
+/* ===================================================================
+   THANH NHỊP TỪNG CÂU — dán vào MÉP DƯỚI header đề thi.
+   Cùng khối với đồng hồ tổng nên đọc ra là "thời gian", nhưng KHÔNG
+   thêm con số thứ hai: con số đặt cạnh thanh sẽ bị hiểu nhầm là giờ
+   của riêng câu đó, trong khi 06:50 là giờ của cả bài.
+   =================================================================== */
+/* .toeic-test-header-bar vốn đã position:sticky → tự làm mốc cho thanh absolute. */
+.toeic-pace-bar {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 3px;
+  background: var(--border-color);
+  border-radius: 0 0 var(--border-radius-large) var(--border-radius-large);
+  overflow: hidden;
+}
+
+.toeic-pace-fill {
+  height: 100%;
+  background: var(--primary-color);
+  transition: width 1s linear, background-color 0.3s;
+}
+
+.toeic-pace-fill.urgent { background: #dc2626; }
+
+/* ===================================================================
+   XEM ẢNH CỠ LỚN (ImageLightbox) — thay cho mở tab mới.
+   Bấm nền / nút × / Esc đều đóng.
+   =================================================================== */
+.toeic-lightbox {
+  position: fixed;
+  inset: 0;
+  z-index: 3000;
+  background: rgba(0, 0, 0, 0.9);
+  /* Ưu tiên BỀ RỘNG (ảnh phải to hơn lúc chưa zoom), nên ảnh cao thì cuộn dọc
+     thay vì thu nhỏ lại. Neo trên để cuộn từ đầu ảnh. */
+  overflow: auto;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 12px;
+  cursor: zoom-out;
+  animation: toeicLightboxIn 0.15s ease;
+}
+
+@keyframes toeicLightboxIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.toeic-lightbox-img {
+  /* Bề rộng cố định (to hơn lúc chưa zoom), chiều cao tự co theo tỉ lệ. KHÔNG
+     giới hạn chiều cao — ảnh dài thì lightbox cuộn dọc, không thu nhỏ. */
+  width: min(880px, 94vw);
+  height: auto;
+  object-fit: contain;
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+  cursor: default;
+}
+
+.toeic-lightbox-close {
+  /* fixed (không absolute): lightbox giờ cuộn được, absolute sẽ trôi mất nút
+     khi cuộn xuống cuối ảnh dài. */
+  position: fixed;
+  top: 16px;
+  right: 20px;
+  z-index: 1;
+  width: 42px;
+  height: 42px;
+  border: none;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.55);
+  color: #fff;
+  font-size: 20px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.toeic-lightbox-close:hover { background: rgba(255, 255, 255, 0.3); }
+
+/* ===================================================================
+   PHÂN TÍCH TỐC ĐỘ PHẢN HỒI (SpeedSection)
+   Thanh ngang giây/câu theo Part + vạch nhịp chuẩn TOEIC + cờ cảnh báo.
+   =================================================================== */
+.speed-analysis { display: flex; flex-direction: column; gap: 14px; }
+.speed-bars { display: flex; flex-direction: column; gap: 10px; }
+
+.speed-row { display: grid; grid-template-columns: 64px 1fr 46px; align-items: center; gap: 10px; }
+.speed-part { font-size: 0.85rem; font-weight: 600; color: var(--text-secondary); }
+
+.speed-track {
+  position: relative;
+  height: 16px;
+  background: var(--bg-tertiary, rgba(148,163,184,.15));
+  border-radius: 8px;
+  overflow: hidden;
+}
+.speed-fill {
+  height: 100%;
+  background: var(--primary-color);
+  border-radius: 8px;
+  transition: width 0.4s ease;
+}
+.speed-fill.over { background: #f59e0b; } /* chậm hơn nhịp chuẩn → cam */
+
+/* Vạch nhịp chuẩn — nằm đè lên track, không bị overflow cắt */
+.speed-track { overflow: visible; }
+.speed-target-mark {
+  position: absolute;
+  top: -3px;
+  bottom: -3px;
+  width: 2px;
+  background: var(--text-primary);
+  opacity: 0.55;
+}
+
+.speed-val { font-size: 0.85rem; font-weight: 700; text-align: right; color: var(--primary-color); }
+.speed-val.over { color: #f59e0b; }
+
+.speed-legend { display: flex; gap: 16px; margin: 2px 0 0; font-size: 0.78rem; color: var(--text-secondary); }
+.speed-legend-item { display: inline-flex; align-items: center; gap: 5px; }
+
+.speed-flags { display: flex; flex-direction: column; gap: 8px; }
+.speed-flag {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  font-size: 0.85rem;
+  line-height: 1.4;
+}
+.speed-flag i { flex-shrink: 0; font-size: 1rem; }
+.speed-flag.warn { background: rgba(245,158,11,.12); color: #b45309; }
+.speed-flag.info { background: rgba(59,130,246,.12); color: #1d4ed8; }
+[data-theme="dark"] .speed-flag.warn { color: #fcd34d; }
+[data-theme="dark"] .speed-flag.info { color: #93c5fd; }
+
+/* ===== Popup chọn thời gian làm bài — 3 lựa chọn dạng thẻ ===== */
+.toeic-time-options { display: flex; flex-direction: column; gap: 10px; }
+.toeic-time-option {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border: 2px solid var(--border-color);
+  border-radius: 12px;
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  cursor: pointer;
+  text-align: left;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+.toeic-time-option:hover { border-color: var(--primary-color); }
+.toeic-time-option.active {
+  border-color: var(--primary-color);
+  background: color-mix(in srgb, var(--primary-color) 10%, var(--bg-secondary));
+}
+.toeic-time-option-icon { font-size: 1.4rem; flex-shrink: 0; }
+.toeic-time-option-text { display: flex; flex-direction: column; gap: 2px; flex: 1; }
+.toeic-time-option-text b { font-size: 0.98rem; }
+.toeic-time-option-text small { font-size: 0.8rem; color: var(--text-secondary); }
+.toeic-time-option-check { color: var(--primary-color); font-size: 1.1rem; flex-shrink: 0; }

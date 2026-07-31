@@ -1,0 +1,121 @@
+          <!-- ===== TAB: BROADCAST ===== -->
+          <div id="main-tab-broadcast" class="main-tab-content">
+            <div class="tab-header">
+              <h2><i class="fas fa-bullhorn"></i> Gửi thông báo hệ thống</h2>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;align-items:start">
+
+              <!-- LEFT: Form -->
+              <div style="background:var(--bg-card);border:1px solid var(--border-color);border-radius:12px;padding:24px;display:flex;flex-direction:column;gap:20px">
+
+                <!-- Group 1: Nội dung -->
+                <div>
+                  <h4 style="font-size:11px;font-weight:700;color:var(--text-secondary);text-transform:uppercase;letter-spacing:.6px;margin-bottom:12px">Nội dung</h4>
+                  <div style="margin-bottom:10px">
+                    <label style="font-size:13px;font-weight:600;display:block;margin-bottom:4px">Tiêu đề <span style="color:#ef4444">*</span></label>
+                    <input type="text" id="bc-title" placeholder="Tiêu đề thông báo..." style="width:100%;padding:9px 12px;border:1.5px solid var(--border-color);border-radius:8px;background:var(--bg-secondary);color:var(--text-primary);box-sizing:border-box">
+                  </div>
+                  <div style="margin-bottom:10px">
+                    <label style="font-size:13px;font-weight:600;display:block;margin-bottom:4px">Mô tả <span style="font-weight:400;color:var(--text-secondary)">(tùy chọn)</span></label>
+                    <textarea id="bc-body" rows="3" placeholder="Nội dung chi tiết..." style="width:100%;padding:9px 12px;border:1.5px solid var(--border-color);border-radius:8px;background:var(--bg-secondary);color:var(--text-primary);resize:vertical;box-sizing:border-box"></textarea>
+                  </div>
+                  <div>
+                    <label style="font-size:13px;font-weight:600;display:block;margin-bottom:4px">Loại thông báo</label>
+                    <select id="bc-type" style="width:100%;padding:9px 12px;border:1.5px solid var(--border-color);border-radius:8px;background:var(--bg-secondary);color:var(--text-primary)">
+                      <option value="system">📢 Hệ thống</option>
+                      <option value="reward">🎁 Phần thưởng</option>
+                      <option value="reminder">🔔 Nhắc nhở</option>
+                      <option value="violation">⚠️ Vi phạm</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div style="border-top:1px solid var(--border-color)"></div>
+
+                <!-- Group 2: Gửi tới -->
+                <div>
+                  <h4 style="font-size:11px;font-weight:700;color:var(--text-secondary);text-transform:uppercase;letter-spacing:.6px;margin-bottom:12px">Gửi tới</h4>
+                  <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">
+                    <label id="bc-target-all-lbl" style="display:flex;align-items:center;gap:8px;padding:10px 14px;border:2px solid var(--primary-color);border-radius:8px;cursor:pointer;font-size:13px;font-weight:600;transition:border-color .2s">
+                      <input type="radio" name="bc-target" value="all" checked style="accent-color:var(--primary-color)"> 🌐 Tất cả
+                    </label>
+                    <label id="bc-target-one-lbl" style="display:flex;align-items:center;gap:8px;padding:10px 14px;border:2px solid var(--border-color);border-radius:8px;cursor:pointer;font-size:13px;font-weight:600;transition:border-color .2s">
+                      <input type="radio" name="bc-target" value="one" style="accent-color:var(--primary-color)"> 👤 Người cụ thể
+                    </label>
+                  </div>
+                  <div id="bc-user-row" style="display:none">
+                    <div style="position:relative">
+                      <input type="text" id="bc-user-email" placeholder="Tìm người dùng theo email..." autocomplete="off"
+                        style="width:100%;padding:9px 12px;border:1.5px solid var(--border-color);border-radius:8px;background:var(--bg-secondary);color:var(--text-primary);box-sizing:border-box" />
+                      <div id="bc-user-suggestions" style="display:none;position:absolute;top:100%;left:0;right:0;background:var(--bg-card);border:1px solid var(--border-color);border-radius:8px;box-shadow:var(--shadow-lg);z-index:100;max-height:200px;overflow-y:auto"></div>
+                    </div>
+                    <input type="hidden" id="bc-user-id" />
+                    <div id="bc-user-selected" style="display:none;margin-top:6px;padding:6px 10px;background:rgba(16,185,129,.12);border-radius:6px;font-size:12px;color:#10b981;font-weight:600"></div>
+                  </div>
+                </div>
+
+                <div style="border-top:1px solid var(--border-color)"></div>
+
+                <!-- Group 3: Quà tặng -->
+                <div>
+                  <h4 style="font-size:11px;font-weight:700;color:var(--text-secondary);text-transform:uppercase;letter-spacing:.6px;margin-bottom:12px">🎁 Kèm quà tặng <span style="font-weight:400;text-transform:none;font-size:12px">(tùy chọn)</span></h4>
+                  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
+                    <div>
+                      <label style="font-size:12px;color:var(--text-secondary);margin-bottom:4px;display:block">🪙 Coins</label>
+                      <input type="number" id="bc-gift-coins" min="0" placeholder="0" style="width:100%;padding:8px 10px;border:1.5px solid var(--border-color);border-radius:8px;background:var(--bg-secondary);color:var(--text-primary);box-sizing:border-box">
+                    </div>
+                    <div>
+                      <label style="font-size:12px;color:var(--text-secondary);margin-bottom:4px;display:block">💎 Gems</label>
+                      <input type="number" id="bc-gift-gems" min="0" placeholder="0" style="width:100%;padding:8px 10px;border:1.5px solid var(--border-color);border-radius:8px;background:var(--bg-secondary);color:var(--text-primary);box-sizing:border-box">
+                    </div>
+                    <div>
+                      <label style="font-size:12px;color:var(--text-secondary);margin-bottom:4px;display:block">⭐ XP</label>
+                      <input type="number" id="bc-gift-xp" min="0" placeholder="0" style="width:100%;padding:8px 10px;border:1.5px solid var(--border-color);border-radius:8px;background:var(--bg-secondary);color:var(--text-primary);box-sizing:border-box">
+                    </div>
+                  </div>
+                  <div style="margin-top:12px">
+                    <label style="font-size:12px;color:var(--text-secondary);margin-bottom:4px;display:block">📦 Vật phẩm (từ catalog)</label>
+                    <div id="bc-gift-items-rows" style="display:flex;flex-direction:column;gap:6px"></div>
+                    <button type="button" id="bc-gift-items-add" class="btn btn-secondary btn-sm" style="margin-top:8px"><i class="fas fa-plus"></i> Thêm vật phẩm</button>
+                  </div>
+                </div>
+
+                <button class="btn btn-primary" id="bc-send-btn" style="width:100%;padding:11px">
+                  <i class="fas fa-paper-plane"></i> Gửi thông báo
+                </button>
+              </div>
+
+              <!-- RIGHT: History -->
+              <div>
+                <!-- Header -->
+                <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+                  <h3 style="font-size:15px;font-weight:700;margin:0">Thông báo gần đây</h3>
+                  <button class="btn btn-ghost btn-sm" id="bc-history-refresh-btn" title="Làm mới" style="margin-left:auto"><i class="fas fa-sync"></i></button>
+                </div>
+
+                <!-- Source filter pills -->
+                <div style="display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap">
+                  <button class="notif-src-btn active" data-src="" style="padding:4px 12px;border-radius:20px;border:1.5px solid var(--primary-color);background:var(--primary-color);color:#fff;font-size:12px;font-weight:600;cursor:pointer;transition:.15s">Tất cả</button>
+                  <button class="notif-src-btn" data-src="admin" style="padding:4px 12px;border-radius:20px;border:1.5px solid var(--border-color);background:transparent;color:var(--text-secondary);font-size:12px;font-weight:600;cursor:pointer;transition:.15s">👤 Admin gửi</button>
+                  <button class="notif-src-btn" data-src="auto" style="padding:4px 12px;border-radius:20px;border:1.5px solid var(--border-color);background:transparent;color:var(--text-secondary);font-size:12px;font-weight:600;cursor:pointer;transition:.15s">👤 User gửi</button>
+                </div>
+
+                <!-- Type filter -->
+                <div style="margin-bottom:12px">
+                  <select id="bc-filter-type" style="width:100%;padding:6px 10px;border:1px solid var(--border-color);border-radius:6px;background:var(--bg-card);color:var(--text-primary);font-size:12px">
+                    <option value="">Tất cả loại</option>
+                    <option value="system" class="opt-admin">📢 Hệ thống</option>
+                    <option value="reward" class="opt-admin">🎁 Phần thưởng</option>
+                    <option value="reminder" class="opt-admin">🔔 Nhắc nhở</option>
+                    <option value="violation" class="opt-admin">⚠️ Vi phạm</option>
+                    <option value="achievement" class="opt-auto">🏆 Thành tích</option>
+                    <option value="quest" class="opt-auto">⚔️ Nhiệm vụ</option>
+                  </select>
+                </div>
+
+                <div id="bc-history" style="display:flex;flex-direction:column;gap:8px;max-height:580px;overflow-y:auto">
+                  <p style="color:var(--text-secondary);font-size:13px">Đang tải...</p>
+                </div>
+              </div>
+            </div>
+          </div>

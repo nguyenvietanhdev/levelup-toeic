@@ -1,0 +1,85 @@
+    <!-- ==================== MODAL QUẢN LÝ TÀI KHOẢN ==================== -->
+    <div
+      id="manage-users-modal"
+      style="
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.6);
+        z-index: 2000;
+        align-items: center;
+        justify-content: center;
+      "
+    >
+      <div
+        style="
+          background: white;
+          border-radius: 15px;
+          width: 95%;
+          max-width: 1100px;
+          max-height: 90vh;
+          overflow: hidden;
+          display: flex;
+          flex-direction: column;
+        "
+      >
+        <div
+          style="
+            padding: 20px;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+          "
+        >
+          <h2 style="margin: 0; color: var(--primary)">
+            <i class="fas fa-user-cog"></i> Quản lý tài khoản người dùng
+          </h2>
+          <button
+            id="close-users-modal"
+            style="
+              background: none;
+              border: none;
+              font-size: 24px;
+              cursor: pointer;
+            "
+          >
+            ×
+          </button>
+        </div>
+
+        <div style="padding: 20px; flex: 1; overflow: auto">
+          <div style="margin-bottom: 15px; text-align: right">
+            <button class="btn btn-success" id="btn-add-user">
+              <i class="fas fa-plus"></i> Thêm tài khoản mới
+            </button>
+          </div>
+
+          <div id="users-modal-pagination" class="pagination-row"></div>
+          <div class="table-container">
+            <table id="users-table">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Tên đăng nhập</th>
+                  <th>Email</th>
+                  <th>Vai trò</th>
+                  <th>Đăng ký</th>
+                  <th>Trạng thái</th>
+                  <th>Khóa</th>
+                  <th>Hành động</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td colspan="7" class="loading">
+                    <i class="fas fa-spinner"></i> Đang tải danh sách tài
+                    khoản...
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>

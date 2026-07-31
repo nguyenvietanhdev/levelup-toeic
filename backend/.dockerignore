@@ -1,0 +1,39 @@
+node_modules
+npm-debug.log
+.npm
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Git
+.git
+.gitignore
+
+# Logs
+*.log
+logs/
+
+# Dev / test
+.prettierrc
+jest.config.js
+tests/
+scripts/
+
+# TTS cache (generated at runtime)
+public/tts-cache/
+
+# Uploads (mount as volume)
+public/uploads/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+
+# Backup files
+*.backup.*

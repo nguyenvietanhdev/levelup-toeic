@@ -1,0 +1,5 @@
+# Không commit file mp3 nguồn (nặng, chỉ là vùng import tạm).
+# Giữ lại script + README.
+*.mp3
+E*.mp3
+ets*.mp3

@@ -1,0 +1,143 @@
+          <!-- Token Management Tab -->
+          <div id="main-tab-token-management" class="main-tab-content">
+            <div class="card">
+              <div class="card-header">
+                <h2><i class="fas fa-key"></i> Token Management</h2>
+                <div style="display:flex;align-items:center;gap:10px">
+                  <label style="font-size:12px;color:var(--text-secondary)">Khoảng:</label>
+                  <select id="ai-usage-days" style="padding:6px 10px;border:1.5px solid var(--border-color);border-radius:8px;background:var(--bg-primary);color:var(--text-primary);font-size:13px">
+                    <option value="1">Hôm nay</option>
+                    <option value="7" selected>7 ngày</option>
+                    <option value="30">30 ngày</option>
+                    <option value="90">90 ngày</option>
+                  </select>
+                </div>
+              </div>
+              <p style="margin:6px 0 16px;color:var(--text-secondary);font-size:13px">
+                Theo dõi token + chi phí OpenAI cho TẤT CẢ chức năng AI trong admin (AI Fill từ vựng, AI Generate câu hỏi TOEIC, giải thích từ, dịch câu, …).
+              </p>
+
+              <!-- Token Stats — 4 cards -->
+              <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:18px">
+                <div class="ai-stat-card" style="background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);color:#fff;padding:18px;border-radius:12px">
+                  <div style="font-size:11px;opacity:.85;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">Tổng token</div>
+                  <div style="font-size:26px;font-weight:700" id="ai-total-tokens">–</div>
+                  <div style="font-size:11px;opacity:.8;margin-top:4px" id="ai-token-split">prompt – · completion –</div>
+                </div>
+                <div class="ai-stat-card" style="background:linear-gradient(135deg,#f59e0b 0%,#ef4444 100%);color:#fff;padding:18px;border-radius:12px">
+                  <div style="font-size:11px;opacity:.85;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">Chi phí (USD)</div>
+                  <div style="font-size:26px;font-weight:700" id="ai-total-cost">$–</div>
+                  <div style="font-size:11px;opacity:.8;margin-top:4px" id="ai-cost-all">All-time: $–</div>
+                </div>
+                <div class="ai-stat-card" style="background:linear-gradient(135deg,#4facfe 0%,#00f2fe 100%);color:#fff;padding:18px;border-radius:12px">
+                  <div style="font-size:11px;opacity:.85;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">Số lần gọi</div>
+                  <div style="font-size:26px;font-weight:700" id="ai-total-calls">–</div>
+                  <div style="font-size:11px;opacity:.8;margin-top:4px" id="ai-calls-all">All-time: –</div>
+                </div>
+                <div class="ai-stat-card" style="background:linear-gradient(135deg,#10b981 0%,#059669 100%);color:#fff;padding:18px;border-radius:12px">
+                  <div style="font-size:11px;opacity:.85;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">User đã dùng</div>
+                  <div style="font-size:26px;font-weight:700" id="ai-total-users">–</div>
+                </div>
+              </div>
+
+              <!-- Chọn nhà cung cấp AI -->
+              <h3 style="margin:18px 0 10px;font-size:15px"><i class="fas fa-plug"></i> Nhà cung cấp AI đang dùng</h3>
+              <div style="border:1px solid var(--border-color);border-radius:10px;padding:12px;margin-bottom:18px">
+                <div style="font-size:12px;color:var(--text-secondary);margin-bottom:10px">
+                  Đổi hãng áp dụng <b>ngay</b> cho mọi tính năng AI, không cần khởi động lại server.
+                  API key vẫn nằm trong <code>.env</code> — hãng nào chưa có key sẽ không chọn được.
+                </div>
+                <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end">
+                  <div>
+                    <label style="font-size:12px;font-weight:600;color:var(--text-secondary)">Nhà cung cấp</label>
+                    <select id="ai-provider-select" class="filter-select" style="width:200px;margin-top:4px"></select>
+                  </div>
+                  <div>
+                    <label style="font-size:12px;font-weight:600;color:var(--text-secondary)">Model</label>
+                    <select id="ai-model-select" class="filter-select" style="width:220px;margin-top:4px"></select>
+                  </div>
+                  <button class="btn btn-primary btn-sm" id="btn-ai-provider-save" style="height:38px">
+                    <i class="fas fa-save"></i> Lưu
+                  </button>
+                  <div id="ai-provider-hint" style="font-size:12px;color:var(--text-secondary);flex:1;min-width:200px"></div>
+                </div>
+              </div>
+
+              <!-- Breakdown theo NHÀ CUNG CẤP -->
+              <h3 style="margin:18px 0 10px;font-size:15px"><i class="fas fa-coins"></i> Chi phí theo nhà cung cấp</h3>
+              <div class="table-container" style="margin-bottom:18px">
+                <table style="width:100%;border-collapse:collapse">
+                  <thead>
+                    <tr style="border-bottom:1.5px solid var(--border-color)">
+                      <th style="padding:10px;text-align:left;font-size:11px;text-transform:uppercase;color:var(--text-secondary)">Nhà cung cấp</th>
+                      <th style="padding:10px;text-align:right;font-size:11px;text-transform:uppercase;color:var(--text-secondary)">Số lần</th>
+                      <th style="padding:10px;text-align:right;font-size:11px;text-transform:uppercase;color:var(--text-secondary)">Token</th>
+                      <th style="padding:10px;text-align:right;font-size:11px;text-transform:uppercase;color:var(--text-secondary)">Cost (USD)</th>
+                      <th style="padding:10px;text-align:left;font-size:11px;text-transform:uppercase;color:var(--text-secondary);width:30%">Tỉ trọng chi phí</th>
+                    </tr>
+                  </thead>
+                  <tbody id="ai-provider-tbody">
+                    <tr><td colspan="5" style="padding:18px;text-align:center;color:var(--text-secondary)">Đang tải…</td></tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <!-- Breakdown theo MODEL -->
+              <h3 style="margin:18px 0 10px;font-size:15px"><i class="fas fa-microchip"></i> Chi phí theo model</h3>
+              <div class="table-container" style="margin-bottom:18px">
+                <table style="width:100%;border-collapse:collapse">
+                  <thead>
+                    <tr style="border-bottom:1.5px solid var(--border-color)">
+                      <th style="padding:10px;text-align:left;font-size:11px;text-transform:uppercase;color:var(--text-secondary)">Model</th>
+                      <th style="padding:10px;text-align:left;font-size:11px;text-transform:uppercase;color:var(--text-secondary)">Hãng</th>
+                      <th style="padding:10px;text-align:right;font-size:11px;text-transform:uppercase;color:var(--text-secondary)">Số lần</th>
+                      <th style="padding:10px;text-align:right;font-size:11px;text-transform:uppercase;color:var(--text-secondary)">Token</th>
+                      <th style="padding:10px;text-align:right;font-size:11px;text-transform:uppercase;color:var(--text-secondary)">Cost (USD)</th>
+                    </tr>
+                  </thead>
+                  <tbody id="ai-model-tbody">
+                    <tr><td colspan="5" style="padding:18px;text-align:center;color:var(--text-secondary)">Đang tải…</td></tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <!-- Breakdown theo Feature -->
+              <h3 style="margin:18px 0 10px;font-size:15px"><i class="fas fa-chart-bar"></i> Phân bổ theo chức năng</h3>
+              <div class="table-container" style="margin-bottom:18px">
+                <table style="width:100%;border-collapse:collapse">
+                  <thead>
+                    <tr style="border-bottom:1.5px solid var(--border-color)">
+                      <th style="padding:10px;text-align:left;font-size:11px;text-transform:uppercase;color:var(--text-secondary)">Chức năng</th>
+                      <th style="padding:10px;text-align:right;font-size:11px;text-transform:uppercase;color:var(--text-secondary)">Số lần</th>
+                      <th style="padding:10px;text-align:right;font-size:11px;text-transform:uppercase;color:var(--text-secondary)">Token</th>
+                      <th style="padding:10px;text-align:right;font-size:11px;text-transform:uppercase;color:var(--text-secondary)">Cost (USD)</th>
+                      <th style="padding:10px;text-align:left;font-size:11px;text-transform:uppercase;color:var(--text-secondary);width:30%">Tỉ trọng</th>
+                    </tr>
+                  </thead>
+                  <tbody id="ai-feature-tbody">
+                    <tr><td colspan="5" style="padding:18px;text-align:center;color:var(--text-secondary)">Đang tải…</td></tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <!-- 30 lần gọi gần nhất -->
+              <h3 style="margin:18px 0 10px;font-size:15px"><i class="fas fa-history"></i> Lịch sử gần đây (30)</h3>
+              <div class="table-container">
+                <table style="width:100%;border-collapse:collapse">
+                  <thead>
+                    <tr style="border-bottom:1.5px solid var(--border-color)">
+                      <th style="padding:10px;text-align:left;font-size:11px;text-transform:uppercase;color:var(--text-secondary)">Thời điểm</th>
+                      <th style="padding:10px;text-align:left;font-size:11px;text-transform:uppercase;color:var(--text-secondary)">Chức năng</th>
+                      <th style="padding:10px;text-align:left;font-size:11px;text-transform:uppercase;color:var(--text-secondary)">Model</th>
+                      <th style="padding:10px;text-align:left;font-size:11px;text-transform:uppercase;color:var(--text-secondary)">Email</th>
+                      <th style="padding:10px;text-align:right;font-size:11px;text-transform:uppercase;color:var(--text-secondary)">Token</th>
+                      <th style="padding:10px;text-align:right;font-size:11px;text-transform:uppercase;color:var(--text-secondary)">Chi phí</th>
+                    </tr>
+                  </thead>
+                  <tbody id="ai-recent-tbody">
+                    <tr><td colspan="6" style="padding:18px;text-align:center;color:var(--text-secondary)">Đang tải…</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>

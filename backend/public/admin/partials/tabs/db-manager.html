@@ -1,0 +1,85 @@
+          <!-- ===== DB MANAGER TAB ===== -->
+          <div id="main-tab-db-manager" class="main-tab-content">
+            <div class="db-manager-layout">
+
+              <!-- LEFT: Collection list -->
+              <div class="db-col-sidebar">
+                <div class="db-col-sidebar-header">
+                  <span><i class="fas fa-database"></i> Collections</span>
+                  <div style="display:flex;gap:4px">
+                    <button class="btn btn-ghost btn-sm" id="db-backup-btn" title="Sao lưu toàn bộ DB (1 file, phục hồi được)">
+                      <i class="fas fa-cloud-arrow-down"></i>
+                    </button>
+                    <button class="btn btn-ghost btn-sm" id="db-restore-btn" title="Phục hồi DB từ file sao lưu">
+                      <i class="fas fa-cloud-arrow-up"></i>
+                    </button>
+                    <button class="btn btn-ghost btn-sm" id="db-export-all-btn" title="Xuất từng collection thành file JSON riêng">
+                      <i class="fas fa-file-export"></i>
+                    </button>
+                    <button class="btn btn-ghost btn-sm" id="db-refresh-btn" title="Làm mới">
+                      <i class="fas fa-sync-alt"></i>
+                    </button>
+                  </div>
+                  <input type="file" id="db-restore-input" accept="application/json,.json" style="display:none" />
+                </div>
+                <div id="db-col-list" class="db-col-list">
+                  <div class="db-col-empty"><i class="fas fa-spinner fa-spin"></i> Đang tải...</div>
+                </div>
+              </div>
+
+              <!-- RIGHT: Document viewer -->
+              <div class="db-doc-panel">
+                <div id="db-doc-empty" class="db-doc-placeholder">
+                  <i class="fas fa-hand-point-left" style="font-size:32px;opacity:.3;display:block;margin-bottom:12px"></i>
+                  Chọn một collection để xem dữ liệu
+                </div>
+
+                <div id="db-doc-content" style="display:none">
+                  <!-- Header -->
+                  <div class="card-header" style="margin-bottom:12px;padding:0">
+                    <div style="display:flex;align-items:center;gap:8px">
+                      <h2 style="margin:0;font-size:16px">
+                        <i class="fas fa-table"></i>
+                        <span id="db-col-title">—</span>
+                      </h2>
+                      <span id="db-col-count" class="badge neutral" style="font-size:11px">0 docs</span>
+                    </div>
+                    <div class="card-header-actions">
+                      <button class="btn btn-success btn-sm" id="db-btn-insert">
+                        <i class="fas fa-plus"></i> Thêm document
+                      </button>
+                      <button class="btn btn-danger btn-sm" id="db-btn-clear" title="Xóa toàn bộ dữ liệu (giữ lại collection)">
+                        <i class="fas fa-eraser"></i> Xóa toàn bộ dữ liệu
+                      </button>
+                      <button class="btn btn-danger btn-sm" id="db-btn-drop" title="Drop toàn bộ collection">
+                        <i class="fas fa-trash-alt"></i> Drop collection
+                      </button>
+                    </div>
+                  </div>
+
+                  <!-- Search -->
+                  <div style="margin-bottom:12px">
+                    <div style="display:flex;gap:8px">
+                      <input type="text" id="db-search" class="filter-input"
+                        placeholder="Tìm trong collection..." style="flex:1">
+                      <button class="btn btn-primary btn-sm" id="db-search-btn">
+                        <i class="fas fa-search"></i>
+                      </button>
+                      <button class="btn btn-ghost btn-sm" id="db-search-clear">
+                        <i class="fas fa-times"></i>
+                      </button>
+                    </div>
+                  </div>
+
+                  <!-- Pagination -->
+                  <div id="db-doc-pagination" class="pagination-row"></div>
+
+                  <!-- Danh sách document dạng JSON -->
+                  <div id="db-doc-list" class="db-doc-list">
+                    <div class="loading"><i class="fas fa-spinner fa-spin"></i> Đang tải...</div>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+          </div>

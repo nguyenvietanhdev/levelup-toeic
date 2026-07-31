@@ -1,0 +1,719 @@
+/* ===================================
+   RESPONSIVE STYLES
+   Mobile-first approach
+   =================================== */
+
+/* ===================================
+   MOBILE - Phones (max-width: 480px)
+   =================================== */
+@media screen and (max-width: 480px) {
+
+    /* Base adjustments */
+    :root {
+        --spacing-xs: 4px;
+        --spacing-sm: 8px;
+        --spacing-md: 12px;
+        --spacing-lg: 16px;
+        --spacing-xl: 24px;
+        --font-size-sm: 12px;
+        --font-size-base: 14px;
+        --font-size-lg: 16px;
+        --font-size-xl: 18px;
+        --font-size-xxl: 24px;
+    }
+
+    /* Container */
+    .game-container {
+        width: 100%;
+        max-width: 100%;
+        margin: 0;
+        padding: 0;
+        border-radius: 0;
+    }
+
+    /* Top Nav - Mobile Layout (2 rows) */
+    .top-nav {
+        display: flex;
+        flex-wrap: wrap;
+        padding: 8px 10px;
+        height: auto;
+        gap: 8px;
+    }
+
+    .nav-left {
+        order: 1;
+        gap: 6px;
+        flex-shrink: 0;
+    }
+
+    .nav-right {
+        order: 2;
+        gap: 4px;
+        flex-shrink: 0;
+        margin-left: auto;
+    }
+
+    /* Quick difficulty selector compact on mobile */
+    .quick-difficulty-selector select {
+        padding: 4px 6px;
+        font-size: 10px;
+        min-width: 70px;
+    }
+
+    .nav-center {
+        order: 3;
+        width: 100%;
+        flex: none !important;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    /* Search bar full width on mobile */
+    .search-bar {
+        width: 100%;
+        max-width: none;
+        margin-bottom: 0;
+    }
+
+    .search-bar input {
+        padding: 8px 35px;
+        font-size: 14px;
+    }
+
+    /* Resources - horizontal compact layout */
+    .resource-display {
+        display: flex !important;
+        flex-direction: row !important;
+        justify-content: center;
+        gap: 8px;
+        width: 100%;
+    }
+
+    .resource {
+        padding: 4px 8px;
+        font-size: 12px;
+        gap: 4px;
+    }
+
+    .resource i {
+        font-size: 12px;
+    }
+
+    .resource-max {
+        font-size: 10px;
+    }
+
+    /* Hide gems on very small screens to save space */
+    .gems-display {
+        display: none !important;
+    }
+
+    .user-info {
+        display: none !important;
+    }
+
+    /* Hide part badge on mobile nav (still accessible via menu) */
+    .part-badge {
+        display: none !important;
+    }
+
+    .level-badge {
+        font-size: 12px;
+        padding: 4px 8px;
+    }
+
+    .xp-bar-container {
+        display: none;
+    }
+
+    /* Smaller icon buttons on mobile */
+    .nav-right .icon-btn,
+    .nav-left .icon-btn {
+        width: 32px;
+        height: 32px;
+        font-size: 14px;
+    }
+
+    /* Main content */
+    main {
+        padding: 12px;
+        margin-top: 0; /* Nav is not fixed on mobile */
+    }
+
+    /* Home screen */
+    .welcome-section h1 {
+        font-size: 24px;
+    }
+
+    .welcome-section p {
+        font-size: 14px;
+    }
+
+    /* Game modes grid */
+    .game-modes-grid {
+        grid-template-columns: 1fr !important; /* Single column on mobile */
+        gap: 12px;
+    }
+
+    .game-mode-card {
+        padding: 16px;
+    }
+
+    .mode-icon {
+        font-size: 32px;
+    }
+
+    .mode-title {
+        font-size: 16px;
+    }
+
+    .mode-description {
+        font-size: 12px;
+    }
+
+    /* Stats grid */
+    .stats-grid {
+        grid-template-columns: repeat(2, 1fr) !important; /* 2 columns on mobile */
+        gap: 12px;
+    }
+
+    .stat-card {
+        padding: 16px 12px;
+    }
+
+    .stat-value {
+        font-size: 24px;
+    }
+
+    .stat-label {
+        font-size: 12px;
+    }
+
+    /* Quest cards */
+    .quests-list {
+        gap: 12px;
+    }
+
+    .quest-card {
+        padding: 12px;
+    }
+
+    .quest-title {
+        font-size: 14px;
+    }
+
+    .quest-progress-text {
+        font-size: 12px;
+    }
+
+    /* Practice screen */
+    .practice-header {
+        display: flex;
+        flex-direction: row !important;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+        padding: 8px 12px;
+        gap: 8px;
+    }
+
+    .practice-info {
+        flex-direction: row;
+        gap: 8px;
+        width: 100%;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .practice-info h2 {
+        font-size: 16px;
+        margin: 0;
+    }
+
+    .practice-meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        justify-content: center;
+    }
+
+    .difficulty-badge {
+        font-size: 10px;
+        padding: 2px 8px;
+    }
+
+    .practice-info .progress-text,
+    .practice-progress {
+        font-size: 12px;
+    }
+
+    /* Timer on mobile */
+    .practice-timer-container {
+        position: static !important;
+        order: 0;
+        flex-shrink: 0;
+    }
+
+    .practice-timer {
+        font-size: 14px;
+        padding: 6px 12px;
+        white-space: nowrap;
+    }
+
+    /* Score bar on mobile */
+    .practice-score-bar {
+        flex-direction: row !important;
+        flex-wrap: wrap;
+        justify-content: center;
+        align-items: center;
+        padding: 8px 12px;
+        gap: 8px 16px;
+        margin-bottom: 12px;
+    }
+
+    .practice-score-bar .score-item {
+        display: flex !important;
+        flex-direction: row !important;
+        align-items: center;
+        font-size: 13px;
+        gap: 4px;
+        white-space: nowrap;
+    }
+
+    .practice-score-bar .score-item i {
+        font-size: 14px;
+    }
+
+    .practice-score-bar .score-item span {
+        min-width: auto;
+    }
+
+    .practice-content {
+        padding: 12px;
+    }
+
+    .question-word {
+        font-size: 32px;
+        margin-bottom: 16px;
+    }
+
+    .word-phonetic {
+        font-size: 14px;
+    }
+
+    .choices-container {
+        grid-template-columns: 1fr !important; /* Single column choices */
+        gap: 12px;
+    }
+
+    .choice-btn {
+        padding: 16px;
+        font-size: 16px;
+        min-height: 50px;
+    }
+
+    /* Modal */
+    .modal {
+        width: 95% !important;
+        max-width: 95%;
+        padding: 20px;
+        margin: 20px;
+    }
+
+    .modal-header h2 {
+        font-size: 20px;
+    }
+
+    .modal-buttons {
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .modal-buttons .btn {
+        width: 100%;
+    }
+
+    /* Side menu */
+    .side-menu {
+        width: 280px; /* Slightly narrower on mobile */
+    }
+
+    .menu-item {
+        padding: 14px 16px;
+        font-size: 15px;
+    }
+
+    /* Profile screen */
+    .profile-header {
+        flex-direction: column;
+        text-align: center;
+        padding: 16px;
+    }
+
+    .profile-avatar {
+        width: 80px;
+        height: 80px;
+        font-size: 40px;
+    }
+
+    .profile-stats {
+        grid-template-columns: repeat(2, 1fr) !important;
+        gap: 12px;
+    }
+
+    .resources-grid {
+        grid-template-columns: repeat(2, 1fr) !important;
+    }
+
+    /* Statistics screen */
+    .stat-overview-grid {
+        grid-template-columns: repeat(2, 1fr) !important;
+    }
+
+    .charts-section {
+        gap: 16px;
+    }
+
+    .chart-card {
+        padding: 16px;
+    }
+
+    /* Achievement card layout on mobile */
+    .achievement-card {
+        padding: 12px;
+    }
+
+    /* Shop */
+    .shop-grid {
+        grid-template-columns: 1fr !important;
+    }
+
+    /* Leaderboard */
+    .leaderboard-item {
+        padding: 12px;
+        font-size: 14px;
+    }
+
+    .rank-position {
+        width: 32px;
+        height: 32px;
+        font-size: 14px;
+    }
+
+    /* Settings */
+    .settings-section {
+        padding: 16px;
+    }
+
+    .setting-item {
+        padding: 12px 0;
+        font-size: 14px;
+    }
+
+    /* Buttons */
+    .btn {
+        padding: 12px 20px;
+        font-size: 14px;
+    }
+
+    .btn-sm {
+        padding: 8px 14px;
+        font-size: 12px;
+    }
+
+    .icon-btn {
+        width: 36px;
+        height: 36px;
+        font-size: 16px;
+    }
+
+    /* Notification */
+    .notification {
+        width: calc(100% - 32px);
+        max-width: calc(100% - 32px);
+        margin: 16px;
+        padding: 12px;
+        font-size: 14px;
+    }
+
+    /* Search */
+    .search-overlay {
+        padding: 16px;
+    }
+
+    .search-bar {
+        padding: 12px 16px;
+    }
+
+    .search-results {
+        max-height: 60vh;
+    }
+
+    /* Vocabulary list */
+    .vocab-list {
+        grid-template-columns: 1fr !important;
+    }
+
+    .vocab-item {
+        padding: 12px;
+    }
+
+    /* Hide decorative elements on mobile */
+    .streak-flame {
+        display: none;
+    }
+}
+
+/* ===================================
+   TABLET - Portrait (481px - 768px)
+   =================================== */
+@media screen and (min-width: 481px) and (max-width: 768px) {
+
+    /* Container */
+    .game-container {
+        max-width: 100%;
+        margin: 0;
+        border-radius: 0;
+    }
+
+    /* Main content */
+    main {
+        padding: 20px;
+    }
+
+    /* Game modes grid */
+    .game-modes-grid {
+        grid-template-columns: repeat(2, 1fr) !important;
+        gap: 16px;
+    }
+
+    /* Stats grid */
+    .stats-grid {
+        grid-template-columns: repeat(2, 1fr) !important;
+    }
+
+    /* Practice choices */
+    .choices-container {
+        grid-template-columns: 1fr !important;
+    }
+
+    /* Profile stats */
+    .profile-stats {
+        grid-template-columns: repeat(3, 1fr) !important;
+    }
+
+    .resources-grid {
+        grid-template-columns: repeat(2, 1fr) !important;
+    }
+
+    /* Statistics */
+    .stat-overview-grid {
+        grid-template-columns: repeat(2, 1fr) !important;
+    }
+
+    /* Shop */
+    .shop-grid {
+        grid-template-columns: repeat(2, 1fr) !important;
+    }
+
+    /* Vocabulary list */
+    .vocab-list {
+        grid-template-columns: repeat(2, 1fr) !important;
+    }
+
+    /* Modal */
+    .modal {
+        width: 85%;
+        max-width: 600px;
+    }
+}
+
+/* ===================================
+   TABLET - Landscape (769px - 1024px)
+   =================================== */
+@media screen and (min-width: 769px) and (max-width: 1024px) {
+
+    /* Container */
+    .game-container {
+        max-width: 100%;
+    }
+
+    /* Game modes grid */
+    .game-modes-grid {
+        grid-template-columns: repeat(3, 1fr) !important;
+    }
+
+    /* Stats grid */
+    .stats-grid {
+        grid-template-columns: repeat(4, 1fr) !important;
+    }
+
+    /* Practice choices */
+    .choices-container {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    /* Profile stats */
+    .profile-stats {
+        grid-template-columns: repeat(3, 1fr) !important;
+    }
+
+    /* Shop */
+    .shop-grid {
+        grid-template-columns: repeat(3, 1fr) !important;
+    }
+
+    /* Vocabulary list */
+    .vocab-list {
+        grid-template-columns: repeat(3, 1fr) !important;
+    }
+}
+
+/* ===================================
+   LANDSCAPE MODE (height-based)
+   =================================== */
+@media screen and (max-height: 500px) and (orientation: landscape) {
+
+    /* Reduce vertical spacing */
+    .top-nav {
+        padding: 6px 12px;
+    }
+
+    main {
+        margin-top: 50px;
+        padding: 12px;
+    }
+
+    .welcome-section {
+        margin-bottom: 16px;
+    }
+
+    .section-header {
+        margin-bottom: 12px;
+    }
+
+    /* Compact practice screen */
+    .practice-header {
+        padding: 8px 12px;
+    }
+
+    .practice-content {
+        padding: 12px;
+    }
+
+    .question-word {
+        font-size: 28px;
+        margin-bottom: 12px;
+    }
+
+    .choices-container {
+        gap: 8px;
+    }
+
+    .choice-btn {
+        padding: 12px;
+        min-height: 40px;
+    }
+
+    /* Compact modal */
+    .modal {
+        max-height: 90vh;
+        overflow-y: auto;
+    }
+
+    .modal-content {
+        max-height: 60vh;
+        overflow-y: auto;
+    }
+}
+
+/* ===================================
+   TOUCH DEVICE OPTIMIZATIONS
+   =================================== */
+@media (hover: none) and (pointer: coarse) {
+
+    /* Larger touch targets */
+    .btn {
+        min-height: 44px;
+        min-width: 44px;
+    }
+
+    .icon-btn {
+        min-width: 44px;
+        min-height: 44px;
+    }
+
+    .choice-btn {
+        min-height: 50px;
+    }
+
+    .menu-item {
+        min-height: 48px;
+    }
+
+    /* Remove hover effects on touch devices */
+    .game-mode-card:hover {
+        transform: none;
+    }
+
+    .btn:hover {
+        transform: none;
+    }
+
+    /* Better tap feedback */
+    .btn:active,
+    .icon-btn:active,
+    .choice-btn:active {
+        opacity: 0.7;
+        transform: scale(0.98);
+    }
+}
+
+/* ===================================
+   PRINT STYLES
+   =================================== */
+@media print {
+
+    .top-nav,
+    .side-menu,
+    .modal,
+    .notification,
+    .btn,
+    .game-mode-card button {
+        display: none !important;
+    }
+
+    .game-container {
+        box-shadow: none;
+    }
+
+    main {
+        margin-top: 0;
+    }
+
+    * {
+        color: #000 !important;
+        background: #fff !important;
+    }
+}
+
+/* ===================================
+   ACCESSIBILITY - Reduced Motion
+   =================================== */
+@media (prefers-reduced-motion: reduce) {
+
+    * {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+
+    .game-mode-card:hover {
+        transform: none;
+    }
+
+    .modal {
+        animation: none;
+    }
+}

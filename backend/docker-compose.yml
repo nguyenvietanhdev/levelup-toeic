@@ -1,0 +1,64 @@
+services:
+
+  # ── App ──────────────────────────────────────────────────────────────────────
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: levelup-toeic-app
+    restart: unless-stopped
+    ports:
+      - "5000:5000"
+    env_file:
+      - .env
+    environment:
+      NODE_ENV: production
+      # Redis chạy trong compose — override URL từ .env nếu có
+      REDIS_URL: redis://redis:6379
+    depends_on:
+      redis:
+        condition: service_healthy
+    volumes:
+      # Persist uploads & TTS cache ra ngoài container
+      - uploads_data:/app/public/uploads
+      - tts_cache:/app/public/tts-cache
+      # JSON data files (vocabulary) — mount read-write để có thể switch file
+      - vocab_data:/app/public/data
+    networks:
+      - levelup-toeic-net
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:5000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+
+  # ── Redis ────────────────────────────────────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    container_name: levelup-toeic-redis
+    restart: unless-stopped
+    command: redis-server --maxmemory 256mb --maxmemory-policy noeviction
+    ports:
+      - "6379:6379"          # expose nếu muốn kết nối từ host (dev)
+    volumes:
+      - redis_data:/data
+    networks:
+      - levelup-toeic-net
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+# ── Volumes ───────────────────────────────────────────────────────────────────
+volumes:
+  redis_data:
+  uploads_data:
+  tts_cache:
+  vocab_data:
+
+# ── Network ───────────────────────────────────────────────────────────────────
+networks:
+  levelup-toeic-net:
+    driver: bridge

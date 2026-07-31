@@ -1,0 +1,118 @@
+          <!-- TOEIC Questions Tab Content -->
+          <div id="main-tab-toeic-questions" class="main-tab-content">
+            <div class="card">
+              <div class="card-header">
+                <h2><i class="fas fa-question-circle"></i> TOEIC Questions</h2>
+                <div class="card-header-actions">
+                  <!-- Loi tat sang 2 tab tao cau hoi o sidebar (form nam han tren trang,
+                       khong con popup). Ca hai deu tao MOT MAN HOI, khac nhau o Part. -->
+                  <button class="btn btn-success btn-sm" id="btn-add-question"
+                    title="Sang tab Tạo câu đơn — Part 1·2·5, mỗi màn đúng 1 câu">
+                    <i class="fas fa-file-circle-plus"></i> Tạo câu đơn <small style="opacity:.75">· P1·2·5</small>
+                  </button>
+                  <button class="btn btn-secondary btn-sm" id="btn-add-group"
+                    title="Sang tab Tạo nhóm câu — Part 3·4·6·7, một ngữ cảnh dùng chung nhiều câu">
+                    <i class="fas fa-layer-group"></i> Tạo nhóm câu <small style="opacity:.75">· P3·4·6·7</small>
+                  </button>
+                  <button
+                    class="btn btn-danger btn-sm"
+                    id="btn-delete-all-questions"
+                    title="Xóa toàn bộ câu hỏi TOEIC"
+                  >
+                    <i class="fas fa-trash-alt"></i> Xóa tất cả
+                  </button>
+                </div>
+              </div>
+
+              <!-- Search & Filter Controls -->
+              <!-- Search & Filter Controls -->
+              <div style="padding: 0 0 12px; display: flex; gap: 8px; align-items: center">
+                <input
+                  type="text"
+                  id="question-search"
+                  class="card-search"
+                  style="flex: 1; margin: 0"
+                  placeholder="Question text, passage, explanation..."
+                />
+                <!-- Nguồn: dropdown tự dựng (không dùng <select>) — 40+ mã đề thì
+                     danh sách gốc của trình duyệt đổ dài quá màn hình, CSS không
+                     chặn chiều cao được. Ở đây tự chặn 280px + có ô lọc nhanh. -->
+                <div style="position: relative; flex-shrink: 0" id="source-filter-wrapper">
+                  <button type="button" id="source-filter-btn" class="filter-select"
+                    style="width: auto; min-width: 140px; display: flex; align-items: center; gap: 6px; cursor: pointer; text-align: left">
+                    <span id="source-filter-label">Tất cả nguồn</span>
+                    <i class="fas fa-chevron-down" style="font-size: 9px; opacity: .6; margin-left: auto"></i>
+                  </button>
+                  <div id="source-filter-dropdown"
+                    style="display: none; position: absolute; top: calc(100% + 4px); left: 0; min-width: 220px;
+                           background: var(--bg-card, #1e293b); border: 1px solid var(--border-color, #334155);
+                           border-radius: 10px; box-shadow: 0 8px 24px rgba(0,0,0,.35); z-index: 999; padding: 8px">
+                    <input type="text" id="source-filter-search" placeholder="Lọc mã đề..."
+                      style="width: 100%; padding: 6px 8px; margin-bottom: 6px; border-radius: 6px;
+                             border: 1px solid var(--border-color, #334155); background: var(--bg-secondary, #0f172a);
+                             color: inherit; font-size: 13px" />
+                    <div id="source-filter-list" style="max-height: 280px; overflow-y: auto; display: flex; flex-direction: column; gap: 2px"></div>
+                  </div>
+                </div>
+                <select id="filter-part" class="filter-select" style="width: auto; min-width: 130px; flex-shrink: 0">
+                  <option value="">Tất cả Part</option>
+                  <option value="1">Part 1</option>
+                  <option value="2">Part 2</option>
+                  <option value="3">Part 3</option>
+                  <option value="4">Part 4</option>
+                  <option value="5">Part 5</option>
+                  <option value="6">Part 6</option>
+                  <option value="7">Part 7</option>
+                </select>
+                <select id="sort-by" class="filter-select" style="width: auto; min-width: 130px; flex-shrink: 0">
+                  <option value="newest">Mới nhất</option>
+                  <option value="oldest">Cũ nhất</option>
+                  <option value="most-used">Dùng nhiều nhất</option>
+                  <option value="least-used">Dùng ít nhất</option>
+                  <option value="part-asc">Part ↑</option>
+                  <option value="part-desc">Part ↓</option>
+                </select>
+              </div>
+              <div class="pagination-row">
+                <div id="questions-pagination" class="filter-results-text"></div>
+                <div style="display: flex; gap: 8px; align-items: center">
+                  <button class="btn btn-ghost btn-sm" id="btn-reload-questions"
+                    title="Tải lại bảng từ server (giữ nguyên bộ lọc đang chọn)">
+                    <i class="fas fa-rotate"></i> Tải lại
+                  </button>
+                  <button class="btn btn-ghost btn-sm" id="btn-sync-all-questions"
+                    title="Soi số câu trùng / lọt dải Part / màn thiếu ảnh-audio, rồi tải lại bảng">
+                    <i class="fas fa-magnifying-glass"></i> Soi lỗi
+                  </button>
+                  <button id="clear-filters" class="btn btn-ghost btn-sm">
+                    <i class="fas fa-times"></i> Xóa lọc
+                  </button>
+                </div>
+              </div>
+
+              <div class="table-container">
+                <table id="questions-table" class="data-table">
+                  <thead>
+                    <tr>
+                      <th>Part</th>
+                      <th>Số câu</th>
+                      <th>Nội dung câu hỏi</th>
+                      <th>Nguồn</th>
+                      <th>Đáp án đúng</th>
+                      <th>Ảnh</th>
+                      <th>Audio</th>
+                      <th>Thao tác</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td colspan="8" class="loading">
+                        <i class="fas fa-spinner"></i>
+                        <p>Đang tải câu hỏi...</p>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>

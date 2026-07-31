@@ -1,0 +1,192 @@
+    <!-- Modal: Create TOEIC Test -->
+    <div
+      id="test-modal"
+      style="
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 1000;
+        align-items: center;
+        justify-content: center;
+      "
+    >
+      <div
+        style="
+          background: white;
+          border-radius: 15px;
+          padding: 24px;
+          max-width: 660px;
+          width: 92%;
+          max-height: 90vh;
+          overflow-y: auto;
+        "
+      >
+        <h3 style="margin-bottom: 16px; color: #e11d48">
+          <i class="fas fa-file-alt"></i> Tạo đề thi mới
+        </h3>
+        <form id="test-form">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px 14px;align-items:start">
+          <div style="grid-column:1/-1">
+            <label style="display:block;margin-bottom:4px;font-weight:500">Tên đề thi *</label>
+            <input type="text" id="test-name" required placeholder="VD: Đề thi TOEIC thực hành 1" style="width:100%;padding:9px;border:1.5px solid var(--border-color);border-radius:8px">
+          </div>
+
+          <!-- Loại đề chiếm cả hàng: nó quyết định hiện/ẩn các phần bên dưới nên
+               phải đọc thấy ngay, và tên lựa chọn cũng dài. -->
+          <div style="grid-column:1/-1">
+            <label style="display:block;margin-bottom:4px;font-weight:500">Loại đề *</label>
+            <select id="test-type" required style="width:100%;padding:9px;border:1.5px solid var(--border-color);border-radius:8px">
+              <option value="">Chọn loại đề</option>
+              <option value="full-test">Full Test (200 câu)</option>
+              <option value="mini-part1">Mini Test - Part 1</option>
+              <option value="mini-part2">Mini Test - Part 2</option>
+              <option value="mini-part3">Mini Test - Part 3</option>
+              <option value="mini-part4">Mini Test - Part 4</option>
+              <option value="mini-part5">Mini Test - Part 5</option>
+              <option value="mini-part6">Mini Test - Part 6</option>
+              <option value="mini-part7">Mini Test - Part 7</option>
+            </select>
+          </div>
+
+          <div>
+            <label style="display:block;margin-bottom:4px;font-weight:500">Thời gian (phút) *</label>
+            <input type="number" id="test-duration" required min="1" placeholder="Tự điền khi chọn loại đề" style="width:100%;padding:9px;border:1.5px solid var(--border-color);border-radius:8px">
+          </div>
+
+          <div>
+            <label style="display:block;margin-bottom:4px;font-weight:500">Độ khó</label>
+            <select id="test-level" style="width:100%;padding:9px;border:1.5px solid var(--border-color);border-radius:8px">
+              <option value="beginner">🟢 Cơ bản</option>
+              <option value="intermediate" selected>🟡 Trung cấp</option>
+              <option value="advanced">🔴 Nâng cao</option>
+            </select>
+          </div>
+
+          <!-- Trộn tối đa 3 nguồn: loại đề ở trên quyết định lấy gì, mấy ô này
+               quyết định lấy từ đâu. Dùng select thay vì ô gõ tay để không lệch
+               chữ (nguồn khớp phân biệt hoa/thường). -->
+          <div style="grid-column:1/-1">
+            <label style="display:block;margin-bottom:4px;font-weight:500">
+              <i class="fas fa-database"></i> Nguồn câu hỏi — trộn tối đa 3 đề
+            </label>
+            <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">
+              <select id="test-source-1" class="test-source-pick" style="width:100%;padding:9px;border:1.5px solid var(--border-color);border-radius:8px"></select>
+              <select id="test-source-2" class="test-source-pick" style="width:100%;padding:9px;border:1.5px solid var(--border-color);border-radius:8px"></select>
+              <select id="test-source-3" class="test-source-pick" style="width:100%;padding:9px;border:1.5px solid var(--border-color);border-radius:8px"></select>
+            </div>
+            <p style="margin:4px 0 0;font-size:12px;color:var(--text-secondary)">
+              Để trống hết = lấy toàn bộ kho. Chọn nhiều nguồn thì câu hỏi được bốc
+              lẫn từ các nguồn đó (vd <code>ets26t1</code> + <code>ets26t3</code> + <code>ets26t9</code>).
+              Chọn trùng nguồn thì chỉ tính một lần.
+            </p>
+            <p id="test-source-summary" style="margin:4px 0 0;font-size:12px;font-weight:500"></p>
+            <!-- Datalist DÙNG CHUNG: các ô nhập nguồn ở tab "Tạo câu đơn" và
+                 "Tạo nhóm câu" trỏ tới id này. Đừng xoá dù modal này không còn
+                 dùng ô gõ tay nữa. -->
+            <datalist id="test-source-list"></datalist>
+          </div>
+
+          <!-- Cách chọn câu — cùng một việc với ô Nguồn ở trên (lấy câu ở đâu, lấy
+               thế nào) nên đặt liền nhau. Ẩn hẳn khi Full Test: đề full lấy đủ cả
+               7 part theo cấu hình cố định, không có gì để đảo. -->
+          <div
+            id="q-select-mode-box"
+            style="
+              grid-column:1/-1;
+              padding: 10px 12px;
+              background: var(--bg-secondary,#f8f9fa);
+              border-radius: 8px;
+              border: 1.5px solid var(--border-color,#e9ecef);
+            "
+          >
+            <div style="font-weight:500;margin-bottom:6px">
+              <i class="fas fa-random" style="color:#28a745"></i> Chế độ chọn câu hỏi
+            </div>
+            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;margin-bottom:5px">
+              <input type="radio" name="q-select-mode" value="default" checked style="width:16px;height:16px;cursor:pointer">
+              <span>Mặc định — theo thứ tự tạo, trong test này</span>
+            </label>
+            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;margin-bottom:5px">
+              <input type="radio" name="q-select-mode" value="shuffle-same" style="width:16px;height:16px;cursor:pointer">
+              <span>🔀 Đảo câu hỏi — <strong>cùng test</strong>, cùng Part</span>
+            </label>
+            <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
+              <input type="radio" name="q-select-mode" value="shuffle-cross" style="width:16px;height:16px;cursor:pointer">
+              <span>🔀 Đảo câu hỏi — <strong>khác test</strong>, cùng Part</span>
+            </label>
+          </div>
+
+          <!-- ĐIỀU KIỆN VÀO BÀI — gom lại một chỗ. Năng lượng không chỉnh ở đây
+               (tính tự động theo số câu). -->
+          <div style="grid-column:1/-1;border-top:1px solid var(--border-color);padding-top:12px;margin-top:4px">
+            <label style="display:flex;align-items:center;gap:8px;font-weight:500;cursor:pointer">
+              <input type="checkbox" id="test-is-free" checked>
+              <span><i class="fas fa-unlock"></i> Đề miễn phí (chỉ tốn năng lượng)</span>
+            </label>
+            <p style="margin:6px 0 0;font-size:12px;color:var(--text-secondary)">
+              Bỏ tick để biến thành đề <strong>premium</strong> — người chơi phải trả thêm xu mỗi lần vào bài.
+              Năng lượng luôn bị trừ, tính tự động theo số câu (0.6⚡/câu, tối thiểu 5, tối đa 60).
+            </p>
+          </div>
+
+          <!-- Giá xu ẩn khi đề miễn phí → Level tối thiểu tự dồn sang trái, không
+               để lại ô trống lửng như bố cục cũ. -->
+          <div id="test-coins-field" style="display:none">
+            <label style="display:block;margin-bottom:4px;font-weight:500"><i class="fas fa-coins"></i> Giá xu mỗi lượt</label>
+            <input type="number" id="test-required-coins" min="0" value="0" style="width:100%;padding:9px;border:1.5px solid var(--border-color);border-radius:8px">
+          </div>
+
+          <div>
+            <label style="display:block;margin-bottom:4px;font-weight:500"><i class="fas fa-lock"></i> Level tối thiểu</label>
+            <input type="number" id="test-required-level" min="1" value="1" style="width:100%;padding:9px;border:1.5px solid var(--border-color);border-radius:8px">
+          </div>
+
+          <!-- Mô tả xuống cuối: trường ít quan trọng nhất, trước đây nằm giữa form
+               chen ngang giữa hai nhóm việc. -->
+          <div style="grid-column:1/-1">
+            <label style="display:block;margin-bottom:4px;font-weight:500">Mô tả</label>
+            <textarea id="test-description" rows="2" placeholder="Mô tả ngắn về đề thi..." style="width:100%;padding:9px;border:1.5px solid var(--border-color);border-radius:8px"></textarea>
+          </div>
+
+          <div
+            style="
+              grid-column:1/-1;
+              display: flex;
+              gap: 10px;
+              justify-content: flex-end;
+              margin-top: 8px;
+            "
+          >
+            <button
+              type="button"
+              id="btn-close-test-modal"
+              style="
+                padding: 9px 18px;
+                border: 1.5px solid var(--border-color,#ccc);
+                background: transparent;
+                color: var(--text-primary);
+                border-radius: 8px;
+                cursor: pointer;
+              "
+            >
+              Hủy
+            </button>
+            <button
+              type="submit"
+              style="
+                padding: 9px 18px;
+                border: none;
+                background: #e11d48;
+                color: white;
+                border-radius: 8px;
+                cursor: pointer;
+              "
+            >
+              Tạo đề thi
+            </button>
+          </div>
+          </div>
+        </form>
+      </div>
+    </div>

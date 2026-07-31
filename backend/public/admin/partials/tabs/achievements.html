@@ -1,0 +1,42 @@
+          <!-- ===== ACHIEVEMENT DEFINITIONS TAB ===== -->
+          <div id="main-tab-achievements" class="main-tab-content">
+            <div class="channel-cat-picker" data-channel="achievement"></div>
+            <div class="card">
+              <div class="card-header">
+                <h2><i class="fas fa-trophy"></i> Quản lý Thành tích</h2>
+                <div class="card-header-actions">
+                  <button class="btn btn-ghost btn-sm" id="btn-copy-achievement-json" title="Copy toàn bộ thành tích hiện có dưới dạng JSON">
+                    <i class="fas fa-clipboard"></i> Copy JSON
+                  </button>
+                  <button class="btn btn-ghost btn-sm" id="btn-ai-gen-achievement" title="Sinh thành tích bằng AI (copy prompt → dán vào ChatGPT/Claude → paste JSON về)">
+                    <i class="fas fa-robot"></i> AI Generate
+                  </button>
+                  <button class="btn btn-success btn-sm" id="btn-add-achievement">
+                    <i class="fas fa-plus"></i> Thêm thành tích
+                  </button>
+                </div>
+              </div>
+              <div style="padding: 0 0 12px; display: flex; gap: 8px; align-items: center">
+                <input type="text" id="ach-search" class="card-search" placeholder="Tên, mã, danh mục..." style="flex: 1; margin: 0; max-width: 360px" />
+                <select id="ach-filter-cat" class="filter-select" style="width: auto; min-width: 150px; flex-shrink: 0">
+                  <option value="">Tất cả danh mục</option>
+                  <option value="learning">Học tập (learning)</option>
+                  <option value="practice">Luyện tập (practice)</option>
+                  <option value="social">Xã hội (social)</option>
+                  <option value="streak">Chuỗi (streak)</option>
+                </select>
+              </div>
+              <div class="table-container">
+                <table id="achievements-table" class="data-table">
+                  <thead><tr>
+                    <th>Icon</th><th>Tên</th><th>Danh mục</th>
+                    <th>Điều kiện</th><th>Phần thưởng</th>
+                    <th>Trạng thái</th><th>Thao tác</th>
+                  </tr></thead>
+                  <tbody id="achievements-tbody">
+                    <tr><td colspan="7" class="loading"><i class="fas fa-spinner fa-spin"></i> Đang tải...</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>

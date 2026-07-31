@@ -1,0 +1,24 @@
+          <!-- ===== KINH TẾ TAB ===== -->
+          <div id="main-tab-economy" class="main-tab-content">
+            <div class="card">
+              <div class="card-header">
+                <h2><i class="fas fa-scale-balanced"></i> Bảng kinh tế (faucet / sink)</h2>
+                <div class="card-header-actions">
+                  <select id="eco-days" class="filter-select" style="width:auto">
+                    <option value="7">7 ngày</option>
+                    <option value="30">30 ngày</option>
+                    <option value="90">90 ngày</option>
+                  </select>
+                  <button class="btn btn-secondary btn-sm" id="eco-refresh"><i class="fas fa-rotate-right"></i> Làm mới</button>
+                </div>
+              </div>
+              <div id="eco-summary" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:16px"></div>
+              <div style="font-size:12px;color:var(--text-secondary);margin-bottom:8px">💡 Số dư lưu hành <b>tăng đều</b> = lạm phát (thêm nơi tiêu). Nhiều user <b>kẹt 0</b> = nới nguồn thu.</div>
+              <div class="table-container">
+                <table class="data-table">
+                  <thead><tr><th>Nguồn</th><th>Hướng</th><th>Tiền</th><th>Tổng</th><th>Lượt</th></tr></thead>
+                  <tbody id="eco-rows"><tr><td colspan="5" class="loading"><i class="fas fa-spinner fa-spin"></i> Đang tải...</td></tr></tbody>
+                </table>
+              </div>
+            </div>
+          </div>

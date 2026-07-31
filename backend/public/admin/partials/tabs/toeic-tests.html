@@ -1,0 +1,94 @@
+          <!-- TOEIC Tests Tab Content -->
+          <div id="main-tab-toeic-tests" class="main-tab-content">
+            <div class="card">
+              <div class="card-header">
+                <h2><i class="fas fa-file-alt"></i> TOEIC Tests</h2>
+                <div class="card-header-actions">
+                  <button class="btn btn-success btn-sm" id="btn-create-test">
+                    <i class="fas fa-plus"></i> Tạo đề thi
+                  </button>
+                  <button class="btn btn-danger btn-sm" id="btn-delete-all-tests">
+                    <i class="fas fa-trash-alt"></i> Xóa tất cả
+                  </button>
+                </div>
+              </div>
+
+              <!-- Tests Search & Filter -->
+              <div style="padding: 0 0 12px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap">
+                <input
+                  type="text"
+                  id="test-search"
+                  class="card-search"
+                  style="flex: 1; min-width: 200px; margin: 0"
+                  placeholder="Tên đề, source key..."
+                />
+                <select id="filter-test-type" class="filter-select" style="width: auto; min-width: 130px; flex-shrink: 0">
+                  <option value="">Tất cả loại</option>
+                  <option value="full-test">Full Test</option>
+                  <option value="mini">Mini Test</option>
+                  <option value="listening-only">Nghe</option>
+                  <option value="reading-only">Đọc</option>
+                </select>
+                <select id="filter-test-level" class="filter-select" style="width: auto; min-width: 120px; flex-shrink: 0">
+                  <option value="">Tất cả cấp</option>
+                  <option value="beginner">🟢 Cơ bản</option>
+                  <option value="intermediate">🟡 Trung cấp</option>
+                  <option value="advanced">🔴 Nâng cao</option>
+                </select>
+                <select id="test-sort-by" class="filter-select" style="width: auto; min-width: 130px; flex-shrink: 0">
+                  <option value="newest">Mới nhất</option>
+                  <option value="oldest">Cũ nhất</option>
+                  <option value="most-attempts">Nhiều lượt thi nhất</option>
+                  <option value="highest-score">Điểm TB cao nhất</option>
+                  <option value="lowest-score">Điểm TB thấp nhất</option>
+                </select>
+              </div>
+              <div class="pagination-row" style="flex-wrap: wrap; gap: 8px">
+                <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap">
+                  <div id="tests-pagination" class="filter-results-text"></div>
+                  <select id="test-page-size" class="filter-select" style="width: auto; min-width: 90px; font-size: 12px; padding: 4px 8px">
+                    <option value="10">10 / trang</option>
+                    <option value="15" selected>15 / trang</option>
+                    <option value="20">20 / trang</option>
+                    <option value="50">50 / trang</option>
+                  </select>
+                </div>
+                <div style="display: flex; gap: 8px; align-items: center">
+                  <!-- Một nút tự đổi: còn đề Nháp → "Xuất bản tất cả"; mọi đề đã đăng → "Ngưng xuất bản tất cả". -->
+                  <button class="btn btn-success btn-sm" id="btn-toggle-publish-all">
+                    <i class="fas fa-upload"></i> Xuất bản tất cả
+                  </button>
+                  <button class="btn btn-ghost btn-sm" id="btn-sync-all-tests" title="Đọc lại số câu từ ngân hàng câu hỏi + dọn tham chiếu chết">
+                    <i class="fas fa-sync"></i> Sync số câu
+                  </button>
+                  <button id="clear-test-filters" class="btn btn-ghost btn-sm">
+                    <i class="fas fa-times"></i> Xóa lọc
+                  </button>
+                </div>
+              </div>
+
+              <div class="table-container">
+                <table id="tests-table" class="data-table">
+                  <thead>
+                    <tr>
+                      <th>Tên đề thi</th>
+                      <th>Loại</th>
+                      <th style="text-align:center">Câu hỏi</th>
+                      <th style="text-align:center">Thời gian (phút)</th>
+                      <th style="text-align:center">Lượt thi</th>
+                      <th style="text-align:center">Điểm TB</th>
+                      <th>Thao tác</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td colspan="7" class="loading">
+                        <i class="fas fa-spinner"></i>
+                        <p>Đang tải đề thi...</p>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>

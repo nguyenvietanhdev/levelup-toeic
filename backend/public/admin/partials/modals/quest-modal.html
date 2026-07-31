@@ -1,0 +1,93 @@
+    <!-- Modal: Quest Definition -->
+    <div id="quest-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:1000;align-items:center;justify-content:center">
+      <div style="background:var(--bg-primary,white);border-radius:14px;padding:28px;max-width:540px;width:90%;max-height:90vh;overflow-y:auto">
+        <h3 style="margin-bottom:20px;color:var(--primary)"><i class="fas fa-tasks"></i> <span id="quest-modal-title">Thêm nhiệm vụ</span></h3>
+        <form id="quest-form">
+          <input type="hidden" id="quest-id">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+            <div style="grid-column:1/-1"><label>Tên *</label><input type="text" id="quest-name" required placeholder="vd: Hoàn thành 3 bài luyện tập" style="width:100%;padding:9px;border:1.5px solid var(--border-color);border-radius:8px;margin-top:4px"></div>
+            <div><label>Code (unique) *</label><input type="text" id="quest-code" required placeholder="vd: daily_practice_3" style="width:100%;padding:9px;border:1.5px solid var(--border-color);border-radius:8px;margin-top:4px"></div>
+            <div><label>Icon</label><input type="text" id="quest-icon" placeholder="⚔️" style="width:100%;padding:9px;border:1.5px solid var(--border-color);border-radius:8px;margin-top:4px"></div>
+            <div style="grid-column:1/-1"><label>Mô tả</label><input type="text" id="quest-desc" placeholder="Mô tả nhiệm vụ..." style="width:100%;padding:9px;border:1.5px solid var(--border-color);border-radius:8px;margin-top:4px"></div>
+            <div><label>Loại</label>
+              <select id="quest-type" style="width:100%;padding:9px;border:1.5px solid var(--border-color);border-radius:8px;margin-top:4px">
+                <option value="daily">Hàng ngày (daily)</option>
+                <option value="weekly">Hàng tuần (weekly)</option>
+                <option value="monthly">Hàng tháng (monthly)</option>
+                <option value="special">Đặc biệt (special)</option>
+              </select>
+            </div>
+            <div><label>Chế độ game</label>
+              <select id="quest-mode" style="width:100%;padding:9px;border:1.5px solid var(--border-color);border-radius:8px;margin-top:4px">
+                <option value="any">Bất kỳ chế độ</option>
+                <optgroup label="Học &amp; Nhận diện từ">
+                  <option value="flashcard">Flashcard</option>
+                  <option value="multiple-choice">Trắc nghiệm</option>
+                  <option value="matching">Nối từ</option>
+                  <option value="word-type-check">Từ loại</option>
+                </optgroup>
+                <optgroup label="Nghe &amp; Phát âm">
+                  <option value="listening">Nghe và chọn</option>
+                  <option value="pronunciation">Phát âm</option>
+                  <option value="dictation">Chép chính tả</option>
+                  <option value="sentence-listening">Nghe chuỗi từ</option>
+                </optgroup>
+                <optgroup label="Đọc &amp; Viết">
+                  <option value="fill-blank">Điền từ</option>
+                  <option value="example-fill-blank">Điền vào câu</option>
+                  <option value="sentence-builder">Xếp câu</option>
+                  <option value="phonetic-quiz">Đọc phiên âm</option>
+                </optgroup>
+                <optgroup label="Nâng cao &amp; Thử thách">
+                  <option value="context-learning">Hiểu qua câu</option>
+                  <option value="synonym-check">Từ đồng nghĩa</option>
+                  <option value="speed-quiz">Tốc độ</option>
+                  <option value="review-mistakes">Ôn lại từ sai</option>
+                </optgroup>
+              </select>
+            </div>
+            <div style="grid-column:1/-1"><label>Chỉ số tiến độ (metric)</label>
+              <select id="quest-metric" style="width:100%;padding:9px;border:1.5px solid var(--border-color);border-radius:8px;margin-top:4px">
+                <option value="">— tự suy theo code (cũ) —</option>
+                <option value="complete-games">Hoàn thành lượt chơi (bất kỳ chế độ)</option>
+                <option value="correct-answers">Trả lời đúng (số câu)</option>
+                <option value="learn-words">Học từ mới</option>
+                <option value="earn-xp">Kiếm XP</option>
+                <option value="daily-streak">Duy trì streak (ngày)</option>
+                <option value="perfect-rounds">Vòng hoàn hảo</option>
+                <option value="play-mode">Chơi 1 chế độ cụ thể (đặt "Chế độ game" ≠ Bất kỳ)</option>
+              </select>
+              <small style="color:var(--text-secondary);font-size:11px">Để trống = dùng quy tắc cũ theo tiền tố code. Chọn rõ để nhiệm vụ mới chạy đúng.</small>
+            </div>
+            <div><label>Cách tính tiến độ (source)</label>
+              <select id="quest-source" style="width:100%;padding:9px;border:1.5px solid var(--border-color);border-radius:8px;margin-top:4px">
+                <option value="computed">computed — server đọc UserStats (khuyến nghị)</option>
+                <option value="event">event — chỉ tăng qua Quest.updateProgress (legacy)</option>
+              </select>
+              <small style="color:var(--text-secondary);font-size:11px">computed = không phụ thuộc client emit, đọc thẳng DB lúc getQuests/claim.</small>
+            </div>
+            <div style="grid-column:1/-1"><label>Params (JSON tuỳ chọn)</label>
+              <textarea id="quest-params" rows="2" placeholder='{} hoặc {"mode":"speed-quiz"} ...' style="width:100%;padding:9px;border:1.5px solid var(--border-color);border-radius:8px;margin-top:4px;font-family:monospace;font-size:12px;resize:vertical"></textarea>
+              <small style="color:var(--text-secondary);font-size:11px">Để trống nếu không cần. play-mode tự suy từ "Chế độ game" nên không cần điền.</small>
+            </div>
+            <div><label>Mục tiêu (target)</label><input type="number" id="quest-target" value="3" style="width:100%;padding:9px;border:1.5px solid var(--border-color);border-radius:8px;margin-top:4px"></div>
+            <div><label>Weight (xác suất)</label><input type="number" id="quest-weight" value="1" style="width:100%;padding:9px;border:1.5px solid var(--border-color);border-radius:8px;margin-top:4px"></div>
+            <div><label>Thưởng XP</label><input type="number" id="quest-xp" value="0" style="width:100%;padding:9px;border:1.5px solid var(--border-color);border-radius:8px;margin-top:4px"></div>
+            <div><label>Thưởng Coins</label><input type="number" id="quest-coins" value="0" style="width:100%;padding:9px;border:1.5px solid var(--border-color);border-radius:8px;margin-top:4px"></div>
+            <div style="grid-column:1/-1">
+              <label>Thưởng vật phẩm <span style="color:var(--text-tertiary,#94a3b8);font-weight:400">(chọn từ catalog + số lượng — để trống nếu không có)</span></label>
+              <div id="quest-items-rows" style="margin-top:6px;display:flex;flex-direction:column;gap:6px"></div>
+              <button type="button" id="quest-items-add" class="btn btn-secondary btn-sm" style="margin-top:8px"><i class="fas fa-plus"></i> Thêm vật phẩm</button>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px;margin-top:16px">
+              <input type="checkbox" id="quest-active" checked style="width:16px;height:16px">
+              <label for="quest-active">Kích hoạt</label>
+            </div>
+          </div>
+          <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:20px">
+            <button type="button" id="btn-quest-cancel" class="btn btn-ghost">Hủy</button>
+            <button type="submit" class="btn btn-primary">Lưu</button>
+          </div>
+        </form>
+      </div>
+    </div>

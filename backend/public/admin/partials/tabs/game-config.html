@@ -1,0 +1,40 @@
+          <!-- ===== HẰNG SỐ GAME TAB ===== -->
+          <div id="main-tab-game-config" class="main-tab-content">
+            <div class="card">
+              <div class="card-header">
+                <h2><i class="fas fa-sliders"></i> Hằng số game</h2>
+                <span style="font-size:13px;color:var(--text-secondary)">Chỉnh không cần deploy — áp dụng ngay sau khi lưu</span>
+              </div>
+              <form id="game-config-form" style="padding:8px 4px;max-width:560px">
+                <div style="display:grid;grid-template-columns:1fr;gap:16px">
+                  <div>
+                    <label style="font-weight:600">📚 Giới hạn từ vựng riêng / người</label>
+                    <div style="font-size:12px;color:var(--text-secondary);margin:2px 0 6px">Số từ tối đa 1 người được lưu (bảo vệ DB).</div>
+                    <input type="number" id="gc-maxUploadWords" min="0" style="width:100%;padding:9px;border:1.5px solid var(--border-color);border-radius:8px">
+                  </div>
+                  <div>
+                    <label style="font-weight:600">⭐ Giới hạn từ yêu thích / người</label>
+                    <div style="font-size:12px;color:var(--text-secondary);margin:2px 0 6px">Số từ yêu thích tối đa 1 người.</div>
+                    <input type="number" id="gc-maxFavorites" min="0" style="width:100%;padding:9px;border:1.5px solid var(--border-color);border-radius:8px">
+                  </div>
+                  <div>
+                    <label style="font-weight:600">🪙 Phí gia hạn / từ (xu)</label>
+                    <div style="font-size:12px;color:var(--text-secondary);margin:2px 0 6px">Gia hạn +30 ngày = số từ × phí này. VIP miễn phí.</div>
+                    <input type="number" id="gc-extendCostPerWord" min="0" style="width:100%;padding:9px;border:1.5px solid var(--border-color);border-radius:8px">
+                  </div>
+                  <div>
+                    <label style="font-weight:600">👑 Thẻ boost tặng kèm khi mua VIP (mỗi loại)</label>
+                    <div style="font-size:12px;color:var(--text-secondary);margin:2px 0 6px">Số thẻ x2 XP + x2 Coins tặng mỗi lần mua VIP.</div>
+                    <input type="number" id="gc-vipBoostCards" min="0" style="width:100%;padding:9px;border:1.5px solid var(--border-color);border-radius:8px">
+                  </div>
+                </div>
+                <div style="margin-top:18px;display:flex;align-items:center;gap:12px">
+                  <button type="submit" class="btn btn-success"><i class="fas fa-save"></i> Lưu hằng số</button>
+                  <span id="game-config-status" style="font-size:13px"></span>
+                </div>
+              </form>
+              <div style="padding:12px 4px;font-size:12px;color:var(--text-secondary)">
+                Ghi chú: giá/giảm giá vật phẩm chỉnh ở tab <b>Vật phẩm</b>; chi phí &amp; tỷ lệ vòng quay ở tab <b>Vòng quay</b>.
+              </div>
+            </div>
+          </div>

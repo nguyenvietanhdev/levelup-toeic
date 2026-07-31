@@ -1,0 +1,20 @@
+{
+  "name": "levelup-toeic",
+  "version": "1.0.0",
+  "description": "Ứng dụng web học từ vựng TOEIC theo phong cách gamification — kết hợp 12 chế độ luyện tập tương tác, hệ thống thi TOEIC 7 Part đầy đủ, và cơ chế XP/level/streak để duy trì động lực học tập.",
+  "main": "index.js",
+  "scripts": {
+    "dev": "concurrently -n \"BACKEND,FRONTEND\" -c \"cyan,magenta\" \"npm run dev --prefix backend\" \"npm run dev --prefix frontend\"",
+    "dev:backend": "npm run dev --prefix backend",
+    "dev:frontend": "npm run dev --prefix frontend",
+    "install:all": "npm install && npm install --prefix backend && npm install --prefix frontend",
+    "build": "npm run build --prefix frontend",
+    "start": "npm run start --prefix backend"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "concurrently": "^9.2.1"
+  }
+}

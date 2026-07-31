@@ -1,0 +1,266 @@
+    <div
+      id="add-word-modal"
+      style="
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 1000;
+        align-items: center;
+        justify-content: center;
+      "
+    >
+      <div
+        style="
+          background: white;
+          border-radius: 15px;
+          padding: 30px;
+          max-width: 600px;
+          width: 90%;
+          max-height: 90vh;
+          overflow-y: auto;
+          scrollbar-gutter: stable;
+        "
+      >
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:15px;flex-wrap:wrap">
+          <h3 style="margin:0; color: var(--primary)">
+            ➕ Thêm từ mới
+          </h3>
+          <!-- AI Fill + Copy Prompt (moved up next to title) -->
+          <div style="display:flex;gap:8px">
+            <button type="button" id="btn-ai-fill"
+              style="padding:9px 14px;border:none;background:linear-gradient(135deg,#e11d48,#f97316);color:#fff;border-radius:8px;cursor:pointer;font-weight:600;font-size:13px;display:flex;align-items:center;gap:6px;white-space:nowrap">
+              <i class="fas fa-magic"></i> AI Tự điền
+            </button>
+            <button type="button" id="btn-copy-word-prompt"
+              title="Copy prompt để dán vào ChatGPT / Claude"
+              style="padding:9px 14px;border:1.5px solid var(--border-color);background:var(--bg-secondary);color:var(--text-primary);border-radius:8px;cursor:pointer;font-weight:600;font-size:13px;display:flex;align-items:center;gap:6px;white-space:nowrap">
+              <i class="fas fa-clipboard"></i> Copy Prompt
+            </button>
+          </div>
+        </div>
+
+        <!-- Tab toggle -->
+        <div
+          id="word-modal-tabs"
+          style="
+            display: flex;
+            gap: 0;
+            margin-bottom: 20px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            overflow: hidden;
+          "
+        >
+          <button
+            type="button"
+            id="tab-manual"
+            style="
+              flex: 1;
+              padding: 9px;
+              border: none;
+              background: var(--primary);
+              color: #fff;
+              font-weight: 600;
+              cursor: pointer;
+              font-size: 13px;
+            "
+          >
+            <i class="fas fa-pen"></i> Nhập tay
+          </button>
+          <button
+            type="button"
+            id="tab-json"
+            style="
+              flex: 1;
+              padding: 9px;
+              border: none;
+              background: #f5f5f5;
+              color: #666;
+              font-weight: 600;
+              cursor: pointer;
+              font-size: 13px;
+            "
+          >
+            <i class="fas fa-code"></i> Nhập JSON
+          </button>
+        </div>
+
+        <!-- JSON input panel -->
+        <div id="word-json-panel" style="display: none">
+          <p style="font-size: 12px; color: #888; margin-bottom: 8px">
+            Dán vào 1 object hoặc array — các key hợp lệ:
+            <code id="json-keys-hint">en, vn, phonetic, part, type, level, synonyms, image, example, source</code>
+          </p>
+          <textarea
+            id="word-json-input"
+            rows="14"
+            placeholder='[
+  {
+    "en": "arrange",
+    "vn": "sắp xếp",
+    "phonetic": "/əˈreɪndʒ/",
+    "part": "ETS24T01-LC",
+    "type": "verb",
+    "image": "images/pages/ETS24T01-LC/arrange.jpg"
+    "level": "B1",
+    "synonyms": "organize, set up",
+    "example": "Please arrange the chairs.",
+    "source": "ets2024"
+  }
+]'
+            style="
+              width: 100%;
+              padding: 12px;
+              border: 2px solid #e0e0e0;
+              border-radius: 8px;
+              font-family: monospace;
+              font-size: 13px;
+              resize: vertical;
+              box-sizing: border-box;
+            "
+          ></textarea>
+          <div
+            id="word-json-result"
+            style="
+              display: none;
+              margin-top: 12px;
+              padding: 12px;
+              border-radius: 8px;
+              font-size: 13px;
+            "
+          ></div>
+          <div
+            style="
+              display: flex;
+              gap: 10px;
+              justify-content: flex-end;
+              margin-top: 16px;
+            "
+          >
+            <button
+              type="button"
+              id="btn-close-modal-json"
+              style="
+                padding: 10px 20px;
+                border: 2px solid #ccc;
+                background: white;
+                border-radius: 8px;
+                cursor: pointer;
+              "
+            >
+              Đóng
+            </button>
+            <button
+              type="button"
+              id="btn-submit-json"
+              style="
+                padding: 10px 24px;
+                border: none;
+                background: var(--primary);
+                color: white;
+                border-radius: 8px;
+                cursor: pointer;
+                font-weight: 600;
+              "
+            >
+              Nhập JSON
+            </button>
+          </div>
+        </div>
+
+        <form id="add-word-form">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+            <!-- EN + VN -->
+            <div>
+              <label style="display:block;font-size:12px;font-weight:600;margin-bottom:4px;color:var(--text-primary)">Tiếng Anh <span style="color:#ef4444">*</span></label>
+              <input type="text" id="word-en" required placeholder="caterer" style="width:100%;padding:8px 10px;border:1px solid var(--border-color);border-radius:6px;font-size:13px;background:var(--bg-secondary);color:var(--text-primary);text-transform:lowercase">
+            </div>
+            <div>
+              <label style="display:block;font-size:12px;font-weight:600;margin-bottom:4px;color:var(--text-primary)">Tiếng Việt <span style="color:#ef4444">*</span></label>
+              <input type="text" id="word-vn" required placeholder="người cung cấp đồ ăn" style="width:100%;padding:8px 10px;border:1px solid var(--border-color);border-radius:6px;font-size:13px;background:var(--bg-secondary);color:var(--text-primary);text-transform:lowercase">
+            </div>
+
+            <!-- Part + Source -->
+            <div>
+              <label style="display:block;font-size:12px;font-weight:600;margin-bottom:4px;color:var(--text-primary)">Part <span style="color:#ef4444">*</span></label>
+              <input type="text" id="word-part" required placeholder="ETS26T10-RC" style="width:100%;padding:8px 10px;border:1px solid var(--border-color);border-radius:6px;font-size:13px;background:var(--bg-secondary);color:var(--text-primary);text-transform:uppercase">
+            </div>
+            <div>
+              <label style="display:block;font-size:12px;font-weight:600;margin-bottom:4px;color:var(--text-primary)">Nguồn <span style="color:#ef4444">*</span></label>
+              <input type="text" id="word-sources" placeholder="ets2026" style="width:100%;padding:8px 10px;border:1px solid var(--border-color);border-radius:6px;font-size:13px;background:var(--bg-secondary);color:var(--text-primary);text-transform:lowercase">
+            </div>
+
+            <!-- Type đơn + Type cụm -->
+            <div>
+              <label style="display:block;font-size:12px;font-weight:600;margin-bottom:4px;color:var(--text-primary)">Type (đơn)</label>
+              <select id="word-type" style="width:100%;padding:8px 10px;border:1px solid var(--border-color);border-radius:6px;font-size:13px;background:var(--bg-secondary);color:var(--text-primary)">
+                <option value="">— Loại từ —</option>
+                <option value="noun">noun</option>
+                <option value="verb">verb</option>
+                <option value="adjective">adjective</option>
+                <option value="adverb">adverb</option>
+                <option value="pronoun">pronoun</option>
+                <option value="preposition">preposition</option>
+                <option value="conjunction">conjunction</option>
+                <option value="interjection">interjection</option>
+                <option value="article">article</option>
+                <option value="determiner">determiner</option>
+                <option value="auxiliary">auxiliary</option>
+              </select>
+            </div>
+            <div>
+              <label style="display:block;font-size:12px;font-weight:600;margin-bottom:4px;color:var(--text-primary)">Type (cụm)</label>
+              <select id="word-type-phrase" style="width:100%;padding:8px 10px;border:1px solid var(--border-color);border-radius:6px;font-size:13px;background:var(--bg-secondary);color:var(--text-primary)">
+                <option value="">— Cụm từ —</option>
+                <option value="noun phrase">noun phrase</option>
+                <option value="verb phrase">verb phrase</option>
+                <option value="adjective phrase">adjective phrase</option>
+                <option value="adverb phrase">adverb phrase</option>
+                <option value="prepositional phrase">prepositional phrase</option>
+                <option value="participle phrase">participle phrase</option>
+                <option value="gerund phrase">gerund phrase</option>
+                <option value="infinitive phrase">infinitive phrase</option>
+              </select>
+            </div>
+
+            <!-- Level + Phonetic -->
+            <div>
+              <label style="display:block;font-size:12px;font-weight:600;margin-bottom:4px;color:var(--text-primary)">Level</label>
+              <input type="text" id="word-level" placeholder="B2" style="width:100%;padding:8px 10px;border:1px solid var(--border-color);border-radius:6px;font-size:13px;background:var(--bg-secondary);color:var(--text-primary);text-transform:uppercase">
+            </div>
+            <div>
+              <label style="display:block;font-size:12px;font-weight:600;margin-bottom:4px;color:var(--text-primary)">Phiên âm</label>
+              <input type="text" id="word-phonetic" placeholder="ˈkeɪtərər" style="width:100%;padding:8px 10px;border:1px solid var(--border-color);border-radius:6px;font-size:13px;background:var(--bg-secondary);color:var(--text-primary)">
+            </div>
+
+            <!-- Example full width -->
+            <div style="grid-column:1/-1">
+              <label style="display:block;font-size:12px;font-weight:600;margin-bottom:4px;color:var(--text-primary)">Ví dụ</label>
+              <input type="text" id="word-example" placeholder="The caterer provided lunch for the entire staff." style="width:100%;padding:8px 10px;border:1px solid var(--border-color);border-radius:6px;font-size:13px;background:var(--bg-secondary);color:var(--text-primary)">
+            </div>
+
+            <!-- Synonyms + Image -->
+            <div>
+              <label style="display:block;font-size:12px;font-weight:600;margin-bottom:4px;color:var(--text-primary)">Từ đồng nghĩa</label>
+              <input type="text" id="word-synonyms" placeholder="food provider, caterer" style="width:100%;padding:8px 10px;border:1px solid var(--border-color);border-radius:6px;font-size:13px;background:var(--bg-secondary);color:var(--text-primary);text-transform:lowercase">
+            </div>
+            <div>
+              <label style="display:block;font-size:12px;font-weight:600;margin-bottom:4px;color:var(--text-primary)">Đường dẫn ảnh</label>
+              <div style="display:flex;gap:6px">
+                <input type="text" id="word-image" placeholder="images/pages/ets26t10-rc/caterer.jpg" style="flex:1;padding:8px 10px;border:1px solid var(--border-color);border-radius:6px;font-size:13px;background:var(--bg-secondary);color:var(--text-primary);text-transform:lowercase">
+                <button type="button" id="btn-gen-image-path" title="Tự sinh đường dẫn" style="padding:8px 10px;background:#6366f1;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:13px;white-space:nowrap">⚙️</button>
+              </div>
+            </div>
+          </div>
+
+          <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px">
+            <button type="button" id="btn-close-modal" class="btn btn-ghost">Hủy</button>
+            <button type="submit" class="btn btn-primary">Thêm từ</button>
+          </div>
+        </form>
+      </div>
+    </div>

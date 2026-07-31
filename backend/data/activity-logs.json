@@ -1,0 +1,874 @@
+[
+  {
+    "id": "1783611943052",
+    "timestamp": "2026-07-09T15:45:43.052Z",
+    "type": "vocabulary",
+    "action": "filter-delete",
+    "admin": "Admin",
+    "data": {
+      "conditions": {
+        "part": "ETS26T02-P6"
+      },
+      "deleted": 30
+    }
+  },
+  {
+    "id": "1779856970698",
+    "timestamp": "2026-05-27T04:42:50.698Z",
+    "type": "vocabulary",
+    "action": "bulk-delete",
+    "admin": "Admin",
+    "data": {
+      "count": 3
+    }
+  },
+  {
+    "id": "1779856662882",
+    "timestamp": "2026-05-27T04:37:42.882Z",
+    "type": "vocabulary",
+    "action": "filter-delete",
+    "admin": "Admin",
+    "data": {
+      "conditions": {
+        "source": "hsk3"
+      },
+      "deleted": 295
+    }
+  },
+  {
+    "id": "1779856655325",
+    "timestamp": "2026-05-27T04:37:35.325Z",
+    "type": "vocabulary",
+    "action": "filter-delete",
+    "admin": "Admin",
+    "data": {
+      "conditions": {
+        "source": "hsk2"
+      },
+      "deleted": 149
+    }
+  },
+  {
+    "id": "1779856619153",
+    "timestamp": "2026-05-27T04:36:59.153Z",
+    "type": "vocabulary",
+    "action": "filter-delete",
+    "admin": "Admin",
+    "data": {
+      "conditions": {
+        "source": "hsk1"
+      },
+      "deleted": 149
+    }
+  },
+  {
+    "id": "1779856581756",
+    "timestamp": "2026-05-27T04:36:21.756Z",
+    "type": "vocabulary",
+    "action": "filter-delete",
+    "admin": "Admin",
+    "data": {
+      "conditions": {
+        "source": "hsk4"
+      },
+      "deleted": 494
+    }
+  },
+  {
+    "id": "1779849344669",
+    "timestamp": "2026-05-27T02:35:44.669Z",
+    "type": "vocabulary",
+    "action": "filter-delete",
+    "admin": "Admin",
+    "data": {
+      "conditions": {
+        "source": "hsk2"
+      },
+      "deleted": 355
+    }
+  },
+  {
+    "id": "1779848699163",
+    "timestamp": "2026-05-27T02:24:59.163Z",
+    "type": "vocabulary",
+    "action": "filter-delete",
+    "admin": "Admin",
+    "data": {
+      "conditions": {
+        "source": "对话"
+      },
+      "deleted": 136
+    }
+  },
+  {
+    "id": "1779844795405",
+    "timestamp": "2026-05-27T01:19:55.405Z",
+    "type": "vocabulary",
+    "action": "filter-delete",
+    "admin": "Admin",
+    "data": {
+      "conditions": {
+        "source": "hsk1"
+      },
+      "deleted": 494
+    }
+  },
+  {
+    "id": "1779814480599",
+    "timestamp": "2026-05-26T16:54:40.599Z",
+    "type": "vocabulary",
+    "action": "filter-delete",
+    "admin": "Admin",
+    "data": {
+      "conditions": {
+        "source": "hsk1"
+      },
+      "deleted": 481
+    }
+  },
+  {
+    "id": "1779808121849",
+    "timestamp": "2026-05-26T15:08:41.849Z",
+    "type": "vocabulary",
+    "action": "filter-delete",
+    "admin": "Admin",
+    "data": {
+      "conditions": {
+        "source": "hsk1"
+      },
+      "deleted": 137
+    }
+  },
+  {
+    "id": "1779795829232",
+    "timestamp": "2026-05-26T11:43:49.232Z",
+    "type": "vocabulary",
+    "action": "filter-delete",
+    "admin": "Admin",
+    "data": {
+      "conditions": {
+        "source": "部首"
+      },
+      "deleted": 9
+    }
+  },
+  {
+    "id": "1779795767275",
+    "timestamp": "2026-05-26T11:42:47.275Z",
+    "type": "vocabulary",
+    "action": "filter-delete",
+    "admin": "Admin",
+    "data": {
+      "conditions": {
+        "source": "部首"
+      },
+      "deleted": 30
+    }
+  },
+  {
+    "id": "1779795509332",
+    "timestamp": "2026-05-26T11:38:29.332Z",
+    "type": "vocabulary",
+    "action": "filter-delete",
+    "admin": "Admin",
+    "data": {
+      "conditions": {
+        "source": "部首"
+      },
+      "deleted": 10
+    }
+  },
+  {
+    "id": "1779795085559",
+    "timestamp": "2026-05-26T11:31:25.559Z",
+    "type": "vocabulary",
+    "action": "filter-delete",
+    "admin": "Admin",
+    "data": {
+      "conditions": {
+        "source": "部首"
+      },
+      "deleted": 10
+    }
+  },
+  {
+    "id": "1779619284297",
+    "timestamp": "2026-05-24T10:41:24.297Z",
+    "type": "vocabulary",
+    "action": "bulk-delete",
+    "admin": "Admin",
+    "data": {
+      "count": 6
+    }
+  },
+  {
+    "id": "1779616301644",
+    "timestamp": "2026-05-24T09:51:41.644Z",
+    "type": "vocabulary",
+    "action": "bulk-delete",
+    "admin": "Admin",
+    "data": {
+      "count": 4
+    }
+  },
+  {
+    "id": "1779549463019",
+    "timestamp": "2026-05-23T15:17:43.019Z",
+    "type": "vocabulary",
+    "action": "filter-delete",
+    "admin": "Admin",
+    "data": {
+      "conditions": {
+        "source": "collocations"
+      },
+      "deleted": 490
+    }
+  },
+  {
+    "id": "1779508044300",
+    "timestamp": "2026-05-23T03:47:24.300Z",
+    "type": "vocabulary",
+    "action": "delete-all",
+    "admin": "Admin",
+    "data": {
+      "deleted": 5814
+    }
+  },
+  {
+    "id": "1779506812067",
+    "timestamp": "2026-05-23T03:26:52.067Z",
+    "type": "vocabulary",
+    "action": "filter-delete",
+    "admin": "Admin",
+    "data": {
+      "conditions": {
+        "source": "1000words"
+      },
+      "deleted": 1275
+    }
+  },
+  {
+    "id": "1778128446786",
+    "timestamp": "2026-05-07T04:34:06.786Z",
+    "type": "vocabulary",
+    "action": "add",
+    "admin": "Admin",
+    "data": {
+      "word": "retirement",
+      "part": "ETS",
+      "type": "noun"
+    }
+  },
+  {
+    "id": "1776092562857",
+    "timestamp": "2026-04-13T15:02:42.857Z",
+    "type": "vocabulary",
+    "action": "view_file",
+    "admin": "Admin",
+    "data": {
+      "file": "ETS2023.json",
+      "count": 412
+    }
+  },
+  {
+    "id": "1770187036550",
+    "timestamp": "2026-02-04T06:37:16.550Z",
+    "type": "vocabulary",
+    "action": "add",
+    "admin": "Admin",
+    "data": {
+      "word": "responsibility",
+      "part": "ETS24T4-P7",
+      "type": "noun"
+    }
+  },
+  {
+    "id": "1770186967574",
+    "timestamp": "2026-02-04T06:36:07.574Z",
+    "type": "vocabulary",
+    "action": "add",
+    "admin": "Admin",
+    "data": {
+      "word": "eager",
+      "part": "ETS24T4-P7",
+      "type": "noun"
+    }
+  },
+  {
+    "id": "1770186960538",
+    "timestamp": "2026-02-04T06:36:00.538Z",
+    "type": "vocabulary",
+    "action": "view_file",
+    "admin": "Admin",
+    "data": {
+      "file": "e2t.json",
+      "count": 1
+    }
+  },
+  {
+    "id": "1769999402585",
+    "timestamp": "2026-02-02T02:30:02.585Z",
+    "type": "vocabulary",
+    "action": "view_file",
+    "admin": "Admin",
+    "data": {
+      "file": "vocabulary.json",
+      "count": 459
+    }
+  },
+  {
+    "id": "1769999241032",
+    "timestamp": "2026-02-02T02:27:21.032Z",
+    "type": "vocabulary",
+    "action": "view_file",
+    "admin": "Admin",
+    "data": {
+      "file": "ets.json",
+      "count": 458
+    }
+  },
+  {
+    "id": "1769998790144",
+    "timestamp": "2026-02-02T02:19:50.144Z",
+    "type": "vocabulary",
+    "action": "add",
+    "admin": "Admin",
+    "data": {
+      "word": "eager",
+      "part": "ETS24T4-P7",
+      "type": "adjective"
+    }
+  },
+  {
+    "id": "1769998789843",
+    "timestamp": "2026-02-02T02:19:49.844Z",
+    "type": "vocabulary",
+    "action": "view_file",
+    "admin": "Admin",
+    "data": {
+      "file": "ets.json",
+      "count": 458
+    }
+  },
+  {
+    "id": "1769998789823",
+    "timestamp": "2026-02-02T02:19:49.823Z",
+    "type": "vocabulary",
+    "action": "add",
+    "admin": "Admin",
+    "data": {
+      "word": "eager",
+      "part": "ETS24T4-P7",
+      "type": "adjective"
+    }
+  },
+  {
+    "id": "1769964373209",
+    "timestamp": "2026-02-01T16:46:13.209Z",
+    "type": "vocabulary",
+    "action": "remove_duplicates",
+    "admin": "Admin",
+    "data": {
+      "file": "ets.json",
+      "originalCount": 459,
+      "newCount": 458,
+      "removedCount": 1
+    }
+  },
+  {
+    "id": "1769964197669",
+    "timestamp": "2026-02-01T16:43:17.669Z",
+    "type": "vocabulary",
+    "action": "remove_duplicates",
+    "admin": "Admin",
+    "data": {
+      "file": "ets.json",
+      "originalCount": 556,
+      "newCount": 458,
+      "removedCount": 98
+    }
+  },
+  {
+    "id": "1769960391356",
+    "timestamp": "2026-02-01T15:39:51.356Z",
+    "type": "vocabulary",
+    "action": "delete",
+    "admin": "Admin",
+    "data": {
+      "word": "appropriate",
+      "part": "E2E9-P3",
+      "type": "adjective"
+    }
+  },
+  {
+    "id": "1769960285804",
+    "timestamp": "2026-02-01T15:38:05.804Z",
+    "type": "vocabulary",
+    "action": "delete",
+    "admin": "Admin",
+    "data": {
+      "word": "variety",
+      "part": "E2E9-P7",
+      "type": "noun"
+    }
+  },
+  {
+    "id": "1769960280330",
+    "timestamp": "2026-02-01T15:38:00.330Z",
+    "type": "vocabulary",
+    "action": "delete",
+    "admin": "Admin",
+    "data": {
+      "word": "convenience",
+      "part": "E2E9-P7",
+      "type": "noun"
+    }
+  },
+  {
+    "id": "1769960277809",
+    "timestamp": "2026-02-01T15:37:57.809Z",
+    "type": "vocabulary",
+    "action": "delete",
+    "admin": "Admin",
+    "data": {
+      "word": "convenient",
+      "part": "E2E9-P6",
+      "type": "adjective"
+    }
+  },
+  {
+    "id": "1769960165703",
+    "timestamp": "2026-02-01T15:36:05.703Z",
+    "type": "vocabulary",
+    "action": "delete",
+    "admin": "Admin",
+    "data": {
+      "word": "landscape",
+      "part": "E2E9-P6",
+      "type": "noun"
+    }
+  },
+  {
+    "id": "1769960157199",
+    "timestamp": "2026-02-01T15:35:57.199Z",
+    "type": "vocabulary",
+    "action": "delete",
+    "admin": "Admin",
+    "data": {
+      "word": "estimate",
+      "part": "E2E9-P7",
+      "type": "noun/verb"
+    }
+  },
+  {
+    "id": "1769960146905",
+    "timestamp": "2026-02-01T15:35:46.905Z",
+    "type": "vocabulary",
+    "action": "delete",
+    "admin": "Admin",
+    "data": {
+      "word": "inconvenience",
+      "part": "E2E9-P7",
+      "type": "noun"
+    }
+  },
+  {
+    "id": "1769960138492",
+    "timestamp": "2026-02-01T15:35:38.492Z",
+    "type": "vocabulary",
+    "action": "delete",
+    "admin": "Admin",
+    "data": {
+      "word": "primarily",
+      "part": "E2E9-P6",
+      "type": "adverb"
+    }
+  },
+  {
+    "id": "1769960129634",
+    "timestamp": "2026-02-01T15:35:29.634Z",
+    "type": "vocabulary",
+    "action": "delete",
+    "admin": "Admin",
+    "data": {
+      "word": "excellent",
+      "part": "E2E9-P7",
+      "type": "adjective"
+    }
+  },
+  {
+    "id": "1769960121339",
+    "timestamp": "2026-02-01T15:35:21.339Z",
+    "type": "vocabulary",
+    "action": "delete",
+    "admin": "Admin",
+    "data": {
+      "word": "immediately",
+      "part": "E2E9-P7",
+      "type": "adverb"
+    }
+  },
+  {
+    "id": "1769850346134",
+    "timestamp": "2026-01-31T09:05:46.134Z",
+    "type": "vocabulary",
+    "action": "view_file",
+    "admin": "Admin",
+    "data": {
+      "file": "ets.json",
+      "count": 458
+    }
+  },
+  {
+    "id": "1769849874552",
+    "timestamp": "2026-01-31T08:57:54.552Z",
+    "type": "vocabulary",
+    "action": "view_file",
+    "admin": "Admin",
+    "data": {
+      "file": "ets.json",
+      "count": 458
+    }
+  },
+  {
+    "id": "1769849058458",
+    "timestamp": "2026-01-31T08:44:18.458Z",
+    "type": "vocabulary",
+    "action": "view_file",
+    "admin": "Admin",
+    "data": {
+      "file": "ets.json",
+      "count": 458
+    }
+  },
+  {
+    "id": "1769848963198",
+    "timestamp": "2026-01-31T08:42:43.198Z",
+    "type": "vocabulary",
+    "action": "view_file",
+    "admin": "Admin",
+    "data": {
+      "file": "ets.json",
+      "count": 458
+    }
+  },
+  {
+    "id": "1769848541754",
+    "timestamp": "2026-01-31T08:35:41.754Z",
+    "type": "vocabulary",
+    "action": "view_file",
+    "admin": "Admin",
+    "data": {
+      "file": "ets.json",
+      "count": 458
+    }
+  },
+  {
+    "id": "1769848503819",
+    "timestamp": "2026-01-31T08:35:03.819Z",
+    "type": "vocabulary",
+    "action": "view_file",
+    "admin": "Admin",
+    "data": {
+      "file": "ets.json",
+      "count": 458
+    }
+  },
+  {
+    "id": "1769848479429",
+    "timestamp": "2026-01-31T08:34:39.429Z",
+    "type": "vocabulary",
+    "action": "view_file",
+    "admin": "Admin",
+    "data": {
+      "file": "vocabulary.json",
+      "count": 544
+    }
+  },
+  {
+    "id": "1769848455337",
+    "timestamp": "2026-01-31T08:34:15.337Z",
+    "type": "vocabulary",
+    "action": "view_file",
+    "admin": "Admin",
+    "data": {
+      "file": "ets.json",
+      "count": 458
+    }
+  },
+  {
+    "id": "1769848278434",
+    "timestamp": "2026-01-31T08:31:18.434Z",
+    "type": "vocabulary",
+    "action": "view_file",
+    "admin": "Admin",
+    "data": {
+      "file": "ets.json",
+      "count": 458
+    }
+  },
+  {
+    "id": "1769848059887",
+    "timestamp": "2026-01-31T08:27:39.887Z",
+    "type": "vocabulary",
+    "action": "view_file",
+    "admin": "Admin",
+    "data": {
+      "file": "ets.json",
+      "count": 458
+    }
+  },
+  {
+    "id": "1769847995213",
+    "timestamp": "2026-01-31T08:26:35.213Z",
+    "type": "vocabulary",
+    "action": "view_file",
+    "admin": "Admin",
+    "data": {
+      "file": "ets.json",
+      "count": 458
+    }
+  },
+  {
+    "id": "1769845885254",
+    "timestamp": "2026-01-31T07:51:25.254Z",
+    "type": "vocabulary",
+    "action": "view_file",
+    "admin": "Admin",
+    "data": {
+      "file": "ets.json",
+      "count": 458
+    }
+  },
+  {
+    "id": "1769845779207",
+    "timestamp": "2026-01-31T07:49:39.207Z",
+    "type": "vocabulary",
+    "action": "view_file",
+    "admin": "Admin",
+    "data": {
+      "file": "ets.json",
+      "count": 458
+    }
+  },
+  {
+    "id": "1769844619720",
+    "timestamp": "2026-01-31T07:30:19.720Z",
+    "type": "vocabulary",
+    "action": "view_file",
+    "admin": "Admin",
+    "data": {
+      "file": "ets.json",
+      "count": 458
+    }
+  },
+  {
+    "id": "1769843280215",
+    "timestamp": "2026-01-31T07:08:00.215Z",
+    "type": "vocabulary",
+    "action": "view_file",
+    "admin": "Admin",
+    "data": {
+      "file": "ets.json",
+      "count": 458
+    }
+  },
+  {
+    "id": "1769843228558",
+    "timestamp": "2026-01-31T07:07:08.558Z",
+    "type": "vocabulary",
+    "action": "view_file",
+    "admin": "Admin",
+    "data": {
+      "file": "e2t.json",
+      "count": 1
+    }
+  },
+  {
+    "id": "1769842000125",
+    "timestamp": "2026-01-31T06:46:40.125Z",
+    "type": "vocabulary",
+    "action": "view_file",
+    "admin": "Admin",
+    "data": {
+      "file": "ets.json",
+      "count": 458
+    }
+  },
+  {
+    "id": "1769840770041",
+    "timestamp": "2026-01-31T06:26:10.041Z",
+    "type": "vocabulary",
+    "action": "view_file",
+    "admin": "Admin",
+    "data": {
+      "file": "ets.json",
+      "count": 451
+    }
+  },
+  {
+    "id": "1769840478092",
+    "timestamp": "2026-01-31T06:21:18.092Z",
+    "type": "vocabulary",
+    "action": "view_file",
+    "admin": "Admin",
+    "data": {
+      "file": "ets.json",
+      "count": 451
+    }
+  },
+  {
+    "id": "1769516125071",
+    "timestamp": "2026-01-27T12:15:25.071Z",
+    "type": "vocabulary",
+    "action": "view_file",
+    "admin": "Admin",
+    "data": {
+      "file": "vocabulary.json",
+      "count": 544
+    }
+  },
+  {
+    "id": "1769515917551",
+    "timestamp": "2026-01-27T12:11:57.551Z",
+    "type": "vocabulary",
+    "action": "view_file",
+    "admin": "Admin",
+    "data": {
+      "file": "vocabularies.json",
+      "count": 533
+    }
+  },
+  {
+    "id": "1769498445461",
+    "timestamp": "2026-01-27T07:20:45.461Z",
+    "type": "vocabulary",
+    "action": "add",
+    "admin": "Admin",
+    "data": {
+      "word": "drive-drovedriven",
+      "part": "ĐỘNG TỪ BẤT QUY TẮC",
+      "type": "verb"
+    }
+  },
+  {
+    "id": "1769498445361",
+    "timestamp": "2026-01-27T07:20:45.361Z",
+    "type": "vocabulary",
+    "action": "add",
+    "admin": "Admin",
+    "data": {
+      "word": "drink-drank-drunk",
+      "part": "ĐỘNG TỪ BẤT QUY TẮC",
+      "type": "verb"
+    }
+  },
+  {
+    "id": "1769498445333",
+    "timestamp": "2026-01-27T07:20:45.333Z",
+    "type": "vocabulary",
+    "action": "add",
+    "admin": "Admin",
+    "data": {
+      "word": "draw-drew-drawn",
+      "part": "ĐỘNG TỪ BẤT QUY TẮC",
+      "type": "verb"
+    }
+  },
+  {
+    "id": "1769498445293",
+    "timestamp": "2026-01-27T07:20:45.293Z",
+    "type": "vocabulary",
+    "action": "add",
+    "admin": "Admin",
+    "data": {
+      "word": "do-did-done",
+      "part": "ĐỘNG TỪ BẤT QUY TẮC",
+      "type": "verb"
+    }
+  },
+  {
+    "id": "1769498445272",
+    "timestamp": "2026-01-27T07:20:45.272Z",
+    "type": "vocabulary",
+    "action": "add",
+    "admin": "Admin",
+    "data": {
+      "word": "cut-cut-cut",
+      "part": "ĐỘNG TỪ BẤT QUY TẮC",
+      "type": "verb"
+    }
+  },
+  {
+    "id": "1769498437313",
+    "timestamp": "2026-01-27T07:20:37.313Z",
+    "type": "vocabulary",
+    "action": "add",
+    "admin": "Admin",
+    "data": {
+      "word": "break-broke-broken",
+      "part": "ĐỘNG TỪ BẤT QUY TẮC",
+      "type": "verb"
+    }
+  },
+  {
+    "id": "1769498437165",
+    "timestamp": "2026-01-27T07:20:37.165Z",
+    "type": "vocabulary",
+    "action": "add",
+    "admin": "Admin",
+    "data": {
+      "word": "begin-began-begun",
+      "part": "ĐỘNG TỪ BẤT QUY TẮC",
+      "type": "verb"
+    }
+  },
+  {
+    "id": "1769498437054",
+    "timestamp": "2026-01-27T07:20:37.054Z",
+    "type": "vocabulary",
+    "action": "add",
+    "admin": "Admin",
+    "data": {
+      "word": "become-became-become",
+      "part": "ĐỘNG TỪ BẤT QUY TẮC",
+      "type": "verb"
+    }
+  },
+  {
+    "id": "1769498436979",
+    "timestamp": "2026-01-27T07:20:36.979Z",
+    "type": "vocabulary",
+    "action": "add",
+    "admin": "Admin",
+    "data": {
+      "word": "be-was/were-been",
+      "part": "ĐỘNG TỪ BẤT QUY TẮC",
+      "type": "verb"
+    }
+  },
+  {
+    "id": "1769498314494",
+    "timestamp": "2026-01-27T07:18:34.494Z",
+    "type": "vocabulary",
+    "action": "add",
+    "admin": "Admin",
+    "data": {
+      "word": "ongoing",
+      "part": "E2HBT7",
+      "type": "adjective"
+    }
+  },
+  {
+    "id": "1769498306426",
+    "timestamp": "2026-01-27T07:18:26.426Z",
+    "type": "vocabulary",
+    "action": "add",
+    "admin": "Admin",
+    "data": {
+      "word": "counter",
+      "part": "E2HBT7",
+      "type": "noun"
+    }
+  }
+]

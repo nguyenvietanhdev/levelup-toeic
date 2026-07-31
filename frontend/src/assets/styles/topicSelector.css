@@ -1,0 +1,335 @@
+/* Topic Selection Container */
+.topic-selection-container {
+  padding: 0;
+}
+
+/* Tabs */
+.topic-tabs {
+  display: flex;
+  gap: 0;
+  border-bottom: 2px solid var(--border-color, #e0e0e0);
+  margin-bottom: 20px;
+}
+
+.tab-btn {
+  flex: 1;
+  padding: 12px 16px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-secondary, #666);
+  position: relative;
+  transition: color 0.3s ease;
+}
+
+.tab-btn:hover {
+  color: var(--text-primary, #333);
+}
+
+.tab-btn.active {
+  color: var(--primary-color, #2196f3);
+}
+
+.tab-btn.active::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--primary-color, #2196f3);
+}
+
+/* Tab Content */
+.topic-selection {
+  padding: 0 20px;
+}
+
+.tab-content {
+  display: none;
+  padding: 0 20px;
+}
+
+.tab-content.active {
+  display: block;
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.topic-hint {
+  color: var(--text-secondary, #666);
+  font-size: 14px;
+  margin-bottom: 15px;
+}
+
+/* Topics List */
+.topics-list {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  max-height: 420px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+@media (max-width: 640px) {
+  .topics-list {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Part selector: căn thẳng mode buttons với part cards theo cùng 3 cột */
+.part-selector-modal {
+  width: 100%;
+  box-sizing: border-box;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+
+/* pmode-group và hint span full 3 cột */
+.part-selector-modal .pmode-group,
+.part-selector-modal .pmode-hint {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-bottom: 0;
+}
+
+/* mỗi topic-card chạy thẳng vào grid cha */
+.part-selector-modal .topics-grid {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr) !important;
+  gap: 10px;
+}
+
+/* ── Mobile: ≤600px ─────────────────────────────────────────────────── */
+@media (max-width: 600px) {
+  /* outer grid 2 cột cho part cards */
+  .part-selector-modal {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 8px;
+  }
+
+  /* pmode-group: 1 cột dọc — nút horizontal (khớp với layout.css mobile) */
+  .part-selector-modal .pmode-group {
+    grid-template-columns: 1fr !important;
+    gap: 6px;
+  }
+
+  /* topics-grid 2 cột */
+  .part-selector-modal .topics-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 8px;
+  }
+
+  /* part cards nhỏ gọn hơn trên mobile */
+  .part-selector-modal .topic-card {
+    padding: 10px 10px;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+  }
+
+  .part-selector-modal .topic-icon {
+    font-size: 20px;
+    margin-right: 0;
+    margin-bottom: 2px;
+  }
+
+  .part-selector-modal .topic-info h3 {
+    font-size: 12px;
+    white-space: normal;
+    word-break: break-word;
+  }
+
+  .part-selector-modal .topic-info p {
+    font-size: 11px;
+  }
+
+  .part-selector-modal .topic-action {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+  }
+
+  /* search input trong header thu nhỏ */
+  #part-search-input {
+    max-width: 120px !important;
+    font-size: 12px !important;
+  }
+}
+
+/* Topic Card — theme aware */
+.topic-card {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  padding: 12px 15px;
+  border: 2px solid var(--border-color, #e0e0e0);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  position: relative;
+  background: var(--bg-secondary, white);
+  color: var(--text-primary, #333);
+}
+
+.topic-card:hover {
+  border-color: var(--primary-color, #2196f3);
+  background: var(--bg-tertiary, #f9fbff);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.topic-card.selected {
+  border-color: var(--primary-color, #2196f3);
+  background: var(--primary-bg-subtle, #e3f2fd);
+}
+
+[data-theme="dark"] .topic-card.selected {
+  background: rgba(96, 165, 250, 0.15);
+}
+
+.topic-card.loading {
+  pointer-events: none;
+  opacity: 0.6;
+}
+
+.topic-icon {
+  font-size: 24px;
+  margin-right: 12px;
+  flex-shrink: 0;
+}
+
+.topic-details {
+  flex: 1;
+}
+
+.topic-details h4 {
+  margin: 0 0 4px 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary, #333);
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.topic-details {
+  min-width: 0;
+}
+
+.topic-description {
+  margin: 0;
+  font-size: 12px;
+  color: var(--text-secondary, #999);
+}
+
+.topic-meta {
+  display: flex;
+  gap: 10px;
+  margin-top: 6px;
+}
+
+.word-count {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  color: var(--text-secondary, #666);
+}
+
+.word-count i {
+  font-size: 11px;
+  color: var(--text-secondary, #999);
+}
+
+/* topic-info block used by Part selector */
+.topic-info {
+  flex: 1;
+  min-width: 0;
+  color: var(--text-primary, #333);
+}
+
+.topic-info h3,
+.topic-info h4 {
+  margin: 0 0 4px 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary, #333);
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.topic-info p {
+  margin: 0;
+  font-size: 12px;
+  color: var(--text-secondary, #999);
+}
+
+.current-badge {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  background: #4caf50;
+  color: white;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.current-badge i {
+  font-size: 12px;
+}
+
+/* Responsive */
+@media (max-width: 600px) {
+  .topic-tabs {
+    margin-bottom: 15px;
+  }
+
+  .tab-btn {
+    padding: 10px 12px;
+    font-size: 13px;
+  }
+
+  .topic-selection,
+  .tab-content {
+    padding: 0 15px;
+  }
+
+  .topics-list {
+    max-height: 300px;
+  }
+
+  .topic-card {
+    padding: 10px 12px;
+  }
+
+  .topic-icon {
+    font-size: 20px;
+    margin-right: 10px;
+  }
+
+  .topic-details h4,
+  .topic-info h3 {
+    font-size: 13px;
+  }
+
+  .topic-description,
+  .word-count,
+  .topic-info p {
+    font-size: 11px;
+  }
+}

@@ -1,0 +1,50 @@
+          <!-- ===== MỞ KHOÁ THEO LEVEL TAB ===== -->
+          <div id="main-tab-feature-unlocks" class="main-tab-content">
+            <div class="card">
+              <div class="card-header">
+                <h2><i class="fas fa-lock-open"></i> Mở khoá theo Level</h2>
+                <div class="card-header-actions">
+                  <button class="btn btn-success btn-sm" id="btn-add-unlock"><i class="fas fa-plus"></i> Thêm mốc</button>
+                </div>
+              </div>
+              <div style="padding:0 4px 12px;font-size:13px;color:var(--text-secondary)">
+                Đặt Level tối thiểu để mở từng chế độ / tính năng. <b>Tắt</b> một mốc = mở cho mọi Level.
+                Server chặn thật (không bypass được từ client).
+              </div>
+              <div class="table-container">
+                <table class="data-table">
+                  <thead><tr>
+                    <th style="width:56px">Icon</th><th>Nhãn</th><th>Key</th>
+                    <th style="width:130px">Level / XP cần</th><th style="width:90px">Bật</th><th style="width:110px">Thao tác</th>
+                  </tr></thead>
+                  <tbody id="unlock-tbody">
+                    <tr><td colspan="6" class="loading"><i class="fas fa-spinner fa-spin"></i> Đang tải...</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <div class="card">
+              <div class="card-header">
+                <h2><i class="fas fa-user-shield"></i> Tài khoản ngoại lệ</h2>
+                <div class="card-header-actions">
+                  <button class="btn btn-success btn-sm" id="btn-add-exception"><i class="fas fa-plus"></i> Thêm tài khoản</button>
+                </div>
+              </div>
+              <div style="padding:0 4px 12px;font-size:13px;color:var(--text-secondary)">
+                Tài khoản trong danh sách này <b>bỏ qua mọi mốc Level</b> ở trên — dùng full tính năng
+                bất kể đang Level mấy. Dành cho tài khoản demo cho nhà tuyển dụng / tài khoản test.
+              </div>
+              <div class="table-container">
+                <table class="data-table">
+                  <thead><tr>
+                    <th>Email</th><th>Tên hiển thị</th>
+                    <th style="width:90px">Level</th><th style="width:90px">Vai trò</th><th style="width:110px">Thao tác</th>
+                  </tr></thead>
+                  <tbody id="exception-tbody">
+                    <tr><td colspan="5" class="loading"><i class="fas fa-spinner fa-spin"></i> Đang tải...</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>

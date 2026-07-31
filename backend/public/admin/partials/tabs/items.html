@@ -1,0 +1,33 @@
+          <!-- ===== ITEM CATALOG TAB ===== -->
+          <div id="main-tab-items" class="main-tab-content">
+            <div class="card">
+              <div class="card-header">
+                <h2><i class="fas fa-cubes"></i> Catalog vật phẩm (item_definitions)</h2>
+                <div class="card-header-actions">
+                  <button class="btn btn-success btn-sm" id="btn-add-item-def"><i class="fas fa-plus"></i> Thêm vật phẩm</button>
+                </div>
+              </div>
+              <div style="padding:0 0 12px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+                <input type="text" id="itemdef-search" class="card-search" placeholder="Tên, mã, loại..." style="flex:1;margin:0;min-width:200px">
+                <select id="itemdef-filter-type" class="filter-select" style="width:auto;min-width:170px;flex-shrink:0">
+                  <option value="">Tất cả loại</option>
+                  <option value="consumable">consumable</option>
+                  <option value="boost">boost</option>
+                  <option value="cosmetic_background">cosmetic_background</option>
+                  <option value="cosmetic_avatar">cosmetic_avatar</option>
+                  <option value="cosmetic_frame">cosmetic_frame</option>
+                  <option value="currency">currency</option>
+                </select>
+              </div>
+              <div class="table-container">
+                <table class="data-table">
+                  <thead><tr>
+                    <th>Ảnh/Icon</th><th>Tên</th><th>Loại</th><th>Hiếm</th><th>Thời hạn</th><th>Thứ tự</th><th>Thao tác</th>
+                  </tr></thead>
+                  <tbody id="itemdef-tbody">
+                    <tr><td colspan="7" class="loading"><i class="fas fa-spinner fa-spin"></i> Đang tải...</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>

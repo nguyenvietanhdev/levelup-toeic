@@ -1,0 +1,257 @@
+          <!-- ===== OVERVIEW TAB (default) ===== -->
+          <div id="main-tab-overview" class="main-tab-content active">
+            <!-- Stats Grid -->
+            <div class="stats-grid">
+              <div class="stat-card">
+                <div class="stat-info">
+                  <h3>Tổng người dùng</h3>
+                  <div class="value" id="total-users">-</div>
+                  <div class="stat-meta">
+                    <i class="fas fa-users"></i> Tổng tài khoản
+                  </div>
+                </div>
+                <div class="stat-icon users">
+                  <i class="fas fa-users"></i>
+                </div>
+              </div>
+
+              <div class="stat-card">
+                <div class="stat-info">
+                  <h3>Từ vựng TOEIC</h3>
+                  <div class="value" id="total-vocabulary">-</div>
+                  <div class="stat-meta">
+                    <i class="fas fa-book-open"></i> Từ vựng trong DB
+                  </div>
+                </div>
+                <div class="stat-icon vocabulary">
+                  <i class="fas fa-book"></i>
+                </div>
+              </div>
+
+              <div class="stat-card">
+                <div class="stat-info">
+                  <h3>Câu hỏi TOEIC</h3>
+                  <div class="value" id="total-sessions">-</div>
+                  <div class="stat-meta">
+                    <i class="fas fa-question-circle"></i> Câu hỏi luyện thi
+                  </div>
+                </div>
+                <div class="stat-icon sessions">
+                  <i class="fas fa-question-circle"></i>
+                </div>
+              </div>
+
+              <div class="stat-card">
+                <div class="stat-info">
+                  <h3>Đề thi TOEIC</h3>
+                  <div class="value" id="toeic-tests-count">-</div>
+                  <div class="stat-meta">
+                    <i class="fas fa-file-alt"></i> Đề thi đã tạo
+                  </div>
+                </div>
+                <div class="stat-icon toeic">
+                  <i class="fas fa-file-alt"></i>
+                </div>
+              </div>
+            </div>
+
+            <!-- Season config -->
+            <div class="card" style="margin-bottom:20px">
+              <div class="card-header">
+                <h2><i class="fas fa-trophy"></i> Mùa giải <span id="season-num-badge" class="badge" style="background:#e11d48">SS1</span></h2>
+                <span id="season-config-status" style="font-size:13px;color:var(--text-secondary)"></span>
+              </div>
+              <div style="padding:16px;display:grid;grid-template-columns:1fr 1fr;gap:14px">
+                <div>
+                  <label style="display:block;font-size:12px;font-weight:600;margin-bottom:4px">Bắt đầu mùa</label>
+                  <input type="datetime-local" id="season-start" style="width:100%;padding:8px 10px;border:1px solid var(--border-color);border-radius:6px;background:var(--bg-secondary);color:var(--text-primary)">
+                </div>
+                <div>
+                  <label style="display:block;font-size:12px;font-weight:600;margin-bottom:4px">Kết thúc mùa (sẽ reset)</label>
+                  <input type="datetime-local" id="season-end" style="width:100%;padding:8px 10px;border:1px solid var(--border-color);border-radius:6px;background:var(--bg-secondary);color:var(--text-primary)">
+                </div>
+                <div style="grid-column:1/-1">
+                  <label style="display:block;font-size:12px;font-weight:600;margin-bottom:6px">Reset những nhóm dữ liệu nào khi hết mùa</label>
+                  <div style="display:flex;flex-wrap:wrap;gap:14px;font-size:13px">
+                    <label style="display:flex;align-items:center;gap:6px;cursor:pointer"><input type="checkbox" id="rb-resources"> Tài nguyên (Vàng/Đá quý/Level/XP + đồ tiêu hao, giữ cosmetic)</label>
+                    <label style="display:flex;align-items:center;gap:6px;cursor:pointer"><input type="checkbox" id="rb-progress"> Tiến trình (Thành tích/Nhiệm vụ/Streak)</label>
+                    <label style="display:flex;align-items:center;gap:6px;cursor:pointer"><input type="checkbox" id="rb-stats"> Thống kê/Hoạt động + Thông báo</label>
+                    <label style="display:flex;align-items:center;gap:6px;cursor:pointer"><input type="checkbox" id="rb-learning"> Học tập + Nội dung upload</label>
+                  </div>
+                </div>
+                <div style="grid-column:1/-1;display:flex;gap:10px;justify-content:flex-end;margin-top:4px">
+                  <button class="btn btn-primary" id="season-save-btn"><i class="fas fa-save"></i> Lưu cấu hình</button>
+                  <button class="btn btn-danger" id="season-reset-btn"><i class="fas fa-bomb"></i> Reset mùa ngay</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- User Growth Chart -->
+            <div class="card" style="margin-bottom: 20px">
+              <div class="card-header">
+                <h2>
+                  <i class="fas fa-chart-line"></i> Tăng trưởng người dùng
+                </h2>
+                <div style="display: flex; gap: 8px; align-items: center">
+                  <select
+                    id="growth-period"
+                    class="filter-select"
+                    style="width: auto; font-size: 12px; padding: 4px 8px"
+                  >
+                    <option value="7">7 ngày</option>
+                    <option value="30" selected>30 ngày</option>
+                    <option value="90">90 ngày</option>
+                  </select>
+                </div>
+              </div>
+              <div id="growth-chart-wrap" style="padding: 8px 0 4px">
+                <div class="empty-state" id="growth-chart-empty">
+                  <i class="fas fa-spinner fa-spin"></i>
+                  <p>Đang tải...</p>
+                </div>
+                <div id="growth-chart-inner" style="display: none">
+                  <div
+                    id="growth-chart-bars"
+                    style="
+                      display: flex;
+                      align-items: flex-end;
+                      gap: 3px;
+                      height: 100px;
+                      padding: 0 4px 0;
+                    "
+                  ></div>
+                  <div
+                    style="
+                      display: flex;
+                      justify-content: space-between;
+                      padding: 4px 4px 0;
+                      font-size: 11px;
+                      color: var(--text-secondary);
+                    "
+                  >
+                    <span id="growth-label-start">–</span>
+                    <span
+                      id="growth-label-total"
+                      style="font-weight: 600; color: var(--primary)"
+                      >–</span
+                    >
+                    <span id="growth-label-end">–</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Overview 2-col grid -->
+            <div class="overview-grid">
+              <!-- Recent Users -->
+              <div class="card">
+                <div class="card-header">
+                  <h2><i class="fas fa-user-clock"></i> Người dùng mới nhất</h2>
+                  <button
+                    class="btn btn-ghost btn-sm"
+                    id="action-btn-view-users"
+                  >
+                    Xem tất cả <i class="fas fa-arrow-right"></i>
+                  </button>
+                </div>
+                <div id="recent-users-container" class="recent-user-list">
+                  <div class="empty-state">
+                    <i class="fas fa-spinner fa-spin"></i>
+                    <p>Đang tải...</p>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Right column -->
+              <div style="display: flex; flex-direction: column; gap: 16px">
+                <!-- Quick Actions -->
+                <div class="card">
+                  <div class="card-header">
+                    <h2><i class="fas fa-bolt"></i> Thao tác nhanh</h2>
+                  </div>
+                  <div class="quick-actions">
+                    <button class="action-btn" id="action-btn-export-vocab">
+                      <div class="action-btn-icon">
+                        <i class="fas fa-file-download"></i>
+                      </div>
+                      <div>
+                        <div class="action-btn-label">Export Vocabulary</div>
+                        <div class="action-btn-desc">
+                          Tải xuống toàn bộ từ vựng
+                        </div>
+                      </div>
+                    </button>
+                    <button class="action-btn" id="action-btn-reload-cache">
+                      <div class="action-btn-icon">
+                        <i class="fas fa-sync-alt"></i>
+                      </div>
+                      <div>
+                        <div class="action-btn-label">Reload Vocabulary</div>
+                        <div class="action-btn-desc">
+                          Tải lại dữ liệu từ vựng từ file
+                        </div>
+                      </div>
+                    </button>
+                    <button
+                      class="action-btn"
+                      data-main-tab-link="toeic-questions"
+                    >
+                      <div class="action-btn-icon">
+                        <i class="fas fa-plus-circle"></i>
+                      </div>
+                      <div>
+                        <div class="action-btn-label">Thêm câu hỏi TOEIC</div>
+                        <div class="action-btn-desc">
+                          Quản lý ngân hàng câu hỏi
+                        </div>
+                      </div>
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Server Info -->
+                <div class="card">
+                  <div class="card-header">
+                    <h2><i class="fas fa-server"></i> Trạng thái hệ thống</h2>
+                    <span class="badge success" id="server-status"
+                      >Đang chạy</span
+                    >
+                  </div>
+                  <div>
+                    <div class="server-info-row">
+                      <span class="server-info-label"
+                        ><i class="fas fa-clock"></i> Uptime</span
+                      >
+                      <span
+                        class="server-info-value"
+                        id="server-uptime"
+                        style="color: var(--success)"
+                        >-</span
+                      >
+                    </div>
+                    <div class="server-info-row">
+                      <span class="server-info-label"
+                        ><i class="fas fa-database"></i> MongoDB</span
+                      >
+                      <span class="server-info-value" id="server-mongo-status"
+                        >-</span
+                      >
+                    </div>
+                    <div class="server-info-row">
+                      <span class="server-info-label"
+                        ><i class="fas fa-file-alt"></i> Vocab file</span
+                      >
+                      <span
+                        class="server-info-value"
+                        id="current-vocab-file"
+                        title="vocabulary.json"
+                        >vocabulary.json</span
+                      >
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <!-- /right col -->
+            </div>
+            <!-- /overview-grid -->
+          </div>

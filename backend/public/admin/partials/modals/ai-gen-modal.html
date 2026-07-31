@@ -1,0 +1,28 @@
+    <!-- ===== AI Generate modal (chung cho Thành tích + Nhiệm vụ) ===== -->
+    <div id="ai-gen-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:1000;align-items:center;justify-content:center">
+      <div style="background:var(--bg-card);color:var(--text-primary);border:1px solid var(--border-color);border-radius:14px;padding:24px;width:min(900px,94vw);max-height:90vh;overflow-y:auto;box-shadow:0 12px 40px rgba(0,0,0,0.45)">
+        <h3 style="margin:0 0 14px;font-size:18px;color:var(--primary)">
+          <i class="fas fa-robot"></i> <span id="ai-gen-title">Tạo bằng AI</span>
+        </h3>
+        <p style="font-size:13px;color:var(--text-secondary);margin:0 0 12px">
+          1) Bấm <b>Copy prompt</b> → dán vào ChatGPT/Claude/AI bất kỳ.
+          2) Lấy JSON về dán vào ô bên dưới.
+          3) Bấm <b>Import</b> để tạo hàng loạt.
+        </p>
+        <div style="display:flex;gap:10px;margin-bottom:10px;flex-wrap:wrap;align-items:center">
+          <label style="font-size:12px;color:var(--text-secondary)">Số lượng gợi ý:</label>
+          <input type="number" id="ai-gen-count" min="1" max="50" value="10" style="width:90px;padding:6px 10px;border:1.5px solid var(--border-color);border-radius:8px;background:var(--bg-primary);color:var(--text-primary)">
+          <button type="button" id="btn-ai-gen-copy" class="btn btn-ghost btn-sm" style="margin-left:auto">
+            <i class="fas fa-clipboard"></i> Copy prompt
+          </button>
+        </div>
+        <textarea id="ai-gen-json" rows="14" placeholder='[ { ... }, { ... } ] — dán JSON từ AI vào đây' style="width:100%;padding:12px;border:1.5px solid var(--border-color);border-radius:8px;background:var(--bg-primary);color:var(--text-primary);font-family:monospace;font-size:12px;resize:vertical;box-sizing:border-box"></textarea>
+        <div id="ai-gen-result" style="display:none;margin-top:12px;padding:10px;border-radius:8px;font-size:13px"></div>
+        <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:16px">
+          <button type="button" id="btn-ai-gen-close" class="btn btn-ghost">Đóng</button>
+          <button type="button" id="btn-ai-gen-import" class="btn btn-primary">
+            <i class="fas fa-cloud-upload-alt"></i> Import JSON
+          </button>
+        </div>
+      </div>
+    </div>

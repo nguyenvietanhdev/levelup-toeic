@@ -1,0 +1,84 @@
+          <!-- ===== QUẢN LÝ CLOUDINARY (kho ảnh/audio TOEIC) ===== -->
+          <div id="main-tab-cloudinary" class="main-tab-content">
+
+            <!-- ── Trạng thái & hạn mức ── -->
+            <div class="card">
+              <div class="card-header">
+                <h2><i class="fas fa-cloud"></i> Trạng thái Cloudinary</h2>
+                <div class="card-header-actions">
+                  <button class="btn btn-ghost btn-sm" id="btn-cld-reload">
+                    <i class="fas fa-rotate"></i> Tải lại
+                  </button>
+                </div>
+              </div>
+              <div id="cld-status">
+                <div class="loading"><i class="fas fa-spinner fa-spin"></i> Đang kiểm tra...</div>
+              </div>
+            </div>
+
+            <!-- ── Kiểm kê + đẩy lên theo lô ── -->
+            <div class="card">
+              <div class="card-header">
+                <h2><i class="fas fa-boxes-stacked"></i> Kiểm kê ảnh &amp; audio trong đề</h2>
+              </div>
+              <div style="padding: 0 4px 12px; font-size: 13px; color: var(--text-secondary)">
+                Đếm theo <b>tham chiếu trong DB</b> (imageUrls / audioUrl của từng màn hỏi).
+                File còn nằm <b>đĩa</b> sẽ mất khi deploy lại — đẩy lên cloud theo từng lô cho an toàn,
+                đẩy tới đâu DB ghi tới đó, dừng giữa chừng cũng không sao.
+              </div>
+              <div id="cld-inventory">
+                <div class="loading"><i class="fas fa-spinner fa-spin"></i> Đang đếm...</div>
+              </div>
+
+              <div style="display: flex; gap: 8px; align-items: flex-end; flex-wrap: wrap; margin-top: 14px">
+                <div>
+                  <label style="font-size: 12px; font-weight: 600; color: var(--text-secondary)">Số file mỗi lô</label>
+                  <input type="number" id="cld-batch" class="filter-select" value="20" min="1" max="100"
+                    style="width: 110px; margin-top: 4px" />
+                </div>
+                <button class="btn btn-secondary btn-sm" id="btn-cld-preview" style="height: 38px">
+                  <i class="fas fa-eye"></i> Xem trước lô tới
+                </button>
+                <button class="btn btn-primary btn-sm" id="btn-cld-migrate" style="height: 38px">
+                  <i class="fas fa-cloud-arrow-up"></i> Đẩy lô này lên
+                </button>
+                <label style="display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-secondary)">
+                  <input type="checkbox" id="cld-auto" /> Tự chạy tiếp cho tới hết
+                </label>
+              </div>
+              <div id="cld-migrate-log" style="margin-top: 12px"></div>
+            </div>
+
+            <!-- ── Duyệt / xoá file ── -->
+            <div class="card">
+              <div class="card-header">
+                <h2><i class="fas fa-folder-open"></i> Duyệt file trên Cloudinary</h2>
+              </div>
+              <div style="display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-end; margin-bottom: 12px">
+                <div>
+                  <label style="font-size: 12px; font-weight: 600; color: var(--text-secondary)">Thư mục (prefix)</label>
+                  <input type="text" id="cld-prefix" class="filter-select" list="cld-folder-list"
+                    placeholder="để trống = tất cả · vd ets26t1" style="width: 240px; margin-top: 4px" />
+                  <datalist id="cld-folder-list"></datalist>
+                </div>
+                <div>
+                  <label style="font-size: 12px; font-weight: 600; color: var(--text-secondary)">Loại</label>
+                  <select id="cld-type" class="filter-select" style="width: 150px; margin-top: 4px">
+                    <option value="image">Ảnh</option>
+                    <option value="video">Audio / video</option>
+                  </select>
+                </div>
+                <button class="btn btn-primary btn-sm" id="btn-cld-browse" style="height: 38px">
+                  <i class="fas fa-magnifying-glass"></i> Xem file
+                </button>
+                <button class="btn btn-secondary btn-sm" id="btn-cld-orphans" style="height: 38px">
+                  <i class="fas fa-ghost"></i> Tìm file mồ côi
+                </button>
+                <div style="flex: 1; min-width: 220px; font-size: 12px; color: var(--text-secondary)">
+                  <i class="fas fa-circle-info"></i> <b>Mồ côi</b> = có trên cloud nhưng không đề nào trỏ tới.
+                  File đang được dùng có nhãn <span class="badge success">đang dùng</span> và bị chặn xoá.
+                </div>
+              </div>
+              <div id="cld-browser"></div>
+            </div>
+          </div>

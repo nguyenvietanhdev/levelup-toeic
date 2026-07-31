@@ -1,0 +1,191 @@
+          <!-- ===== VOCABULARY TAB ===== -->
+          <div id="main-tab-vocabulary" class="main-tab-content">
+
+            <!-- Lang sub-tab nav -->
+            <div class="activity-subtab-nav">
+              <button class="activity-subtab-btn active" data-vocab-lang="en">
+                🇬🇧 Tiếng Anh (EN)
+              </button>
+              <button class="activity-subtab-btn" data-vocab-lang="zh">
+                🇨🇳 Tiếng Trung (ZH)
+              </button>
+            </div>
+
+            <div class="vocab-layout">
+              <div class="card">
+                <div class="card-header">
+                  <h2><i class="fas fa-book"></i> TOEIC Vocabulary Database</h2>
+                  <div class="card-header-actions">
+                    <!-- Hidden selects for backward-compat JS logic -->
+                    <select
+                      id="vocab-part-filter"
+                      style="display: none"
+                    ></select>
+                    <select
+                      id="vocab-file-selector"
+                      style="display: none"
+                    ></select>
+                    <button class="btn btn-success btn-sm" id="btn-add-vocabulary">
+                      <i class="fas fa-plus"></i> Thêm từ
+                    </button>
+                    <button
+                      class="btn btn-ghost btn-sm"
+                      id="btn-scan-duplicates"
+                      title="Quét từ vựng trùng lặp"
+                    >
+                      <i class="fas fa-search"></i> Quét trùng
+                    </button>
+                    <button
+                      class="btn btn-danger btn-sm"
+                      id="btn-filter-delete-vocab"
+                      title="Xóa toàn bộ docs khớp field=value"
+                    >
+                      <i class="fas fa-filter"></i> Xóa chọn lọc
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Search + filters row -->
+                <div style="padding: 0 0 12px; display: flex; gap: 8px; align-items: center; position: relative">
+                  <input
+                    type="text"
+                    id="vocab-search"
+                    class="card-search"
+                    style="flex: 1; margin: 0"
+                    placeholder="Tìm kiếm từ vựng (English, Vietnamese, Chinese)..."
+                  />
+                  <!-- Source filter -->
+                  <select id="vocab-filter-source" class="filter-select" style="width: auto; min-width: 130px; flex-shrink: 0">
+                    <option value="">Tất cả Source</option>
+                  </select>
+                  <!-- Type filter -->
+                  <select id="vocab-filter-type" class="filter-select" style="width: auto; min-width: 140px; flex-shrink: 0">
+                    <option value="">Tất cả loại từ</option>
+                    <option value="noun">Danh từ</option>
+                    <option value="verb">Động từ</option>
+                    <option value="adjective">Tính từ</option>
+                    <option value="adverb">Trạng từ</option>
+                    <option value="preposition">Giới từ</option>
+                    <option value="conjunction">Liên từ</option>
+                    <option value="pronoun">Đại từ</option>
+                    <option value="interjection">Thán từ</option>
+                    <option value="article">Mạo từ</option>
+                    <option value="determiner">Từ hạn định</option>
+                    <option value="auxiliary">Trợ động từ</option>
+                    <option value="noun phrase">Cụm danh từ</option>
+                    <option value="verb phrase">Cụm động từ</option>
+                    <option value="adjective phrase">Cụm tính từ</option>
+                    <option value="adverb phrase">Cụm trạng từ</option>
+                    <option value="prepositional phrase">Cụm giới từ</option>
+                    <option value="participle phrase">Cụm phân từ</option>
+                    <option value="gerund phrase">Cụm danh động từ</option>
+                    <option value="infinitive phrase">Cụm động từ nguyên thể</option>
+                  </select>
+                  <!-- Part filter dropdown -->
+                  <div style="position: relative; flex-shrink: 0" id="part-filter-wrapper">
+                    <button
+                      type="button"
+                      id="part-filter-btn"
+                      class="btn btn-ghost btn-sm"
+                      style="min-width: 130px; display: flex; align-items: center; gap: 6px; height: 38px"
+                    >
+                      <i class="fas fa-layer-group" style="font-size: 11px"></i>
+                      <span id="part-filter-label">Tất cả Part</span>
+                      <i class="fas fa-chevron-down" style="font-size: 9px; opacity: 0.6; margin-left: auto"></i>
+                    </button>
+                    <div
+                      id="part-filter-dropdown"
+                      style="
+                        display: none;
+                        position: absolute;
+                        top: calc(100% + 4px);
+                        right: 0;
+                        min-width: 220px;
+                        max-width: 300px;
+                        background: #1e293b;
+                        border: 1px solid #334155;
+                        border-radius: 10px;
+                        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+                        z-index: 999;
+                        padding: 8px;
+                      "
+                    >
+                      <div
+                        id="part-filter-pills"
+                        style="
+                          display: flex;
+                          flex-wrap: wrap;
+                          gap: 6px;
+                          max-height: 260px;
+                          overflow-y: auto;
+                          padding: 2px;
+                        "
+                      ></div>
+                    </div>
+                  </div>
+                </div>
+
+                <div
+                  id="vocabulary-filter-info"
+                  class="filter-bar-footer"
+                  style="padding: 10px 0; margin: 0 0 12px"
+                >
+                  <div
+                    id="vocabulary-pagination-controls"
+                    class="filter-results-text"
+                  >
+                    <i class="fas fa-spinner fa-spin"></i> Đang tải...
+                  </div>
+                  <div style="display: flex; gap: 8px; align-items: center">
+                    <button class="btn btn-ghost btn-sm" id="btn-sync-all-vocab" title="Đồng bộ toàn bộ từ vựng">
+                      <i class="fas fa-sync"></i> Sync tất cả
+                    </button>
+                    <button
+                      id="clear-vocab-filters"
+                      class="btn btn-ghost btn-sm"
+                      title="Bỏ hết tìm kiếm và bộ lọc, về danh sách đầy đủ"
+                    >
+                      <i class="fas fa-times"></i> Xóa lọc
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Bulk action toolbar (shown when rows are selected) -->
+                <div id="vocab-bulk-toolbar" style="display:none; align-items:center; gap:10px; padding:8px 0 12px; border-bottom: 1px solid #334155; margin-bottom:12px;">
+                  <span id="vocab-bulk-count" style="color:#94a3b8;font-size:13px;font-weight:500;">0 đã chọn</span>
+                  <button id="btn-delete-selected-vocab" class="btn btn-danger btn-sm">
+                    <i class="fas fa-trash"></i> Xóa đã chọn
+                  </button>
+                  <button id="btn-deselect-all-vocab" class="btn btn-ghost btn-sm">
+                    <i class="fas fa-times"></i> Bỏ chọn
+                  </button>
+                </div>
+
+                <div class="table-container">
+                  <table id="vocabulary-table" class="data-table">
+                    <thead>
+                      <tr>
+                        <th style="width:36px;"><input type="checkbox" id="vocab-select-all" title="Chọn tất cả"></th>
+                        <th>Tiếng Anh</th>
+                        <th>Tiếng Việt</th>
+                        <th>Loại từ</th>
+                        <th>Part</th>
+                        <th>Nguồn</th>
+                        <th>Thao tác</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td colspan="7" class="loading">
+                          <i class="fas fa-spinner"></i>
+                          <p>Đang tải từ vựng...</p>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+            <!-- /vocab-layout -->
+            <!-- End Vocabulary Tab -->
+          </div>

@@ -1,0 +1,37 @@
+          <!-- ===== VÒNG QUAY TAB ===== -->
+          <div id="main-tab-spin" class="main-tab-content">
+            <div class="channel-cat-picker" data-channel="spin"></div>
+            <div class="card" style="margin-bottom:20px">
+              <div class="card-header">
+                <h2><i class="fas fa-dharmachakra"></i> Vòng quay — Phần thưởng &amp; tỷ lệ</h2>
+                <span id="spin-config-status" style="font-size:13px;color:var(--text-secondary)"></span>
+              </div>
+              <div style="padding:16px">
+                <div style="display:flex;gap:16px;margin-bottom:10px;flex-wrap:wrap">
+                  <div>
+                    <label style="font-size:12px;font-weight:600;display:block;margin-bottom:4px">Chi phí Xu / lượt</label>
+                    <input type="number" id="spin-cost-coin" style="width:120px;padding:7px 10px;border:1px solid var(--border-color);border-radius:6px;background:var(--bg-secondary);color:var(--text-primary)">
+                  </div>
+                  <div>
+                    <label style="font-size:12px;font-weight:600;display:block;margin-bottom:4px">Chi phí Đá / lượt</label>
+                    <input type="number" id="spin-cost-gem" style="width:120px;padding:7px 10px;border:1px solid var(--border-color);border-radius:6px;background:var(--bg-secondary);color:var(--text-primary)">
+                  </div>
+                </div>
+                <div style="font-size:12px;color:var(--text-secondary);margin-bottom:8px">
+                  <i class="fas fa-info-circle"></i> Tỷ lệ là <b>trọng số</b> (không cần cộng = 1) — hệ thống tự chuẩn hoá theo từng chế độ (Free / Xu / Đá).
+                </div>
+                <div style="overflow-x:auto">
+                  <table class="data-table" id="spin-config-table" style="font-size:13px">
+                    <thead><tr>
+                      <th>Màu</th><th>Icon</th><th>Ảnh</th><th>Nhãn</th><th>Loại</th><th>SL</th>
+                      <th>TL Free</th><th>TL Xu</th><th>TL Đá</th>
+                    </tr></thead>
+                    <tbody id="spin-config-rows"></tbody>
+                  </table>
+                </div>
+                <div style="display:flex;justify-content:flex-end;margin-top:12px">
+                  <button class="btn btn-primary" id="spin-config-save"><i class="fas fa-save"></i> Lưu cấu hình</button>
+                </div>
+              </div>
+            </div>
+          </div>

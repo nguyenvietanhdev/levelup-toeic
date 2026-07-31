@@ -1,0 +1,64 @@
+    <!-- Mốc mở khoá theo Level modal -->
+    <div id="unlock-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:1000;align-items:center;justify-content:center">
+      <div style="background:var(--bg-card);color:var(--text-primary);border:1px solid var(--border-color);border-radius:14px;padding:24px;width:min(520px,94vw);max-height:90vh;overflow-y:auto">
+        <h3 id="unlock-modal-title" style="margin:0 0 16px;font-size:18px;color:var(--primary)">Thêm mốc mở khoá</h3>
+        <form id="unlock-form">
+          <input type="hidden" id="unlock-id">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+            <div>
+              <label style="font-size:12px;font-weight:600;color:var(--text-secondary)">Key * <small>(mode:xxx / feature:xxx)</small></label>
+              <input type="text" id="unlock-key" required placeholder="vd: mode:speed-quiz" style="width:100%;padding:9px;border:1.5px solid var(--border-color);border-radius:8px;margin-top:4px;font-family:monospace">
+            </div>
+            <div>
+              <label style="font-size:12px;font-weight:600;color:var(--text-secondary)">Nhãn *</label>
+              <input type="text" id="unlock-label" required placeholder="vd: Tốc độ" style="width:100%;padding:9px;border:1.5px solid var(--border-color);border-radius:8px;margin-top:4px">
+            </div>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:12px">
+            <div>
+              <label style="font-size:12px;font-weight:600;color:var(--text-secondary)">Level yêu cầu *</label>
+              <input type="number" id="unlock-level" min="1" required style="width:100%;padding:9px;border:1.5px solid var(--border-color);border-radius:8px;margin-top:4px">
+              <div id="unlock-xp-hint" style="font-size:11px;color:var(--text-secondary);margin-top:4px"></div>
+            </div>
+            <div>
+              <label style="font-size:12px;font-weight:600;color:var(--text-secondary)">Icon</label>
+              <input type="text" id="unlock-icon" placeholder="🎰" style="width:100%;padding:9px;border:1.5px solid var(--border-color);border-radius:8px;margin-top:4px;text-align:center">
+            </div>
+            <div>
+              <label style="font-size:12px;font-weight:600;color:var(--text-secondary)">Thứ tự</label>
+              <input type="number" id="unlock-order" style="width:100%;padding:9px;border:1.5px solid var(--border-color);border-radius:8px;margin-top:4px">
+            </div>
+          </div>
+          <div style="margin-bottom:12px">
+            <label style="font-size:12px;font-weight:600;color:var(--text-secondary)">Mô tả</label>
+            <input type="text" id="unlock-desc" placeholder="Hiện trong màn Lộ trình" style="width:100%;padding:9px;border:1.5px solid var(--border-color);border-radius:8px;margin-top:4px">
+          </div>
+          <label style="font-size:13px;display:inline-flex;align-items:center;gap:6px;margin-bottom:16px">
+            <input type="checkbox" id="unlock-active" checked> Bật khoá (tắt = mở cho mọi Level)
+          </label>
+          <div style="display:flex;gap:10px;justify-content:flex-end">
+            <button type="button" id="btn-unlock-cancel" class="btn btn-ghost">Hủy</button>
+            <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Lưu</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Thêm tài khoản ngoại lệ (bỏ qua mốc Level) modal -->
+    <div id="exception-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:1000;align-items:center;justify-content:center">
+      <div style="background:var(--bg-card);color:var(--text-primary);border:1px solid var(--border-color);border-radius:14px;padding:24px;width:min(460px,94vw)">
+        <h3 style="margin:0 0 6px;font-size:18px;color:var(--primary)">Thêm tài khoản ngoại lệ</h3>
+        <p style="margin:0 0 16px;font-size:13px;color:var(--text-secondary)">
+          Tài khoản này sẽ dùng được <b>full tính năng</b>, bỏ qua mọi mốc Level.
+        </p>
+        <form id="exception-form">
+          <label style="font-size:12px;font-weight:600;color:var(--text-secondary)">Email tài khoản *</label>
+          <input type="email" id="exception-email" required placeholder="vd: demo@example.com"
+                 style="width:100%;padding:9px;border:1.5px solid var(--border-color);border-radius:8px;margin-top:4px;margin-bottom:16px">
+          <div style="display:flex;gap:10px;justify-content:flex-end">
+            <button type="button" id="btn-exception-cancel" class="btn btn-ghost">Hủy</button>
+            <button type="submit" class="btn btn-primary"><i class="fas fa-user-shield"></i> Thêm</button>
+          </div>
+        </form>
+      </div>
+    </div>

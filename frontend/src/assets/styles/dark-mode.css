@@ -1,0 +1,1082 @@
+/* ===================================
+   DARK MODE STYLES
+   =================================== */
+
+/* Light mode (default) - no changes needed */
+:root[data-theme="light"] {
+    /* Keep existing CSS variables */
+}
+
+/* Dark mode */
+:root[data-theme="dark"] {
+    /* Colors */
+    --primary-color: #60a5fa;
+    --secondary-color: #a78bfa;
+    --accent-color: #34d399;
+    --success-color: #10b981;
+    --error-color: #f87171;
+    --warning-color: #fbbf24;
+    --info-color: #60a5fa;
+    
+    /* Background */
+    --bg-color: #0f172a;
+    --bg-primary: #0f172a;
+    --bg-secondary: #1e293b;
+    --bg-tertiary: #334155;
+    
+    /* Text */
+    --text-primary: #f1f5f9;
+    --text-secondary: #cbd5e1;
+    --text-muted: #94a3b8;
+    
+    /* Border */
+    --border-color: #334155;
+    --border-light: #475569;
+    
+    /* Shadow */
+    --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.5);
+    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.5);
+    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
+    --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.5);
+    
+    /* Card background */
+    --card-bg: #1e293b;
+    --card-hover-bg: #334155;
+    --bg-card: #1e293b;
+    --surface-color: #1e293b;
+}
+
+/* Dark mode specific adjustments */
+[data-theme="dark"] body {
+    background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+}
+
+[data-theme="dark"] .game-container {
+    background-color: var(--bg-color);
+}
+
+[data-theme="dark"] .top-nav {
+    background: rgba(30, 41, 59, 0.95);
+    border-bottom-color: var(--border-color);
+}
+
+[data-theme="dark"] .game-mode-card {
+    background: var(--card-bg);
+    border-color: var(--border-color);
+}
+
+[data-theme="dark"] .game-mode-card:hover {
+    background: var(--card-hover-bg);
+    transform: translateY(-5px);
+}
+
+[data-theme="dark"] .stat-card {
+    background: var(--card-bg);
+}
+
+[data-theme="dark"] .quest-card {
+    background: var(--card-bg);
+    border-color: var(--border-color);
+}
+
+[data-theme="dark"] .side-menu {
+    background-color: var(--bg-secondary);
+}
+
+[data-theme="dark"] .notif-panel {
+    background: var(--bg-secondary);
+    border-color: var(--border-color);
+}
+
+[data-theme="dark"] .notif-item:hover {
+    background: var(--bg-tertiary);
+}
+
+[data-theme="dark"] .notif-item.unread {
+    background: rgba(96, 165, 250, 0.08);
+}
+
+[data-theme="dark"] .menu-item:hover {
+    background-color: var(--bg-tertiary);
+}
+
+[data-theme="dark"] .modal {
+    background-color: var(--bg-secondary);
+    color: var(--text-primary);
+}
+
+[data-theme="dark"] .notification {
+    background-color: var(--bg-secondary);
+    border-color: var(--border-color);
+}
+
+[data-theme="dark"] .notification > i:first-child {
+    background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+}
+
+[data-theme="dark"] input[type="text"],
+[data-theme="dark"] input[type="email"],
+[data-theme="dark"] input[type="password"],
+[data-theme="dark"] select,
+[data-theme="dark"] textarea {
+    background-color: var(--bg-tertiary);
+    border-color: var(--border-color);
+    color: var(--text-primary);
+}
+
+[data-theme="dark"] input[type="text"]:focus,
+[data-theme="dark"] input[type="email"]:focus,
+[data-theme="dark"] input[type="password"]:focus,
+[data-theme="dark"] select:focus,
+[data-theme="dark"] textarea:focus {
+    border-color: var(--primary-color);
+}
+
+
+[data-theme="dark"] .search-bar input {
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+    box-shadow: 0 0 0 1.5px var(--border-color);
+}
+
+[data-theme="dark"] .search-results-header {
+    background: var(--bg-tertiary);
+    border-color: var(--border-color);
+}
+
+[data-theme="dark"] .choice-btn {
+    background: var(--bg-tertiary);
+    border-color: var(--border-color);
+    color: var(--text-primary);
+}
+
+[data-theme="dark"] .choice-btn:hover {
+    background: var(--bg-secondary);
+}
+
+[data-theme="dark"] .option-btn {
+    background: var(--bg-tertiary);
+    border-color: var(--border-color);
+    color: var(--text-primary);
+}
+
+[data-theme="dark"] .option-btn:hover:not(:disabled) {
+    background: var(--bg-secondary);
+    border-color: var(--primary-color);
+}
+
+[data-theme="dark"] .speed-choice-btn {
+    background: var(--bg-tertiary);
+    border-color: var(--border-color);
+    color: var(--text-primary);
+}
+
+[data-theme="dark"] .speed-choice-btn.correct-btn {
+    border-color: rgba(16, 185, 129, 0.5);
+}
+
+[data-theme="dark"] .speed-choice-btn.wrong-btn {
+    border-color: rgba(239, 68, 68, 0.5);
+}
+
+/* Streak card in dark mode */
+[data-theme="dark"] .streak-card {
+    background: linear-gradient(135deg, #dc2626 0%, #ea580c 100%);
+}
+
+/* Energy display */
+[data-theme="dark"] .energy-display {
+    color: var(--text-primary);
+}
+
+/* Icon buttons - back buttons */
+[data-theme="dark"] .icon-btn,
+[data-theme="dark"] .back-btn,
+[data-theme="dark"] .back-btn-screen {
+    color: var(--text-primary);
+}
+
+[data-theme="dark"] .icon-btn:hover,
+[data-theme="dark"] .back-btn:hover,
+[data-theme="dark"] .back-btn-screen:hover {
+    background-color: var(--bg-tertiary);
+    color: var(--primary-color);
+}
+
+[data-theme="dark"] .icon-btn i,
+[data-theme="dark"] .back-btn i,
+[data-theme="dark"] .back-btn-screen i {
+    color: inherit;
+}
+
+/* Quick difficulty selector dark mode */
+[data-theme="dark"] .quick-difficulty-selector select {
+    background: linear-gradient(135deg, var(--primary-color, #E11D48), var(--secondary-color, #F97316));
+    border-color: var(--primary-color, #E11D48);
+}
+
+[data-theme="dark"] .quick-difficulty-selector select option {
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+}
+
+/* Button variants for dark mode */
+[data-theme="dark"] .btn-danger {
+    background-color: var(--error-color);
+    color: white;
+    border: none;
+}
+
+[data-theme="dark"] .btn-danger:hover {
+    background-color: #dc2626;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(248, 113, 113, 0.3);
+}
+
+[data-theme="dark"] .btn-primary {
+    background-color: var(--primary-color);
+    color: white;
+}
+
+[data-theme="dark"] .btn-primary:hover {
+    background-color: #3b82f6;
+    box-shadow: 0 4px 8px rgba(96, 165, 250, 0.3);
+}
+
+[data-theme="dark"] .btn-success {
+    background-color: var(--success-color);
+    color: white;
+}
+
+[data-theme="dark"] .btn-success:hover {
+    background-color: #059669;
+    box-shadow: 0 4px 8px rgba(16, 185, 129, 0.3);
+}
+
+[data-theme="dark"] .btn-warning {
+    background-color: var(--warning-color);
+    color: #0f172a;
+}
+
+[data-theme="dark"] .btn-warning:hover {
+    background-color: #f59e0b;
+    box-shadow: 0 4px 8px rgba(251, 191, 36, 0.3);
+}
+
+[data-theme="dark"] .btn-secondary {
+    background-color: var(--bg-tertiary);
+    color: var(--text-primary);
+    border: 1px solid var(--border-color);
+}
+
+[data-theme="dark"] .btn-secondary:hover {
+    background-color: var(--bg-secondary);
+    border-color: var(--primary-color);
+}
+
+/* Settings cards */
+[data-theme="dark"] .settings-section {
+    background: var(--card-bg);
+    border-color: var(--border-color);
+}
+
+[data-theme="dark"] .setting-item {
+    border-bottom-color: var(--border-color);
+}
+
+/* Practice screen */
+[data-theme="dark"] .practice-header {
+    background: var(--bg-secondary);
+    border-bottom-color: var(--border-color);
+}
+
+[data-theme="dark"] .practice-content {
+    background: var(--bg-color);
+}
+
+/* Leaderboard */
+[data-theme="dark"] .leaderboard-item {
+    background: var(--card-bg);
+    border-color: var(--border-color);
+}
+
+[data-theme="dark"] .leaderboard-item:hover {
+    background: var(--card-hover-bg);
+}
+
+/* Achievement cards */
+[data-theme="dark"] .achievement-card {
+    background: var(--card-bg);
+    border-color: var(--border-color);
+}
+
+[data-theme="dark"] .achievement-card.locked {
+    opacity: 0.5;
+}
+
+/* Shop items */
+[data-theme="dark"] .shop-item {
+    background: var(--card-bg);
+    border-color: var(--border-color);
+}
+
+[data-theme="dark"] .shop-item:hover {
+    background: var(--card-hover-bg);
+}
+
+.search-result-part{
+    color: #000;
+}
+
+/* ===================================
+   PROFILE & STATS - DARK MODE
+   =================================== */
+
+/* Profile stat cards */
+[data-theme="dark"] .profile-stat-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+}
+
+[data-theme="dark"] .profile-stat-value,
+[data-theme="dark"] .stat-value {
+    color: var(--primary-color);
+}
+
+[data-theme="dark"] .profile-stat-label,
+[data-theme="dark"] .stat-label {
+    color: var(--text-secondary);
+}
+
+[data-theme="dark"] .stat-icon {
+    opacity: 0.9;
+}
+
+/* XP Bar */
+[data-theme="dark"] .status-bar {
+    background-color: var(--bg-primary);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+[data-theme="dark"] .xp-bar-container {
+    background-color: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+[data-theme="dark"] .xp-bar {
+    background-color: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+[data-theme="dark"] .xp-progress {
+    background: linear-gradient(90deg, var(--secondary-color, #F97316), var(--primary-color, #E11D48));
+    box-shadow: 0 0 10px rgba(var(--primary-rgb, 225,29,72), 0.35);
+}
+
+[data-theme="dark"] .xp-text {
+    color: var(--text-secondary);
+}
+
+/* Resource cards */
+[data-theme="dark"] .resource-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+}
+
+[data-theme="dark"] .resource-value {
+    color: var(--text-primary);
+}
+
+[data-theme="dark"] .resource-label {
+    color: var(--text-secondary);
+}
+
+[data-theme="dark"] .resource-max {
+    color: var(--text-muted);
+}
+
+/* Profile sections */
+[data-theme="dark"] .profile-section {
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+}
+
+[data-theme="dark"] .profile-section h3 {
+    color: var(--text-primary);
+    border-bottom-color: var(--border-color);
+}
+
+/* Profile header */
+[data-theme="dark"] .profile-header {
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+}
+
+[data-theme="dark"] .profile-details h2 {
+    color: var(--text-primary);
+}
+
+[data-theme="dark"] .profile-level {
+    color: var(--warning-color);
+}
+
+/* Stats section in home screen */
+[data-theme="dark"] .stats-section h2 {
+    color: var(--text-primary);
+}
+
+/* Achievement badges */
+[data-theme="dark"] .achievement-badge {
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+}
+
+[data-theme="dark"] .achievement-badge.locked {
+    opacity: 0.4;
+}
+
+[data-theme="dark"] .achievement-name {
+    color: var(--text-secondary);
+}
+
+/* Settings list */
+[data-theme="dark"] .settings-list {
+    background: transparent;
+}
+
+[data-theme="dark"] .setting-item {
+    border-bottom: 1px solid var(--border-color);
+}
+
+[data-theme="dark"] .setting-info h4 {
+    color: var(--text-primary);
+}
+
+[data-theme="dark"] .setting-info p {
+    color: var(--text-secondary);
+}
+
+[data-theme="dark"] .setting-info span {
+    color: var(--text-primary);
+}
+
+/* Data actions */
+[data-theme="dark"] .data-actions {
+    background: transparent;
+}
+
+/* Achievement progress card */
+[data-theme="dark"] .achievement-progress-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+}
+
+[data-theme="dark"] .achievement-progress-card h3 {
+    color: var(--text-primary);
+}
+
+[data-theme="dark"] .progress-label {
+    color: var(--text-secondary);
+}
+
+[data-theme="dark"] .progress-value {
+    color: var(--primary-color);
+}
+
+/* ===================================
+   CHARTS & STATISTICS - DARK MODE
+   =================================== */
+
+/* Chart cards */
+[data-theme="dark"] .chart-card {
+    background: var(--card-bg) !important;
+    border: 1px solid var(--border-color);
+    color: var(--text-primary);
+}
+
+[data-theme="dark"] .chart-card h3 {
+    color: var(--text-primary);
+}
+
+/* Statistics content */
+[data-theme="dark"] .statistics-content {
+    background: transparent;
+}
+
+[data-theme="dark"] .stat-overview-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+}
+
+/* Progress bars */
+[data-theme="dark"] .progress-bar-container {
+    background: var(--bg-tertiary) !important;
+    border: 1px solid var(--border-color);
+}
+
+[data-theme="dark"] .progress-bar-fill {
+    background: linear-gradient(90deg, var(--primary-color), var(--accent-color)) !important;
+}
+
+[data-theme="dark"] .progress-fill {
+    background: linear-gradient(90deg, var(--primary-color), var(--accent-color));
+}
+
+[data-theme="dark"] .achievement-progress-bar {
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+}
+
+/* Charts canvas background */
+[data-theme="dark"] .chart-placeholder {
+    background: transparent !important;
+}
+
+[data-theme="dark"] canvas {
+    background: transparent !important;
+}
+
+/* Vocabulary progress */
+[data-theme="dark"] .vocab-category {
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+}
+
+[data-theme="dark"] .vocab-category h4 {
+    color: var(--text-primary);
+}
+
+/* Mode accuracy items */
+[data-theme="dark"] .mode-accuracy-item {
+    background: var(--card-bg);
+    border-left: 3px solid var(--primary-color);
+}
+
+[data-theme="dark"] .mode-accuracy-item .mode-name {
+    color: var(--text-primary);
+}
+
+[data-theme="dark"] .mode-accuracy-item .accuracy-value {
+    color: var(--primary-color);
+}
+
+/* ===================================
+   TOEIC SCREEN - DARK MODE
+   =================================== */
+
+/* TOEIC Container */
+[data-theme="dark"] .toeic-container {
+    color: var(--text-primary);
+}
+
+/* TOEIC Intro */
+[data-theme="dark"] .toeic-intro {
+    /* Sync with the theme color picked in Settings instead of a hardcoded
+       blue→purple (which ignored the chosen accent in dark mode). */
+    background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+}
+
+/* TOEIC Tabs */
+[data-theme="dark"] .toeic-tab {
+    background-color: var(--card-bg);
+    border-color: var(--border-color);
+    color: var(--text-primary);
+}
+
+[data-theme="dark"] .toeic-tab:hover {
+    background-color: var(--bg-tertiary);
+}
+
+[data-theme="dark"] .toeic-tab.active {
+    background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+    border-color: var(--primary-color);
+}
+
+/* TOEIC Test Cards */
+[data-theme="dark"] .toeic-test-card {
+    background-color: var(--card-bg);
+    border-color: var(--border-color);
+}
+
+[data-theme="dark"] .toeic-test-card:hover {
+    border-color: var(--primary-color);
+}
+
+[data-theme="dark"] .toeic-test-card::before {
+    background: linear-gradient(90deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+}
+
+[data-theme="dark"] .toeic-test-icon {
+    background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+}
+
+[data-theme="dark"] .toeic-test-badge.full {
+    background-color: rgba(59, 130, 246, 0.2);
+    color: #60a5fa;
+}
+
+[data-theme="dark"] .toeic-test-badge.mini {
+    background-color: rgba(168, 85, 247, 0.2);
+    color: #a78bfa;
+}
+
+[data-theme="dark"] .toeic-test-badge.easy {
+    background-color: rgba(16, 185, 129, 0.2);
+    color: #34d399;
+}
+
+[data-theme="dark"] .toeic-test-badge.medium {
+    background-color: rgba(251, 191, 36, 0.2);
+    color: #fbbf24;
+}
+
+[data-theme="dark"] .toeic-test-badge.hard {
+    background-color: rgba(239, 68, 68, 0.2);
+    color: #f87171;
+}
+
+[data-theme="dark"] .toeic-test-title {
+    color: var(--text-primary);
+}
+
+[data-theme="dark"] .toeic-test-description {
+    color: var(--text-secondary);
+}
+
+[data-theme="dark"] .toeic-test-stats {
+    background-color: var(--bg-tertiary);
+}
+
+[data-theme="dark"] .toeic-stat-value {
+    color: var(--primary-color);
+}
+
+[data-theme="dark"] .toeic-stat-label {
+    color: var(--text-secondary);
+}
+
+[data-theme="dark"] .toeic-test-footer {
+    border-top-color: var(--border-color);
+}
+
+[data-theme="dark"] .toeic-test-attempts {
+    color: var(--text-secondary);
+}
+
+[data-theme="dark"] .toeic-start-btn {
+    background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+}
+
+/* TOEIC Part Cards */
+[data-theme="dark"] .toeic-part-card {
+    background-color: var(--card-bg);
+    border-color: var(--border-color);
+    color: var(--text-primary);
+}
+
+[data-theme="dark"] .toeic-part-card:hover {
+    border-color: var(--primary-color);
+}
+
+[data-theme="dark"] .toeic-part-number {
+    color: var(--primary-color);
+}
+
+[data-theme="dark"] .toeic-part-name {
+    color: var(--text-primary);
+}
+
+[data-theme="dark"] .toeic-part-type,
+[data-theme="dark"] .toeic-part-questions {
+    color: var(--text-secondary);
+}
+
+/* Empty State */
+[data-theme="dark"] .toeic-empty-icon,
+[data-theme="dark"] .toeic-empty-title,
+[data-theme="dark"] .toeic-empty-text {
+    color: var(--text-secondary);
+}
+
+/* ===================================
+   TOEIC TEST INTERFACE - DARK MODE
+   =================================== */
+
+/* Test Header Bar */
+[data-theme="dark"] .toeic-test-header-bar {
+    background-color: var(--card-bg);
+    border: 1px solid var(--border-color);
+}
+
+[data-theme="dark"] .toeic-test-name {
+    color: var(--text-primary);
+}
+
+[data-theme="dark"] .toeic-progress-info {
+    color: var(--text-secondary);
+}
+
+[data-theme="dark"] .toeic-timer {
+    background-color: var(--bg-tertiary);
+    color: var(--primary-color);
+}
+
+[data-theme="dark"] .toeic-timer.warning {
+    color: var(--warning-color);
+}
+
+[data-theme="dark"] .toeic-action-btn {
+    background-color: var(--bg-tertiary);
+    border-color: var(--border-color);
+    color: var(--text-primary);
+}
+
+[data-theme="dark"] .toeic-action-btn:hover {
+    background-color: var(--card-hover-bg);
+}
+
+[data-theme="dark"] .toeic-action-btn.primary {
+    background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+    border-color: var(--primary-color);
+}
+
+/* Question Container */
+[data-theme="dark"] .toeic-question-container {
+    background-color: var(--card-bg);
+    border: 1px solid var(--border-color);
+}
+
+[data-theme="dark"] .toeic-question-number {
+    background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+}
+
+[data-theme="dark"] .toeic-audio-player {
+    background-color: var(--bg-tertiary);
+}
+
+[data-theme="dark"] .toeic-question-text {
+    color: var(--text-primary);
+}
+
+[data-theme="dark"] .toeic-passage {
+    background-color: var(--bg-tertiary);
+    border-left-color: var(--primary-color);
+    color: var(--text-primary);
+}
+
+/* Options */
+[data-theme="dark"] .toeic-option {
+    background-color: var(--bg-tertiary);
+    border-color: var(--border-color);
+    color: var(--text-primary);
+}
+
+[data-theme="dark"] .toeic-option:hover {
+    background-color: var(--card-bg);
+    border-color: var(--primary-color);
+}
+
+[data-theme="dark"] .toeic-option.selected {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+}
+
+/* Question Navigation */
+[data-theme="dark"] .toeic-question-nav {
+    background-color: var(--card-bg);
+    border: 1px solid var(--border-color);
+}
+
+[data-theme="dark"] .toeic-nav-title {
+    color: var(--text-secondary);
+}
+
+[data-theme="dark"] .toeic-nav-btn {
+    background-color: var(--bg-tertiary);
+    border-color: var(--border-color);
+    color: var(--text-primary);
+}
+
+[data-theme="dark"] .toeic-nav-btn:hover {
+    background-color: var(--card-bg);
+}
+
+[data-theme="dark"] .toeic-nav-btn.answered {
+    background-color: var(--success-color);
+    border-color: var(--success-color);
+}
+
+[data-theme="dark"] .toeic-nav-btn.marked {
+    background-color: var(--warning-color);
+    border-color: var(--warning-color);
+}
+
+[data-theme="dark"] .toeic-nav-btn.current {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+}
+
+/* ===================================
+   TOEIC RESULTS SCREEN - DARK MODE
+   =================================== */
+
+[data-theme="dark"] .toeic-results-header h2 {
+    color: var(--success-color);
+}
+
+[data-theme="dark"] .toeic-score-card {
+    background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+}
+
+[data-theme="dark"] .toeic-stats-grid {
+    color: var(--text-primary);
+}
+
+[data-theme="dark"] .stat-card {
+    background-color: var(--card-bg);
+    border: 1px solid var(--border-color);
+}
+
+[data-theme="dark"] .stat-icon i {
+    color: #fff;
+}
+
+[data-theme="dark"] .stat-value {
+    color: var(--text-primary);
+}
+
+[data-theme="dark"] .stat-label {
+    color: var(--text-secondary);
+}
+
+/* History List */
+[data-theme="dark"] .toeic-history-item {
+    background-color: var(--card-bg);
+    border-color: var(--border-color);
+}
+
+[data-theme="dark"] .toeic-history-item:hover {
+    border-color: var(--primary-color);
+}
+
+[data-theme="dark"] .history-left h4 {
+    color: var(--text-primary);
+}
+
+[data-theme="dark"] .history-left p {
+    color: var(--text-secondary);
+}
+
+[data-theme="dark"] .history-score.success {
+    background-color: rgba(16, 185, 129, 0.2);
+    color: #34d399;
+}
+
+[data-theme="dark"] .history-score.warning {
+    background-color: rgba(251, 191, 36, 0.2);
+    color: #fbbf24;
+}
+
+[data-theme="dark"] .history-score.error {
+    background-color: rgba(239, 68, 68, 0.2);
+    color: #f87171;
+}
+
+/* Analytics */
+[data-theme="dark"] .toeic-analytics-container {
+    color: var(--text-primary);
+}
+
+[data-theme="dark"] .analytics-overview,
+[data-theme="dark"] .analytics-progress,
+[data-theme="dark"] .analytics-parts {
+    background-color: var(--card-bg);
+    border: 1px solid var(--border-color);
+}
+
+[data-theme="dark"] .analytics-overview h3,
+[data-theme="dark"] .analytics-progress h3,
+[data-theme="dark"] .analytics-parts h3 {
+    color: var(--text-primary);
+}
+
+[data-theme="dark"] .analytics-card {
+    background-color: var(--bg-tertiary);
+}
+
+[data-theme="dark"] .analytics-value {
+    color: var(--primary-color);
+}
+
+[data-theme="dark"] .analytics-label {
+    color: var(--text-secondary);
+}
+
+[data-theme="dark"] .chart-label {
+    color: var(--text-primary);
+}
+
+[data-theme="dark"] .chart-value {
+    background: linear-gradient(90deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+}
+
+[data-theme="dark"] .part-stats-card {
+    background-color: var(--bg-tertiary);
+}
+
+[data-theme="dark"] .part-stats-card h4 {
+    color: var(--primary-color);
+}
+
+[data-theme="dark"] .part-accuracy {
+    color: var(--text-primary);
+}
+
+[data-theme="dark"] .part-attempts {
+    color: var(--text-secondary);
+}
+
+/* ===================================
+   ANSWER FEEDBACK - DARK MODE
+   =================================== */
+
+/* Correct/Wrong choice buttons */
+[data-theme="dark"] .choice-btn.correct {
+    background: linear-gradient(135deg, #10b981, #059669);
+    border-color: #10b981;
+    color: white;
+}
+
+[data-theme="dark"] .choice-btn.wrong {
+    background: linear-gradient(135deg, #ef4444, #dc2626);
+    border-color: #ef4444;
+    color: white;
+}
+
+/* Correct/Wrong blank inputs */
+[data-theme="dark"] .blank-input.correct {
+    border-color: var(--primary-color);
+    background-color: rgba(var(--primary-rgb, 225,29,72), 0.2);
+    color: var(--text-primary);
+}
+
+[data-theme="dark"] .blank-input.wrong {
+    border-color: #ef4444;
+    background-color: rgba(239, 68, 68, 0.2);
+    color: var(--text-primary);
+}
+
+/* Correct/Wrong option buttons */
+[data-theme="dark"] .option-btn.correct {
+    background: linear-gradient(135deg, #10b981, #059669);
+    border-color: #10b981;
+    color: white;
+}
+
+[data-theme="dark"] .option-btn.wrong {
+    background: linear-gradient(135deg, #ef4444, #dc2626);
+    border-color: #ef4444;
+    color: white;
+}
+
+/* Feedback messages */
+[data-theme="dark"] .feedback.correct {
+    background-color: rgba(var(--primary-rgb, 225,29,72), 0.15);
+    border-color: var(--primary-color);
+    color: var(--primary-color);
+}
+
+[data-theme="dark"] .feedback.wrong {
+    background-color: rgba(239, 68, 68, 0.15);
+    border-color: #ef4444;
+    color: #f87171;
+}
+
+[data-theme="dark"] .feedback .full-sentence {
+    background-color: var(--bg-tertiary);
+    color: var(--text-primary);
+}
+
+/* Result sentences */
+[data-theme="dark"] .result-sentence.correct {
+    background-color: rgba(var(--primary-rgb, 225,29,72), 0.15);
+    border-color: var(--primary-color);
+    color: var(--primary-color);
+}
+
+[data-theme="dark"] .result-sentence.wrong {
+    background-color: rgba(239, 68, 68, 0.15);
+    border-color: #ef4444;
+    color: #f87171;
+}
+
+/* Microphone status */
+[data-theme="dark"] .mic-status.correct {
+    background-color: rgba(var(--primary-rgb, 225,29,72), 0.2);
+    color: var(--primary-color);
+}
+
+[data-theme="dark"] .mic-status.wrong {
+    background-color: rgba(239, 68, 68, 0.2);
+    color: #f87171;
+}
+
+/* Recognition results */
+[data-theme="dark"] .recognition-result.correct {
+    background-color: rgba(var(--primary-rgb, 225,29,72), 0.15);
+    border-color: var(--primary-color);
+}
+
+[data-theme="dark"] .recognition-result.wrong {
+    background-color: rgba(239, 68, 68, 0.15);
+    border-color: #ef4444;
+}
+
+[data-theme="dark"] .recognition-result.correct .result-icon {
+    color: var(--primary-color);
+}
+
+[data-theme="dark"] .recognition-result.wrong .result-icon {
+    color: #f87171;
+}
+
+/* ===== Speaker / Audio Button ===== */
+[data-theme="dark"] .btn-speak,
+[data-theme="dark"] .btn-speak-mini {
+    background: transparent;
+    border: none;
+    color: var(--text-primary);
+    cursor: pointer;
+    font-size: 1.2em;
+    transition: color 0.2s;
+}
+
+[data-theme="dark"] .btn-speak:hover,
+[data-theme="dark"] .btn-speak-mini:hover {
+    color: var(--primary-color);
+}
+
+/* ===== Settings - Theme Select Dropdown ===== */
+[data-theme="dark"] .setting-select {
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+    border-color: var(--border-color);
+}
+
+[data-theme="dark"] .setting-select option {
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+}
+/* ===== Color Theme Picker ===== */
+[data-theme="dark"] .color-swatch.active {
+    box-shadow: 0 0 0 2px var(--bg-secondary), 0 0 0 4px var(--primary-color);
+}
+
+[data-theme="dark"] .color-picker-label {
+    color: var(--text-secondary);
+}
+
+[data-theme="dark"] .color-picker-label input[type="color"] {
+    border-color: var(--border-color);
+    background: var(--bg-tertiary);
+}

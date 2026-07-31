@@ -1,0 +1,177 @@
+          <!-- Tab: Tạo nhóm câu (Part 3·4·6·7) — trước đây là popup #group-modal -->
+          <div id="main-tab-toeic-group" class="main-tab-content">
+            <div class="card">
+              <div class="card-header">
+                <h2 id="group-builder-title"><i class="fas fa-layer-group"></i> Thêm nhóm câu (Part 3·4·6·7)</h2>
+                <div class="card-header-actions">
+                  <button type="button" class="btn btn-ghost btn-sm" id="btn-close-group-modal"
+                    title="Xoá trắng trình dựng, làm lại từ đầu">
+                    <i class="fas fa-eraser"></i> Xoá trắng
+                  </button>
+                </div>
+              </div>
+              <p style="margin: 0 0 14px; color: var(--text-secondary); font-size: 13px">
+                1 ngữ cảnh (audio/ảnh dùng chung) → <strong>nhiều câu</strong>. Hệ thống tự đánh số câu theo chuẩn Part
+                trong bộ đề đó.
+              </p>
+
+              <!-- Tab con: Trình dựng / Nhập JSON -->
+              <div style="display: flex; margin-bottom: 18px; border: 1.5px solid var(--border-color); border-radius: 8px; overflow: hidden">
+                <button type="button" id="group-tab-manual"
+                  style="flex: 1; padding: 9px; border: none; background: var(--primary); color: #fff; cursor: pointer; font-weight: 600; font-size: 13px">
+                  <i class="fas fa-pen"></i> Trình dựng
+                </button>
+                <button type="button" id="group-tab-json"
+                  style="flex: 1; padding: 9px; border: none; background: #f5f5f5; color: #666; cursor: pointer; font-weight: 600; font-size: 13px">
+                  <i class="fas fa-code"></i> Nhập JSON
+                </button>
+              </div>
+
+              <!-- Panel: Trình dựng -->
+              <div id="group-manual-panel">
+                <div class="question-form-grid">
+                  <div>
+                    <label style="display: block; margin-bottom: 5px; font-weight: 500">Part *</label>
+                    <select id="group-part"
+                      style="width: 100%; padding: 10px; border: 1px solid var(--border-color); border-radius: 8px">
+                      <option value="3">Part 3 - Conversations</option>
+                      <option value="4">Part 4 - Talks</option>
+                      <option value="6">Part 6 - Text Completion</option>
+                      <option value="7">Part 7 - Reading Comprehension</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label style="display: block; margin-bottom: 5px; font-weight: 500">Source (mã đề) *</label>
+                    <input type="text" id="group-source" list="test-source-list" autocomplete="off"
+                      placeholder="VD: ets26t1"
+                      style="width: 100%; padding: 10px; border: 1px solid var(--border-color); border-radius: 8px" />
+                  </div>
+
+                  <!-- Audio chung (Part 3/4) -->
+                  <div class="full-width" id="group-audio-field">
+                    <label style="display: block; margin-bottom: 5px; font-weight: 500">
+                      <i class="fas fa-volume-up"></i> File audio chung (Part 3/4)
+                    </label>
+                    <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap">
+                      <input type="file" id="group-audio-file" accept="audio/*"
+                        style="flex: 1 1 240px; min-width: 200px; padding: 10px; border: 1px solid var(--border-color); border-radius: 8px" />
+                      <div id="group-audio-status" style="display: none">
+                        <p style="color: #e11d48; font-size: 14px; margin: 0; white-space: nowrap">
+                          <i class="fas fa-spinner fa-spin"></i> Đang tải...
+                        </p>
+                      </div>
+                      <div id="group-audio-preview" style="display: none; flex: 1 1 320px; min-width: 260px">
+                        <audio id="group-audio-player" controls style="width: 100%"></audio>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Ảnh chung -->
+                  <div class="full-width" id="group-image-field">
+                    <label style="display: block; margin-bottom: 5px; font-weight: 500">
+                      <i class="fas fa-image"></i> Ảnh chung
+                      <span id="group-image-hint" style="font-weight: 400; color: var(--text-secondary); font-size: 12px"></span>
+                    </label>
+                    <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap">
+                      <input type="file" id="group-image-file" accept="image/*"
+                        style="flex: 1 1 240px; min-width: 200px; padding: 10px; border: 1px solid var(--border-color); border-radius: 8px" />
+                      <div id="group-image-status" style="display: none">
+                        <p style="color: #e11d48; font-size: 14px; margin: 0; white-space: nowrap">
+                          <i class="fas fa-spinner fa-spin"></i> Đang tải...
+                        </p>
+                      </div>
+                      <div id="group-images-container" style="display: flex; flex-wrap: wrap; gap: 10px"></div>
+                    </div>
+                  </div>
+
+                  <!-- Số đoạn (Part 7) -->
+                  <div id="group-passage-count-field">
+                    <label style="display: block; margin-bottom: 5px; font-weight: 500">Số đoạn văn (Part 7)</label>
+                    <select id="group-passage-count"
+                      style="width: 100%; padding: 10px; border: 1px solid var(--border-color); border-radius: 8px">
+                      <option value="">-- Không có --</option>
+                      <option value="1">1 đoạn (Single)</option>
+                      <option value="2">2 đoạn (Double)</option>
+                      <option value="3">3 đoạn (Triple)</option>
+                    </select>
+                  </div>
+
+                  <!-- Danh sách câu con (dựng bằng JS) -->
+                  <div class="full-width" style="border-top: 1.5px solid var(--border-color); padding-top: 14px; margin-top: 4px">
+                    <label style="display: block; margin-bottom: 10px; font-weight: 600; color: #6366f1">
+                      <i class="fas fa-list-ol"></i> Các câu hỏi trong nhóm
+                    </label>
+                    <div id="group-questions-container"></div>
+                    <button type="button" id="btn-group-add-q" class="btn btn-secondary btn-sm" style="margin-top: 8px">
+                      <i class="fas fa-plus"></i> Thêm câu hỏi
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Panel: Nhập JSON -->
+              <div id="group-json-panel" style="display: none">
+                <div style="display: flex; gap: 10px; align-items: center; margin-bottom: 10px; flex-wrap: wrap">
+                  <label style="font-weight: 500; font-size: 13px">Part:</label>
+                  <select id="group-json-part" class="filter-select" style="width: auto; min-width: 210px">
+                    <option value="3">Part 3 - Conversations</option>
+                    <option value="4">Part 4 - Talks</option>
+                    <option value="6">Part 6 - Text Completion</option>
+                    <option value="7">Part 7 - Reading Comprehension</option>
+                  </select>
+                  <label style="font-weight: 500; font-size: 13px">Source:</label>
+                  <input type="text" id="group-json-source" list="test-source-list" autocomplete="off"
+                    placeholder="mã đề, vd ets26t1"
+                    style="padding: 8px 10px; border: 1px solid var(--border-color); border-radius: 8px; min-width: 180px" />
+                  <button type="button" id="btn-group-copy-prompt" class="btn btn-secondary btn-sm">
+                    <i class="fas fa-robot"></i> Copy prompt AI
+                  </button>
+                </div>
+                <small style="display: block; color: var(--text-secondary); font-size: 12px; margin-bottom: 10px">
+                  Điền Source → prompt copy ra sẽ ép AI dùng đúng mã đề đó cho mọi câu. Dán prompt vào ChatGPT/AI → lấy
+                  mảng JSON → dán xuống dưới.
+                </small>
+                <p style="margin: 0 0 8px; font-size: 12px; color: #b45309; background: #fffbeb; border: 1px solid #fcd34d; border-radius: 6px; padding: 8px 10px">
+                  <i class="fas fa-triangle-exclamation"></i> Path audio/ảnh trong JSON phải trỏ file
+                  <strong>đã có sẵn</strong> trên server. Nếu file <strong>chưa có</strong>, hãy dùng tab
+                  <strong>“Trình dựng”</strong> (upload trực tiếp) thay vì dán path tay.
+                </p>
+                <textarea id="group-json-input" rows="14" spellcheck="false"
+                  placeholder='Dán MẢNG JSON [...] — mỗi phần tử là 1 MÀN HỎI, ngữ cảnh (audioUrl/imageUrls) ở CẤP MÀN, các câu nằm trong "questions"...'
+                  style="width: 100%; padding: 12px; border: 1px solid var(--border-color); border-radius: 8px; font-family: monospace; font-size: 13px; resize: vertical; box-sizing: border-box"></textarea>
+                <div id="group-json-result"
+                  style="display: none; margin-top: 10px; padding: 12px; border-radius: 8px; font-size: 13px"></div>
+              </div>
+
+              <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px">
+                <button type="button" id="btn-submit-group" class="btn btn-primary">
+                  <i class="fas fa-layer-group"></i> Tạo nhóm
+                </button>
+                <button type="button" id="btn-group-submit-json" class="btn btn-primary" style="display: none">
+                  <i class="fas fa-file-import"></i> Import JSON
+                </button>
+              </div>
+            </div>
+
+            <!-- Soạn prompt AI: sửa được, lưu DB. Xoá bản sửa = về mặc định trong code. -->
+            <div class="card" id="group-prompt-card">
+              <div class="card-header">
+                <h2><i class="fas fa-robot"></i> Prompt AI — nhóm câu</h2>
+                <div class="card-header-actions">
+                  <select id="group-prompt-key" class="filter-select" style="width: auto; min-width: 190px"></select>
+                  <button type="button" class="btn btn-ghost btn-sm" id="group-prompt-copy">
+                    <i class="fas fa-copy"></i> Copy
+                  </button>
+                  <button type="button" class="btn btn-secondary btn-sm" id="group-prompt-reset">
+                    <i class="fas fa-rotate-left"></i> Về mặc định
+                  </button>
+                  <button type="button" class="btn btn-success btn-sm" id="group-prompt-save">
+                    <i class="fas fa-save"></i> Lưu
+                  </button>
+                </div>
+              </div>
+              <p id="group-prompt-status" style="margin: 0 0 10px; font-size: 12.5px; color: var(--text-secondary)"></p>
+              <textarea id="group-prompt-text" rows="18" spellcheck="false"
+                style="width: 100%; padding: 12px; border: 1px solid var(--border-color); border-radius: 8px; font-family: monospace; font-size: 12.5px; line-height: 1.55; resize: vertical; box-sizing: border-box"></textarea>
+            </div>
+          </div>

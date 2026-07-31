@@ -1,0 +1,30 @@
+node_modules/
+node_module/
+public/tts-cache/
+
+# Environment variables - NEVER commit these
+.env
+.env.local
+.env.production
+.env.*.local
+
+# Cache & uploads
+public/images/pages/
+uploads/
+cache.json
+
+# Ảnh/audio TOEIC đã migrate lên Cloudinary — không track nữa (xem docs/backend)
+backend/public/images/
+backend/public/assets/
+
+node_modules
+
+# Báo cáo do bộ skill review sinh ra (.claude/skills) — chỉ là output, không track
+.claude-audit/
+
+# Claude Code — settings riêng của máy + bộ skill audit (generic, để repo riêng)
+.claude/settings.local.json
+.claude/skills/
+
+# Ghi chú riêng (bối cảnh, roadmap cá nhân) — không lên GitHub
+.claude/*.local.md

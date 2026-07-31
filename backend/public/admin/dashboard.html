@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/admin/favicon-admin.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>LevelUp TOEIC - Admin Dashboard</title>
+    <!-- FontAwesome self-host (bỏ cdnjs → hết Tracking Prevention chặn) -->
+    <link rel="stylesheet" href="/admin/vendor/fontawesome/css/all.min.css?v=6.4.0" />
+    <link rel="stylesheet" href="/admin/css/dashboard.css?v=26" />
+  </head>
+  <body>
+    <!-- @include('partials/modals/login-modal.html') -->
+
+    <!-- Sidebar overlay (mobile) -->
+    <div class="sidebar-overlay" id="sidebar-overlay"></div>
+
+    <div class="admin-layout" id="main-dashboard" style="display: none">
+      <!-- @include('partials/layout/sidebar.html') -->
+      <!-- ===== MAIN AREA ===== -->
+      <div class="admin-main">
+        <!-- @include('partials/layout/topbar.html') -->
+
+        <!-- Content Area -->
+        <div class="admin-content">
+          <!-- @include('partials/tabs/overview.html') -->
+          <!-- End Overview Tab -->
+
+          <!-- @include('partials/tabs/topics.html') -->
+          <!-- End Topics Tab -->
+
+          <!-- @include('partials/tabs/vocabulary.html') -->
+
+          <!-- @include('partials/tabs/users.html') -->
+          <!-- End User Management Tab -->
+
+          <!-- @include('partials/tabs/toeic-questions.html') -->
+          <!-- End TOEIC Questions Tab -->
+
+          <!-- @include('partials/tabs/toeic-single.html') -->
+
+          <!-- @include('partials/tabs/toeic-group.html') -->
+
+          <!-- @include('partials/tabs/answer-keys.html') -->
+
+          <!-- @include('partials/tabs/toeic-tests.html') -->
+          <!-- End TOEIC Tests Tab -->
+
+          <!-- @include('partials/tabs/activity.html') -->
+          <!-- End Activity Tab -->
+
+          <!-- @include('partials/tabs/reports.html') -->
+          <!-- End Reports Tab -->
+
+          <!-- @include('partials/tabs/achievements.html') -->
+
+          <!-- @include('partials/tabs/quests.html') -->
+
+          <!-- @include('partials/tabs/shop.html') -->
+
+          <!-- @include('partials/tabs/categories.html') -->
+
+          <!-- @include('partials/tabs/items.html') -->
+
+          <!-- @include('partials/tabs/spin.html') -->
+
+          <!-- @include('partials/tabs/feature-unlocks.html') -->
+
+          <!-- @include('partials/tabs/game-config.html') -->
+
+          <!-- ===== SYSTEM MONITOR TAB ===== -->
+          <!-- @include('partials/tabs/economy.html') -->
+
+          <!-- @include('partials/tabs/monitor.html') -->
+          <!-- End System Monitor Tab -->
+
+          <!-- @include('partials/tabs/db-manager.html') -->
+          <!-- End DB Manager Tab -->
+
+          <!-- @include('partials/tabs/cloudinary.html') -->
+          <!-- End Cloudinary Tab -->
+
+          <!-- @include('partials/tabs/upload-management.html') -->
+
+          <!-- @include('partials/tabs/token-management.html') -->
+          <!-- @include('partials/tabs/broadcast.html') -->
+
+        </div>
+        <!-- /admin-content -->
+      </div>
+      <!-- /admin-main -->
+    </div>
+    <!-- /admin-layout -->
+
+    <!-- @include('partials/modals/add-word-modal.html') -->
+
+    <!-- @include('partials/modals/manage-users-modal.html') -->
+
+    <!-- @include('partials/modals/quick-delete-modal.html') -->
+
+    <!-- @include('partials/modals/user-form-modal.html') -->
+
+    <!-- @include('partials/modals/test-modal.html') -->
+
+    <!-- @include('partials/modals/achievement-modal.html') -->
+
+    <!-- @include('partials/modals/quest-modal.html') -->
+
+
+    <!-- @include('partials/modals/unlock-modal.html') -->
+
+    <!-- @include('partials/modals/ai-gen-modal.html') -->
+
+    <!-- @include('partials/modals/cat-modal.html') -->
+
+    <!-- @include('partials/modals/itemdef-modal.html') -->
+
+    <!-- Modular dashboard: load order matters (state first, then dependencies) -->
+    <script src="/admin/js/core/state.js?v=3"></script>
+    <script src="/admin/js/core/utils.js?v=3"></script>
+    <script src="/admin/js/core/auth.js?v=2"></script>
+    <script src="/admin/js/core/core.js?v=10"></script>
+    <script src="/admin/js/features/vocab/vocab.js?v=4"></script>
+    <script src="/admin/js/features/users/users.js?v=4"></script>
+    <script src="/admin/js/features/vocab/vocab-stats.js?v=2"></script>
+    <script src="/admin/js/features/toeic/toeic.js?v=54"></script>
+    <script src="/admin/js/features/toeic/toeic-group.js?v=9"></script>
+    <script src="/admin/js/features/toeic/answer-keys.js?v=1"></script>
+    <script src="/admin/js/features/monitor/monitor.js?v=2"></script>
+    <script src="/admin/js/core/tabs.js?v=10"></script>
+    <script src="/admin/js/features/season/season-admin.js?v=1"></script>
+    <script src="/admin/js/features/catalog/spin-admin.js?v=4"></script>
+    <script src="/admin/js/features/catalog/item-defs-admin.js?v=8"></script>
+    <script src="/admin/js/features/catalog/category-admin.js?v=1"></script>
+    <script src="/admin/js/features/catalog/channel-config-admin.js?v=1"></script>
+    <script src="/admin/js/features/economy/economy-admin.js?v=2"></script>
+    <script src="/admin/js/features/economy/game-config-admin.js?v=1"></script>
+    <script src="/admin/js/features/economy/feature-unlock-admin.js?v=2"></script>
+    <script src="/admin/js/features/monitor/db-manager.js?v=3"></script>
+    <script src="/admin/js/features/monitor/cloudinary-admin.js?v=1"></script>
+    <script src="/admin/js/core/ui-init.js?v=18"></script>
+    <script src="/admin/js/core/nav-game.js?v=15"></script>
+  </body>
+</html>

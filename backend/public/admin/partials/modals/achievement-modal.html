@@ -1,0 +1,94 @@
+    <!-- Modal: Achievement -->
+    <div id="achievement-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:1000;align-items:center;justify-content:center">
+      <div style="background:var(--bg-primary,white);border-radius:14px;padding:28px;max-width:540px;width:90%;max-height:90vh;overflow-y:auto">
+        <h3 style="margin-bottom:20px;color:var(--primary)"><i class="fas fa-trophy"></i> <span id="ach-modal-title">Thêm thành tích</span></h3>
+        <form id="achievement-form">
+          <input type="hidden" id="ach-id">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+            <div style="grid-column:1/-1"><label>Tên *</label><input type="text" id="ach-name" required placeholder="vd: Học 100 từ đầu tiên" style="width:100%;padding:9px;border:1.5px solid var(--border-color);border-radius:8px;margin-top:4px"></div>
+            <div><label>Code (unique) *</label><input type="text" id="ach-code" required placeholder="vd: first_100_words" style="width:100%;padding:9px;border:1.5px solid var(--border-color);border-radius:8px;margin-top:4px"></div>
+            <div><label>Icon</label><input type="text" id="ach-icon" placeholder="🏆" style="width:100%;padding:9px;border:1.5px solid var(--border-color);border-radius:8px;margin-top:4px"></div>
+            <div style="grid-column:1/-1"><label>Mô tả</label><input type="text" id="ach-desc" placeholder="Mô tả thành tích..." style="width:100%;padding:9px;border:1.5px solid var(--border-color);border-radius:8px;margin-top:4px"></div>
+            <div><label>Danh mục</label>
+              <select id="ach-category" style="width:100%;padding:9px;border:1.5px solid var(--border-color);border-radius:8px;margin-top:4px">
+                <option value="learning">learning — Học tập</option>
+                <option value="practice">practice — Luyện tập</option>
+                <option value="skill">skill — Luyện tập (kỹ năng)</option>
+                <option value="speed">speed — Luyện tập (tốc độ)</option>
+                <option value="social">social — Xã hội</option>
+                <option value="streak">streak — Đặc biệt</option>
+              </select>
+            </div>
+            <div><label>conditionType (chỉ số)</label>
+              <select id="ach-cond-type" style="width:100%;padding:9px;border:1.5px solid var(--border-color);border-radius:8px;margin-top:4px">
+                <option value="words-learned">Số từ đã học</option>
+                <option value="words-mastered">Số từ đã thuộc</option>
+                <option value="sessions">Số lượt luyện tập (session)</option>
+                <option value="games-played">Số lượt chơi (game)</option>
+                <option value="perfect-rounds">Số vòng hoàn hảo</option>
+                <option value="correct-answers">Tổng câu trả lời đúng</option>
+                <option value="wrong-answers">Tổng câu trả lời sai</option>
+                <option value="questions-answered">Tổng câu đã trả lời</option>
+                <option value="streak">Streak hiện tại (ngày)</option>
+                <option value="streak-longest">Streak dài nhất (ngày)</option>
+                <option value="level">Cấp độ (level)</option>
+                <option value="total-xp">Tổng XP tích luỹ</option>
+                <option value="coins">Số coins đang có</option>
+                <option value="gems">Số gems đang có</option>
+                <option value="highest-score">Điểm cao nhất</option>
+                <option value="play-time">Tổng thời gian luyện (giây)</option>
+                <option value="accuracy">Độ chính xác (%)</option>
+                <option value="mode-plays">Số lượt chơi 1 chế độ (cần conditionMode)</option>
+              </select>
+            </div>
+            <div><label>conditionValue</label><input type="number" id="ach-cond-value" placeholder="100" style="width:100%;padding:9px;border:1.5px solid var(--border-color);border-radius:8px;margin-top:4px"></div>
+            <div><label>conditionMode (chỉ dùng cho "Số lượt chơi 1 chế độ")</label>
+              <select id="ach-cond-mode" style="width:100%;padding:9px;border:1.5px solid var(--border-color);border-radius:8px;margin-top:4px">
+                <option value="">— không dùng —</option>
+                <optgroup label="Học &amp; Nhận diện từ">
+                  <option value="flashcard">Flashcard</option>
+                  <option value="multiple-choice">Trắc nghiệm</option>
+                  <option value="matching">Nối từ</option>
+                  <option value="word-type-check">Từ loại</option>
+                </optgroup>
+                <optgroup label="Nghe &amp; Phát âm">
+                  <option value="listening">Nghe và chọn</option>
+                  <option value="pronunciation">Phát âm</option>
+                  <option value="dictation">Chép chính tả</option>
+                  <option value="sentence-listening">Nghe chuỗi từ</option>
+                </optgroup>
+                <optgroup label="Đọc &amp; Viết">
+                  <option value="fill-blank">Điền từ</option>
+                  <option value="example-fill-blank">Điền vào câu</option>
+                  <option value="sentence-builder">Xếp câu</option>
+                  <option value="phonetic-quiz">Đọc phiên âm</option>
+                </optgroup>
+                <optgroup label="Nâng cao &amp; Thử thách">
+                  <option value="context-learning">Hiểu qua câu</option>
+                  <option value="synonym-check">Từ đồng nghĩa</option>
+                  <option value="speed-quiz">Tốc độ</option>
+                  <option value="review-mistakes">Ôn lại từ sai</option>
+                </optgroup>
+              </select>
+            </div>
+            <div><label>Thưởng XP</label><input type="number" id="ach-xp" value="0" style="width:100%;padding:9px;border:1.5px solid var(--border-color);border-radius:8px;margin-top:4px"></div>
+            <div><label>Thưởng Coins</label><input type="number" id="ach-coins" value="0" style="width:100%;padding:9px;border:1.5px solid var(--border-color);border-radius:8px;margin-top:4px"></div>
+            <div><label>Thưởng Gems</label><input type="number" id="ach-gems" value="0" style="width:100%;padding:9px;border:1.5px solid var(--border-color);border-radius:8px;margin-top:4px"></div>
+            <div><label>Thứ tự hiển thị</label><input type="number" id="ach-order" value="0" style="width:100%;padding:9px;border:1.5px solid var(--border-color);border-radius:8px;margin-top:4px"></div>
+            <div style="display:flex;align-items:center;gap:8px;margin-top:16px">
+              <input type="checkbox" id="ach-active" checked style="width:16px;height:16px">
+              <label for="ach-active">Kích hoạt</label>
+            </div>
+          </div>
+          <div style="margin-top:14px">
+            <label>Thưởng vật phẩm <span style="color:var(--text-tertiary,#94a3b8);font-weight:400">(chọn từ catalog + số lượng — để trống nếu không có)</span></label>
+            <div id="ach-items-rows" style="margin-top:6px;display:flex;flex-direction:column;gap:6px"></div>
+            <button type="button" id="ach-items-add" class="btn btn-secondary btn-sm" style="margin-top:8px"><i class="fas fa-plus"></i> Thêm vật phẩm</button>
+          </div>
+          <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:20px">
+            <button type="button" id="btn-ach-cancel" class="btn btn-ghost">Hủy</button>
+            <button type="submit" class="btn btn-primary">Lưu</button>
+          </div>
+        </form>
+      </div>
+    </div>

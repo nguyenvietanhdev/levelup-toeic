@@ -1,0 +1,48 @@
+    <!-- Login Modal -->
+    <div id="admin-login-modal" class="modal" style="display: none">
+      <div class="modal-content" style="max-width: 400px">
+        <div class="modal-header">
+          <h2><i class="fas fa-lock"></i> Admin Login</h2>
+        </div>
+        <div class="modal-body">
+          <p style="color: #666; margin-bottom: 20px">
+            Please login with your admin account to access the dashboard.
+          </p>
+          <form id="admin-login-form">
+            <div class="form-group">
+              <label for="admin-username">
+                <i class="fas fa-user"></i> Username
+              </label>
+              <input
+                type="text"
+                id="admin-username"
+                name="username"
+                required
+                autocomplete="username"
+                placeholder="Enter your username"
+              />
+            </div>
+            <div class="form-group">
+              <label for="admin-password">
+                <i class="fas fa-key"></i> Password
+              </label>
+              <input
+                type="password"
+                id="admin-password"
+                name="password"
+                required
+                autocomplete="current-password"
+                placeholder="Enter your password"
+              />
+            </div>
+            <div
+              id="login-error"
+              style="color: #dc3545; margin-bottom: 15px; display: none"
+            ></div>
+            <button type="submit" class="btn btn-primary" style="width: 100%">
+              <i class="fas fa-sign-in-alt"></i> Login
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>

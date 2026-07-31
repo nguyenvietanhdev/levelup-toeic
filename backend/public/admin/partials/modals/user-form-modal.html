@@ -1,0 +1,136 @@
+    <!-- Modal thêm/sửa tài khoản -->
+    <div
+      id="user-form-modal"
+      style="
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.6);
+        z-index: 3000;
+        align-items: center;
+        justify-content: center;
+      "
+    >
+      <div
+        style="
+          background: white;
+          border-radius: 15px;
+          padding: 30px;
+          width: 90%;
+          max-width: 500px;
+        "
+      >
+        <h3
+          id="user-modal-title"
+          style="margin-bottom: 20px; color: var(--primary)"
+        >
+          Thêm tài khoản mới
+        </h3>
+        <form id="user-form">
+          <input type="hidden" id="edit-user-id" />
+
+          <div style="margin-bottom: 15px">
+            <label>Tên đăng nhập *</label>
+            <input
+              type="text"
+              id="user-username"
+              required
+              style="
+                width: 100%;
+                padding: 10px;
+                border: 2px solid #ddd;
+                border-radius: 8px;
+              "
+            />
+          </div>
+
+          <div style="margin-bottom: 15px">
+            <label>Email *</label>
+            <input
+              type="email"
+              id="user-email"
+              required
+              style="
+                width: 100%;
+                padding: 10px;
+                border: 2px solid #ddd;
+                border-radius: 8px;
+              "
+            />
+          </div>
+
+          <div style="margin-bottom: 15px">
+            <label>Mật khẩu <small>(để trống nếu không đổi)</small></label>
+            <input
+              type="password"
+              id="user-password"
+              style="
+                width: 100%;
+                padding: 10px;
+                border: 2px solid #ddd;
+                border-radius: 8px;
+              "
+            />
+          </div>
+
+          <div style="margin-bottom: 15px">
+            <label>Vai trò</label>
+            <select
+              id="user-role"
+              style="
+                width: 100%;
+                padding: 10px;
+                border: 2px solid #ddd;
+                border-radius: 8px;
+              "
+            >
+              <option value="user">Người dùng</option>
+              <option value="admin">Quản trị viên</option>
+            </select>
+          </div>
+
+          <div style="margin-bottom: 15px" id="user-lock-row">
+            <label>Trạng thái tài khoản</label>
+            <select
+              id="user-lock-status"
+              style="
+                width: 100%;
+                padding: 10px;
+                border: 2px solid #ddd;
+                border-radius: 8px;
+              "
+            >
+              <option value="false">🔓 Unlock — Cho phép đăng nhập</option>
+              <option value="true">🔒 Lock — Chặn đăng nhập</option>
+            </select>
+          </div>
+
+          <div style="display: flex; gap: 10px; justify-content: flex-end">
+            <button
+              type="button"
+              id="cancel-user-form"
+              style="
+                padding: 10px 20px;
+                border: 2px solid #ccc;
+                background: white;
+                border-radius: 8px;
+              "
+            >
+              Hủy
+            </button>
+            <button
+              type="submit"
+              style="
+                padding: 10px 20px;
+                background: var(--primary);
+                color: white;
+                border: none;
+                border-radius: 8px;
+              "
+            >
+              Lưu
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>

@@ -1,0 +1,664 @@
+/* ===================================
+   MODE STATS BADGE ON HOME CARDS
+   =================================== */
+
+.mode-stats-badge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 8px;
+  padding: 4px 10px;
+  background: rgba(var(--primary-rgb), 0.1);
+  border: 1px solid rgba(var(--primary-rgb), 0.25);
+  border-radius: 20px;
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.mode-badge-played {
+  color: var(--primary-color);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.mode-badge-accuracy {
+  color: var(--text-secondary);
+  border-left: 1px solid rgba(var(--primary-rgb), 0.3);
+  padding-left: 8px;
+}
+
+.mode-stats-badge--new {
+  background: rgba(var(--primary-rgb), 0.04);
+  border-color: rgba(var(--primary-rgb), 0.12);
+}
+
+.mode-badge-new {
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  opacity: 0.7;
+}
+
+/* ===================================
+   DICTATION MODE - NGHE VÀ ĐIỀN CÂU
+   =================================== */
+
+.dictation-container {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-lg);
+  max-width: 900px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+/* --- 2-column layout --- */
+.dictation-two-col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--spacing-xl);
+  align-items: center;
+  width: 100%;
+}
+
+.dictation-col-question {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+}
+
+.dictation-col-answer {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+}
+
+@media (max-width: 640px) {
+  .dictation-two-col {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* --- Audio area --- */
+.dictation-audio-area {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+  padding: var(--spacing-md) var(--spacing-lg);
+  background: var(--bg-secondary);
+  border-radius: var(--border-radius-large);
+  width: 100%;
+  cursor: pointer;
+}
+
+.dictation-play-btn {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+  color: white;
+  border: none;
+  font-size: 1.3rem;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: transform 0.2s, box-shadow 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.dictation-play-btn:hover { transform: scale(1.08); box-shadow: 0 4px 16px rgba(var(--primary-rgb), 0.4); }
+.dictation-play-btn.playing { animation: pq-pulse-ring 0.8s ease infinite; }
+
+.dictation-audio-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.dictation-audio-title {
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+}
+
+.dictation-audio-sub {
+  font-size: var(--font-size-sm);
+  color: var(--primary-color);
+  font-weight: 600;
+}
+
+/* --- Câu ví dụ với lỗ trống --- */
+.dictation-sentence-display {
+  width: 100%;
+  padding: var(--spacing-lg);
+  background: var(--bg-secondary);
+  border-radius: var(--border-radius-large);
+  font-size: 1.15rem;
+  line-height: 1.8;
+  color: var(--text-primary);
+  text-align: left;
+}
+
+.dictation-blank-slot {
+  display: inline-block;
+  background: rgba(var(--primary-rgb), 0.15);
+  color: var(--primary-color);
+  font-weight: 700;
+  border-radius: 6px;
+  padding: 2px 10px;
+  margin: 0 4px;
+  border-bottom: 2px solid var(--primary-color);
+}
+
+/* --- Prompt --- */
+.dictation-prompt {
+  font-size: var(--font-size-md);
+  color: var(--text-secondary);
+  text-align: center;
+}
+
+/* --- Input rows --- */
+.dictation-inputs-area {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+  width: 100%;
+}
+
+.dictation-input-row {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.dictation-blank-label {
+  font-size: var(--font-size-md);
+  font-weight: 700;
+  color: var(--primary-color);
+  min-width: 28px;
+  text-align: center;
+}
+
+.dictation-input {
+  flex: 1;
+  padding: 12px 16px;
+  font-size: var(--font-size-lg);
+  font-weight: 600;
+  border: 2px solid var(--border-color);
+  border-radius: var(--border-radius);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  transition: border-color 0.2s;
+}
+
+.dictation-input:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px rgba(var(--primary-rgb), 0.15);
+}
+
+.dictation-input.dictation-correct {
+  border-color: var(--primary-color);
+  background: rgba(var(--primary-rgb), 0.06);
+}
+
+.dictation-input.dictation-wrong {
+  border-color: var(--error-color);
+  background: rgba(239, 68, 68, 0.06);
+}
+
+/* --- Submit button --- */
+.dictation-submit-btn {
+  width: 100%;
+  padding: 14px;
+  font-size: var(--font-size-md);
+  background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+  color: white;
+  border: none;
+  border-radius: var(--border-radius);
+  cursor: pointer;
+  font-weight: 600;
+  transition: opacity 0.2s, transform 0.1s;
+}
+
+.dictation-submit-btn:hover { opacity: 0.9; transform: translateY(-1px); }
+.dictation-submit-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+/* --- Result --- */
+.dictation-result {
+  width: 100%;
+  padding: var(--spacing-md) var(--spacing-lg);
+  border-radius: var(--border-radius);
+  border: 2px solid;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+.dictation-result.correct { background: rgba(var(--primary-rgb), 0.08); border-color: var(--primary-color); }
+.dictation-result.wrong { background: rgba(239, 68, 68, 0.08); border-color: var(--error-color); }
+
+.dictation-result-word {
+  font-size: var(--font-size-lg);
+  font-weight: 600;
+}
+
+.dictation-result.correct .dictation-result-word { color: var(--primary-color); }
+.dictation-result.wrong .dictation-result-word { color: var(--error-color); }
+
+.dictation-answers-row {
+  display: flex;
+  gap: var(--spacing-xs);
+  flex-wrap: wrap;
+}
+
+.dictation-answer-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+}
+
+.dictation-answer-chip.correct {
+  background: rgba(var(--primary-rgb), 0.12);
+  color: var(--primary-color);
+}
+
+.dictation-answer-chip.wrong {
+  background: rgba(239, 68, 68, 0.12);
+  color: var(--error-color);
+}
+
+.dictation-result-info {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  flex-wrap: wrap;
+}
+
+.dictation-phonetic {
+  font-size: 0.95rem;
+  color: var(--text-secondary);
+  font-style: italic;
+}
+
+.dictation-meaning {
+  color: var(--text-primary);
+}
+
+.dictation-full-sentence {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+  padding-top: var(--spacing-xs);
+  border-top: 1px solid var(--border-color);
+  flex-wrap: wrap;
+}
+
+.dictation-translation {
+  font-size: var(--font-size-sm);
+  color: var(--primary-color);
+  font-style: italic;
+  opacity: 0.85;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* ===================================
+   SENTENCE LISTENING MODE - NGHE CHUỖI TỪ
+   =================================== */
+
+.sentence-listening-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-lg);
+  max-width: 660px;
+  margin: 0 auto;
+}
+
+.sl-audio-area {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+  padding: var(--spacing-lg) var(--spacing-xl);
+  background: var(--bg-secondary);
+  border-radius: var(--border-radius-large);
+  width: 100%;
+}
+
+.sl-play-btn {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+  color: white;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.2s;
+}
+
+.sl-play-btn:hover { transform: scale(1.08); }
+.sl-play-btn.playing { opacity: 0.75; transform: scale(0.96); }
+
+.sl-listen-info {
+  flex: 1;
+}
+
+.sl-listen-label {
+  font-weight: 600;
+  font-size: var(--font-size-md);
+  color: var(--text-primary);
+}
+
+.sl-listen-sub {
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+  margin-top: 2px;
+}
+
+.sl-selected-count {
+  font-size: var(--font-size-md);
+  color: var(--text-secondary);
+  text-align: center;
+  padding: 4px 0;
+}
+
+/* Word grid: 4 columns × 2 rows = 8 buttons */
+.sl-word-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--spacing-sm);
+  width: 100%;
+}
+
+.sl-grid-word-btn {
+  padding: 14px 6px;
+  border: 2px solid var(--border-color);
+  border-radius: var(--border-radius);
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  font-size: var(--font-size-md);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-align: center;
+  word-break: break-word;
+}
+
+.sl-grid-word-btn:hover:not(:disabled) {
+  border-color: var(--primary-color);
+  background: rgba(var(--primary-rgb), 0.05);
+}
+
+.sl-grid-word-btn.sl-selected {
+  border-color: var(--primary-color);
+  background: rgba(var(--primary-rgb), 0.12);
+  color: var(--primary-color);
+  transform: scale(1.03);
+}
+
+.sl-grid-word-btn.correct {
+  border-color: #10b981;
+  background: rgba(16, 185, 129, 0.18);
+  color: #059669;
+}
+
+.sl-grid-word-btn.wrong {
+  border-color: #ef4444;
+  background: rgba(239, 68, 68, 0.15);
+  color: #dc2626;
+}
+
+.sl-grid-word-btn.sl-missed {
+  border-color: #10b981;
+  background: rgba(16, 185, 129, 0.08);
+  color: #059669;
+  animation: sl-missed-pulse 0.5s ease 2;
+}
+
+@keyframes sl-missed-pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.06); }
+}
+
+.sl-submit-btn {
+  width: 100%;
+  padding: 14px;
+  font-size: var(--font-size-md);
+  background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+  color: white;
+  border: none;
+  border-radius: var(--border-radius);
+  cursor: pointer;
+  font-weight: 600;
+  transition: opacity 0.2s;
+}
+
+.sl-submit-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.sl-submit-btn:not(:disabled):hover { opacity: 0.9; }
+
+.sl-result {
+  width: 100%;
+  border-radius: var(--border-radius);
+  overflow: hidden;
+  border: 2px solid var(--border-color);
+}
+
+.sl-result-header {
+  padding: var(--spacing-sm) var(--spacing-md);
+  font-weight: 600;
+  font-size: var(--font-size-md);
+}
+
+.sl-result-header.correct { background: rgba(var(--primary-rgb), 0.1); color: var(--primary-color); }
+.sl-result-header.wrong { background: rgba(239, 68, 68, 0.1); color: var(--error-color); }
+
+.sl-words-reveal {
+  padding: var(--spacing-sm) var(--spacing-md);
+  background: var(--bg-secondary);
+}
+
+.sl-words-label {
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+  font-weight: 600;
+  margin-bottom: var(--spacing-xs);
+}
+
+.sl-word-reveal-item {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding: 6px 0;
+  border-bottom: 1px solid var(--border-color);
+  font-size: var(--font-size-sm);
+  flex-wrap: wrap;
+}
+
+.sl-word-reveal-item:last-child { border-bottom: none; }
+
+/* ===================================
+   PHONETIC QUIZ MODE - ĐỌC PHIÊN ÂM
+   =================================== */
+
+.phonetic-quiz-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-lg);
+  max-width: 620px;
+  margin: 0 auto;
+}
+
+/* IPA display box (new mode: show IPA → pick word) */
+.pq-ipa-display {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-lg);
+  padding: var(--spacing-xl);
+  background: linear-gradient(135deg, rgba(var(--primary-rgb), 0.08), rgba(var(--secondary-rgb), 0.08));
+  border: 2px solid rgba(var(--primary-rgb), 0.25);
+  border-radius: var(--border-radius-large);
+  width: 100%;
+}
+
+.pq-ipa-big {
+  font-family: 'Courier New', monospace;
+  font-size: 2.4rem;
+  font-weight: 700;
+  color: var(--primary-color);
+  letter-spacing: 2px;
+  flex: 1;
+  word-break: break-all;
+}
+
+.pq-ipa-side {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: var(--spacing-sm);
+  flex-shrink: 0;
+}
+
+.pq-ipa-label {
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.pq-ipa-hint-area {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+}
+
+.pq-audio-left {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  font-weight: 600;
+}
+
+/* Fallback / legacy word display */
+.pq-word-display {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+  padding: var(--spacing-lg) var(--spacing-xl);
+  background: linear-gradient(135deg, rgba(var(--primary-rgb), 0.08), rgba(var(--secondary-rgb), 0.08));
+  border: 2px solid rgba(var(--primary-rgb), 0.2);
+  border-radius: var(--border-radius-large);
+}
+
+.pq-word {
+  font-size: 2.2rem;
+  font-weight: 700;
+  color: var(--primary-color);
+  letter-spacing: 1px;
+  flex: 1;
+}
+
+.pq-play-btn {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+  color: white;
+  border: none;
+  font-size: 1.1rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.2s;
+  flex-shrink: 0;
+}
+
+.pq-play-btn:hover { transform: scale(1.1); }
+.pq-play-btn.playing { animation: pq-pulse-ring 0.8s ease infinite; }
+
+.pq-instruction {
+  font-size: var(--font-size-md);
+  color: var(--text-secondary);
+  text-align: center;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.pq-options {
+  width: 100%;
+}
+
+/* Choice buttons showing English words (IPA→Word mode) */
+.pq-word-choice-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 14px 10px;
+}
+
+.pq-choice-word {
+  font-size: var(--font-size-lg);
+  font-weight: 700;
+}
+
+.pq-choice-vn {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  font-weight: 400;
+  font-style: italic;
+}
+
+.pq-result {
+  width: 100%;
+  padding: var(--spacing-md) var(--spacing-lg);
+  border-radius: var(--border-radius);
+  background: var(--bg-secondary);
+  border: 2px solid var(--border-color);
+}
+
+.pq-result-header {
+  font-size: var(--font-size-md);
+  font-weight: 600;
+  margin-bottom: var(--spacing-sm);
+}
+
+.pq-result-header.correct { color: var(--primary-color); }
+.pq-result-header.wrong { color: var(--error-color); }
+
+.pq-word-full {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  flex-wrap: wrap;
+  margin-bottom: 4px;
+}
+
+.pq-meaning {
+  color: var(--text-secondary);
+  font-size: var(--font-size-sm);
+  margin-bottom: var(--spacing-sm);
+}
+
+@keyframes pq-pulse-ring {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(var(--primary-rgb), 0.5); }
+  50% { box-shadow: 0 0 0 10px rgba(var(--primary-rgb), 0); }
+}

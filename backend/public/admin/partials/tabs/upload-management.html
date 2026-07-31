@@ -1,0 +1,75 @@
+          <!-- Upload Management Tab -->
+          <div id="main-tab-upload-management" class="main-tab-content">
+            <div class="card">
+              <div class="card-header">
+                <h2>
+                  <i class="fas fa-cloud-upload-alt"></i> Quản lý nội dung người dùng
+                </h2>
+                <div class="card-header-actions">
+                </div>
+                <p
+                  style="
+                    margin-top: 4px;
+                    color: var(--text-secondary);
+                    font-size: 13px;
+                  "
+                >
+                  Giám sát các upload từ vựng của user
+                </p>
+              </div>
+
+              <div style="padding: 0 0 12px; display: flex; gap: 8px; align-items: center">
+                <input
+                  type="text"
+                  id="upload-search"
+                  class="card-search"
+                  style="flex: 1; margin: 0"
+                  placeholder="Email, nguồn..."
+                />
+                <select id="upload-filter-words" class="filter-select" style="width: auto; min-width: 130px; flex-shrink: 0">
+                  <option value="">Tất cả</option>
+                  <option value="0-9">&lt; 10 từ</option>
+                  <option value="10-49">10 – 49 từ</option>
+                  <option value="50-99">50 – 99 từ</option>
+                  <option value="100-">≥ 100 từ</option>
+                </select>
+                <select id="upload-filter-status" class="filter-select" style="width: auto; min-width: 130px; flex-shrink: 0">
+                  <option value="">Tất cả</option>
+                  <option value="active">Cho phép</option>
+                  <option value="blocked">Bị chặn</option>
+                </select>
+              </div>
+              <div style="display: flex; justify-content: space-between; align-items: center; padding-bottom: 12px">
+                <span id="upload-filter-count" class="result-count" style="font-size: 13px; color: var(--text-secondary)"></span>
+                <div style="display: flex; gap: 8px; align-items: center">
+                  <button class="btn btn-ghost btn-sm" id="btn-sync-all-uploads" title="Tải lại danh sách từ server">
+                    <i class="fas fa-rotate"></i> Tải lại
+                  </button>
+                  <button id="btn-clear-upload-filters" class="btn btn-ghost btn-sm"><i class="fas fa-times"></i> Xóa lọc</button>
+                  <button id="btn-refresh-uploads" class="btn btn-ghost btn-sm" style="display:none"></button>
+                </div>
+              </div>
+
+              <div class="table-container">
+                <table class="data-table">
+                  <thead>
+                    <tr>
+                      <th>Email</th>
+                      <th>Nguồn</th>
+                      <th>Nội dung</th>
+                      <th>Số từ</th>
+                      <th>Trạng thái</th>
+                      <th>Lần upload cuối</th>
+                    </tr>
+                  </thead>
+                  <tbody id="upload-monitoring-tbody">
+                    <tr>
+                      <td colspan="6" class="loading">
+                        <i class="fas fa-spinner fa-spin"></i> Đang tải dữ liệu...
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>

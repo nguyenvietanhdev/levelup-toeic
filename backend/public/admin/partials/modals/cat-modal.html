@@ -1,0 +1,45 @@
+    <!-- Modal: Danh mục -->
+    <div id="cat-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:1000;align-items:center;justify-content:center">
+      <div style="background:var(--bg-primary,white);border-radius:14px;padding:28px;max-width:480px;width:94%">
+        <h3 style="margin-bottom:20px;color:var(--primary)"><i class="fas fa-tag"></i> <span id="cat-modal-title">Thêm danh mục</span></h3>
+        <form id="cat-form">
+          <input type="hidden" id="cat-id">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+            <div>
+              <label style="font-size:12px;font-weight:600;color:var(--text-secondary)">Domain *</label>
+              <select id="cat-domain-f" style="width:100%;padding:9px;border:1.5px solid var(--border-color);border-radius:8px;margin-top:4px">
+                <option value="item">item</option>
+                <option value="shop">shop</option>
+                <option value="achievement">achievement</option>
+                <option value="quest">quest</option>
+              </select>
+            </div>
+            <div>
+              <label style="font-size:12px;font-weight:600;color:var(--text-secondary)">Key (unique) *</label>
+              <input type="text" id="cat-key" required placeholder="vd: cosmetic" style="width:100%;padding:9px;border:1.5px solid var(--border-color);border-radius:8px;margin-top:4px;font-family:monospace">
+            </div>
+          </div>
+          <div style="display:grid;grid-template-columns:110px 1fr;gap:12px;margin-bottom:12px">
+            <div>
+              <label style="font-size:12px;font-weight:600;color:var(--text-secondary)">Icon (emoji/FA)</label>
+              <input type="text" id="cat-icon" placeholder="🎨 / fa-store" style="width:100%;padding:9px;border:1.5px solid var(--border-color);border-radius:8px;margin-top:4px;text-align:center">
+            </div>
+            <div>
+              <label style="font-size:12px;font-weight:600;color:var(--text-secondary)">Nhãn *</label>
+              <input type="text" id="cat-label" required placeholder="vd: Giao diện" style="width:100%;padding:9px;border:1.5px solid var(--border-color);border-radius:8px;margin-top:4px">
+            </div>
+          </div>
+          <div style="display:flex;gap:16px;align-items:center;margin-bottom:18px">
+            <div style="flex:0 0 120px">
+              <label style="font-size:12px;font-weight:600;color:var(--text-secondary)">Thứ tự</label>
+              <input type="number" id="cat-order" value="0" style="width:100%;padding:9px;border:1.5px solid var(--border-color);border-radius:8px;margin-top:4px">
+            </div>
+            <label style="font-size:13px;display:inline-flex;align-items:center;gap:6px;margin-top:18px"><input type="checkbox" id="cat-active" checked> đang bật</label>
+          </div>
+          <div style="display:flex;justify-content:flex-end;gap:10px">
+            <button type="button" id="btn-cat-cancel" class="btn btn-secondary">Hủy</button>
+            <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Lưu</button>
+          </div>
+        </form>
+      </div>
+    </div>
