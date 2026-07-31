@@ -251,7 +251,7 @@ function displayLocalVocabulary() {
 
   if (filtered.length === 0) {
     tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: #999; padding: 40px;">
-            Không tìm thấy từ vựng nào với từ khóa "${vocabSearchTerm}".
+            Không tìm thấy từ vựng nào với từ khóa "${esc(vocabSearchTerm)}".
         </td></tr>`;
 
     // Update count display
@@ -263,15 +263,15 @@ function displayLocalVocabulary() {
     .map(
       (word) => `
         <tr>
-            <td><strong>${word.en || ""}</strong> ${word.phonetic || ""}</td>
-            <td>${word.vn || ""}</td>
-            <td><span class="badge info">${word.type || "-"}</span></td>
-            <td><span class="badge warning">${word.part || "-"}</span></td>
+            <td><strong>${esc(word.en)}</strong> ${esc(word.phonetic)}</td>
+            <td>${esc(word.vn)}</td>
+            <td><span class="badge info">${esc(word.type || "-")}</span></td>
+            <td><span class="badge warning">${esc(word.part || "-")}</span></td>
             <td>
                 <button class="btn btn-warning btn-sm btn-edit-word" data-word='${JSON.stringify(word).replace(/'/g, "&#39;")}' title="Sửa từ vựng">
                     <i class="fas fa-edit"></i>
                 </button>
-                <button class="btn btn-danger btn-sm btn-delete-word" data-en="${word.en || ""}" title="Xóa từ vựng">
+                <button class="btn btn-danger btn-sm btn-delete-word" data-en="${esc(word.en)}" title="Xóa từ vựng">
                     <i class="fas fa-trash"></i>
                 </button>
             </td>
@@ -352,7 +352,7 @@ function updateLocalStats() {
                 <div style="color: var(--text-secondary); font-size: 12px;">Loại từ</div>
             </div>
             <div class="stat-item" style="text-align: center; padding: 15px; background: var(--card-bg); border-radius: 8px;">
-                <div style="font-size: 14px; font-weight: bold; color: var(--info);">${currentLocalFile}</div>
+                <div style="font-size: 14px; font-weight: bold; color: var(--info);">${esc(currentLocalFile)}</div>
                 <div style="color: var(--text-secondary); font-size: 12px;">File hiện tại</div>
             </div>
         </div>

@@ -932,7 +932,12 @@ function showToast(message, type = 'info') {
     // Tạo toast element
     const toast = document.createElement('div');
     toast.className = `toast-notification toast-${type}`;
-    toast.innerHTML = message;
+    // textContent chứ KHÔNG phải innerHTML. Đây là hàm được gọi nhiều nhất trong
+    // panel (157 chỗ) và phần lớn call site nhét thẳng `err.message` từ server
+    // hoặc tên do người dùng đặt vào chuỗi — mỗi chỗ như vậy là một sink XSS.
+    // Đã kiểm: 0/157 lời gọi truyền markup có chủ ý, nên đổi ở ĐÂY miễn nhiễm
+    // tất cả cùng lúc, thay vì đi bọc esc() ở 157 nơi rồi sót.
+    toast.textContent = message;
     toast.style.cssText = `
         position: fixed;
         bottom: 20px;

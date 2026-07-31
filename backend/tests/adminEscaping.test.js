@@ -99,4 +99,48 @@ describe('tabs.js — dữ liệu người dùng phải đi qua esc()', () => {
         const fake = 'tbody.innerHTML = `<td>${u.email}</td>`;';
         expect(fake.match(unescaped('u.email'))).not.toBeNull();
     });
+
+    test.each([
+        ['t.displayName', 'tên đề — admin đặt, lưu trong DB'],
+        ['n.title', 'tiêu đề thông báo'],
+        ['n.body', 'nội dung thông báo'],
+        ['a.name', 'tên thành tích'],
+        ['m.provider', 'nhà cung cấp AI'],
+    ])('%s cũng phải qua esc()', (field) => {
+        expect(tabs.match(unescaped(field)) || []).toEqual([]);
+    });
+});
+
+describe('showToast — hàm được gọi nhiều nhất trong panel, không được là sink HTML', () => {
+    const fs = require('fs');
+    const path = require('path');
+    const ADMIN_JS = path.join(__dirname, '..', 'public', 'admin', 'js');
+    const vocab = fs.readFileSync(path.join(ADMIN_JS, 'features', 'vocab', 'vocab.js'), 'utf8');
+
+    test('dựng nội dung toast bằng textContent, không phải innerHTML', () => {
+        // 157 call site, phần lớn nhét thẳng err.message từ server hoặc tên do
+        // người dùng đặt. Đổi ở đây miễn nhiễm tất cả; để innerHTML thì mỗi call
+        // site là một sink và không ai đi bọc đủ 157 chỗ.
+        const body = vocab.slice(vocab.indexOf('function showToast'));
+        const decl = body.slice(0, body.indexOf('toast.style.cssText'));
+        expect(decl).toMatch(/toast\.textContent\s*=\s*message/);
+        expect(decl).not.toMatch(/toast\.innerHTML\s*=\s*message/);
+    });
+
+    test('không call site nào truyền markup — cơ sở để dùng textContent', () => {
+        const withMarkup = [];
+        for (const dir of ['core', 'features']) {
+            const walk = (d) => fs.readdirSync(d, { withFileTypes: true }).forEach(e => {
+                const full = path.join(d, e.name);
+                if (e.isDirectory()) return e.name !== 'vendor' && walk(full);
+                if (!e.name.endsWith('.js')) return;
+                const src = fs.readFileSync(full, 'utf8');
+                for (const m of src.matchAll(/showToast\(([\s\S]{0,160}?)\);/g)) {
+                    if (/<[a-zA-Z/]/.test(m[1])) withMarkup.push(path.basename(full));
+                }
+            });
+            walk(path.join(ADMIN_JS, dir));
+        }
+        expect(withMarkup).toEqual([]);
+    });
 });

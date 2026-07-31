@@ -88,7 +88,7 @@ async function loadTopicsTab() {
     _setupTopicsSearch();
     _applyTopicsFilter();
   } catch (err) {
-    tbody.innerHTML = `<tr><td colspan="7" style="color:#ef4444;text-align:center;padding:20px;">${err.message}</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="7" style="color:#ef4444;text-align:center;padding:20px;">${esc(err.message)}</td></tr>`;
   }
 }
 
@@ -195,10 +195,10 @@ function renderTopicsTable(topics) {
     const tr = document.createElement("tr");
     tr.innerHTML = `
             <td>
-                <strong>${t.displayName}</strong>
-                ${t.description ? `<div style="font-size:11px;color:#64748b;margin-top:2px;">${t.description}</div>` : ""}
+                <strong>${esc(t.displayName)}</strong>
+                ${t.description ? `<div style="font-size:11px;color:#64748b;margin-top:2px;">${esc(t.description)}</div>` : ""}
             </td>
-            <td><span class="badge info" style="font-family:monospace;">${Array.isArray(t.sourceKeys) ? t.sourceKeys.join(", ") : t.sourceKeys}</span></td>
+            <td><span class="badge info" style="font-family:monospace;">${esc(Array.isArray(t.sourceKeys) ? t.sourceKeys.join(", ") : t.sourceKeys)}</span></td>
             <td><strong>${(t.wordCount || 0).toLocaleString()}</strong> từ</td>
             <td style="text-align:center;">${t.order}</td>
             <td style="text-align:center;">
@@ -248,23 +248,23 @@ function showTopicModal(topic) {
             <div style="display:grid;gap:14px;">
                 <div>
                     <label style="font-size:12px;color:#94a3b8;display:block;margin-bottom:5px;">SOURCE KEYS <span style="color:#ef4444">*</span></label>
-                    <input id="ti-sourceKey" value="${(Array.isArray(topic?.sourceKeys) ? topic.sourceKeys : [topic?.sourceKeys || ""]).filter(Boolean).join(", ")}"
+                    <input id="ti-sourceKey" value="${esc((Array.isArray(topic?.sourceKeys) ? topic.sourceKeys : [topic?.sourceKeys || ""]).filter(Boolean).join(", "))}"
                         placeholder="vd: ets2024, 600words" style="width:100%;padding:9px 12px;background:#0f172a;border:1px solid #334155;border-radius:8px;color:#e2e8f0;font-family:monospace;">
                     <div style="font-size:11px;color:#64748b;margin-top:4px;">Nhiều giá trị cách nhau bằng dấu phẩy. Phải khớp với sources trong vocabulary.</div>
                 </div>
                 <div>
                     <label style="font-size:12px;color:#94a3b8;display:block;margin-bottom:5px;">TÊN HIỂN THỊ <span style="color:#ef4444">*</span></label>
-                    <input id="ti-displayName" value="${topic?.displayName || ""}" placeholder="vd: ETS 2024"
+                    <input id="ti-displayName" value="${esc(topic?.displayName || "")}" placeholder="vd: ETS 2024"
                         style="width:100%;padding:9px 12px;background:#0f172a;border:1px solid #334155;border-radius:8px;color:#e2e8f0;">
                 </div>
                 <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
                     <div>
                         <label style="font-size:12px;color:#94a3b8;display:block;margin-bottom:5px;">ICON (emoji)</label>
-                        <input id="ti-icon" value="${topic?.icon || "📚"}" style="width:100%;padding:9px 12px;background:#0f172a;border:1px solid #334155;border-radius:8px;color:#e2e8f0;font-size:18px;">
+                        <input id="ti-icon" value="${esc(topic?.icon || "📚")}" style="width:100%;padding:9px 12px;background:#0f172a;border:1px solid #334155;border-radius:8px;color:#e2e8f0;font-size:18px;">
                     </div>
                     <div>
                         <label style="font-size:12px;color:#94a3b8;display:block;margin-bottom:5px;">MÀU</label>
-                        <input type="color" id="ti-color" value="${topic?.color || "#3b82f6"}" style="width:100%;height:38px;padding:2px;background:#0f172a;border:1px solid #334155;border-radius:8px;cursor:pointer;">
+                        <input type="color" id="ti-color" value="${esc(topic?.color || "#3b82f6")}" style="width:100%;height:38px;padding:2px;background:#0f172a;border:1px solid #334155;border-radius:8px;cursor:pointer;">
                     </div>
                 </div>
                 <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
@@ -288,7 +288,7 @@ function showTopicModal(topic) {
                 </div>
                 <div>
                     <label style="font-size:12px;color:#94a3b8;display:block;margin-bottom:5px;">MÔ TẢ</label>
-                    <input id="ti-description" value="${topic?.description || ""}" placeholder="Mô tả ngắn về đề này..."
+                    <input id="ti-description" value="${esc(topic?.description || "")}" placeholder="Mô tả ngắn về đề này..."
                         style="width:100%;padding:9px 12px;background:#0f172a;border:1px solid #334155;border-radius:8px;color:#e2e8f0;">
                 </div>
             </div>
@@ -407,7 +407,7 @@ async function _bulkPublishTopics(publish) {
       if (!res.ok || !data.success) throw new Error(data.message || "lỗi");
       ok++;
     } catch (err) {
-      errors.push(`${t.displayName || t._id}: ${err.message}`);
+      errors.push(`${esc(t.displayName || t._id)}: ${err.message}`);
     }
   }
 
@@ -590,7 +590,7 @@ async function loadUploadMonitoring() {
     _setupUploadsFilters();
     _applyUploadsFilter();
   } catch (err) {
-    tbody.innerHTML = `<tr><td colspan="6" style="padding:20px;text-align:center;color:#ef4444">Lỗi tải dữ liệu: ${err.message}</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="6" style="padding:20px;text-align:center;color:#ef4444">Lỗi tải dữ liệu: ${esc(err.message)}</td></tr>`;
   }
 }
 
@@ -635,7 +635,7 @@ function renderProviderPicker(providers) {
       pSel.innerHTML = providers
         .map(
           (p) =>
-            `<option value="${p.id}" ${p.configured ? "" : "disabled"} ${p.id === cur.provider ? "selected" : ""}>${p.label}${p.configured ? "" : " (chưa có key)"}</option>`,
+            `<option value="${p.id}" ${p.configured ? "" : "disabled"} ${p.id === cur.provider ? "selected" : ""}>${esc(p.label)}${p.configured ? "" : " (chưa có key)"}</option>`,
         )
         .join("");
 
@@ -651,7 +651,7 @@ function renderProviderPicker(providers) {
         // Model không đọc được ảnh thì nói trước, đừng để lỗi lúc quét đáp án.
         if (hint) {
           hint.innerHTML = p.vision.length
-            ? `<i class="fas fa-image"></i> Đọc được ảnh: ${p.vision.join(", ")}`
+            ? `<i class="fas fa-image"></i> Đọc được ảnh: ${esc(p.vision.join(", "))}`
             : '<i class="fas fa-triangle-exclamation"></i> Hãng này chưa đọc được ảnh — không dùng cho quét đáp án.';
         }
       };
@@ -744,7 +744,7 @@ async function loadTokenStats() {
               : ' <span class="badge neutral" title="Chưa có API key trong .env">chưa cấu hình</span>';
             return `
                         <tr style="border-bottom:1px solid var(--border-color)">
-                            <td style="padding:10px"><b>${p.label || p._id}</b>${key}</td>
+                            <td style="padding:10px"><b>${esc(p.label || p._id)}</b>${key}</td>
                             <td style="padding:10px;text-align:right">${fmt(p.calls)}</td>
                             <td style="padding:10px;text-align:right;font-family:monospace">${fmt(p.tokens)}</td>
                             <td style="padding:10px;text-align:right;font-family:monospace">${usd(p.cost)}</td>
@@ -768,8 +768,8 @@ async function loadTokenStats() {
             .map(
               (m) => `
                     <tr style="border-bottom:1px solid var(--border-color)">
-                        <td style="padding:10px;font-family:monospace;font-size:12px">${m.model || "—"}</td>
-                        <td style="padding:10px;font-size:12px;color:var(--text-secondary)">${m.provider}</td>
+                        <td style="padding:10px;font-family:monospace;font-size:12px">${esc(m.model || "—")}</td>
+                        <td style="padding:10px;font-size:12px;color:var(--text-secondary)">${esc(m.provider)}</td>
                         <td style="padding:10px;text-align:right">${fmt(m.calls)}</td>
                         <td style="padding:10px;text-align:right;font-family:monospace">${fmt(m.tokens)}</td>
                         <td style="padding:10px;text-align:right;font-family:monospace">${usd(m.cost)}</td>
@@ -796,7 +796,7 @@ async function loadTokenStats() {
             const pct = Math.round((f.tokens / maxTokens) * 100);
             return `
                         <tr style="border-bottom:1px solid var(--border-color)">
-                            <td style="padding:10px"><b>${label}</b></td>
+                            <td style="padding:10px"><b>${esc(label)}</b></td>
                             <td style="padding:10px;text-align:right">${fmt(f.calls)}</td>
                             <td style="padding:10px;text-align:right;font-family:monospace">${fmt(f.tokens)}</td>
                             <td style="padding:10px;text-align:right;font-family:monospace">${usd(f.cost)}</td>
@@ -823,9 +823,9 @@ async function loadTokenStats() {
             (r) => `
                     <tr style="border-bottom:1px solid var(--border-color)">
                         <td style="padding:8px 10px;font-size:12px;color:var(--text-secondary);white-space:nowrap">${new Date(r.createdAt).toLocaleString("vi-VN")}</td>
-                        <td style="padding:8px 10px;font-size:13px">${AI_FEATURE_LABELS[r.feature] || r.feature}</td>
-                        <td style="padding:8px 10px;font-family:monospace;font-size:12px;color:var(--text-secondary)">${r.model || "—"}</td>
-                        <td style="padding:8px 10px;font-size:12px">${r.email || "—"}</td>
+                        <td style="padding:8px 10px;font-size:13px">${esc(AI_FEATURE_LABELS[r.feature] || r.feature)}</td>
+                        <td style="padding:8px 10px;font-family:monospace;font-size:12px;color:var(--text-secondary)">${esc(r.model || "—")}</td>
+                        <td style="padding:8px 10px;font-size:12px">${esc(r.email || "—")}</td>
                         <td style="padding:8px 10px;text-align:right;font-family:monospace">${fmt(r.totalTokens)}</td>
                         <td style="padding:8px 10px;text-align:right;font-family:monospace">${usd(r.costUsd)}</td>
                     </tr>
@@ -909,7 +909,7 @@ async function loadUserStats(page = 1, search = null) {
 
     renderUsPagination(pagination);
   } catch (err) {
-    tbody.innerHTML = `<tr><td colspan="12" style="text-align:center;padding:20px;color:var(--danger-color)">Lỗi: ${err.message}</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="12" style="text-align:center;padding:20px;color:var(--danger-color)">Lỗi: ${esc(err.message)}</td></tr>`;
   }
 }
 
@@ -1023,7 +1023,7 @@ async function loadUaUsers(page = 1, search = null) {
       }
     }
   } catch (err) {
-    tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;color:var(--danger-color);padding:24px">Lỗi: ${err.message}</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;color:var(--danger-color);padding:24px">Lỗi: ${esc(err.message)}</td></tr>`;
   }
 }
 
@@ -1091,9 +1091,9 @@ async function _loadUaAchievements(uid, panel) {
                           );
                         return `<tr style="border-bottom:1px solid var(--border-color)">
                             <td style="padding:8px">${i + 1}</td>
-                            <td style="padding:8px;font-size:18px;text-align:center">${a.icon || "🏆"}</td>
-                            <td style="padding:8px;font-weight:600">${a.name || "—"}</td>
-                            <td style="padding:8px;color:var(--text-secondary)">${a.description || ""}</td>
+                            <td style="padding:8px;font-size:18px;text-align:center">${esc(a.icon || "🏆")}</td>
+                            <td style="padding:8px;font-weight:600">${esc(a.name || "—")}</td>
+                            <td style="padding:8px;color:var(--text-secondary)">${esc(a.description || "")}</td>
                             <td style="padding:8px">${new Date(a.unlockedAt).toLocaleDateString("vi-VN")}</td>
                             <td style="padding:8px">${rewards.length ? rewards.join(" ") : '<span style="color:var(--text-secondary)">—</span>'}</td>
                         </tr>`;
@@ -1102,7 +1102,7 @@ async function _loadUaAchievements(uid, panel) {
                 </tbody>
             </table>`;
   } catch (err) {
-    panel.innerHTML = `<p style="color:var(--danger-color);font-size:13px;margin:0">Lỗi: ${err.message}</p>`;
+    panel.innerHTML = `<p style="color:var(--danger-color);font-size:13px;margin:0">Lỗi: ${esc(err.message)}</p>`;
   }
 }
 
@@ -1405,7 +1405,7 @@ function _renderNotifList() {
       const isGlobal = !n.userId;
       const recipientHtml = isGlobal
         ? '<span style="color:#3b82f6;font-weight:600">👥 Tất cả người dùng</span>'
-        : `<span>${n.userId?.email || "?"}</span>`;
+        : `<span>${esc(n.userId?.email || "?")}</span>`;
       const readHtml = !isGlobal
         ? n.read
           ? ' · <span style="color:#10b981">✓ Đã đọc</span>'
@@ -1430,8 +1430,8 @@ function _renderNotifList() {
                 <span style="color:var(--text-secondary);font-size:12px">${new Date(n.createdAt).toLocaleString("vi-VN")}</span>
                 <button class="btn btn-sm nhi-del-btn" data-id="${n._id}" style="margin-left:auto;background:rgba(239,68,68,.12);color:#ef4444;border:1px solid rgba(239,68,68,.3);padding:2px 8px;font-size:11px;border-radius:6px"><i class="fas fa-trash"></i></button>
             </div>
-            <div style="font-weight:600;margin-top:7px;font-size:14px">${n.title}</div>
-            ${n.body ? `<div style="color:var(--text-secondary);font-size:13px;margin-top:2px">${n.body}</div>` : ""}
+            <div style="font-weight:600;margin-top:7px;font-size:14px">${esc(n.title)}</div>
+            ${n.body ? `<div style="color:var(--text-secondary);font-size:13px;margin-top:2px">${esc(n.body)}</div>` : ""}
             <div style="font-size:12px;color:var(--text-secondary);margin-top:5px">${recipientHtml}${readHtml}</div>
             ${giftHtml}
         </div>`;
@@ -1458,7 +1458,7 @@ async function loadNotifHistory() {
     _notifData = result.data || [];
     _renderNotifList();
   } catch (err) {
-    list.innerHTML = `<p style="color:var(--danger-color);padding:16px">Lỗi: ${err.message}</p>`;
+    list.innerHTML = `<p style="color:var(--danger-color);padding:16px">Lỗi: ${esc(err.message)}</p>`;
   }
 }
 
@@ -1524,8 +1524,8 @@ async function loadPracticeHistory12(page = 1, search = null, mode = null) {
             ? Math.round((s.correctAnswers / s.questionsCount) * 100)
             : 0;
         return `<tr>
-                <td>${s.user?.email || "-"}</td>
-                <td><span class="badge badge-info">${MODE_LABELS[s.mode] || s.mode}</span></td>
+                <td>${esc(s.user?.email || "-")}</td>
+                <td><span class="badge badge-info">${esc(MODE_LABELS[s.mode] || s.mode)}</span></td>
                 <td style="text-align:right">${s.score || 0}</td>
                 <td style="text-align:center;color:var(--success-color)">${s.correctAnswers || 0}</td>
                 <td style="text-align:center;color:var(--danger-color)">${s.wrongAnswers || 0}</td>
@@ -1550,7 +1550,7 @@ async function loadPracticeHistory12(page = 1, search = null, mode = null) {
 
     renderPhPagination(pagination);
   } catch (err) {
-    tbody.innerHTML = `<tr><td colspan="10" style="text-align:center;padding:20px;color:var(--danger-color)">Lỗi: ${err.message}</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="10" style="text-align:center;padding:20px;color:var(--danger-color)">Lỗi: ${esc(err.message)}</td></tr>`;
   }
 }
 

@@ -125,7 +125,7 @@ function renderPager(containerId, { page, limit, total, itemName = 'mục', onPa
     container.innerHTML = '';
 
     if (!total) {
-        container.innerHTML = `<span class="pager-info">Không có ${itemName} nào.</span>`;
+        container.innerHTML = `<span class="pager-info">Không có ${esc(itemName)} nào.</span>`;
         return;
     }
 
@@ -139,7 +139,7 @@ function renderPager(containerId, { page, limit, total, itemName = 'mục', onPa
 
     const info = document.createElement('span');
     info.className = 'pager-info';
-    info.innerHTML = `${from}–${to} / <strong>${total}</strong> ${itemName}`;
+    info.innerHTML = `${from}–${to} / <strong>${total}</strong> ${esc(itemName)}`;
     wrap.appendChild(info);
 
     if (totalPages > 1) {
