@@ -522,12 +522,14 @@ function _renderUploads(data) {
       const statusBg = isActive
         ? "rgba(16,185,129,.12)"
         : "rgba(239,68,68,.12)";
-      const preview = (u.contentPreview || []).slice(0, 3).join(", ");
+      // Cả 3 giá trị dưới đây do NGƯỜI DÙNG viết (từ vựng họ upload + email):
+      // phải qua esc(), kể cả trong thuộc tính title="..." nháy kép.
+      const preview = esc((u.contentPreview || []).slice(0, 3).join(", "));
       const more = u.wordCount > 3 ? ` +${u.wordCount - 3}` : "";
       return `<tr>
-            <td style="padding:12px;font-weight:500">${u.email}</td>
-            <td style="padding:12px;font-size:13px"><code style="background:var(--bg-tertiary);padding:2px 8px;border-radius:4px;font-size:12px">${u.source}</code></td>
-            <td style="padding:12px;font-size:13px;color:var(--text-secondary);max-width:260px;overflow:hidden;text-overflow:ellipsis"><span title="${(u.contentPreview || []).join(", ")}">${preview}${more}</span></td>
+            <td style="padding:12px;font-weight:500">${esc(u.email)}</td>
+            <td style="padding:12px;font-size:13px"><code style="background:var(--bg-tertiary);padding:2px 8px;border-radius:4px;font-size:12px">${esc(u.source)}</code></td>
+            <td style="padding:12px;font-size:13px;color:var(--text-secondary);max-width:260px;overflow:hidden;text-overflow:ellipsis"><span title="${esc((u.contentPreview || []).join(", "))}">${preview}${more}</span></td>
             <td style="padding:12px;text-align:right;font-family:monospace;font-weight:600">${u.wordCount}</td>
             <td style="padding:12px;text-align:center"><span style="display:inline-block;padding:4px 10px;border-radius:12px;font-size:11px;font-weight:600;background:${statusBg};color:${statusColor}">${statusLabel}</span></td>
             <td style="padding:12px;text-align:center;font-size:12px;color:var(--text-secondary)">${new Date(u.createdAt).toLocaleString("vi-VN", { dateStyle: "short", timeStyle: "short" })}</td>
@@ -877,8 +879,8 @@ async function loadUserStats(page = 1, search = null) {
       .map(
         (u) => `
             <tr>
-                <td>${u.email}</td>
-                <td>${u.username || "-"}</td>
+                <td>${esc(u.email)}</td>
+                <td>${esc(u.username || "-")}</td>
                 <td style="text-align:center">${u.level}</td>
                 <td style="text-align:right">${(u.xp || 0).toLocaleString()}</td>
                 <td style="text-align:right">${(u.coins || 0).toLocaleString()}</td>
@@ -886,11 +888,11 @@ async function loadUserStats(page = 1, search = null) {
                 <td style="text-align:center">${u.streakCurrent}</td>
                 <td style="text-align:center">${u.totalSessions}</td>
                 <td style="text-align:center">${u.totalCorrect}</td>
-                <td><span class="badge ${u.role === "admin" ? "badge-danger" : "badge-success"}">${u.role}</span></td>
+                <td><span class="badge ${u.role === "admin" ? "badge-danger" : "badge-success"}">${esc(u.role)}</span></td>
                 <td style="font-size:12px;color:var(--text-secondary)">${u.createdAt ? new Date(u.createdAt).toLocaleDateString("vi-VN") : "-"}</td>
                 <td>
                     <button class="btn btn-sm btn-outline us-ach-btn"
-                        data-uid="${u._id}" data-email="${u.email.replace(/"/g, "&quot;")}">
+                        data-uid="${esc(u._id)}" data-email="${esc(u.email)}">
                         <i class="fas fa-trophy"></i>
                     </button>
                 </td>
@@ -988,8 +990,8 @@ async function loadUaUsers(page = 1, search = null) {
         (u, idx) => `
             <tr class="ua-user-row" data-uid="${u._id}" style="cursor:pointer">
                 <td style="color:var(--text-secondary)">${offset + idx + 1}</td>
-                <td style="font-weight:600">${u.username || "—"}</td>
-                <td>${u.email}</td>
+                <td style="font-weight:600">${esc(u.username || "—")}</td>
+                <td>${esc(u.email)}</td>
                 <td style="font-size:13px;color:var(--text-secondary)">${u.createdAt ? new Date(u.createdAt).toLocaleDateString("vi-VN") : "—"}</td>
                 <td style="text-align:center"><i class="fas fa-chevron-down ua-chevron" style="transition:transform .2s;color:var(--text-secondary)"></i></td>
             </tr>
@@ -1232,10 +1234,10 @@ async function _bcSearchUsers(q) {
     suggestions.innerHTML = users
       .map(
         (u) => `
-            <div class="bc-suggest-item" data-id="${u._id}" data-email="${u.email}"
+            <div class="bc-suggest-item" data-id="${esc(u._id)}" data-email="${esc(u.email)}"
               style="padding:10px 14px;cursor:pointer;font-size:13px;border-bottom:1px solid var(--border-color);">
-              <div style="font-weight:600;color:var(--text-primary)">${u.email}</div>
-              ${u.displayName || u.username ? `<div style="font-size:11px;color:var(--text-secondary)">${u.displayName || u.username}</div>` : ""}
+              <div style="font-weight:600;color:var(--text-primary)">${esc(u.email)}</div>
+              ${u.displayName || u.username ? `<div style="font-size:11px;color:var(--text-secondary)">${esc(u.displayName || u.username)}</div>` : ""}
             </div>
         `,
       )

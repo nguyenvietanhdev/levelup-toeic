@@ -5,6 +5,23 @@
 // ===================================
 
 /**
+ * Escape cho MỌI giá trị nội suy vào chuỗi HTML.
+ *
+ * Panel này dựng bảng bằng cách nối chuỗi rồi gán `innerHTML`, và phần lớn dữ
+ * liệu hiển thị là do người dùng viết: từ vựng họ upload, tên hiển thị họ đặt,
+ * email họ đăng ký. Không escape thì một từ vựng chứa thẻ HTML sẽ chạy script
+ * ngay trong phiên admin — mà token admin nằm ở localStorage. Đường ghi đó là
+ * tính năng hợp lệ (`POST /api/upload/vocabulary` đã guard đủ 3 lớp), nên
+ * KHÔNG có cách vá phía server: chỉ escape ở chỗ hiển thị mới cứu được.
+ *
+ * Chỗ nào dựng bằng createElement thì dùng `textContent`, tốt hơn escape.
+ */
+function esc(s) {
+    const MAP = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
+    return String(s ?? '').replace(/[&<>"']/g, (c) => MAP[c]);
+}
+
+/**
  * Header cho các API admin (kho từ vựng…). Gom một chỗ thay vì gõ lại Bearer ở
  * từng call site — thiếu một chỗ là hỏng đúng một nút, và đó chính là cách các
  * đường XOÁ từ vựng đi thẳng ra internet không kèm token trước đây.

@@ -43,12 +43,8 @@ const ALLOWLIST = {
     // Người chưa đăng nhập vẫn gửi được góp ý — ghi rõ ngay trong routes/reports.js.
     'reports.js:POST /guest': 'unauthenticated fallback, có chủ ý',
 
-    // NỢ ĐÃ BIẾT, không phải quyết định: router debug này lẽ ra không được deploy.
-    // Xem SEC-be.admin-api-001 / -004 / -005 — cách sửa là XOÁ file + mount ở
-    // server.js:175, không phải thêm guard. Ba dòng dưới đây biến mất cùng file đó.
-    'test.js:POST /test-connection': 'NỢ — SEC-be.admin-api-001, chờ xoá cả file',
-    'test.js:POST /test-save-user': 'NỢ — SEC-be.admin-api-005, chờ xoá cả file',
-    'test.js:POST /migrate-to-mongodb': 'NỢ — SEC-be.admin-api-005, chờ xoá cả file',
+    // (routes/test.js đã bị xoá — SEC-be.admin-api-001/-004/-005. Ba mục miễn trừ
+    //  của nó biến mất cùng file, đúng như test "ALLOWLIST không có mục thừa" ép.)
 };
 
 /** Mọi route ghi khai báo trong routes/*.js, kèm cờ đã có guard hay chưa. */

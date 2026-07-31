@@ -172,7 +172,6 @@ app.use('/api/ai', require('./routes/ai'));
 app.use('/api/shop', require('./routes/shop'));
 app.use('/api/leaderboard', require('./routes/leaderboard'));
 app.use('/api/wrong-words', require('./routes/wrongWords')); // Wrong words with spaced repetition
-app.use('/api/test', require('./routes/test')); // Test MongoDB endpoints
 app.use('/api/activities', require('./routes/activity')); // Activity logs for dashboard
 app.use('/api/toeic', require('./routes/toeic')); // TOEIC 7-Part Test System
 app.use('/api/tts', require('./routes/tts')); // Text-to-Speech natural voice
