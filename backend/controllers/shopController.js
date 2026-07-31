@@ -11,6 +11,7 @@ const UserStats = require('../models/UserStats');
 const logger = require('../utils/logger');
 const { applyShopEffect, boostBlockReason } = require('../services/shopEffects');
 const Inventory = require('../services/inventoryService');
+const Balance = require('../services/balanceService');
 const Transaction = require('../models/Transaction');
 const ItemDefinition = require('../models/ItemDefinition');
 const ChannelConfig = require('../models/ChannelConfig');
@@ -135,7 +136,10 @@ exports.purchaseItem = async (req, res, next) => {
         item = await resolveExpiry(item); // tới hạn khuyến mãi → unpublish/revert ngay
         if (item.published === false) return res.status(410).json({ success: false, message: 'Sản phẩm đã hết hạn bày bán' });
 
-        const stats = await UserStats.findOne({ userId: req.user.id });
+        // Bản đọc này CHỈ dùng cho các cửa kiểm trước khi trừ tiền (đầy năng lượng,
+        // boost yếu hơn, cooldown). Sau khi trừ, `stats` được thay bằng doc atomic
+        // trả về — xem chỗ Balance.debit bên dưới.
+        let stats = await UserStats.findOne({ userId: req.user.id });
         if (!stats) return res.status(404).json({ success: false, message: 'User not found' });
 
         // Giới hạn mua theo chu kỳ (vd Gói Khiên Bảo Vệ: 1 lần/tuần).
@@ -188,15 +192,20 @@ exports.purchaseItem = async (req, res, next) => {
         const unitPrice = unitPriceAfterDiscount(item);
         const totalPrice = unitPrice * units;
 
-        if (item.currency === 'coins' && stats.coins < totalPrice) {
-            return res.status(400).json({ success: false, message: 'Not enough coins' });
+        // Trừ tiền ATOMIC: điều kiện đủ tiền nằm TRONG filter nên hai request song
+        // song không thể cùng qua cửa. Trước đây đọc → kiểm → trừ trên bản in-memory
+        // → save(), mua song song là nhân đôi vật phẩm mà chỉ mất tiền một lần.
+        //
+        // Từ đây trở đi PHẢI dùng doc trả về: save() trên bản đọc lúc đầu sẽ ghi đè
+        // số dư bằng giá trị trước khi trừ.
+        const debited = await Balance.debit(req.user.id, item.currency, totalPrice);
+        if (!debited) {
+            return res.status(400).json({
+                success: false,
+                message: item.currency === 'coins' ? 'Not enough coins' : 'Not enough gems',
+            });
         }
-        if (item.currency === 'gems' && stats.gems < totalPrice) {
-            return res.status(400).json({ success: false, message: 'Not enough gems' });
-        }
-
-        if (item.currency === 'coins') stats.coins -= totalPrice;
-        else stats.gems -= totalPrice;
+        stats = debited;
 
         // "Thẻ" (durationType 'on_use') mua về phải NẰM TRONG KHO để người chơi
         // tự chọn lúc kích hoạt — đó là toàn bộ ý nghĩa của thẻ. Áp hiệu ứng
