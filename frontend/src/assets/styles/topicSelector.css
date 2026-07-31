@@ -8,12 +8,12 @@
   display: flex;
   gap: 0;
   border-bottom: 2px solid var(--border-color, #e0e0e0);
-  margin-bottom: 20px;
+  margin-bottom: 12px;
 }
 
 .tab-btn {
   flex: 1;
-  padding: 12px 16px;
+  padding: 9px 14px;
   background: transparent;
   border: none;
   cursor: pointer;
@@ -65,7 +65,7 @@
 .topic-hint {
   color: var(--text-secondary, #666);
   font-size: 14px;
-  margin-bottom: 15px;
+  margin-bottom: 10px;
 }
 
 /* Topics List */
@@ -133,16 +133,16 @@
 
   /* part cards nhỏ gọn hơn trên mobile */
   .part-selector-modal .topic-card {
-    padding: 10px 10px;
+    padding: 8px 8px;
     flex-direction: column;
     align-items: flex-start;
-    gap: 4px;
+    gap: 3px;
   }
 
   .part-selector-modal .topic-icon {
-    font-size: 20px;
+    font-size: 17px;
     margin-right: 0;
-    margin-bottom: 2px;
+    margin-bottom: 0;
   }
 
   .part-selector-modal .topic-info h3 {
@@ -173,7 +173,7 @@
   display: flex;
   align-items: center;
   min-width: 0;
-  padding: 12px 15px;
+  padding: 9px 12px;
   border: 2px solid var(--border-color, #e0e0e0);
   border-radius: 8px;
   cursor: pointer;
@@ -204,8 +204,8 @@
 }
 
 .topic-icon {
-  font-size: 24px;
-  margin-right: 12px;
+  font-size: 20px;
+  margin-right: 10px;
   flex-shrink: 0;
 }
 
@@ -236,7 +236,7 @@
 .topic-meta {
   display: flex;
   gap: 10px;
-  margin-top: 6px;
+  margin-top: 3px;
 }
 
 .word-count {
@@ -314,12 +314,12 @@
   }
 
   .topic-card {
-    padding: 10px 12px;
+    padding: 8px 10px;
   }
 
   .topic-icon {
-    font-size: 20px;
-    margin-right: 10px;
+    font-size: 17px;
+    margin-right: 8px;
   }
 
   .topic-details h4,

@@ -2717,14 +2717,14 @@
   }
 
   .topic-card {
-    padding: 10px 12px;
+    padding: 8px 10px;
     gap: 10px;
   }
 
   .topic-icon {
-    width: 44px;
-    height: 44px;
-    font-size: 1.4rem;
+    width: 34px;
+    height: 34px;
+    font-size: 1.05rem;
   }
 }
 
@@ -2763,9 +2763,9 @@
 }
 
 .topic-icon {
-  font-size: 2rem;
-  width: 60px;
-  height: 60px;
+  font-size: 1.25rem;
+  width: 40px;
+  height: 40px;
   display: flex;
   align-items: center;
   justify-content: center;

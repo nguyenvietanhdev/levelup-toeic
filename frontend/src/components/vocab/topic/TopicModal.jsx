@@ -239,24 +239,24 @@ export default function TopicModal({ open, onClose, onSelected }) {
                       style={{
                         gridColumn: "1 / -1", // span hết lưới, nếu không sẽ lệch về cột đầu
                         textAlign: "center",
-                        padding: "30px 20px",
+                        padding: "18px 20px",
                         color: "var(--text-secondary)",
                         display: "flex",
                         flexDirection: "column",
                         alignItems: "center",
                         justifyContent: "center",
-                        minHeight: 260,
+                        minHeight: 180,
                         width: "100%",
                       }}
                     >
                       <i
                         className="fas fa-cloud-upload-alt"
                         style={{
-                          fontSize: 40,
+                          fontSize: 32,
                           opacity: 0.4,
                           display: "block",
                           width: "fit-content",
-                          margin: "0 auto 12px",
+                          margin: "0 auto 8px",
                         }}
                       ></i>
                       <p
@@ -325,24 +325,24 @@ export default function TopicModal({ open, onClose, onSelected }) {
                       style={{
                         gridColumn: "1 / -1", // span hết lưới, nếu không sẽ lệch về cột đầu
                         textAlign: "center",
-                        padding: "30px 20px",
+                        padding: "18px 20px",
                         color: "var(--text-secondary)",
                         display: "flex",
                         flexDirection: "column",
                         alignItems: "center",
                         justifyContent: "center",
-                        minHeight: 260,
+                        minHeight: 180,
                         width: "100%",
                       }}
                     >
                       <i
                         className="fas fa-check-circle"
                         style={{
-                          fontSize: 40,
+                          fontSize: 32,
                           opacity: 0.4,
                           display: "block",
                           width: "fit-content",
-                          margin: "0 auto 12px",
+                          margin: "0 auto 8px",
                         }}
                       ></i>
                       <p

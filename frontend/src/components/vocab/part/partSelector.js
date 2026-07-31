@@ -139,9 +139,9 @@ export const PartSelector = {
                             : `<p class="pmode-hint"><i class="fas fa-info-circle"></i> Chọn Part bên dưới để áp dụng</p>`}
                     <div class="topics-grid ${currentMode === 'random-all' ? 'topics-grid--disabled' : ''}">
                         ${(GameLogic.vocabularyData?.length || 0) === 0
-                            ? `<div style="grid-column:1/-1;display:flex;flex-direction:column;align-items:center;text-align:center;color:var(--text-secondary);padding:28px 0">
-                                    <i class="fas fa-book-open" style="font-size:32px;opacity:.4;margin-bottom:10px"></i>
-                                    <p style="margin:0 0 12px">Chưa có từ vựng — vui lòng chọn đề luyện tập trước.</p>
+                            ? `<div style="grid-column:1/-1;display:flex;flex-direction:column;align-items:center;text-align:center;color:var(--text-secondary);padding:16px 0">
+                                    <i class="fas fa-book-open" style="font-size:26px;opacity:.4;margin-bottom:8px"></i>
+                                    <p style="margin:0 0 10px">Chưa có từ vựng — vui lòng chọn đề luyện tập trước.</p>
                                     <button class="btn btn-primary" id="part-choose-topic"><i class="fas fa-list"></i> Chọn đề luyện tập</button>
                                </div>`
                             : (partsHTML || '<p style="text-align:center;color:#999">Không có Parts</p>')}
