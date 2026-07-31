@@ -7,6 +7,34 @@ const { protect, authorize } = require('../middleware/auth');
 
 const admin = [protect, authorize('admin')];
 
+// ── Hai luật về collection, mỗi luật MỘT chỗ ────────────────────────────────
+// Trước đây luật "bỏ qua system.*" nằm rải ở 2 trong 6 handler nhận :name, còn
+// luật "không được xoá users" chỉ nằm trong đúng route drop. Người đọc thấy một
+// chỗ rồi tưởng nó áp khắp nơi — xem SEC-be.admin-api-008 và SYS-001.
+//
+// Cố ý tách làm HAI chứ không gộp: `users` phải ĐỌC được (không thì bản sao lưu
+// vô dụng), chỉ là không được xoá. Gộp một predicate sẽ loại users khỏi export.
+
+/** Collection nội bộ của MongoDB — không đọc, không ghi, không xoá. */
+const isInternal = (name) => String(name || '').startsWith('system.');
+
+/** Không được phép XOÁ (drop / xoá sạch). Đọc thì vẫn được. */
+const PROTECTED = ['users'];
+const isDestructionProtected = (name) => isInternal(name) || PROTECTED.includes(name);
+
+// Chốt duy nhất cho luật `system.*`: Express chạy cái này cho MỌI route có :name,
+// kể cả route thêm sau này. Đó là điểm khác biệt so với việc rải `if` vào từng
+// handler rồi quên mất một chỗ — chính là cách luật này từng chỉ áp ở 2/6 chỗ.
+router.param('name', (req, res, next, name) => {
+    if (isInternal(name)) {
+        return res.status(403).json({
+            success: false,
+            message: `Collection "${name}" là collection nội bộ của MongoDB, không thao tác được`,
+        });
+    }
+    next();
+});
+
 // ── SAO LƯU TOÀN BỘ DB → 1 file Extended JSON ─────────────────
 // EJSON (canonical) giữ nguyên kiểu: ObjectId → {$oid}, Date → {$date}…
 // nên import lại không bị mất kiểu/đứt liên kết như JSON thường.
@@ -16,7 +44,7 @@ router.get('/export', admin, async (req, res) => {
         const cols = await db.listCollections().toArray();
         const collections = {};
         for (const c of cols) {
-            if (c.name.startsWith('system.')) continue;
+            if (isInternal(c.name)) continue;
             collections[c.name] = await db.collection(c.name).find({}).toArray();
         }
         const body = EJSON.stringify(
@@ -36,7 +64,11 @@ router.get('/export', admin, async (req, res) => {
 // Nhận body text thô (file gửi dạng text/plain) — dùng parser riêng giới
 // hạn lớn để không vướng limit 2mb của express.json toàn cục.
 // ?mode=replace (mặc định: xoá sạch rồi nạp lại) | merge (upsert theo _id).
-router.post('/import', admin, bodyParser.text({ limit: '200mb', type: () => true }), async (req, res) => {
+// `type: () => true` cũ nhận MỌI content-type, nên hạn mức 200mb áp cho bất kỳ
+// request nào tới route này. Client gửi 'text/plain' tường minh (db-manager.js)
+// nên siết đúng loại đó, và 200mb → 50mb: tiến trình này báo RSS vài chục MB,
+// một body 200mb là giết nó trên gói 512MB mà Phase 1 nhắm tới.
+router.post('/import', admin, bodyParser.text({ limit: '50mb', type: 'text/plain' }), async (req, res) => {
     try {
         const raw = typeof req.body === 'string' ? req.body : '';
         if (!raw.trim()) return res.status(400).json({ success: false, message: 'File sao lưu trống' });
@@ -54,10 +86,42 @@ router.post('/import', admin, bodyParser.text({ limit: '200mb', type: () => true
 
         const mode = req.query.mode === 'merge' ? 'merge' : 'replace';
         const db = mongoose.connection.db;
+
+        // ── CHẠY THỬ MẶC ĐỊNH ───────────────────────────────────────────────
+        // Không có ?confirm=true thì chỉ báo cáo sẽ làm gì, không đụng dữ liệu.
+        // Trước đây mode mặc định là 'replace' và chạy thẳng: một file sao lưu
+        // thiếu collection, hay chỉ chứa một collection, là xoá sạch đúng những
+        // collection có tên trong file — không diff, không xác nhận, không ảnh
+        // chụp trước. Bằng chứng đầu tiên của sự cố là người dùng báo mất tài
+        // khoản. Xem SEC-be.admin-api-002.
+        const confirmed = req.query.confirm === 'true';
+
+        const targets = Object.entries(collections)
+            .filter(([name, docs]) => !isInternal(name) && Array.isArray(docs));
+
+        if (!confirmed) {
+            const plan = [];
+            for (const [name, docs] of targets) {
+                plan.push({
+                    collection: name,
+                    willClear: mode === 'replace' ? await db.collection(name).countDocuments() : 0,
+                    willWrite: docs.length,
+                    // Cờ này để UI in đậm: xoá users là tự đăng xuất chính mình.
+                    destructionProtected: isDestructionProtected(name),
+                });
+            }
+            return res.json({
+                success: true,
+                dryRun: true,
+                mode,
+                plan,
+                message: 'Chạy thử — chưa đụng dữ liệu. Gửi lại kèm ?confirm=true để thực thi.',
+            });
+        }
+
         const report = [];
 
-        for (const [name, docs] of Object.entries(collections)) {
-            if (name.startsWith('system.') || !Array.isArray(docs)) continue;
+        for (const [name, docs] of targets) {
             const col = db.collection(name);
             let cleared = 0, written = 0;
 
@@ -195,6 +259,10 @@ router.put('/collections/:name/:id', admin, async (req, res) => {
 router.delete('/collections/:name/all', admin, async (req, res) => {
     try {
         const { name } = req.params;
+        // Xoá sạch document cũng phá dữ liệu ngang với drop — cùng luật bảo vệ.
+        // Trước đây chỉ route drop kiểm, nên vòng qua đây là xoá được users.
+        if (isDestructionProtected(name))
+            return res.status(403).json({ success: false, message: `Collection "${name}" được bảo vệ, không thể xóa` });
         const col = mongoose.connection.db.collection(name);
         const result = await col.deleteMany({});
         res.json({ success: true, message: `Đã xóa ${result.deletedCount} documents khỏi "${name}"` });
@@ -226,8 +294,7 @@ router.delete('/collections/:name/:id', admin, async (req, res) => {
 router.delete('/collections/:name', admin, async (req, res) => {
     try {
         const { name } = req.params;
-        const PROTECTED = ['users']; // collection không được drop
-        if (PROTECTED.includes(name))
+        if (isDestructionProtected(name))
             return res.status(403).json({ success: false, message: `Collection "${name}" được bảo vệ, không thể xóa` });
 
         await mongoose.connection.db.collection(name).drop();

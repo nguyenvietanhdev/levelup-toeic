@@ -198,12 +198,34 @@ async function restoreDatabase(file) {
     btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
     try {
         const text = await file.text();
-        const res = await dbFetch(`/api/admin/db/import?mode=${mode}`, {
+        const post = (qs) => dbFetch(`/api/admin/db/import?${qs}`, {
             method: 'POST',
             headers: { 'Content-Type': 'text/plain' }, // tránh limit 2mb của express.json
             body: text,
-        });
-        const json = await res.json();
+        }).then(r => r.json());
+
+        // Bước 1 — CHẠY THỬ. Server không đụng dữ liệu, chỉ trả về sẽ xoá bao
+        // nhiêu / ghi bao nhiêu cho từng collection. Trước đây bước này không
+        // tồn tại: hai hộp confirm hỏi "bạn có chắc không" mà không ai biết
+        // chắc CÁI GÌ, rồi request duy nhất đó xoá thật.
+        const dry = await post(`mode=${mode}&_=${Date.now()}`);
+        if (!dry.success) throw new Error(dry.message);
+
+        const lines = (dry.plan || []).map(p =>
+            `  ${p.destructionProtected ? '⚠ ' : ''}${p.collection}: ` +
+            (mode === 'replace' ? `xoá ${p.willClear} → nạp ${p.willWrite}` : `gộp ${p.willWrite}`)
+        );
+        const totalClear = (dry.plan || []).reduce((n, p) => n + p.willClear, 0);
+        const proceed = confirm(
+            `Chế độ ${mode.toUpperCase()} — ${dry.plan.length} collection:\n\n` +
+            lines.join('\n') +
+            (totalClear ? `\n\nTỔNG SẼ XOÁ: ${totalClear} bản ghi. Không hoàn tác được.` : '') +
+            '\n\nOK = thực thi · Cancel = huỷ'
+        );
+        if (!proceed) { showToast('Đã huỷ phục hồi', 'info'); return; }
+
+        // Bước 2 — thực thi.
+        const json = await post(`mode=${mode}&confirm=true`);
         if (!json.success) throw new Error(json.message);
 
         const totalDocs = (json.report || []).reduce((n, r) => n + (r.written || 0), 0);
