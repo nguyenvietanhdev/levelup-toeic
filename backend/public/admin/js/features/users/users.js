@@ -729,7 +729,7 @@ Chỉ trả về JSON array, không giải thích thêm.`;
     ?.addEventListener("click", async () => {
       if (confirm("Ban co chac muon tai lai du lieu tu file?")) {
         try {
-          await fetch("http://localhost:5000/health");
+          await fetch("/health");
           alert("Da reload cache thanh cong!");
           loadDashboard();
         } catch (error) {

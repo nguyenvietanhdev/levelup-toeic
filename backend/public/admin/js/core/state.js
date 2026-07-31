@@ -3,7 +3,13 @@
 // ===================================
 // GLOBAL CONFIG
 // ===================================
-const API_URL = 'http://localhost:5000/api';
+// Panel do CHÍNH server API phục vụ (server.js: express.static + /admin/*), nên
+// origin của trang luôn là origin của API. Trước đây ghi cứng
+// 'http://localhost:5000/api': deploy lên thì localhost:5000 trỏ về máy của
+// người đang mở trang, mọi call fail, loadDashboard() nuốt lỗi rồi âm thầm
+// chuyển sang đọc file JSON tĩnh — admin ngồi xoá từ trên dữ liệu seed mà tưởng
+// là production. Ngoài ra http:// trong trang https:// bị chặn vì mixed content.
+const API_URL = `${location.origin}/api`;
 
 // ===================================
 // AUTH STATE

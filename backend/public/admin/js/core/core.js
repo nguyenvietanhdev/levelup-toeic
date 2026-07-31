@@ -690,7 +690,7 @@ async function loadDashboard() {
     }
 
     // Online mode - original code
-    const healthRes = await fetch("http://localhost:5000/health");
+    const healthRes = await fetch("/health");
     const health = await healthRes.json();
 
     document.getElementById("total-users").textContent = health.usersCount ?? 0;
