@@ -34,6 +34,43 @@ async function grantItemsFromEffect(userId, effect, source = 'shop') {
     }
 }
 
+// Cosmetic + thẻ boost mà gói VIP phát kèm. Gom thành hằng để bước kiểm trước
+// khi trừ tiền và bước grant dùng CHUNG một danh sách — hai danh sách rời nhau
+// là kiểu để sót đúng cái mình đang phòng.
+const VIP_GRANT_IDS = ['bg-vip-week', 'boost-xp-card', 'boost-coins-card'];
+
+/**
+ * Mọi itemId mà một lần mua sẽ phát ra — đệ quy qua combo, gồm cả children và
+ * gói VIP. Dùng để kiểm TRƯỚC khi trừ tiền.
+ *
+ * Vì sao cần: `Inventory.grant` ném lỗi khi itemId không có ItemDefinition
+ * (inventoryService.js). Trước đây lỗi đó bị nuốt sau khi tiền đã trừ, và
+ * response vẫn báo 'Item purchased successfully' — người mua mất tiền, không
+ * nhận được gì, không ai biết. Một ký tự gõ nhầm trong trình soạn catalog là đủ.
+ */
+// Export để test được: đây là logic thuần, và nó là thứ quyết định bước kiểm
+// trước khi trừ tiền có sót đường phát nào không — sót một đường là quay lại
+// đúng bug cũ. Cùng lý do `itemDefRules.js` tách ra khỏi route.
+exports._collectGrantedItemIds = collectGrantedItemIds;
+function collectGrantedItemIds(item, isCard) {
+    const ids = new Set();
+    if (isCard) ids.add(item.itemId);
+
+    (function walk(effect) {
+        if (!effect) return;
+        if (effect.type === 'item' && effect.itemId) ids.add(effect.itemId);
+        else if (effect.type === 'combo' && Array.isArray(effect.items)) effect.items.forEach(walk);
+    })(item.effect);
+
+    if (Array.isArray(item.children)) {
+        for (const c of item.children) if (c?.itemId) ids.add(c.itemId);
+    }
+    if (item.effect?.type === 'vip' || item.category === 'vip') {
+        VIP_GRANT_IDS.forEach(id => ids.add(id));
+    }
+    return [...ids];
+}
+
 // Đơn giá sau giảm (1 đơn vị). Tổng giá 1 gói = perUnit × quantity.
 function unitPriceAfterDiscount(item) {
     return item.discountPercent > 0
@@ -189,6 +226,28 @@ exports.purchaseItem = async (req, res, next) => {
         }
 
         // Tổng giá = đơn giá sau giảm × tổng đơn vị (bundle × số gói).
+        // "Thẻ" (durationType 'on_use') nằm trong kho chứ không áp hiệu ứng ngay
+        // lúc mua — cần biết sớm vì nó đổi danh sách vật phẩm sẽ phát.
+        const isCard = item.durationType === 'on_use';
+
+        // ── KIỂM TRƯỚC KHI TRỪ TIỀN ─────────────────────────────────────────
+        // Mọi itemId sắp phát phải có ItemDefinition. Nếu thiếu, `Inventory.grant`
+        // sẽ ném lỗi — mà lúc đó tiền đã trừ xong rồi. Chặn ở đây thì khoản tiền
+        // không bao giờ rời tài khoản. Đây là nguyên nhân thực tế của
+        // SEC-be.economy-003: một itemId gõ nhầm trong catalog.
+        const grantIds = collectGrantedItemIds(item, isCard);
+        if (grantIds.length) {
+            const found = await ItemDefinition.find({ itemId: { $in: grantIds } }).select('itemId').lean();
+            const missing = grantIds.filter(id => !found.some(d => d.itemId === id));
+            if (missing.length) {
+                logger.error('Catalog hỏng — vật phẩm sắp phát không tồn tại:', { itemId, missing });
+                return res.status(409).json({
+                    success: false,
+                    message: 'Sản phẩm này đang cấu hình sai, chưa mua được. Vui lòng báo quản trị viên.',
+                });
+            }
+        }
+
         const unitPrice = unitPriceAfterDiscount(item);
         const totalPrice = unitPrice * units;
 
@@ -207,11 +266,9 @@ exports.purchaseItem = async (req, res, next) => {
         }
         stats = debited;
 
-        // "Thẻ" (durationType 'on_use') mua về phải NẰM TRONG KHO để người chơi
-        // tự chọn lúc kích hoạt — đó là toàn bộ ý nghĩa của thẻ. Áp hiệu ứng
-        // ngay lúc mua thì thẻ mua lúc nửa đêm cháy vô ích. Các loại khác
-        // (gói tài nguyên, VIP, nạp ⚡) vẫn áp thẳng như cũ.
-        const isCard = item.durationType === 'on_use';
+        // Thẻ mua về nằm trong kho để người chơi tự chọn lúc kích hoạt — đó là
+        // toàn bộ ý nghĩa của thẻ; áp hiệu ứng ngay lúc mua thì thẻ mua lúc nửa
+        // đêm cháy vô ích. Các loại khác (gói tài nguyên, VIP, nạp ⚡) áp thẳng.
         if (!isCard) {
             // Áp hiệu ứng theo TỔNG đơn vị (consumable cộng dồn; VIP cộng dồn hạn).
             for (let i = 0; i < units; i++) applyShopEffect(stats, item.effect);
@@ -225,41 +282,49 @@ exports.purchaseItem = async (req, res, next) => {
 
         await stats.save();
 
-        // Grant vật phẩm inventory theo TỔNG đơn vị (effect type 'item' / combo) — vd Vé quay.
+        // ── PHÁT VẬT PHẨM ───────────────────────────────────────────────────
+        // Ba khối này trước đây là ba try/catch riêng, mỗi cái chỉ ghi log rồi
+        // đi tiếp, và response cuối vẫn báo 'Item purchased successfully'. Người
+        // mua mất tiền, không nhận được gì, và dấu vết duy nhất là một dòng log.
+        //
+        // Giờ gộp một khối: hỏng thì HOÀN TIỀN và trả lỗi thật. Nguyên nhân phổ
+        // biến nhất (itemId không tồn tại) đã bị chặn ở bước kiểm trước khi trừ,
+        // nên tới được đây gần như chắc chắn là sự cố hạ tầng.
         try {
             if (isCard) await Inventory.grant(req.user.id, itemId, units, { source: 'shop' });
             for (let i = 0; i < units; i++) await grantItemsFromEffect(req.user.id, item.effect);
-        } catch (e) {
-            logger.error('Grant inventory item failed:', e.message);
-        }
 
-        // Vật phẩm con (combo mới) — grant child.quantity × tổng đơn vị.
-        if (Array.isArray(item.children) && item.children.length) {
-            try {
-                for (const c of item.children) {
-                    if (c.itemId) await Inventory.grant(req.user.id, c.itemId, (c.quantity || 1) * units, { source: 'shop' });
-                }
-            } catch (e) {
-                logger.error('Grant combo children failed:', e.message);
+            // Vật phẩm con (combo mới) — grant child.quantity × tổng đơn vị.
+            for (const c of (item.children || [])) {
+                if (c.itemId) await Inventory.grant(req.user.id, c.itemId, (c.quantity || 1) * units, { source: 'shop' });
             }
-        }
 
-        // VIP → grant + tự trang bị nền cosmetic (hạn = VIP). Best-effort:
-        // lỗi inventory không được làm hỏng giao dịch mua đã lưu.
-        if (item.effect?.type === 'vip' || item.category === 'vip') {
-            try {
+            // VIP → grant + tự trang bị nền cosmetic (hạn = VIP), kèm thẻ boost.
+            if (item.effect?.type === 'vip' || item.category === 'vip') {
                 await Inventory.grant(req.user.id, 'bg-vip-week', 1, {
                     source: 'vip',
                     expiresAt: stats.vipExpiresAt || null,
                 });
                 await Inventory.equip(req.user.id, 'bg-vip-week');
-                // Thay auto-boost: phát thẻ x2 XP + x2 Coins (on_use) — tự kích hoạt.
                 const VIP_BOOST_CARDS = (await getGameConfig()).vipBoostCards;
                 await Inventory.grant(req.user.id, 'boost-xp-card', VIP_BOOST_CARDS, { source: 'vip' });
                 await Inventory.grant(req.user.id, 'boost-coins-card', VIP_BOOST_CARDS, { source: 'vip' });
-            } catch (e) {
-                logger.error('VIP grant failed:', e.message);
             }
+        } catch (e) {
+            logger.error('Grant thất bại sau khi đã trừ tiền — hoàn lại:', { itemId, error: e.message });
+            try {
+                await Balance.credit(req.user.id, item.currency, totalPrice);
+            } catch (refundErr) {
+                // Hoàn cũng hỏng: đây là thứ PHẢI xử tay, nên log riêng cho dễ tìm.
+                logger.error('HOÀN TIỀN THẤT BẠI — cần xử lý thủ công:', {
+                    userId: String(req.user.id), itemId, amount: totalPrice,
+                    currency: item.currency, error: refundErr.message,
+                });
+            }
+            return res.status(500).json({
+                success: false,
+                message: 'Mua không thành công, đã hoàn lại số tiền đã trừ. Vui lòng thử lại.',
+            });
         }
 
         // Ghi lịch sử giao dịch (collection riêng, không giới hạn).

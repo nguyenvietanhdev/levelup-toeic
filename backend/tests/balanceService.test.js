@@ -8,10 +8,16 @@
  *
  * Pure, no DB — model được mock.
  */
-jest.mock('../models/UserStats', () => ({ findOneAndUpdate: jest.fn() }));
+jest.mock('../models/UserStats', () => ({
+    findOneAndUpdate: jest.fn(),
+    updateOne: jest.fn(),
+    // Cố ý có mặt và cố ý KHÔNG được gọi: hình dạng bug cũ là findOne() rồi
+    // save(). Xem test "không đọc số dư ra trước rồi mới ghi".
+    findOne: jest.fn(),
+}));
 
 const UserStats = require('../models/UserStats');
-const { buildDebitQuery, debit } = require('../services/balanceService');
+const { buildDebitQuery, debit, credit } = require('../services/balanceService');
 
 beforeEach(() => jest.clearAllMocks());
 
@@ -77,9 +83,55 @@ describe('debit', () => {
 
     test('không đọc số dư ra trước rồi mới ghi — chỉ đúng một lượt chạm DB', async () => {
         // Hình dạng cũ là findOne() rồi save(): hai lượt, có khe hở ở giữa.
+        // Chốt bằng HÀNH VI (findOne không được gọi) chứ không bằng hình dạng
+        // của mock — bản trước assert Object.keys(UserStats), nên thêm bất kỳ
+        // phương thức nào vào service cũng làm nó đỏ dù code vẫn đúng.
         UserStats.findOneAndUpdate.mockResolvedValue({ gems: 1 });
         await debit('u1', 'gems', 2);
-        expect(Object.keys(UserStats)).toEqual(['findOneAndUpdate']);
+        expect(UserStats.findOne).not.toHaveBeenCalled();
         expect(UserStats.findOneAndUpdate).toHaveBeenCalledTimes(1);
+    });
+});
+
+describe('credit — hoàn tiền khi bước sau khi trừ bị hỏng', () => {
+    test('cộng lại đúng số, đúng trường, bằng $inc', async () => {
+        UserStats.updateOne.mockResolvedValue({ modifiedCount: 1 });
+
+        await credit('u1', 'coins', 250);
+
+        expect(UserStats.updateOne).toHaveBeenCalledWith(
+            { userId: 'u1' },
+            { $inc: { coins: 250 } },
+        );
+    });
+
+    test('gems: cùng hình dạng, khác trường', async () => {
+        UserStats.updateOne.mockResolvedValue({});
+        await credit('u1', 'gems', 7);
+        expect(UserStats.updateOne).toHaveBeenCalledWith({ userId: 'u1' }, { $inc: { gems: 7 } });
+    });
+
+    test('currency lạ rơi về gems — đối xứng với debit, để hoàn đúng trường đã trừ', async () => {
+        UserStats.updateOne.mockResolvedValue({});
+        await credit('u1', 'vnd', 5);
+        expect(UserStats.updateOne).toHaveBeenCalledWith({ userId: 'u1' }, { $inc: { gems: 5 } });
+    });
+
+    test('không kèm điều kiện — cộng lại thì luôn hợp lệ, không cần cửa như debit', async () => {
+        UserStats.updateOne.mockResolvedValue({});
+        await credit('u1', 'coins', 10);
+        const [filter] = UserStats.updateOne.mock.calls[0];
+        expect(Object.keys(filter)).toEqual(['userId']);
+    });
+
+    test('debit rồi credit cùng số → hai lệnh $inc triệt tiêu nhau', async () => {
+        UserStats.findOneAndUpdate.mockResolvedValue({ coins: 0 });
+        UserStats.updateOne.mockResolvedValue({});
+
+        await debit('u1', 'coins', 120);
+        await credit('u1', 'coins', 120);
+
+        expect(UserStats.findOneAndUpdate.mock.calls[0][1]).toEqual({ $inc: { coins: -120 } });
+        expect(UserStats.updateOne.mock.calls[0][1]).toEqual({ $inc: { coins: 120 } });
     });
 });

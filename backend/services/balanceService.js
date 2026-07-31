@@ -45,4 +45,17 @@ async function debit(userId, currency, amount) {
     return UserStats.findOneAndUpdate(filter, update, { new: true });
 }
 
-module.exports = { buildDebitQuery, debit };
+/**
+ * Hoàn tiền — dùng khi đã trừ xong nhưng bước sau hỏng.
+ *
+ * `$inc` nên không cần điều kiện: cộng lại luôn hợp lệ, và không có khe hở kiểu
+ * đọc-rồi-ghi. Đây là bù trừ thủ công, KHÔNG phải rollback thật: hiệu ứng đã áp
+ * lên UserStats trước đó (năng lượng, boost, hạn VIP) không được gỡ ra. Muốn
+ * nguyên tử thật thì phải bọc cả cụm trong Mongo session — ROADMAP mục 22, chờ Atlas.
+ */
+async function credit(userId, currency, amount) {
+    const field = currency === 'coins' ? 'coins' : 'gems';
+    return UserStats.updateOne({ userId }, { $inc: { [field]: amount } });
+}
+
+module.exports = { buildDebitQuery, debit, credit };
