@@ -5,6 +5,8 @@ const ItemDefinition = require('../models/ItemDefinition');
 const UserStats = require('../models/UserStats');
 const Inventory = require('../services/inventoryService');
 const { applyShopEffect, boostBlockReason } = require('../services/shopEffects');
+const validate = require('../middleware/validate');
+const { inventoryItem, inventorySlot } = require('../validators/schemas');
 
 // Catalog công khai — danh sách item đang bật.
 router.get('/items', async (req, res, next) => {
@@ -26,10 +28,9 @@ router.get('/', protect, async (req, res, next) => {
 });
 
 // Dùng / kích hoạt đồ. on_use (thẻ boost) → tiêu 1 + áp hiệu ứng vào UserStats.
-router.post('/use', protect, async (req, res, next) => {
+router.post('/use', protect, validate(inventoryItem), async (req, res, next) => {
     try {
         const { itemId } = req.body;
-        if (!itemId) return res.status(400).json({ success: false, message: 'Thiếu itemId' });
 
         const def = await ItemDefinition.findOne({ itemId }).lean();
         if (!def) return res.status(404).json({ success: false, message: 'Item không tồn tại' });
@@ -75,10 +76,9 @@ router.post('/use', protect, async (req, res, next) => {
 });
 
 // Trang bị cosmetic.
-router.post('/equip', protect, async (req, res, next) => {
+router.post('/equip', protect, validate(inventoryItem), async (req, res, next) => {
     try {
         const { itemId } = req.body;
-        if (!itemId) return res.status(400).json({ success: false, message: 'Thiếu itemId' });
         const result = await Inventory.equip(req.user.id, itemId);
         res.json({ success: true, ...result });
     } catch (err) {
@@ -87,10 +87,9 @@ router.post('/equip', protect, async (req, res, next) => {
 });
 
 // Bỏ trang bị theo slot.
-router.post('/unequip', protect, async (req, res, next) => {
+router.post('/unequip', protect, validate(inventorySlot), async (req, res, next) => {
     try {
         const { slot } = req.body;
-        if (!slot) return res.status(400).json({ success: false, message: 'Thiếu slot' });
         const result = await Inventory.unequip(req.user.id, slot);
         res.json({ success: true, ...result });
     } catch (err) { next(err); }

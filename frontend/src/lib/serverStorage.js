@@ -139,11 +139,13 @@ export const ServerStorage = {
         }
     },
 
-    async purchaseItem(itemId) {
+    async purchaseItem(itemId, quantity = 1) {
         try {
-            const response = await API.shop.purchase(itemId, {
-                headers: { Authorization: `Bearer ${this.token}` }
-            });
+            // Chữ ký là purchase(itemId, quantity) — trước đây chỗ này truyền một
+            // object headers vào đúng vị trí `quantity`. Server nuốt được vì
+            // parseInt(object) ra NaN rồi `|| 1`, nhưng từ khi schema ép
+            // quantity là number thì nó sẽ ăn 400. Token do Http tự đính.
+            const response = await API.shop.purchase(itemId, quantity);
             return response.success ? response.data : null;
         } catch (err) {
             console.error('❌ Failed to purchase item:', err);
