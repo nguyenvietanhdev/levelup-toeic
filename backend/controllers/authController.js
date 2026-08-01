@@ -526,10 +526,17 @@ const syncProgress = async (req, res, next) => {
         // ⚠️ SERVER-AUTHORITATIVE: giống saveState — KHÔNG tin client về tiền tệ
         // và counter tổng. Chỉ nhận energy (giới hạn lượt) + danh sách từ.
         // Tiền tệ/level/counter do các endpoint server cấp (/practice/submit...).
-        if (resources) {
-            if (resources.energy !== undefined) stats.energy = resources.energy;
-            if (resources.maxEnergy !== undefined) stats.maxEnergy = resources.maxEnergy;
+        // Năng lượng: CHỈ NHẬN THEO HƯỚNG GIẢM — cùng luật với saveState
+        // (userStateController.js). Đây là chỗ THỨ HAI nhận energy từ client mà
+        // pass audit trên module userstate không thấy, vì nó nằm ở file khác.
+        // Vá một chỗ mà bỏ chỗ này thì coi như chưa vá. Xem SEC-be.userstate-002.
+        if (resources?.energy !== undefined) {
+            const asked = Number(resources.energy);
+            if (Number.isFinite(asked)) {
+                stats.energy = Math.max(0, Math.min(stats.energy, asked));
+            }
         }
+        // maxEnergy: KHÔNG nhận từ client — đó là trần của chính cơ chế hồi.
 
         if (progress) {
             if (progress.wordsLearned) stats.wordsLearned = progress.wordsLearned;

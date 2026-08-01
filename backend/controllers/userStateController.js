@@ -10,6 +10,7 @@ const { buildFullState, applyEnergyRegen, applyLevelUp, awardXp } = require('../
 const Inventory = require('../services/inventoryService');
 const ItemDefinition = require('../models/ItemDefinition');
 const { logTxn } = require('../utils/economyLog');
+const { checkAchievementCondition } = require('../utils/achievementRules');
 
 function expireBoosts(stats) {
     const now = Date.now();
@@ -102,13 +103,29 @@ exports.saveState = async (req, res, next) => {
         // User / profile fields — avatar đổi qua POST /api/auth/avatar; level do server.
         // (state.user.level/xp/totalXp: bỏ qua — server-authoritative)
 
-        // Resources — chỉ energy (giới hạn lượt chơi) còn nhận từ client.
-        // Tiền tệ (coins/gems/hints/shields/timeFreezes): bỏ qua — server-authoritative.
-        if (state.resources) {
-            if (state.resources.energy !== undefined) stats.energy = state.resources.energy;
-            if (state.resources.maxEnergy !== undefined) stats.maxEnergy = state.resources.maxEnergy;
-            if (state.resources.lastEnergyUpdate) stats.lastEnergyUpdate = new Date(state.resources.lastEnergyUpdate);
+        // Năng lượng: CHỈ NHẬN THEO HƯỚNG GIẢM.
+        //
+        // Trước đây gán thẳng cả `energy`, `maxEnergy` và `lastEnergyUpdate` từ
+        // client, không trần — gửi `energy: 99999` là chơi vô hạn vĩnh viễn, và
+        // `lastEnergyUpdate` lùi về quá khứ còn khiến applyEnergyRegen tự cộng
+        // thêm. Việc này vi phạm nguyên văn quy ước trong CLAUDE.md ("Energy hồi
+        // 1/phút tính server-side"). Xem SEC-be.userstate-002.
+        //
+        // Vì sao không bỏ sạch: hiện KHÔNG có chỗ nào trừ năng lượng phía server
+        // (`rg "energy -=|$inc.*energy"` → không có). Server chỉ hồi; việc tiêu
+        // do client làm rồi báo lên. Bỏ hết đường nhận thì năng lượng không bao
+        // giờ giảm — thành lỗ hổng ngược lại. Chốt một chiều là chặn được gian
+        // lận mà không phải dời cả cơ chế tiêu sang server ngay bây giờ.
+        // Việc dời đó là bản vá đúng nghĩa — xem Long-term trong report.
+        if (state.resources?.energy !== undefined) {
+            const asked = Number(state.resources.energy);
+            if (Number.isFinite(asked)) {
+                stats.energy = Math.max(0, Math.min(stats.energy, asked));
+            }
         }
+        // `maxEnergy` và `lastEnergyUpdate`: KHÔNG BAO GIỜ nhận từ client.
+        // maxEnergy là trần của chính cơ chế hồi; lastEnergyUpdate là mốc tính
+        // thời gian hồi. Cho client đặt hai thứ này là cho nó tự viết luật.
 
         // Progress — chỉ danh sách từ (không phải tiền tệ). Các counter tổng
         // và modeStats do /practice/submit cập nhật → bỏ qua ở đây để khỏi
@@ -140,36 +157,17 @@ exports.saveState = async (req, res, next) => {
             );
         }
 
-        // Achievements — upsert newly unlocked ones
-        if (state.achievements && Array.isArray(state.achievements)) {
-            // Accept both new-style (unlocked: true) and old-style (only unlockedAt set)
-            const unlocked = state.achievements.filter(a => a.unlocked || a.unlockedAt);
-            if (unlocked.length) {
-                const codes = unlocked.map(a => a.id);
-                const defs = await AchievementDefinition.find({ code: { $in: codes } });
-                const defMap = new Map(defs.map(d => [d.code, d]));
-
-                await Promise.all(
-                    unlocked.map(a => {
-                        const def = defMap.get(a.id);
-                        if (!def) return null;
-                        return UserAchievement.findOneAndUpdate(
-                            { userId, code: a.id },
-                            {
-                                $setOnInsert: {
-                                    userId,
-                                    achievementDefinitionId: def._id,
-                                    code: a.id,
-                                    unlockedAt: a.unlockedAt ? new Date(a.unlockedAt) : new Date(),
-                                    claimedRewards: { xp: def.rewardXp, coins: def.rewardCoins, gems: def.rewardGems },
-                                },
-                            },
-                            { upsert: true, new: false }
-                        );
-                    }).filter(Boolean)
-                );
-            }
-        }
+        // Thành tích: KHÔNG mở từ blob client ở đây.
+        //
+        // Khối cũ nhận `state.achievements` do client tự khai rồi upsert
+        // UserAchievement kèm cả `claimedRewards` — mà KHÔNG cộng đồng nào. Hậu
+        // quả không phải cheat mà là ngược lại: bản ghi đó khiến lần gọi
+        // /user/achievement sau trả về "Achievement already unlocked", nên người
+        // chơi MẤT VĨNH VIỄN phần thưởng thật. Số liệu trên DB lúc audit: 35 lần
+        // mở, cả 35 đều lẽ ra sinh giao dịch thưởng, nhưng chỉ có 16 giao dịch.
+        //
+        // Giờ chỉ còn MỘT đường mở thành tích: POST /api/user/achievement — có
+        // kiểm điều kiện, có trả thưởng, có ghi giao dịch. Xem SEC-be.userstate-004.
 
         // Boosts: KHÔNG ghi từ client — boost chỉ kích hoạt khi mua ở shop
         // (applyShopEffect case 'boost', server-side) và tự hết hạn (expireBoosts).
@@ -243,6 +241,30 @@ exports.unlockAchievement = async (req, res, next) => {
         const stats = await UserStats.findOne({ userId });
         if (!stats) return res.status(404).json({ success: false, message: 'User not found' });
         const profile = await UserProfile.findOne({ userId });
+
+        // ── KIỂM ĐIỀU KIỆN TRƯỚC KHI PHÁT THƯỞNG ────────────────────────────
+        // Trước đây bước này KHÔNG tồn tại: server chỉ kiểm "đã mở chưa" và "mã
+        // có thật không" rồi cộng tiền. Điều kiện ("đạt level 50", "streak 7
+        // ngày") chỉ được chép vào state để hiển thị, không ai so nó với gì.
+        const check = checkAchievementCondition(def, stats, profile);
+        if (!check.ok) {
+            if (check.reason.startsWith('unsupported_condition') || check.reason === 'invalid_condition_value') {
+                // Không tra được điều kiện thì TỪ CHỐI, không cho qua. Cho qua là
+                // quay lại đúng bug cũ, chỉ khác là im lặng hơn.
+                logger.error('Thành tích cấu hình sai, không kiểm được điều kiện:', {
+                    code: achievementId, reason: check.reason,
+                });
+                return res.status(409).json({
+                    success: false,
+                    message: 'Thành tích này đang cấu hình sai. Vui lòng báo quản trị viên.',
+                });
+            }
+            return res.status(403).json({
+                success: false,
+                message: `Chưa đạt điều kiện (${check.current}/${def.conditionValue}).`,
+                progress: { current: check.current, required: def.conditionValue },
+            });
+        }
 
         // Grant rewards
         if (def.rewardCoins) stats.coins += def.rewardCoins;
