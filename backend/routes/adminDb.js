@@ -54,24 +54,46 @@ router.param('name', (req, res, next, name) => {
 // ── SAO LƯU TOÀN BỘ DB → 1 file Extended JSON ─────────────────
 // EJSON (canonical) giữ nguyên kiểu: ObjectId → {$oid}, Date → {$date}…
 // nên import lại không bị mất kiểu/đứt liên kết như JSON thường.
+// Ghi THẲNG ra response, từng document một, thay vì gom cả DB vào RAM rồi mới
+// gửi. Bản cũ giữ đồng thời: (1) mọi collection dưới dạng mảng JS, (2) một bản
+// sao chuỗi của tất cả — đỉnh bộ nhớ khoảng gấp đôi kích thước DB, trên tiến
+// trình báo RSS vài chục MB. Trên gói 512MB mà Phase 1 nhắm tới, đó là tự giết
+// mình đúng lúc cần bản sao lưu nhất. Giờ đỉnh bộ nhớ là MỘT document.
+//
+// Định dạng đầu ra giữ nguyên byte-for-byte với bản cũ — adminDbRoundTrip.test.js
+// chốt điều đó, vì hợp đồng này là thứ /import dựa vào để đọc lại.
 router.get('/export', admin, async (req, res) => {
     try {
         const db = mongoose.connection.db;
         const cols = await db.listCollections().toArray();
-        const collections = {};
-        for (const c of cols) {
-            if (isInternal(c.name)) continue;
-            collections[c.name] = await db.collection(c.name).find({}).toArray();
-        }
-        const body = EJSON.stringify(
-            { _meta: { exportedAt: new Date(), db: db.databaseName, version: 1 }, collections },
-            { relaxed: false }
-        );
+        const names = cols.map(c => c.name).filter(n => !isInternal(n));
+
         const stamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-');
         res.setHeader('Content-Type', 'application/json; charset=utf-8');
         res.setHeader('Content-Disposition', `attachment; filename="backup-${stamp}.json"`);
-        res.send(body);
+
+        const meta = EJSON.stringify(
+            { exportedAt: new Date(), db: db.databaseName, version: 1 },
+            { relaxed: false },
+        );
+        res.write(`{"_meta":${meta},"collections":{`);
+
+        for (let i = 0; i < names.length; i++) {
+            res.write(`${i ? ',' : ''}${JSON.stringify(names[i])}:[`);
+            const cursor = db.collection(names[i]).find({});
+            let first = true;
+            for await (const doc of cursor) {
+                res.write((first ? '' : ',') + EJSON.stringify(doc, { relaxed: false }));
+                first = false;
+            }
+            res.write(']');
+        }
+
+        res.end('}}');
     } catch (err) {
+        // Header đã gửi thì không đổi được status nữa — cắt kết nối để client
+        // thấy file hỏng thay vì tưởng đã tải xong một bản sao lưu thiếu.
+        if (res.headersSent) return res.destroy(err);
         res.status(500).json({ success: false, message: err.message });
     }
 });

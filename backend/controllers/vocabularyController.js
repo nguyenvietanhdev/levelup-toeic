@@ -9,6 +9,15 @@ const VocabularyZh = require('../models/VocabularyZh');
 
 const escapeRegex = (str) => str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
+/**
+ * Số từ tối đa cho một lần gọi `/bulk` hoặc `/replace`.
+ *
+ * 2.000 đủ cho một bộ đề bình thường (bộ lớn nhất trong repo ~1.000 từ) và vẫn
+ * là 4.000 lượt chạm DB cho một request — chấp nhận được. Cần nhập nhiều hơn
+ * thì chia file, đó là việc của công cụ chứ không phải của server.
+ */
+const MAX_BULK_IMPORT = 2000;
+
 function getVocabModel(req) {
     return req.query.lang === 'zh' ? VocabularyZh : Vocabulary;
 }
@@ -624,6 +633,17 @@ exports.bulkImportVocabulary = async (req, res, next) => {
             });
         }
 
+        // Trần số từ mỗi lần import. Trước đây không có: vòng lặp bên dưới tốn
+        // 2 lượt truy vấn cho MỖI phần tử (findOne + save), nên body 2MB —
+        // khoảng 10.000 từ — là 20.000 lượt chạm DB tuần tự trên một tiến trình
+        // Node đơn luồng. Vài request như vậy cùng lúc là cả web đứng.
+        if (words.length > MAX_BULK_IMPORT) {
+            return res.status(413).json({
+                success: false,
+                message: `Mỗi lần chỉ nhập tối đa ${MAX_BULK_IMPORT} từ (đang gửi ${words.length}). Hãy chia nhỏ file.`,
+            });
+        }
+
         let inserted = 0;
         let skipped = 0;
         const errors = [];
@@ -774,6 +794,14 @@ exports.replaceVocabulary = async (req, res, next) => {
             return res.status(400).json({
                 success: false,
                 message: 'words array is required',
+            });
+        }
+
+        // Cùng trần với /bulk — replace còn nặng hơn vì xoá sạch rồi nạp lại.
+        if (words.length > MAX_BULK_IMPORT) {
+            return res.status(413).json({
+                success: false,
+                message: `Mỗi lần chỉ thay tối đa ${MAX_BULK_IMPORT} từ (đang gửi ${words.length}). Hãy chia nhỏ file.`,
             });
         }
 

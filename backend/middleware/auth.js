@@ -43,33 +43,27 @@ const protect = async (req, res, next) => {
         // "đã khoá", mà người đó vẫn thi/tiêu xu/upload như thường suốt một tuần.
         // Dùng 423 giống hệt login: frontend đã bắt sẵn (api/http.js) và tự đăng
         // xuất, nên không phải sửa gì bên client.
-        // Miễn trừ cho admin: `isLocked` là khoá THỦ CÔNG do một admin khác bấm,
-        // và chưa có đường lấy lại nếu người cuối cùng tự khoá mình.
-        //
-        // Còn `lockUntil` (backoff do nhập sai) thì cố ý KHÔNG kiểm ở đây cho
-        // admin, dù login đã áp backoff cho admin từ SEC-be.auth-001: backoff là
-        // cửa ĐĂNG NHẬP, không phải lệnh cấm. Kiểm ở đây thì kẻ tấn công chỉ cần
-        // gõ sai mật khẩu admin vài lần là đá được admin đang làm việc ra khỏi
-        // phiên — biến biện pháp chống brute-force thành công cụ DoS.
-        if (user.role !== 'admin') {
-            if (user.isLocked) {
-                return res.status(423).json({
-                    success: false,
-                    locked: true,
-                    lockType: 'admin',
-                    message: 'Tài khoản đã bị khóa bởi quản trị viên. Vui lòng liên hệ hỗ trợ.',
-                });
-            }
-            if (user.lockUntil && new Date(user.lockUntil).getTime() > Date.now()) {
-                return res.status(423).json({
-                    success: false,
-                    locked: true,
-                    lockType: 'temp',
-                    lockUntil: user.lockUntil,
-                    message: 'Tài khoản tạm thời bị khóa do nhập sai quá nhiều lần.',
-                });
-            }
+        // `isLocked` = khoá THỦ CÔNG do admin bấm. Đây là quyết định của con
+        // người nên phải ăn ngay, không đợi token hết hạn. Miễn trừ cho admin vì
+        // chưa có đường lấy lại nếu người cuối cùng tự khoá mình.
+        if (user.role !== 'admin' && user.isLocked) {
+            return res.status(423).json({
+                success: false,
+                locked: true,
+                lockType: 'admin',
+                message: 'Tài khoản đã bị khóa bởi quản trị viên. Vui lòng liên hệ hỗ trợ.',
+            });
         }
+
+        // `lockUntil` (backoff do nhập sai) cố ý KHÔNG kiểm ở đây, cho BẤT KỲ AI.
+        //
+        // Backoff là cửa ĐĂNG NHẬP, không phải lệnh cấm. Kiểm ở đây thì bất kỳ ai
+        // biết email của bạn cũng đá được bạn ra khỏi phiên đang làm việc: gõ sai
+        // mật khẩu của bạn 5 lần là xong. Biện pháp chống brute-force trở thành
+        // công cụ quấy rối, và nạn nhân không hiểu vì sao mình bị đăng xuất liên
+        // tục. Kẻ tấn công vẫn không vào được — đó là việc của cửa đăng nhập.
+        //
+        // Ai muốn CẤM một tài khoản thì dùng isLocked ở trên, đó mới là ý định rõ ràng.
 
         req.user = {
             id: user._id,

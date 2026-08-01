@@ -12,7 +12,13 @@
  *
  * Test thuần, không DB: mock model + logger.
  */
-jest.mock('../models/Vocabulary', () => ({ deleteMany: jest.fn(), insertMany: jest.fn() }));
+jest.mock('../models/Vocabulary', () => ({
+    deleteMany: jest.fn(),
+    insertMany: jest.fn(),
+    // Cố ý có mặt và cố ý KHÔNG được gọi khi vượt trần import: nếu nó được gọi
+    // nghĩa là vòng lặp 2-truy-vấn-mỗi-từ đã chạy, tức trần không chặn được gì.
+    findOne: jest.fn(),
+}));
 jest.mock('../models/VocabularyZh', () => ({ deleteMany: jest.fn(), insertMany: jest.fn() }));
 jest.mock('../utils/activityLogger', () => ({
     logActivity: jest.fn(),
@@ -23,7 +29,7 @@ jest.mock('../utils/activityLogger', () => ({
 jest.mock('../utils/logger', () => ({ error: jest.fn(), info: jest.fn(), warn: jest.fn() }));
 
 const Vocabulary = require('../models/Vocabulary');
-const { replaceVocabulary } = require('../controllers/vocabularyController');
+const { replaceVocabulary, bulkImportVocabulary } = require('../controllers/vocabularyController');
 
 /** req/res/next giả — res ghi lại status + body để assert. */
 function mkCtx(body) {
@@ -39,6 +45,54 @@ function mkCtx(body) {
 const validWord = { en: 'delegate', vn: 'uỷ thác', part: 'V', type: 'verb' };
 
 beforeEach(() => jest.clearAllMocks());
+
+/**
+ * Trần số từ mỗi lần import.
+ *
+ * Vòng lặp import tốn 2 lượt chạm DB cho MỖI phần tử (findOne + save). Không có
+ * trần thì một body 2MB — khoảng 10.000 từ — là 20.000 lượt truy vấn tuần tự
+ * trên một tiến trình Node đơn luồng. Vài request như vậy cùng lúc là cả web
+ * đứng, và route này chỉ cần một tài khoản admin để gọi.
+ */
+describe('trần số từ mỗi lần import', () => {
+    const tooMany = () => Array.from({ length: 2001 }, (_, i) => ({ en: `w${i}`, vn: 'x' }));
+
+    test('/bulk vượt trần → 413, KHÔNG chạm DB', async () => {
+        const { req, res, next } = mkCtx({ words: tooMany() });
+
+        await bulkImportVocabulary(req, res, next);
+
+        expect(res.statusCode).toBe(413);
+        expect(Vocabulary.findOne).not.toHaveBeenCalled();
+        expect(Vocabulary.insertMany).not.toHaveBeenCalled();
+    });
+
+    test('/replace vượt trần → 413, KHÔNG xoá gì', async () => {
+        const { req, res, next } = mkCtx({ words: tooMany() });
+
+        await replaceVocabulary(req, res, next);
+
+        expect(res.statusCode).toBe(413);
+        expect(Vocabulary.deleteMany).not.toHaveBeenCalled();
+    });
+
+    test('thông báo lỗi nói rõ trần và số đang gửi, để người dùng biết chia bao nhiêu', async () => {
+        const { req, res, next } = mkCtx({ words: tooMany() });
+        await replaceVocabulary(req, res, next);
+        expect(res.body.message).toMatch(/2000/);
+        expect(res.body.message).toMatch(/2001/);
+    });
+
+    test('đúng bằng trần thì vẫn qua — chặn ở > chứ không phải >=', async () => {
+        const words = Array.from({ length: 2000 }, (_, i) => ({ en: `w${i}`, vn: 'x', part: 'N', type: 'noun' }));
+        const { req, res, next } = mkCtx({ words });
+
+        await replaceVocabulary(req, res, next);
+
+        expect(res.statusCode).not.toBe(413);
+        expect(Vocabulary.deleteMany).toHaveBeenCalled();
+    });
+});
 
 describe('replaceVocabulary — validate trước, xoá sau', () => {
     test('body rác → KHÔNG xoá gì, trả 400', async () => {

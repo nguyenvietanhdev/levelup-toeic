@@ -41,7 +41,12 @@ function fakeDb(data) {
             toArray: async () => Object.keys(data).map(name => ({ name })),
         }),
         collection: (name) => ({
-            find: () => ({ toArray: async () => data[name] || [] }),
+            // `find()` phải vừa dùng được `for await` (export stream từng doc)
+            // vừa còn `toArray` cho chỗ khác — đúng như cursor thật của driver.
+            find: () => ({
+                toArray: async () => data[name] || [],
+                async *[Symbol.asyncIterator]() { yield* (data[name] || []); },
+            }),
             countDocuments: async () => (data[name] || []).length,
             deleteMany: async () => {
                 const n = (data[name] || []).length;
@@ -69,11 +74,15 @@ function fakeDb(data) {
 
 function mockRes() {
     return {
-        statusCode: 200, body: null, sent: null, headers: {},
+        statusCode: 200, body: null, sent: null, headers: {}, headersSent: false,
         setHeader(k, v) { this.headers[k] = v; },
         status(c) { this.statusCode = c; return this; },
         json(b) { this.body = b; return this; },
         send(s) { this.sent = s; return this; },
+        // Export ghi thẳng ra response theo từng mảnh — gom lại để so sánh.
+        write(chunk) { this.sent = (this.sent || '') + chunk; this.headersSent = true; return true; },
+        end(chunk) { if (chunk) this.write(chunk); return this; },
+        destroy() { this.destroyed = true; return this; },
     };
 }
 

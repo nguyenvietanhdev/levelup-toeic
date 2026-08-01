@@ -70,11 +70,21 @@ UserSchema.methods.comparePassword = async function (candidatePassword) {
     return bcrypt.compare(candidatePassword, this.password);
 };
 
+// Đăng xuất phía client chỉ xoá token khỏi localStorage — server không có danh
+// sách thu hồi, nên token vẫn dùng được cho tới khi hết hạn. Mặc định cũ là 7
+// NGÀY: ai nhặt được token trên máy dùng chung vẫn vào được suốt một tuần sau
+// khi chủ tài khoản bấm "Đăng xuất".
+//
+// 12 giờ là đánh đổi: đủ dài để không ai phải đăng nhập lại giữa buổi học, đủ
+// ngắn để một token rò rỉ hết giá trị trong ngày. Thu hồi thật (danh sách đen)
+// là việc lớn hơn — rút hạn là 80% lợi ích với 1 dòng.
+const DEFAULT_JWT_EXPIRE = '12h';
+
 UserSchema.methods.generateToken = function () {
     return jwt.sign(
         { id: this._id, role: this.role },
         process.env.JWT_SECRET,
-        { expiresIn: process.env.JWT_EXPIRE || '7d' }
+        { expiresIn: process.env.JWT_EXPIRE || DEFAULT_JWT_EXPIRE }
     );
 };
 

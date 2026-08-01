@@ -97,17 +97,36 @@ describe('protect — khoá tài khoản (lỗ hổng đã vá)', () => {
         expect(res.body.lockType).toBe('admin');
     });
 
-    test('khoá tạm còn hạn → 423 kèm thời điểm hết khoá', async () => {
+    // ── Khoá TẠM (backoff do nhập sai) KHÔNG được đá người đang làm việc ────
+    // Bản trước của test này khẳng định điều ngược lại: lockUntil còn hạn thì
+    // protect trả 423. Hành vi đó biến biện pháp chống brute-force thành công cụ
+    // quấy rối — bất kỳ ai biết email của bạn cũng đá được bạn ra khỏi phiên
+    // bằng cách gõ sai mật khẩu bạn 5 lần, và bạn không hiểu vì sao mình bị
+    // đăng xuất liên tục. Backoff là cửa ĐĂNG NHẬP; muốn CẤM thì dùng isLocked.
+    test('khoá tạm còn hạn → phiên đang làm việc VẪN chạy, không bị đá ra', async () => {
         const until = new Date(Date.now() + HOUR);
         User.findById.mockResolvedValue(baseUser({ lockUntil: until }));
         const { req, res, next } = mkCtx();
 
         await protect(req, res, next);
 
+        expect(next).toHaveBeenCalled();
+        expect(res.statusCode).toBeNull();
+    });
+
+    test('khoá tạm còn hạn nhưng BỊ KHOÁ THẬT → vẫn chặn, vì đó là ý định của admin', async () => {
+        // Chốt ranh giới: bỏ kiểm lockUntil không được làm mất hiệu lực isLocked.
+        User.findById.mockResolvedValue(baseUser({
+            lockUntil: new Date(Date.now() + HOUR),
+            isLocked: true,
+        }));
+        const { req, res, next } = mkCtx();
+
+        await protect(req, res, next);
+
         expect(next).not.toHaveBeenCalled();
         expect(res.statusCode).toBe(423);
-        expect(res.body.lockType).toBe('temp');
-        expect(res.body.lockUntil).toEqual(until);
+        expect(res.body.lockType).toBe('admin');
     });
 
     test('khoá tạm đã hết hạn → cho qua bình thường', async () => {
