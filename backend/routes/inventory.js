@@ -45,32 +45,42 @@ router.post('/use', protect, validate(inventoryItem), async (req, res, next) => 
             if (blocked) return res.status(409).json({ success: false, message: blocked });
         }
 
+        // Kiểm dùng-được-hay-không TRƯỚC khi trừ đồ. Trước đây bước này nằm SAU
+        // `consume`, nên bấm "dùng" một món không dùng được (cosmetic, item
+        // không phải on_use, effect rỗng) là món đó bị trừ, không hiệu ứng gì,
+        // không hoàn lại — và response vẫn trả `success: true`.
+        // Xem SEC-be.economy-004.
+        if (def.durationType !== 'on_use' || !def.effect?.type) {
+            return res.status(400).json({ success: false, message: 'Vật phẩm này không dùng được' });
+        }
+
+        // UserStats thiếu thì cũng phải chặn TRƯỚC khi trừ: nhánh `if (stats)`
+        // bên dưới không có `else`, nên trước đây món vẫn mất mà chẳng áp gì.
+        const statsExists = await UserStats.exists({ userId: req.user.id });
+        if (!statsExists) return res.status(404).json({ success: false, message: 'User not found' });
+
         const ok = await Inventory.consume(req.user.id, itemId, 1);
         if (!ok) return res.status(400).json({ success: false, message: 'Bạn không có vật phẩm này' });
 
-        // Kích hoạt on_use có hiệu ứng (vd thẻ boost) → áp vào UserStats.
-        let boosts = null;
-        let resources = null;
-        if (def.durationType === 'on_use' && def.effect && def.effect.type) {
-            const stats = await UserStats.findOne({ userId: req.user.id });
-            if (stats) {
-                applyShopEffect(stats, def.effect);
-                await stats.save();
-                // Thẻ hồi ⚡ đổi thẳng tài nguyên → phải trả số mới, không thì
-                // client giữ số cũ rồi saveState ghi đè mất phần vừa hồi.
-                resources = {
-                    energy: stats.energy, maxEnergy: stats.maxEnergy,
-                    coins: stats.coins, gems: stats.gems,
-                    hints: stats.hints, shields: stats.shields, timeFreezes: stats.timeFreezes,
-                    lastEnergyUpdate: stats.lastEnergyUpdate,
-                };
-                boosts = {
-                    xp: { active: stats.xpBoostActive, multiplier: stats.xpBoostMultiplier, expiresAt: stats.xpBoostExpiresAt },
-                    coins: { active: stats.coinsBoostActive, multiplier: stats.coinsBoostMultiplier, expiresAt: stats.coinsBoostExpiresAt },
-                    energy: { active: stats.energyBoostActive, multiplier: stats.energyBoostMultiplier, expiresAt: stats.energyBoostExpiresAt },
-                };
-            }
-        }
+        // Tới đây chắc chắn là on_use có effect (đã chặn ở trên) và UserStats
+        // tồn tại — nên không còn nhánh `if` nào nuốt lặng trường hợp hỏng.
+        const stats = await UserStats.findOne({ userId: req.user.id });
+        applyShopEffect(stats, def.effect);
+        await stats.save();
+
+        // Thẻ hồi ⚡ đổi thẳng tài nguyên → phải trả số mới, không thì client
+        // giữ số cũ rồi saveState ghi đè mất phần vừa hồi.
+        const resources = {
+            energy: stats.energy, maxEnergy: stats.maxEnergy,
+            coins: stats.coins, gems: stats.gems,
+            hints: stats.hints, shields: stats.shields, timeFreezes: stats.timeFreezes,
+            lastEnergyUpdate: stats.lastEnergyUpdate,
+        };
+        const boosts = {
+            xp: { active: stats.xpBoostActive, multiplier: stats.xpBoostMultiplier, expiresAt: stats.xpBoostExpiresAt },
+            coins: { active: stats.coinsBoostActive, multiplier: stats.coinsBoostMultiplier, expiresAt: stats.coinsBoostExpiresAt },
+            energy: { active: stats.energyBoostActive, multiplier: stats.energyBoostMultiplier, expiresAt: stats.energyBoostExpiresAt },
+        };
         res.json({ success: true, boosts, resources });
     } catch (err) { next(err); }
 });

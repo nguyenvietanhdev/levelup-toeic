@@ -5,6 +5,7 @@ const OtpCode = require('../models/OtpCode');
 const logger = require('../utils/logger');
 const { buildFullState, applyEnergyRegen, createUserWithDependents } = require('../utils/userStateHelper');
 const { lockMinutesFor } = require('../utils/loginBackoff');
+const { boundWordList } = require('../utils/stateLimits');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const crypto = require('crypto');
@@ -538,9 +539,13 @@ const syncProgress = async (req, res, next) => {
         }
         // maxEnergy: KHÔNG nhận từ client — đó là trần của chính cơ chế hồi.
 
+        // Cùng luật với saveState — chỗ thứ hai nhận hai mảng này. Vá một chỗ
+        // mà bỏ chỗ kia thì coi như chưa vá (đúng bài học từ SEC-be.userstate-002).
         if (progress) {
-            if (progress.wordsLearned) stats.wordsLearned = progress.wordsLearned;
-            if (progress.wordsMastered) stats.wordsMastered = progress.wordsMastered;
+            const learned = boundWordList(progress.wordsLearned);
+            const mastered = boundWordList(progress.wordsMastered);
+            if (learned) stats.wordsLearned = learned;
+            if (mastered) stats.wordsMastered = mastered;
         }
 
         // Streak KHÔNG ghi từ client (xem userStateController.saveState). Nguồn

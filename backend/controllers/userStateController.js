@@ -11,6 +11,7 @@ const Inventory = require('../services/inventoryService');
 const ItemDefinition = require('../models/ItemDefinition');
 const { logTxn } = require('../utils/economyLog');
 const { checkAchievementCondition } = require('../utils/achievementRules');
+const { boundWordList, boundPracticeHistory } = require('../utils/stateLimits');
 
 function expireBoosts(stats) {
     const now = Date.now();
@@ -130,9 +131,15 @@ exports.saveState = async (req, res, next) => {
         // Progress — chỉ danh sách từ (không phải tiền tệ). Các counter tổng
         // và modeStats do /practice/submit cập nhật → bỏ qua ở đây để khỏi
         // double-count / bị client ghi đè.
+        // Ép kiểu + chặn trần. Bản cũ chỉ kiểm truthy nên một object cũng gán
+        // được vào chỗ đáng lẽ là mảng, và không có giới hạn độ dài.
+        // `wordsLearned` giờ là đầu vào của điều kiện thành tích, nên để client
+        // ghi tuỳ ý là mở đường vòng qua bản vá SEC-be.userstate-001.
         if (state.progress) {
-            if (state.progress.wordsLearned) stats.wordsLearned = state.progress.wordsLearned;
-            if (state.progress.wordsMastered) stats.wordsMastered = state.progress.wordsMastered;
+            const learned = boundWordList(state.progress.wordsLearned);
+            const mastered = boundWordList(state.progress.wordsMastered);
+            if (learned) stats.wordsLearned = learned;
+            if (mastered) stats.wordsMastered = mastered;
         }
 
         // Streak: KHÔNG ghi từ blob client ở đây. Streak do /practice/submit
@@ -179,10 +186,10 @@ exports.saveState = async (req, res, next) => {
             profile.markModified('settings');
         }
 
-        // Practice history
-        if (state.practiceHistory && Array.isArray(state.practiceHistory)) {
-            stats.practiceHistory = state.practiceHistory;
-        }
+        // Practice history — cắt theo trần để một tài khoản không tự đẩy
+        // document của mình tới ngưỡng 16MB của MongoDB.
+        const history = boundPracticeHistory(state.practiceHistory);
+        if (history) stats.practiceHistory = history;
 
         await Promise.all([profile.save(), stats.save()]);
 
