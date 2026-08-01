@@ -285,8 +285,10 @@ export default function AchievementsScreen({ active }) {
                             <div key={ach.id || ach._id || i} className={`achievement-card ${isUnlocked ? 'unlocked' : isClaimable ? 'claimable' : 'locked'}`}>
                                 <div className="achievement-card-top">
                                     <div className={`achievement-icon ${isUnlocked || isClaimable ? 'gold' : ''}`}>
+                                        {/* Không đặt cỡ chữ tại đây: để .achievement-icon quyết định,
+                                            khỏi phải sửa hai nơi mỗi lần chỉnh kích thước thẻ. */}
                                         {iconIsEmoji
-                                            ? <span style={{ fontSize: 28 }}>{ach.icon}</span>
+                                            ? <span>{ach.icon}</span>
                                             : <i className={`fas ${ach.icon || (isUnlocked || isClaimable ? 'fa-trophy' : 'fa-lock')}`}></i>
                                         }
                                     </div>
