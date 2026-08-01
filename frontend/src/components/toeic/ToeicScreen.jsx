@@ -45,7 +45,7 @@ export default function ToeicScreen({ active }) {
     const [levelFilter, setLevelFilter] = useState('');   // '' = mọi độ khó
     // Danh mục bộ đề do admin khai (ToeicSeries), khớp đề theo TIỀN TỐ source key.
     // Chưa khai bộ nào thì buildSeriesChips tự lui về cắt tên đề như trước.
-    const { series: seriesCatalog } = useToeicSeries();
+    const { series: seriesCatalog, reload: reloadSeries } = useToeicSeries();
     const levelOptions = useMemo(() => listTestLevels(tests), [tests]);
     // Mini Test / Đục lỗ giữ Ô SELECT (không đổi sang pill như Full Test): hàng
     // nav bên đó đã có dãy Part + 3 ô lọc, thêm pill là kho đề lớn dần sẽ đẩy
@@ -151,8 +151,9 @@ export default function ToeicScreen({ active }) {
 
     const handleRefresh = useCallback(() => {
         reloadTests();
+        reloadSeries();   // sửa danh mục bên admin xong, bấm làm mới là thấy ngay
         setRefreshKey(k => k + 1);
-    }, [reloadTests]);
+    }, [reloadTests, reloadSeries]);
 
     const handleViewResults = useCallback(async (attemptId) => {
         Modal.show({

@@ -16,12 +16,18 @@ async function countTests(seriesList) {
     }));
 }
 
+// Thứ tự bày ra thanh lọc: `order` nhỏ lên trước. Hoà (mặc định 0 khi vừa tạo)
+// thì xếp tên GIẢM dần — bộ mới nhất lên đầu (ETS 2026 → 2022), giống cách
+// thanh lọc cũ vẫn xếp. Để tăng dần thì vừa khai xong đã thấy ETS 2022 chiếm
+// đầu bảng, tưởng thứ tự hỏng.
+const SERIES_SORT = { order: 1, displayName: -1 };
+
 // GET /api/toeic-series — public, để frontend dựng thanh lọc bên Full Test.
 // Chỉ trả bộ đang bật.
 exports.getSeries = async (req, res, next) => {
     try {
         const list = await ToeicSeries.find({ isActive: true })
-            .sort({ order: 1, displayName: 1 })
+            .sort(SERIES_SORT)
             .select('displayName keys order')
             .lean();
         res.json({ success: true, data: list });
@@ -35,7 +41,7 @@ exports.getSeries = async (req, res, next) => {
 exports.getAllSeries = async (req, res, next) => {
     try {
         const list = await ToeicSeries.find()
-            .sort({ order: 1, displayName: 1 })
+            .sort(SERIES_SORT)
             .lean();
         res.json({ success: true, data: await countTests(list) });
     } catch (err) {
