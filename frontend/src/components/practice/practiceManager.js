@@ -5,7 +5,7 @@ import { Utils } from '@lib/utils.js';
 import { logger } from '@lib/logger.js';
 import { EventBus, GameEvents } from '@game/eventBus.js';
 import { GameLogic, vocabLang } from '@game/gameLogic.js';
-import { Http } from '@api/http.js';
+import { Http, API } from '@api/http.js';
 import { Energy } from '@game/energy.js';
 import { Quest } from '@components/quest/quest.js';
 import { getQuestionTime, QUESTION_TIME_MODES } from '@components/practice/questionTime.js';
@@ -83,7 +83,7 @@ export const PracticeManager = {
     },
 
     // `async` vì việc trừ năng lượng giờ là một lượt gọi server (xem chỗ
-    // Http.practice.start bên dưới). Đổi được an toàn: cả ba nơi gọi hàm này
+    // API.practice.start bên dưới). Đổi được an toàn: cả ba nơi gọi hàm này
     // (PracticeScreen.jsx:72, HomeScreen.jsx:195 và :249) đều BỎ QUA giá trị
     // trả về, không nơi nào làm `if (!PracticeManager.start(mode))` — kiểu đó
     // mới hỏng ngầm vì Promise luôn truthy.
@@ -184,7 +184,9 @@ export const PracticeManager = {
         try {
             // Http.post bọc payload của server vào `.data` và ném Error khi
             // không ok — nên đọc `res.data`, và lỗi chỉ còn message.
-            const { data } = await Http.practice.start(mode);
+            // API.practice, KHÔNG phải Http.practice: `Http` là lớp gửi request
+            // thô, còn các nhóm endpoint (auth/user/shop/practice) nằm trên `API`.
+            const { data } = await API.practice.start(mode);
             if (typeof data?.energyRemaining === 'number') {
                 GameState.setEnergy(data.energyRemaining);
             }
