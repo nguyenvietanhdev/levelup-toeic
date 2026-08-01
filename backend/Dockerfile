@@ -28,6 +28,11 @@ COPY --chown=appuser:appgroup . .
 RUN mkdir -p public/tts-cache public/uploads data logs \
     && chown -R appuser:appgroup public/tts-cache public/uploads data logs
 
+# Không trông vào platform tự tiêm: Render KHÔNG tiêm NODE_ENV cho Docker service,
+# Railway thì tuỳ builder. Thiếu nó thì log rớt về mức debug và morgan mất định
+# dạng combined — và trước đây còn mở luôn /api-docs (nay đã fail closed ở server.js).
+ENV NODE_ENV=production
+
 USER appuser
 
 # Port the app listens on (matches PORT env var)

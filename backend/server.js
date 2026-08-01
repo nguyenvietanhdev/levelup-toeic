@@ -124,7 +124,11 @@ app.use(requestMetricsMiddleware);
 // đầy đủ mọi endpoint (kể cả nhóm admin) kèm sẵn client để bấm thử — không tự
 // nó cho quyền gì, nhưng xoá sạch công đoạn dò tìm. Bật lại bằng ENABLE_API_DOCS
 // nếu cần xem trên server thật.
-if (process.env.NODE_ENV !== 'production' || process.env.ENABLE_API_DOCS === 'true') {
+// FAIL CLOSED: điều kiện cũ là `NODE_ENV !== 'production'`, tức THIẾU biến thì
+// `'undefined' !== 'production'` → true → docs mở toang. Đó đúng là trạng thái của
+// một image không khai báo NODE_ENV hoặc một platform không tự tiêm, và nó im lặng.
+// Giờ phải nói ĐÚNG là development, hoặc bật tay bằng ENABLE_API_DOCS.
+if (process.env.NODE_ENV === 'development' || process.env.ENABLE_API_DOCS === 'true') {
     app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
         customSiteTitle: 'TOEIC API Docs',
         customCss: '.swagger-ui .topbar { background-color: #1a1a2e; }',

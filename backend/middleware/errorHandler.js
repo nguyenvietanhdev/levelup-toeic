@@ -12,7 +12,11 @@ const errorHandler = (err, req, res, _next) => {
         method: req.method,
         url: req.originalUrl,
         error: err.message,
-        stack: process.env.NODE_ENV === 'development' ? err.stack : undefined,
+        // LUÔN ghi stack vào log. Chỗ chặn theo môi trường là RESPONSE ở dưới —
+        // client không được nhận stack. Nhưng bỏ nó khỏi log thì sự cố production
+        // còn lại đúng một dòng message không frame nào, và việc lần ra chỗ hỏng
+        // thành đoán mò giữa nhiều đường gọi.
+        stack: err.stack,
     });
 
     if (err.name === 'CastError') {
