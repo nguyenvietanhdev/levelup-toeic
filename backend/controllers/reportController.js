@@ -2,23 +2,18 @@ const Report = require('../models/Report');
 const UserProfile = require('../models/UserProfile');
 const logger = require('../utils/logger');
 const path = require('path');
-const fs = require('fs');
 const multer = require('multer');
+const { storeUpload } = require('../utils/uploadStore');
 
-// ── Multer config: save to public/uploads/reports ──
+// ── Multer: giữ file trong RAM, `storeUpload` quyết định Cloudinary hay đĩa ──
+// Trước đây ghi thẳng `public/uploads/reports/` rồi lưu đường dẫn đó vào Mongo.
+// Trên Render/Railway đĩa container là ephemeral: mỗi lần redeploy là file bay,
+// còn bản ghi thì sống và vẫn trỏ tới đó → ảnh vỡ trong tab Báo cáo mà không có
+// lỗi ở đâu, vì đường dẫn tĩnh 404 thì không ai ghi log.
 const uploadDir = path.join(__dirname, '..', 'public', 'uploads', 'reports');
-if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
-
-const storage = multer.diskStorage({
-    destination: (_req, _file, cb) => cb(null, uploadDir),
-    filename: (_req, file, cb) => {
-        const ext = path.extname(file.originalname);
-        cb(null, `report-${Date.now()}${ext}`);
-    },
-});
 
 const upload = multer({
-    storage,
+    storage: multer.memoryStorage(),
     limits: { fileSize: 5 * 1024 * 1024 }, // 5 MB
     fileFilter: (_req, file, cb) => {
         if (/^image\/(jpeg|png|gif|webp)$/.test(file.mimetype)) cb(null, true);
@@ -40,7 +35,14 @@ exports.submitReport = [
             }
 
             const imageUrl = req.file
-                ? `/uploads/reports/${req.file.filename}`
+                ? await storeUpload(req.file.buffer, {
+                    folder: 'reports',
+                    diskDir: uploadDir,
+                    publicPrefix: '/uploads/reports',
+                    originalname: req.file.originalname,
+                    basename: `report-${Date.now()}`,
+                    optimize: true,
+                })
                 : null;
 
             const userId = req.user?.id || req.user?._id || null;

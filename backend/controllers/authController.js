@@ -6,6 +6,8 @@ const logger = require('../utils/logger');
 const { buildFullState, applyEnergyRegen, createUserWithDependents } = require('../utils/userStateHelper');
 const { lockMinutesFor } = require('../utils/loginBackoff');
 const { boundWordList } = require('../utils/stateLimits');
+const { storeUpload } = require('../utils/uploadStore');
+const { avatarDir } = require('../middleware/upload');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const crypto = require('crypto');
@@ -227,7 +229,17 @@ const uploadAvatar = async (req, res, next) => {
     try {
         if (!req.file) return res.status(400).json({ success: false, message: 'Không có file ảnh' });
 
-        const avatarUrl = `/uploads/avatars/${req.file.filename}`;
+        // Cloudinary nếu có env, đĩa nếu không — xem utils/uploadStore.js. Trước
+        // đây luôn ghi đĩa container, tức avatar bay sạch sau mỗi lần redeploy
+        // trong khi UserProfile.avatar vẫn trỏ tới đường dẫn đã chết.
+        const avatarUrl = await storeUpload(req.file.buffer, {
+            folder: 'avatars',
+            diskDir: avatarDir,
+            publicPrefix: '/uploads/avatars',
+            originalname: req.file.originalname,
+            basename: String(req.user.id),
+            optimize: true,
+        });
 
         const profile = await UserProfile.findOne({ userId: req.user.id });
         if (!profile) return res.status(404).json({ success: false, message: 'User not found' });

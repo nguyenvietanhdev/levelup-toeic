@@ -143,16 +143,6 @@ const uploadAudioMem = multer({
 // ===================================
 
 const avatarDir = path.join(__dirname, '../public/uploads/avatars');
-if (!fs.existsSync(avatarDir)) fs.mkdirSync(avatarDir, { recursive: true });
-
-const avatarStorage = multer.diskStorage({
-    destination: (req, file, cb) => cb(null, avatarDir),
-    filename: (req, file, cb) => {
-        // Dùng userId làm tên file → tự động ghi đè khi update
-        const ext = path.extname(file.originalname).toLowerCase() || '.jpg';
-        cb(null, `${req.user.id}${ext}`);
-    },
-});
 
 const avatarFilter = (req, file, cb) => {
     if (/image\/(jpeg|jpg|png|gif|webp)/.test(file.mimetype)) {
@@ -162,8 +152,12 @@ const avatarFilter = (req, file, cb) => {
     }
 };
 
+// RAM, không đĩa: controller gọi `storeUpload` để quyết định Cloudinary hay đĩa.
+// Bản cũ đặt tên file theo `req.user.id` nên upload mới ĐÈ file cũ. Trên
+// Cloudinary không đè được (unique_filename), nên avatar cũ ở lại trên cloud —
+// đổi lấy việc ảnh sống qua redeploy. Dọn rác là việc của `clean-uploads`.
 const uploadAvatar = multer({
-    storage: avatarStorage,
+    storage: multer.memoryStorage(),
     limits: { fileSize: 2 * 1024 * 1024 }, // 2MB max
     fileFilter: avatarFilter,
 });
@@ -179,23 +173,14 @@ const SHOP_IMAGE_ROLES = ['background', 'avatar', 'frame', 'item', 'spin'];
 // chỉ nhận ký tự an toàn cho tên folder; rỗng → 'item'. Folder tự tạo khi upload.
 const sanitizeRole = (r) => String(r || 'item').toLowerCase().replace(/[^a-z0-9_-]/g, '') || 'item';
 
-const shopImageStorage = multer.diskStorage({
-    destination: (req, file, cb) => {
-        const role = sanitizeRole(req.query.role);
-        const dir = path.join(__dirname, '../public/uploads', role);
-        if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-        cb(null, dir);
-    },
-    filename: (req, file, cb) => {
-        const ext = path.extname(file.originalname).toLowerCase() || '.png';
-        const base = path.basename(file.originalname, ext)
-            .toLowerCase().replace(/[^a-z0-9-_]/g, '-').slice(0, 40) || 'img';
-        cb(null, `${base}-${Date.now()}${ext}`);
-    },
-});
+/** Thư mục fallback đĩa cho một role — dùng khi thiếu env Cloudinary. */
+const shopImageDir = (role) => path.join(__dirname, '../public/uploads', sanitizeRole(role));
 
+// RAM, không đĩa (xem uploadAvatar). Ảnh cosmetic trước đây ghi thẳng
+// `public/uploads/{role}/` rồi lưu đường dẫn vào item definition — mất sau mỗi
+// lần redeploy, và admin phải upload lại toàn bộ kho ảnh shop.
 const uploadShopImage = multer({
-    storage: shopImageStorage,
+    storage: multer.memoryStorage(),
     limits: { fileSize: 3 * 1024 * 1024 }, // 3MB
     fileFilter: imageFilter,
 });
@@ -209,6 +194,8 @@ module.exports = {
     uploadShopImage,
     SHOP_IMAGE_ROLES,
     sanitizeRole,
+    avatarDir,
+    shopImageDir,
     // Dùng lại cho nhánh fallback lưu đĩa trong controller.
     resolveTestFolder,
     uniqueFilename,

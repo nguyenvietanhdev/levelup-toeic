@@ -16,9 +16,10 @@ const UserProfile = require('../models/UserProfile');
 const { clearUnlockCache } = require('../services/featureUnlock');
 const { clearGameConfigCache } = require('../services/gameConfig');
 const adminCtrl = require('../controllers/adminController');
-const { uploadShopImage, sanitizeRole } = require('../middleware/upload');
+const path = require('path');
+const { uploadShopImage, sanitizeRole, shopImageDir } = require('../middleware/upload');
 const { removeIfOrphan } = require('../utils/uploadCleanup');
-const { optimizeUploaded } = require('../utils/imageOptimizer');
+const { storeUpload } = require('../utils/uploadStore');
 
 const admin = [protect, authorize('admin')];
 
@@ -28,8 +29,20 @@ router.post('/upload-image', admin, uploadShopImage.single('image'), async (req,
     if (!req.file) return res.status(400).json({ success: false, message: 'Thiếu file ảnh' });
     const role = sanitizeRole(req.query.role);
     // Nén ngay lúc upload: ảnh nền cosmetic còn vẽ cho từng dòng bảng xếp hạng,
-    // để nguyên PNG 2MB là mỗi lần mở BXH kéo vài MB.
-    const url = await optimizeUploaded(req.file.path, `/uploads/${role}/${req.file.filename}`);
+    // để nguyên PNG 2MB là mỗi lần mở BXH kéo vài MB. `storeUpload` nén rồi đẩy
+    // lên Cloudinary (nếu có env) — trước đây ghi đĩa container nên cả kho ảnh
+    // shop bay sau mỗi lần redeploy, trong khi item definition vẫn trỏ tới.
+    const ext = path.extname(req.file.originalname).toLowerCase() || '.png';
+    const base = path.basename(req.file.originalname, ext)
+        .toLowerCase().replace(/[^a-z0-9-_]/g, '-').slice(0, 40) || 'img';
+    const url = await storeUpload(req.file.buffer, {
+        folder: `shop/${role}`,
+        diskDir: shopImageDir(role),
+        publicPrefix: `/uploads/${role}`,
+        originalname: req.file.originalname,
+        basename: `${base}-${Date.now()}`,
+        optimize: true,
+    });
     res.json({ success: true, url, role });
 });
 
