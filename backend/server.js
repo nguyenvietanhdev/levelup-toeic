@@ -117,6 +117,24 @@ if (process.env.NODE_ENV !== 'production' || process.env.ENABLE_API_DOCS === 'tr
 app.use(express.static(path.join(__dirname, 'public')));
 app.use('/static', express.static(path.join(__dirname, 'public', 'admin')));
 
+// ── Bản build của frontend React ─────────────────────────────────────────────
+// Frontend gọi `fetch('/api/...')` — đường dẫn TƯƠNG ĐỐI so với origin đang phục
+// vụ nó (72 chỗ trong 29 file). Lúc `vite dev` thì proxy trong vite.config.js đẩy
+// `/api` sang đây nên chạy được; **bản build không có proxy nào cả**. Tách frontend
+// sang host khác là cả 72 lời gọi trỏ vào host đó → 404 sạch, app render xong rồi
+// đứng im mà server không ghi một dòng lỗi nào.
+// Phục vụ SPA từ chính tiến trình này → cùng origin → `/api`, `/uploads`,
+// `/tts-cache`, `/assets` đều đúng mà không phải sửa file nào bên frontend.
+// Thiếu thư mục build (chưa `npm run build`, hoặc image chỉ có backend) thì bỏ
+// qua: API vẫn chạy bình thường, chỉ không có SPA để trả.
+const FRONTEND_DIST = path.join(__dirname, '..', 'frontend', 'dist');
+const hasFrontendBuild = require('fs').existsSync(path.join(FRONTEND_DIST, 'index.html'));
+if (hasFrontendBuild) {
+    app.use(express.static(FRONTEND_DIST));
+} else {
+    logger.warn('frontend/dist chưa có — chỉ phục vụ API. Chạy `npm run build` trước khi deploy.');
+}
+
 // ===================================
 // API ROUTES (Mount BEFORE server starts)
 // ===================================
@@ -218,6 +236,22 @@ app.use('/api/*', (req, res) => {
 app.get('/admin/*', (req, res) => {
     res.send(renderAdminDashboard());
 });
+
+// SPA Fallback cho frontend React — PHẢI đứng sau handler 404 của `/api/*` ở
+// trên. Đảo thứ tự là catch-all nuốt mọi URL /api gõ sai và trả về HTML cho một
+// lời gọi fetch: client parse HTML thành JSON rồi báo một lỗi không liên quan gì
+// tới nguyên nhân thật.
+// Chỉ trả index.html cho đường dẫn ĐIỀU HƯỚNG (không có đuôi file). Nếu bắt tất,
+// một file ảnh/audio thiếu sẽ trả HTML kèm status 200 thay vì 404: `<img>` và
+// `<audio>` nhận HTML rồi hỏng lúc decode, không còn tín hiệu nào để lần ra.
+// Nguy hiểm nhất là nó CHE ĐÚNG triệu chứng của DEPLOY-deployment-004 (ảnh upload
+// biến mất sau mỗi lần redeploy) — ảnh hỏng mà server báo 200.
+if (hasFrontendBuild) {
+    app.get('*', (req, res, next) => {
+        if (path.extname(req.path)) return next();   // trông như file → để 404 thật
+        res.sendFile(path.join(FRONTEND_DIST, 'index.html'));
+    });
+}
 
 // ===================================
 // ERROR HANDLER (Must be last middleware)
