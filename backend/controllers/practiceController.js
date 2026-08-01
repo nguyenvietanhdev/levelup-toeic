@@ -7,10 +7,34 @@ const { logTxn } = require('../utils/economyLog');
 const MAX_XP_PER_Q = 100;
 const MAX_COINS_PER_Q = 30;
 
+const { practiceEnergyCost, isVipActive } = require('../utils/energyCosts');
+
 exports.startSession = async (req, res, next) => {
     try {
-        const { mode, energyCost = 10 } = req.body;
+        const { mode } = req.body;
         if (!mode) return res.status(400).json({ success: false, message: 'Mode is required' });
+
+        // Giá do SERVER quyết, tra từ bảng theo `mode`. Trước đây lấy thẳng
+        // `req.body.energyCost` (mặc định 10) — client tự khai giá phải trả cho
+        // chính mình: gửi 0 là chơi miễn phí, gửi SỐ ÂM thì `$inc` đổi dấu và
+        // client tự cộng năng lượng, biến endpoint tiêu thành vòi bơm.
+        const energyCost = practiceEnergyCost(mode);
+        if (energyCost === null) {
+            return res.status(400).json({ success: false, message: `Chế độ không hợp lệ: ${mode}` });
+        }
+
+        // VIP miễn trừ — luật này trước đây chỉ có ở client (GameState.useEnergy),
+        // nên server không biết. Đưa lên cùng chỗ trừ tiền để chuyển việc trừ
+        // sang server không làm mất quyền lợi của gói VIP.
+        const current = await UserStats.findOne({ userId: req.user.id });
+        if (!current) return res.status(404).json({ success: false, message: 'User not found' });
+
+        if (isVipActive(current)) {
+            return res.json({
+                success: true, message: 'Practice session started (VIP)',
+                energyRemaining: current.energy, energyCost: 0, vip: true,
+            });
+        }
 
         const updated = await UserStats.findOneAndUpdate(
             { userId: req.user.id, energy: { $gte: energyCost } },
@@ -19,16 +43,18 @@ exports.startSession = async (req, res, next) => {
         );
 
         if (!updated) {
-            const stats = await UserStats.findOne({ userId: req.user.id });
             return res.status(400).json({
                 success: false,
                 message: 'Not enough energy',
                 energyNeeded: energyCost,
-                currentEnergy: stats?.energy ?? 0,
+                currentEnergy: current.energy ?? 0,
             });
         }
 
-        res.json({ success: true, message: 'Practice session started', energyRemaining: updated.energy });
+        res.json({
+            success: true, message: 'Practice session started',
+            energyRemaining: updated.energy, energyCost, vip: false,
+        });
     } catch (error) {
         next(error);
     }

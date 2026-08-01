@@ -268,6 +268,23 @@ export const API = {
         }
     },
 
+    practice: {
+        /**
+         * Mở một phiên luyện tập — SERVER trừ năng lượng, không phải client.
+         *
+         * Chỉ gửi `mode`: giá do server tra từ bảng của nó. Trước đây client tự
+         * trừ rồi báo số dư mới lên qua saveState, nghĩa là con số cuối cùng do
+         * client quyết. Cũng KHÔNG gửi energyCost — bản cũ của endpoint nhận
+         * trường đó từ body, và gửi số âm là tự cộng năng lượng cho mình.
+         *
+         * @returns {{success, energyRemaining, energyCost, vip}} hoặc ném lỗi
+         *          kèm `energyNeeded`/`currentEnergy` khi không đủ.
+         */
+        async start(mode) {
+            return Http.post('/practice/start', { mode });
+        }
+    },
+
     /**
      * Vocabulary endpoints
      */

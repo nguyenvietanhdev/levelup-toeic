@@ -489,6 +489,26 @@ export const GameState = {
         return added;
     },
 
+    /**
+     * Đặt số ⚡ theo con số SERVER trả về.
+     *
+     * Khác `useEnergy`/`addEnergy` ở chỗ không tự tính: server là nơi trừ (xem
+     * POST /practice/start), client chỉ đồng bộ lại để giao diện khớp. Có hàm
+     * riêng để không ai phải gán thẳng vào `state.resources.energy` rồi quên
+     * phát sự kiện — thanh ⚡ trên đầu nghe sự kiện này để vẽ lại.
+     */
+    setEnergy(value) {
+        const next = Math.max(0, Math.min(Number(value) || 0, this.state.resources.maxEnergy));
+        if (next === this.state.resources.energy) return next;
+
+        this.state.resources.energy = next;
+        EventBus.emit(GameEvents.ENERGY_CHANGED, {
+            current: next,
+            max: this.state.resources.maxEnergy,
+        });
+        return next;
+    },
+
     async useEnergy(amount) {
         // VIP còn hạn → năng lượng KHÔNG bị trừ (đúng mô tả "Unlimited energy").
         if (this.isVipActive()) {

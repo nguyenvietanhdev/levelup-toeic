@@ -161,14 +161,38 @@ export const PracticeManager = {
             }
         }
 
+        // Bảng giá phía client chỉ để CHẶN SỚM cho đỡ tốn một request và để
+        // popup báo còn thiếu bao nhiêu. Con số thật do server quyết.
         const energyCost = Config.energyCosts[mode];
-        if (!Energy.hasEnough(energyCost)) {
-            // Truyền số ⚡ cần để popup báo còn thiếu bao nhiêu + đếm giờ hồi đủ.
+        if (!GameState.isVipActive() && !Energy.hasEnough(energyCost)) {
             Energy.showRefillModal({ needed: energyCost });
             return false;
         }
 
-        if (!Energy.use(energyCost)) {
+        // SERVER trừ năng lượng, client chỉ đồng bộ lại số dư.
+        //
+        // Trước đây client tự trừ (`Energy.use`) rồi báo số mới lên qua
+        // saveState — nghĩa là con số cuối cùng do client quyết, và ai sửa được
+        // request là chơi vô hạn. Giờ endpoint /practice/start là nơi duy nhất
+        // trừ, và nó cũng là nơi xét miễn trừ VIP (utils/energyCosts.js), nên
+        // hai luật không thể lệch nhau nữa.
+        try {
+            // Http.post bọc payload của server vào `.data` và ném Error khi
+            // không ok — nên đọc `res.data`, và lỗi chỉ còn message.
+            const { data } = await Http.practice.start(mode);
+            if (typeof data?.energyRemaining === 'number') {
+                GameState.setEnergy(data.energyRemaining);
+            }
+        } catch (err) {
+            const msg = String(err?.message || '');
+            // Server từ chối vì thiếu ⚡ → hiện đúng popup nạp như trước. Số hiện
+            // là ước lượng của client vì Error không mang theo body; đủ dùng cho
+            // popup, còn quyết định thật thì server đã ra rồi.
+            if (/energy|năng lượng/i.test(msg)) {
+                Energy.showRefillModal({ needed: energyCost });
+            } else {
+                logger.error('Không mở được phiên luyện tập:', msg);
+            }
             return false;
         }
 
