@@ -82,7 +82,12 @@ export const PracticeManager = {
         return pool;
     },
 
-    start(mode) {
+    // `async` vì việc trừ năng lượng giờ là một lượt gọi server (xem chỗ
+    // Http.practice.start bên dưới). Đổi được an toàn: cả ba nơi gọi hàm này
+    // (PracticeScreen.jsx:72, HomeScreen.jsx:195 và :249) đều BỎ QUA giá trị
+    // trả về, không nơi nào làm `if (!PracticeManager.start(mode))` — kiểu đó
+    // mới hỏng ngầm vì Promise luôn truthy.
+    async start(mode) {
         logger.log('🚀 PracticeManager.start() called with mode:', mode);
 
         if (this.currentSession && this.currentSession.mode) {
