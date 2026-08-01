@@ -3483,6 +3483,10 @@ mark {
 }
 .achievement-tabs::-webkit-scrollbar { display: none; }
 
+/* Khớp 1:1 với .quest-tab. Trước đây thiếu `font-size` nên tab thừa hưởng cỡ
+   chữ gốc 16px (bên Nhiệm vụ dùng 14px), lại luôn bật font-weight 600 trong khi
+   quest chỉ đậm ở tab đang chọn — hai thứ đó làm thanh nav Thành tích cao và
+   nặng hơn hẳn, dù padding hai bên y hệt nhau. */
 .achievement-tab {
   flex: 1;
   min-width: max-content;
@@ -3494,7 +3498,7 @@ mark {
   transition: all 0.2s;
   white-space: nowrap;
   color: var(--text-secondary);
-  font-weight: 600;
+  font-size: var(--font-size-sm);
   text-align: center;
 }
 .achievement-tab:hover { color: var(--primary-color); }
@@ -3502,6 +3506,7 @@ mark {
 .achievement-tab.active {
   background: var(--primary-color);
   color: #fff;
+  font-weight: 600;
 }
 
 .achievements-grid {
