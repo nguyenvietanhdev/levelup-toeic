@@ -4,6 +4,7 @@ const UserStats = require('../models/UserStats');
 const OtpCode = require('../models/OtpCode');
 const logger = require('../utils/logger');
 const { buildFullState, applyEnergyRegen, createUserWithDependents } = require('../utils/userStateHelper');
+const { lockMinutesFor } = require('../utils/loginBackoff');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const crypto = require('crypto');
@@ -87,36 +88,32 @@ const login = async (req, res, next) => {
             return res.status(423).json({ success: false, locked: true, lockType: 'admin', message: 'Tài khoản đã bị khóa bởi quản trị viên. Vui lòng liên hệ hỗ trợ.' });
         }
 
+        // Backoff theo số lần sai áp cho MỌI vai trò, kể cả admin. Trước đây cả
+        // khối này bọc trong `if (user.role !== 'admin')`, nên brute-force vào
+        // tài khoản quyền cao nhất chỉ còn rate limiter theo IP chặn — mà IP thì
+        // xoay được. Admin không bị nhốt vĩnh viễn vì lịch backoff của admin có
+        // trần 5 phút (utils/loginBackoff.js). Xem SEC-be.auth-001.
         const now = Date.now();
-        if (user.role !== 'admin') {
-            if (user.lockUntil && user.lockUntil > now) {
-                return res.status(423).json({ success: false, locked: true, lockType: 'temp', lockUntil: user.lockUntil, message: 'Tài khoản tạm thời bị khóa do nhập sai quá nhiều lần.' });
-            }
-            if (user.lockUntil && user.lockUntil <= now) {
-                user.loginAttempts = 0;
-                user.lockUntil = null;
-            }
+        if (user.lockUntil && user.lockUntil > now) {
+            return res.status(423).json({ success: false, locked: true, lockType: 'temp', lockUntil: user.lockUntil, message: 'Tài khoản tạm thời bị khóa do nhập sai quá nhiều lần.' });
+        }
+        if (user.lockUntil && user.lockUntil <= now) {
+            user.loginAttempts = 0;
+            user.lockUntil = null;
         }
 
         const isMatch = await user.comparePassword(password);
 
         if (!isMatch) {
-            if (user.role !== 'admin') {
-                user.loginAttempts = (user.loginAttempts || 0) + 1;
-                const attempts = user.loginAttempts;
-                let lockMinutes = 0;
-                if (attempts >= 20) lockMinutes = 60;
-                else if (attempts >= 15) lockMinutes = 30;
-                else if (attempts >= 10) lockMinutes = 15;
-                else if (attempts >= 5) lockMinutes = 5;
+            user.loginAttempts = (user.loginAttempts || 0) + 1;
+            const lockMinutes = lockMinutesFor(user.loginAttempts, user.role);
 
-                if (lockMinutes > 0) {
-                    user.lockUntil = new Date(now + lockMinutes * 60 * 1000);
-                    await user.save();
-                    return res.status(423).json({ success: false, locked: true, lockType: 'temp', lockUntil: user.lockUntil, message: `Nhập sai quá nhiều lần. Tài khoản bị khóa ${lockMinutes} phút.` });
-                }
+            if (lockMinutes > 0) {
+                user.lockUntil = new Date(now + lockMinutes * 60 * 1000);
                 await user.save();
+                return res.status(423).json({ success: false, locked: true, lockType: 'temp', lockUntil: user.lockUntil, message: `Nhập sai quá nhiều lần. Tài khoản bị khóa ${lockMinutes} phút.` });
             }
+            await user.save();
             return res.status(401).json({ success: false, message: 'Invalid credentials' });
         }
 
