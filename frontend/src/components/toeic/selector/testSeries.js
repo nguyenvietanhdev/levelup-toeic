@@ -24,6 +24,75 @@ export function listTestSeries(tests = []) {
     );
 }
 
+// ── Danh mục bộ đề do admin khai (ToeicSeries) ──────────────────────────────
+// Khớp theo TIỀN TỐ source key, cùng luật với backend/utils/toeicSeries.js.
+// Đây là đường CHÍNH; phần cắt tên đề bên trên chỉ còn là đường lui khi admin
+// chưa khai bộ nào (xem buildSeriesChips).
+
+/** Chuẩn hoá tiền tố: nhận mảng hoặc chuỗi "a, b"; trim + lowercase, bỏ rỗng/trùng. */
+export function normalizeKeys(raw) {
+    if (!raw) return [];
+    const arr = Array.isArray(raw) ? raw : String(raw).split(',');
+    return [...new Set(
+        arr.map(s => String(s ?? '').trim().toLowerCase()).filter(Boolean),
+    )];
+}
+
+/** Nguồn của một đề — gộp `sources[]` và `source`; chỉ đọc `source` sẽ sót đề trộn. */
+function testSources(test) {
+    const raw = [...(Array.isArray(test?.sources) ? test.sources : []), test?.source];
+    return raw.map(s => String(s ?? '').trim().toLowerCase()).filter(Boolean);
+}
+
+/** Đề có nguồn nào bắt đầu bằng một trong `keys` không. */
+export function testMatchesKeys(test, keys) {
+    const list = normalizeKeys(keys);
+    if (!list.length) return false;
+    return testSources(test).some(src => list.some(k => src.startsWith(k)));
+}
+
+/** Id của nút gom các đề chưa thuộc bộ nào. */
+export const OTHER_CHIP_ID = '__other__';
+
+/**
+ * Dựng danh sách nút lọc cho Full Test.
+ *
+ * - Có danh mục → mỗi bộ CÓ ĐỀ THẬT thành một nút (nút không bao giờ trỏ vào
+ *   danh sách rỗng), cộng nút "Khác" nếu còn đề chưa thuộc bộ nào — nhờ vậy
+ *   không đề nào biến mất chỉ vì admin quên khai.
+ * - Chưa khai bộ nào → lui về cắt tên đề như cũ, để thanh lọc không trống trơn
+ *   ngay lúc tính năng vừa lên.
+ */
+export function buildSeriesChips(tests = [], catalog = []) {
+    if (catalog.length) {
+        const chips = catalog
+            .filter(s => tests.some(t => testMatchesKeys(t, s.keys)))
+            .map(s => ({ id: String(s._id), label: s.displayName, keys: s.keys }));
+        const ungrouped = tests.some(t => !catalog.some(s => testMatchesKeys(t, s.keys)));
+        if (ungrouped) chips.push({ id: OTHER_CHIP_ID, label: 'Khác', keys: null });
+        return chips;
+    }
+    return listTestSeries(tests).map(name => ({ id: `name:${name}`, label: name, name }));
+}
+
+/**
+ * Một đề có thuộc nút lọc đang chọn không. `chip` rỗng = không lọc.
+ * Dùng trực tiếp khi danh sách đã có sẵn chuỗi điều kiện khác (Mini Test / Đục lỗ
+ * còn lọc theo Part, độ khó, từ khoá) — khỏi lọc hai lượt.
+ */
+export function matchesChip(test, chip = null, catalog = []) {
+    if (!chip) return true;
+    if (chip.id === OTHER_CHIP_ID) return !catalog.some(s => testMatchesKeys(test, s.keys));
+    if (chip.keys) return testMatchesKeys(test, chip.keys);
+    if (chip.name) return testSeriesName(test) === chip.name; // đường lui: khớp theo tên
+    return true;
+}
+
+/** Lọc đề theo nút đang chọn. `chip` rỗng = xem hết. */
+export function filterByChip(tests = [], chip = null, catalog = []) {
+    return tests.filter(t => matchesChip(t, chip, catalog));
+}
+
 // Độ khó đọc từ `level` (beginner/intermediate/advanced) — đây là trường THẬT
 // trong ToeicTest. `difficulty` không có trong schema, nhãn "MEDIUM" trên thẻ đề
 // chỉ là giá trị mặc định cứng ở TestCard nên không lọc theo nó được.

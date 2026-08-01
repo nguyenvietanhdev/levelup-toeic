@@ -39,6 +39,7 @@ function initMainTabs() {
         'toeic-single':      'Tạo câu đơn TOEIC (Part 1·2·5)',
         'toeic-group':       'Tạo nhóm câu TOEIC (Part 3·4·6·7)',
         'toeic-tests':       'Đề thi TOEIC',
+        'toeic-series':      'Bộ đề TOEIC (dựng thanh lọc Full Test)',
         activity:            'Hoạt động người dùng',
         reports:             'Báo cáo người dùng',
         achievements:        'Quản lý Thành tích',
@@ -89,6 +90,8 @@ function initMainTabs() {
         } else if (tab === 'toeic-tests') {
             loadToeicStats();
             loadTests();
+        } else if (tab === 'toeic-series') {
+            window.loadToeicSeries?.();
         } else if (tab === 'activity') {
             // Activate default sub-tab (Tổng quan) on first visit
             const activeBtn = document.querySelector('.activity-subtab-btn.active');

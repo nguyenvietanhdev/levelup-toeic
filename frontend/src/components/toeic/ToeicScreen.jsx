@@ -10,7 +10,8 @@ import FillBlankList from './selector/FillBlankList.jsx';
 import HistoryList from './selector/HistoryList.jsx';
 import AnalyticsView from './selector/AnalyticsView.jsx';
 import StartTestModal from './runner/StartTestModal.jsx';
-import { listTestSeries, listTestLevels, TEST_LEVELS } from './selector/testSeries.js';
+import { listTestLevels, TEST_LEVELS, buildSeriesChips } from './selector/testSeries.js';
+import { useToeicSeries } from './hooks/useToeicSeries.js';
 import { isFullTestType } from './toeicPartTime.js';
 import TestRunner from './runner/TestRunner.jsx';
 import { GameState } from '@game/state.js';
@@ -40,16 +41,40 @@ export default function ToeicScreen({ active }) {
     // Bump để remount History/Analytics (chúng tự fetch khi mount) → tải lại dữ liệu.
     const [refreshKey, setRefreshKey] = useState(0);
     const [partFilter, setPartFilter] = useState('new'); // 'new' (9 đề mới nhất) | 1..7
-    const [seriesFilter, setSeriesFilter] = useState(''); // '' = mọi bộ đề
+    const [seriesFilter, setSeriesFilter] = useState(''); // '' = mọi bộ đề (giữ id của nút/bộ)
     const [levelFilter, setLevelFilter] = useState('');   // '' = mọi độ khó
-    // Danh sách bộ đề / độ khó suy từ chính dữ liệu — thêm ở admin là tự có mặt,
-    // và không đổ ra lựa chọn mà không đề nào thuộc về.
-    const seriesOptions = useMemo(() => listTestSeries(tests), [tests]);
+    // Danh mục bộ đề do admin khai (ToeicSeries), khớp đề theo TIỀN TỐ source key.
+    // Chưa khai bộ nào thì buildSeriesChips tự lui về cắt tên đề như trước.
+    const { series: seriesCatalog } = useToeicSeries();
     const levelOptions = useMemo(() => listTestLevels(tests), [tests]);
-    // Full Test ít đề nên bày hết thành menu ngang thay cho ô tìm kiếm.
+    // Mini Test / Đục lỗ giữ Ô SELECT (không đổi sang pill như Full Test): hàng
+    // nav bên đó đã có dãy Part + 3 ô lọc, thêm pill là kho đề lớn dần sẽ đẩy
+    // mấy ô kia xuống hàng hai. Chỉ NGUỒN dữ liệu đổi sang danh mục.
+    const seriesChips = useMemo(
+        () => buildSeriesChips(tests || [], seriesCatalog),
+        [tests, seriesCatalog],
+    );
+    // Full Test bày thành menu ngang thay cho ô tìm kiếm — gom theo BỘ
+    // ("ETS 2026") chứ không mỗi đề một nút: kho lớn dần thì dãy nút tên đầy đủ
+    // ("ETS 2026 FULL TEST 1"…) sẽ dài vô tận và tra cứu kém.
     const fullTests = useMemo(() => (tests || []).filter(isFullTestType), [tests]);
+    const fullChips = useMemo(
+        () => buildSeriesChips(fullTests, seriesCatalog),
+        [fullTests, seriesCatalog],
+    );
     const [sortBy, setSortBy] = useState('default');     // sắp xếp danh sách đề
-    const [fullTestId, setFullTestId] = useState('');    // '' = xem hết
+    const [fullChipId, setFullChipId] = useState('');    // '' = xem hết mọi bộ
+    // Bộ vừa bị admin xoá/tắt thì nút biến mất — bám theo id cũ sẽ ra danh sách
+    // trắng, nên không tìm thấy là coi như đang xem hết.
+    const fullChip = useMemo(
+        () => fullChips.find(c => c.id === fullChipId) || null,
+        [fullChips, fullChipId],
+    );
+    // Cùng lý do với fullChip: bộ biến mất thì coi như đang xem hết, không lọc rỗng.
+    const seriesChip = useMemo(
+        () => seriesChips.find(c => c.id === seriesFilter) || null,
+        [seriesChips, seriesFilter],
+    );
 
     const [mode, setMode] = useState('selector');       // selector | runner
     const [runnerConfig, setRunnerConfig] = useState(null);
@@ -202,25 +227,26 @@ export default function ToeicScreen({ active }) {
                             </button>
                         ))}
                     </div>
-                    {/* Full Test: bày thẳng mọi đề thành menu ngang, cùng kiểu khối
-                        pill với hàng Part bên Mini Test. */}
+                    {/* Full Test: bày các BỘ đề thành menu ngang, cùng kiểu khối
+                        pill với hàng Part bên Mini Test. Bấm một bộ là lọc ra mọi
+                        Full Test thuộc bộ đó. */}
                     {activeTab === 'full-test' && fullTests.length > 0 && (
                         <div className="toeic-part-filters">
                             <div className="toeic-part-group">
                                 <button
-                                    className={`toeic-part-btn${fullTestId === '' ? ' active' : ''}`}
-                                    onClick={() => setFullTestId('')}
+                                    className={`toeic-part-btn${fullChip ? '' : ' active'}`}
+                                    onClick={() => setFullChipId('')}
                                 >
                                     Tất cả ({fullTests.length})
                                 </button>
-                                {fullTests.map(t => (
+                                {fullChips.map(c => (
                                     <button
-                                        key={t._id}
-                                        className={`toeic-part-btn${String(fullTestId) === String(t._id) ? ' active' : ''}`}
-                                        onClick={() => setFullTestId(t._id)}
-                                        title={t.testName || t.title}
+                                        key={c.id}
+                                        className={`toeic-part-btn${fullChipId === c.id ? ' active' : ''}`}
+                                        onClick={() => setFullChipId(c.id)}
+                                        title={`Xem mọi Full Test của bộ ${c.label}`}
                                     >
-                                        {t.testName || t.title}
+                                        {c.label}
                                     </button>
                                 ))}
                             </div>
@@ -255,7 +281,7 @@ export default function ToeicScreen({ active }) {
                                         title="Lọc theo bộ đề"
                                     >
                                         <option value="">Tất cả bộ đề</option>
-                                        {seriesOptions.map(s => <option key={s} value={s}>{s}</option>)}
+                                        {seriesChips.map(c => <option key={c.id} value={c.id}>{c.label}</option>)}
                                     </select>
                                 </span>
                                 {/* Đủ 3 mức, kể cả mức chưa đề nào dùng — mức nào đang
@@ -294,9 +320,9 @@ export default function ToeicScreen({ active }) {
                         </div>
                     )}
                     <div id="toeic-tab-content">
-                        {activeTab === 'full-test'  && <FullTestList tests={tests} loading={testsLoading} selectedId={fullTestId} onStart={(id) => openStartModal(id, false)} />}
-                        {activeTab === 'mini-test'  && <MiniTestList tests={tests} loading={testsLoading} partFilter={partFilter} sortBy={sortBy} series={seriesFilter} level={levelFilter} onStart={(id) => openStartModal(id, false)} />}
-                        {activeTab === 'fill-blank' && <FillBlankList tests={tests} loading={testsLoading} partFilter={partFilter} sortBy={sortBy} series={seriesFilter} level={levelFilter} onStart={(id) => openStartModal(id, true)} />}
+                        {activeTab === 'full-test'  && <FullTestList tests={tests} loading={testsLoading} chip={fullChip} catalog={seriesCatalog} onStart={(id) => openStartModal(id, false)} />}
+                        {activeTab === 'mini-test'  && <MiniTestList tests={tests} loading={testsLoading} partFilter={partFilter} sortBy={sortBy} chip={seriesChip} catalog={seriesCatalog} level={levelFilter} onStart={(id) => openStartModal(id, false)} />}
+                        {activeTab === 'fill-blank' && <FillBlankList tests={tests} loading={testsLoading} partFilter={partFilter} sortBy={sortBy} chip={seriesChip} catalog={seriesCatalog} level={levelFilter} onStart={(id) => openStartModal(id, true)} />}
                         {activeTab === 'my-history' && <HistoryList key={`history-${refreshKey}`} active={active && activeTab === 'my-history'} partFilter={partFilter} onView={handleViewResults} />}
                         {activeTab === 'analytics'  && <AnalyticsView key={`analytics-${refreshKey}`} active={active && activeTab === 'analytics'} />}
                     </div>

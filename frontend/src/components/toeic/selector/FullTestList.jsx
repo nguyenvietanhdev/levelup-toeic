@@ -1,8 +1,9 @@
 import EmptyState from './EmptyState.jsx';
 import TestCard from './TestCard.jsx';
 import { isFullTestType } from '../toeicPartTime.js';
+import { filterByChip } from './testSeries.js';
 
-export default function FullTestList({ tests, loading, onStart, selectedId = '' }) {
+export default function FullTestList({ tests, loading, onStart, chip = null, catalog = [] }) {
     if (loading) {
         return (
             <div style={{ textAlign: 'center', padding: 40 }}>
@@ -12,10 +13,8 @@ export default function FullTestList({ tests, loading, onStart, selectedId = '' 
     }
 
     // isFullTestType: backend đặt cả 'full' lẫn 'full-test', so tay một chuỗi sẽ sót.
-    // selectedId rỗng = xem hết; chọn một đề trên thanh menu thì chỉ còn đề đó.
-    const fullTests = tests.filter(t =>
-        isFullTestType(t) && (!selectedId || String(t._id) === String(selectedId)),
-    );
+    // chip rỗng = xem hết; chọn một bộ trên thanh menu thì còn MỌI đề của bộ đó.
+    const fullTests = filterByChip(tests.filter(isFullTestType), chip, catalog);
 
     if (fullTests.length === 0) {
         return (

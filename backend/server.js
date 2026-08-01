@@ -174,6 +174,7 @@ app.use('/api/leaderboard', require('./routes/leaderboard'));
 app.use('/api/wrong-words', require('./routes/wrongWords')); // Wrong words with spaced repetition
 app.use('/api/activities', require('./routes/activity')); // Activity logs for dashboard
 app.use('/api/toeic', require('./routes/toeic')); // TOEIC 7-Part Test System
+app.use('/api/toeic-series', require('./routes/toeicSeries')); // Danh mục bộ đề TOEIC (dựng thanh lọc Full Test)
 app.use('/api/tts', require('./routes/tts')); // Text-to-Speech natural voice
 app.use('/api/reports', require('./routes/reports')); // User reports / feedback
 app.use('/api/topics', require('./routes/topics'));   // Vocabulary topic/dataset management

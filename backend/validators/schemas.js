@@ -35,4 +35,11 @@ const vocabUpload = {
     source: { required: true, message: 'Source is required' },
 };
 
-module.exports = { shopPurchase, vocabUpload, inventoryItem, inventorySlot };
+// POST /api/toeic-series — toeicSeriesController.createSeries
+// `keys` không khai ở đây: nó nhận CẢ mảng lẫn chuỗi "a, b" (ô nhập admin) nên
+// một `type` không tả đủ — controller tự chuẩn hoá rồi chặn nếu rỗng.
+const toeicSeries = {
+    displayName: { required: true, type: 'string', message: 'Tên bộ đề là bắt buộc' },
+};
+
+module.exports = { shopPurchase, vocabUpload, inventoryItem, inventorySlot, toeicSeries };

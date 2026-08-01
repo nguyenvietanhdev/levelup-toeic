@@ -1,10 +1,10 @@
 import FillBlankCard from './FillBlankCard.jsx';
 import { sortTests } from './sortTests.js';
-import { testSeriesName, testLevel, NEW_TESTS_LIMIT } from './testSeries.js';
+import { matchesChip, testLevel, NEW_TESTS_LIMIT } from './testSeries.js';
 
 const FILL_BLANK_TYPES = ['mini-part1', 'mini-part2', 'mini-part3', 'mini-part4'];
 
-export default function FillBlankList({ tests, loading, onStart, partFilter = 'new', sortBy = 'default', search = '', series = '', level = '' }) {
+export default function FillBlankList({ tests, loading, onStart, partFilter = 'new', sortBy = 'default', search = '', chip = null, catalog = [], level = '' }) {
     if (loading) {
         return (
             <div style={{ textAlign: 'center', padding: 40 }}>
@@ -17,13 +17,13 @@ export default function FillBlankList({ tests, loading, onStart, partFilter = 'n
     let fillBlankTests = sortTests(tests.filter(t =>
         t.isPublished === true && FILL_BLANK_TYPES.includes(t.testType)
         && (partFilter === 'new' || t.testType === `mini-part${partFilter}`)
-        && (!series || testSeriesName(t) === series)
+        && matchesChip(t, chip, catalog)
         && (!level || testLevel(t) === level)
         && (!q || (t.testName || t.title || '').toLowerCase().includes(q))
     ), sortBy);
 
     // Tab "New": chỉ vài đề mới nhất; đã chọn bộ đề thì hiện hết bộ đó.
-    if (partFilter === 'new' && !series) fillBlankTests = fillBlankTests.slice(0, NEW_TESTS_LIMIT);
+    if (partFilter === 'new' && !chip) fillBlankTests = fillBlankTests.slice(0, NEW_TESTS_LIMIT);
 
     if (fillBlankTests.length === 0) {
         return (
