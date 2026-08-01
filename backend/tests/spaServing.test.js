@@ -125,6 +125,18 @@ describe('SPA serving — origin phục vụ index.html phải phục vụ luôn
         expect(catchAll).toMatch(/return next\(\)/);
     });
 
+    test('CSP phải khai báo mediaSrc cho Cloudinary', () => {
+        // Hệ quả trực tiếp của việc backend phục vụ SPA: bản build giờ chạy DƯỚI
+        // CSP của helmet, thứ mà `vite dev` không hề gửi. Thiếu `mediaSrc` thì media
+        // rơi về `defaultSrc: 'self'` → trình duyệt chặn thẳng audio Cloudinary:
+        // không request, không log, client chỉ báo "Không thể phát file audio".
+        // `imgSrc` đã có `https:` nên ẢNH vẫn chạy — đó là lý do lỗi chỉ hiện ở audio
+        // và rất dễ bị đọc nhầm thành hỏng file.
+        expect(serverSrc).toMatch(/mediaSrc:\s*\[/);
+        const media = serverSrc.match(/mediaSrc:\s*\[([^\]]*)\]/);
+        expect(media[1]).toMatch(/res\.cloudinary\.com/);
+    });
+
     test('mọi prefix frontend fetch() đều được backend phục vụ', () => {
         const served = new Set([...mountedPrefixes(serverSrc), ...staticPrefixes(PUBLIC_DIR)]);
         const requested = fetchedPrefixes(FRONTEND_SRC);

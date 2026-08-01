@@ -55,6 +55,13 @@ app.use(helmet({
             styleSrc: ["'self'", "'unsafe-inline'", "https://cdnjs.cloudflare.com"],
             fontSrc: ["'self'", "https://cdnjs.cloudflare.com"],
             imgSrc: ["'self'", "data:", "https:"],
+            // Audio đề TOEIC nằm trên Cloudinary (699 URL trong `toeic_question_sets`).
+            // KHÔNG có directive này thì media rơi về `defaultSrc: 'self'` và trình
+            // duyệt CHẶN THẲNG mọi file audio ngoài origin — không request, không log,
+            // chỉ có "Không thể phát file audio" ở client. Lúc frontend còn chạy bằng
+            // `vite dev` thì không lộ, vì dev server không gửi CSP nào cả; nó chỉ xuất
+            // hiện từ khi backend phục vụ luôn bản build.
+            mediaSrc: ["'self'", "https://res.cloudinary.com"],
             connectSrc: ["'self'", "https://cdn.jsdelivr.net", "https://cdnjs.cloudflare.com", "https://*.onrender.com"],
         }
     }
