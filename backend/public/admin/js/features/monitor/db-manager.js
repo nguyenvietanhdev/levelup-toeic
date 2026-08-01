@@ -95,7 +95,7 @@ async function loadDbCollections() {
             </div>
         `).join('');
     } catch (err) {
-        list.innerHTML = `<div class="db-col-empty" style="color:var(--danger)"><i class="fas fa-exclamation-circle"></i> ${err.message}</div>`;
+        list.innerHTML = `<div class="db-col-empty" style="color:var(--danger)"><i class="fas fa-exclamation-circle"></i> ${esc(err.message)}</div>`;
     }
 }
 
@@ -288,7 +288,7 @@ async function loadDbDocuments(page = 1) {
         renderDbDocs(json.data);
         renderDbPagination(json.pagination);
     } catch (err) {
-        if (list) list.innerHTML = `<div class="loading" style="color:var(--danger)">${err.message}</div>`;
+        if (list) list.innerHTML = `<div class="loading" style="color:var(--danger)">${esc(err.message)}</div>`;
     }
 }
 
@@ -310,7 +310,7 @@ function renderDbDocs(docs) {
 // Render các trường top-level của 1 document
 function renderDocFields(obj) {
     return Object.keys(obj).map(k =>
-        `<div class="db-field"><span class="db-key">${escapeHtml(k)}</span><span class="db-colon">:</span> ${renderDbValue(obj[k], k)}</div>`
+        `<div class="db-field"><span class="db-key">${esc(k)}</span><span class="db-colon">:</span> ${renderDbValue(obj[k], k)}</div>`
     ).join('');
 }
 
@@ -322,12 +322,12 @@ function renderDbValue(val, key) {
 
     if (Array.isArray(val)) {
         if (val.length === 0) return '<span class="dbv-meta">Array (empty)</span>';
-        const json = escapeHtml(JSON.stringify(val, null, 2));
+        const json = esc(JSON.stringify(val, null, 2));
         return `<details class="dbv-tree"><summary class="dbv-meta">Array (${val.length})</summary><pre class="dbv-pre">${json}</pre></details>`;
     }
     if (typeof val === 'object') {
         const n = Object.keys(val).length;
-        const json = escapeHtml(JSON.stringify(val, null, 2));
+        const json = esc(JSON.stringify(val, null, 2));
         return `<details class="dbv-tree"><summary class="dbv-meta">Object {${n}}</summary><pre class="dbv-pre">${json}</pre></details>`;
     }
     if (typeof val === 'boolean') return `<span class="dbv-bool">${val}</span>`;
@@ -335,18 +335,22 @@ function renderDbValue(val, key) {
 
     // string
     const s = String(val);
-    if (key === '_id' || OBJECT_ID_RE.test(s)) return `<span class="dbv-oid">ObjectId('${escapeHtml(s)}')</span>`;
-    if (ISO_DATE_RE.test(s)) return `<span class="dbv-date">${escapeHtml(s)}</span>`;
-    return `<span class="dbv-str">"${escapeHtml(s)}"</span>`;
+    if (key === '_id' || OBJECT_ID_RE.test(s)) return `<span class="dbv-oid">ObjectId('${esc(s)}')</span>`;
+    if (ISO_DATE_RE.test(s)) return `<span class="dbv-date">${esc(s)}</span>`;
+    return `<span class="dbv-str">"${esc(s)}"</span>`;
 }
 
-function escapeHtml(str) {
-    return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-}
-
-function escapeAttr(str) {
-    return str.replace(/'/g, '&#39;').replace(/"/g, '&quot;');
-}
+// `esc` dùng bản chung ở core/utils.js (nạp trước file này trong dashboard.html).
+//
+// Trước đây file này có `escapeHtml` riêng phủ 4 ký tự (thiếu `'`), còn
+// cloudinary-admin.js có `esc` riêng cũng thiếu `'`, và core/utils.js có bản
+// thứ ba phủ đủ 5. Ba bản cho một luật, khác kết quả — nên câu "chỗ này đã
+// escape chưa" không còn trả lời được bằng cách nhìn tên hàm.
+// Bản chung phủ nhiều ký tự hơn nên đầu ra chỉ an toàn hơn, và nó nhận cả
+// non-string (`String(s ?? '')`) trong khi bản cũ gọi thẳng `.replace` sẽ ném lỗi.
+//
+// `escapeAttr` cũ bị xoá: định nghĩa mà KHÔNG chỗ nào gọi, và `esc` phủ cả `'`
+// lẫn `"` nên nó là tập cha.
 
 // ── Pagination ────────────────────────────────────────────────
 function renderDbPagination(pagination) {

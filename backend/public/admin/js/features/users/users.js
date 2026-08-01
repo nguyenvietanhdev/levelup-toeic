@@ -62,7 +62,7 @@ async function loadUsers() {
       const dangerColor = getComputedStyle(document.documentElement)
         .getPropertyValue("--danger")
         .trim();
-      tbody.innerHTML = `<tr><td colspan="7" class="loading" style="color: ${dangerColor}">Loi tai du lieu: ${data.message}</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="7" class="loading" style="color: ${dangerColor}">Loi tai du lieu: ${esc(data.message)}</td></tr>`;
     }
   } catch (err) {
     console.error("Error loading users:", err);
@@ -137,21 +137,21 @@ function displayUsers() {
       return `
           <tr>
             <td>${userId}</td>
-            <td><strong>${u.username}</strong></td>
-            <td>${u.email || "-"}</td>
+            <td><strong>${esc(u.username)}</strong></td>
+            <td>${esc(u.email || "-")}</td>
             <td>${roleBadge}</td>
             <td>${createdAt}</td>
             <td>${statusBadge}</td>
             <td>${lockBadge}</td>
             <td>
-                <button class="btn btn-primary btn-sm btn-user-edit" data-id="${userId}" data-username="${u.username}" data-email="${u.email}" data-role="${u.role}" data-locked="${u.isLocked ? "true" : "false"}">
+                <button class="btn btn-primary btn-sm btn-user-edit" data-id="${esc(userId)}" data-username="${esc(u.username)}" data-email="${esc(u.email)}" data-role="${esc(u.role)}" data-locked="${u.isLocked ? "true" : "false"}">
                     <i class="fas fa-edit"></i>
                 </button>
                 <button class="btn btn-sm btn-user-togglelock ${u.isLocked ? "btn-success" : "btn-warning"}"
-                    data-id="${userId}" data-username="${u.username}" data-locked="${u.isLocked ? "true" : "false"}">
+                    data-id="${esc(userId)}" data-username="${esc(u.username)}" data-locked="${u.isLocked ? "true" : "false"}">
                     <i class="fas ${u.isLocked ? "fa-lock-open" : "fa-lock"}"></i>
                 </button>
-                <button class="btn btn-danger btn-sm btn-user-delete" data-id="${userId}" data-username="${u.username}">
+                <button class="btn btn-danger btn-sm btn-user-delete" data-id="${esc(userId)}" data-username="${esc(u.username)}">
                     <i class="fas fa-trash"></i>
                 </button>
             </td>

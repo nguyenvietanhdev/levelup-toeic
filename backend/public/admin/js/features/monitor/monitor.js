@@ -305,13 +305,22 @@ async function loadReports(page = 1) {
             const date = new Date(r.createdAt).toLocaleString('vi-VN', {
                 day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit'
             });
-            const imgHtml = r.imageUrl
-                ? `<img class="rpt-image-thumb" src="${r.imageUrl}" alt="ảnh" data-lightbox="${r.imageUrl}" style="cursor:zoom-in;" />`
+            // Báo cáo do NGƯỜI DÙNG viết, và cửa gửi là POST /api/reports/guest —
+            // không cần đăng nhập, có chủ ý (routes/reports.js:8). Nên đây là
+            // đường XSS ẩn danh vào phiên admin, và KHÔNG vá được ở server: nhận
+            // góp ý từ khách là tính năng. Escape lúc hiển thị là biện pháp duy nhất.
+            //
+            // `imageUrl` phải kiểm SCHEME trước khi escape: escape không ngăn được
+            // `javascript:` vì chuỗi đó không chứa ký tự nào cần escape.
+            const safeImg = /^https?:\/\//i.test(r.imageUrl || '') ? esc(r.imageUrl) : '';
+            const imgHtml = safeImg
+                ? `<img class="rpt-image-thumb" src="${safeImg}" alt="ảnh" data-lightbox="${safeImg}" style="cursor:zoom-in;" />`
                 : '<span style="color:var(--text-secondary);font-size:12px;">–</span>';
-            const shortContent = r.content.length > 120 ? r.content.slice(0, 120) + '…' : r.content;
-            return `<tr data-report-id="${r._id}">
-                <td><span style="font-weight:600;">${r.username}</span></td>
-                <td title="${r.content.replace(/"/g, '&quot;')}" style="max-width:280px;white-space:normal;word-break:break-word;font-size:13px;">${shortContent}</td>
+            const raw = String(r.content ?? '');
+            const shortContent = raw.length > 120 ? raw.slice(0, 120) + '…' : raw;
+            return `<tr data-report-id="${esc(r._id)}">
+                <td><span style="font-weight:600;">${esc(r.username)}</span></td>
+                <td title="${esc(raw)}" style="max-width:280px;white-space:normal;word-break:break-word;font-size:13px;">${esc(shortContent)}</td>
                 <td>${imgHtml}</td>
                 <td><span class="rpt-badge ${cls}">${label}</span></td>
                 <td style="font-size:12px;color:var(--text-secondary);">${date}</td>
@@ -342,7 +351,7 @@ async function loadReports(page = 1) {
         const { total, pages } = data.pagination;
         renderReportsPagination(page, pages, total);
     } catch (err) {
-        tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:20px;color:var(--danger);">❌ ${err.message}</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:20px;color:var(--danger);">❌ ${esc(err.message)}</td></tr>`;
     }
 }
 
@@ -549,7 +558,7 @@ async function submitJsonImport() {
         if (!res.ok) throw new Error(data.message || 'Server error');
         inserted = data.inserted || 0;
         updated  = data.updated  || 0;
-        errors   = (data.errors  || []).map(e => `"${e.en}": ${e.message}`);
+        errors   = (data.errors  || []).map(e => `"${esc(e.en)}": ${e.message}`);
     } catch (e) {
         showToast('Lỗi import: ' + e.message, 'error');
         btn.disabled = false;

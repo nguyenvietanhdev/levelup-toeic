@@ -8,7 +8,8 @@
     if (ic.startsWith('fa-')) return `<i class="fas ${ic}" style="font-size:18px"></i>`;
     return `<span style="font-size:20px">${ic || '🔓'}</span>`;
   };
-  const esc = (s) => String(s || '').replace(/"/g, '&quot;');
+  // esc dùng bản chung ở core/utils.js (nạp trước file này). Bản cục bộ cũ
+  // ở đây chỉ escape đúng một ký tự (") — bản chung phủ đủ & < > " ' nên gỡ đi là an toàn hơn.
 
   // Cùng công thức với server: XP mỗi cấp = floor(100 * level^1.5).
   // Tổng XP để ĐẠT `level` = cộng dồn các cấp trước đó.

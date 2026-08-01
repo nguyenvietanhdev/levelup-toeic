@@ -3,9 +3,8 @@
     let inited = false;
     let lastCompare = null;   // kết quả đối chiếu gần nhất { source, comparison }
     const auth = () => ({ Authorization: `Bearer ${getToken()}` });
-    const esc = (s) => String(s ?? '').replace(/[&<>"]/g, c => (
-        { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]
-    ));
+    // esc dùng bản chung ở core/utils.js (nạp trước file này). Bản cục bộ cũ
+    // ở đây chỉ escape 4 ký tự (thiếu ') — bản chung phủ đủ & < > " ' nên gỡ đi là an toàn hơn.
 
     // ── Danh sách bộ đáp án đã lưu ──────────────────────────────────────────
     async function loadKeys() {

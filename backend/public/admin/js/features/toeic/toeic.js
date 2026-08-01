@@ -1913,7 +1913,8 @@ async function loadTestSourceOptions(selected = []) {
         const data = await res.json();
         if (!data.success) return;
 
-        const esc = (s) => String(s).replace(/"/g, '&quot;').replace(/</g, '&lt;');
+        // esc dùng bản chung ở core/utils.js (nạp trước file này). Bản cục bộ cũ
+        // ở đây chỉ escape 2 ký tự (" và <) — bản chung phủ đủ & < > " ' nên gỡ đi là an toàn hơn.
         const list = data.data || [];
         if (dl) dl.innerHTML = list.map(s => `<option value="${esc(s)}"></option>`).join('');
 

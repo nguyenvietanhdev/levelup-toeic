@@ -111,6 +111,78 @@ describe('tabs.js — dữ liệu người dùng phải đi qua esc()', () => {
     });
 });
 
+describe('MỘT hàm escape duy nhất trong cả panel', () => {
+    const fs = require('fs');
+    const path = require('path');
+    const ADMIN_JS = path.join(__dirname, '..', 'public', 'admin', 'js');
+
+    const scripts = (dir, acc = []) => {
+        for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
+            const full = path.join(dir, e.name);
+            if (e.isDirectory()) { if (e.name !== 'vendor') scripts(full, acc); }
+            else if (e.name.endsWith('.js')) acc.push(full);
+        }
+        return acc;
+    };
+    const files = scripts(ADMIN_JS);
+
+    test('quét được các file panel (chốt chính máy quét)', () => {
+        expect(files.length).toBeGreaterThan(15);
+    });
+
+    test('chỉ core/utils.js được định nghĩa hàm escape', () => {
+        // Panel từng có BỐN bản: esc ở utils.js (5 ký tự), esc cục bộ ở
+        // cloudinary-admin.js (4, thiếu '), escapeHtml ở db-manager.js (4, thiếu
+        // '), và escapeAttr (2, không ai gọi). Ba bản cho một luật, khác kết quả
+        // — nên câu "chỗ này đã escape chưa" không trả lời được bằng tên hàm.
+        const definers = files
+            .filter(f => /(?:function|const)\s+(esc|escapeHtml|escapeAttr)\s*[=(]/.test(fs.readFileSync(f, 'utf8')))
+            .map(f => path.relative(ADMIN_JS, f).replace(/\\/g, '/'));
+        expect(definers).toEqual(['core/utils.js']);
+    });
+
+    test('máy dò còn hoạt động', () => {
+        const re = /(?:function|const)\s+(esc|escapeHtml|escapeAttr)\s*[=(]/;
+        expect(re.test('function escapeHtml(str) {')).toBe(true);
+        expect(re.test('const esc = (s) => s;')).toBe(true);
+        expect(re.test('const escaped = esc(x);')).toBe(false);
+    });
+});
+
+describe('admin.features.data — dữ liệu người dùng phải qua esc()', () => {
+    const fs = require('fs');
+    const path = require('path');
+    const F = (p) => fs.readFileSync(path.join(__dirname, '..', 'public', 'admin', 'js', 'features', p), 'utf8');
+
+    const unescaped = (field) => new RegExp(
+        '\\$\\{(?!esc\\()[^${}]*\\b' + field.replace('.', '\\.') + '\\b[^${}]*\\}', 'g',
+    );
+
+    test('báo cáo của khách (không cần đăng nhập) không lọt thô vào markup', () => {
+        // POST /api/reports/guest là cửa cố ý mở — không vá được ở server, nên
+        // đây là chốt duy nhất. Xem SEC-admin.features.data-001.
+        const monitor = F('monitor/monitor.js');
+        expect(monitor.match(unescaped('r.content')) || []).toEqual([]);
+        expect(monitor.match(unescaped('r.username')) || []).toEqual([]);
+    });
+
+    test('ảnh trong báo cáo phải kiểm scheme, không chỉ escape', () => {
+        // esc() không ngăn được `javascript:` — chuỗi đó không chứa ký tự cần escape.
+        expect(F('monitor/monitor.js')).toMatch(/\^https\?:\\\/\\\/.*test\(r\.imageUrl/);
+    });
+
+    test.each([
+        ['users/users.js', 'u.email'],
+        ['users/users.js', 'u.username'],
+        ['vocab/vocab.js', 'word.en'],
+        ['vocab/vocab.js', 'word.vn'],
+        ['vocab/vocab-stats.js', 'word.en'],
+        ['vocab/vocab-stats.js', 'word.part'],
+    ])('%s: %s được bọc esc()', (file, field) => {
+        expect(F(file).match(unescaped(field)) || []).toEqual([]);
+    });
+});
+
 describe('showToast — hàm được gọi nhiều nhất trong panel, không được là sink HTML', () => {
     const fs = require('fs');
     const path = require('path');

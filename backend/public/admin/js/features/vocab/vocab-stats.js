@@ -65,17 +65,17 @@ function showNextWord() {
     card.innerHTML = `
         <div style="text-align: center;">
             <div style="font-size: 48px; font-weight: bold; margin-bottom: 15px; text-shadow: 0 2px 10px rgba(0,0,0,0.2);">
-                ${word.en || '-'}
+                ${esc(word.en || '-')}
             </div>
-            ${word.phonetic ? `<div style="font-size: 18px; opacity: 0.9; margin-bottom: 20px;">/${word.phonetic}/</div>` : ''}
+            ${word.phonetic ? `<div style="font-size: 18px; opacity: 0.9; margin-bottom: 20px;">/${esc(word.phonetic)}/</div>` : ''}
             <div style="background: rgba(255,255,255,0.2); border-radius: 12px; padding: 20px; margin-top: 20px;">
                 <div style="font-size: 20px; margin-bottom: 10px;">
-                    <strong>Vietnamese:</strong> ${word.vn || '-'}
+                    <strong>Vietnamese:</strong> ${esc(word.vn || '-')}
                 </div>
             </div>
             <div style="margin-top: 15px; display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
-                ${word.type ? `<span style="background: rgba(255,255,255,0.3); padding: 6px 12px; border-radius: 20px; font-size: 12px;">${word.type}</span>` : ''}
-                ${word.part ? `<span style="background: rgba(255,255,255,0.3); padding: 6px 12px; border-radius: 20px; font-size: 12px;">${word.part}</span>` : ''}
+                ${word.type ? `<span style="background: rgba(255,255,255,0.3); padding: 6px 12px; border-radius: 20px; font-size: 12px;">${esc(word.type)}</span>` : ''}
+                ${word.part ? `<span style="background: rgba(255,255,255,0.3); padding: 6px 12px; border-radius: 20px; font-size: 12px;">${esc(word.part)}</span>` : ''}
             </div>
         </div>
     `;
@@ -217,7 +217,7 @@ async function loadAvailableFiles() {
                 card.dataset.source = file.source;
                 card.innerHTML = `
                     <div class="vocab-picker-card-left">
-                        <div class="vocab-picker-card-name">${file.displayName || file.source}</div>
+                        <div class="vocab-picker-card-name">${esc(file.displayName || file.source)}</div>
                         <div class="vocab-picker-card-count"><i class="fas fa-book-open" style="font-size:10px;margin-right:3px;"></i>${file.wordCount.toLocaleString()} từ</div>
                     </div>
                     <div class="vocab-picker-card-check"><i class="fas fa-check"></i></div>`;
@@ -363,7 +363,7 @@ function displayRecentActivities(activities) {
     const getActionText = (type, action, data) => {
         if (type === 'vocabulary') {
             const word = data.word || 'từ vựng';
-            const part = data.part ? ` (${data.part})` : '';
+            const part = data.part ? ` (${esc(data.part)})` : '';
             if (action === 'add') return `Thêm từ <strong>${word}</strong>${part}`;
             if (action === 'update') return `Cập nhật từ <strong>${word}</strong>${part}`;
             if (action === 'delete') return `Xóa từ <strong>${word}</strong>${part}`;

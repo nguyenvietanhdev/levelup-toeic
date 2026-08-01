@@ -8,9 +8,9 @@
     let autoRunning = false;      // đang chạy chuỗi lô liên tiếp
 
     const auth = () => ({ Authorization: `Bearer ${getToken()}` });
-    const esc = (s) => String(s ?? '').replace(/[&<>"]/g, c => (
-        { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]
-    ));
+    // `esc` dùng bản chung ở core/utils.js (nạp trước file này). Bản cục bộ cũ
+    // ở đây thiếu ký tự `'`, nên thuộc tính dùng nháy đơn không được bảo vệ.
+    // Cùng tên nên 17 chỗ gọi bên dưới không phải sửa.
     const $ = (id) => document.getElementById(id);
 
     function bytes(n) {

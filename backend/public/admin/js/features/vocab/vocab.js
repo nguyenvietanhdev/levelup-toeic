@@ -42,7 +42,7 @@ async function loadVocabulary(page = vocabCurrentPage, part = vocabCurrentPart, 
             }
         } else {
             const dangerColor = getComputedStyle(document.documentElement).getPropertyValue('--danger').trim();
-            tbody.innerHTML = `<tr><td colspan="7" class="loading" style="color: ${dangerColor}">Lỗi tải dữ liệu: ${data.message}</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="7" class="loading" style="color: ${dangerColor}">Lỗi tải dữ liệu: ${esc(data.message)}</td></tr>`;
         }
     } catch (err) {
         console.error("Lỗi tải từ vựng:", err);
@@ -88,7 +88,7 @@ function displayVocabulary(words) {
             return `
         <tr>
             <td style="text-align:center;"><input type="checkbox" class="vocab-row-cb" data-word-en="${wordSafe}"></td>
-            <td><strong>${primaryWord}</strong> <span style="color:#888;font-size:12px;">${word.phonetic || ''}</span></td>
+            <td><strong>${primaryWord}</strong> <span style="color:#888;font-size:12px;">${esc(word.phonetic || '')}</span></td>
             <td>${vn}</td>
             <td><span class="badge info">${type}</span></td>
             <td><span class="badge warning">${part}</span></td>
@@ -436,7 +436,7 @@ function findDuplicateVocabulary() {
 
     localVocabularyData.forEach((word, index) => {
         // Tạo key từ en + vn + part
-        const key = `${(word.en || '').toLowerCase().trim()}|${(word.vn || '').toLowerCase().trim()}|${(word.part || '').toLowerCase().trim()}`;
+        const key = `${esc((word.en || '').toLowerCase().trim())}|${esc((word.vn || '').toLowerCase().trim())}|${esc((word.part || '').toLowerCase().trim())}`;
 
         if (seen.has(key)) {
             // Đã thấy từ này trước đó -> trùng lặp
@@ -602,7 +602,7 @@ function showDbDuplicateModal(groups, summary, filterSrc, filterPart) {
         <tr style="border-bottom: 1px solid #333;">
             <td style="padding: 10px; color: #888;">${i + 1}</td>
             <td style="padding: 10px; color: #fff;"><strong>${g.en || '-'}</strong></td>
-            <td style="padding: 10px; color: #ccc;">${(g.docs[0] && g.docs[0].vn) || '-'}</td>
+            <td style="padding: 10px; color: #ccc;">${esc((g.docs[0] && g.docs[0].vn) || '-')}</td>
             <td style="padding: 10px;"><span style="background: #f39c12; color: #000; padding: 2px 8px; border-radius: 4px; font-size: 12px;">${g.part || '-'}</span></td>
             <td style="padding: 10px;"><span style="background: #1e3a5f; color: #60a5fa; padding: 2px 8px; border-radius: 4px; font-size: 12px;">${g.source || '-'}</span></td>
             <td style="padding: 10px; color: #e74c3c; font-weight: bold;">${g.count} bản (thừa ${g.count - 1})</td>
@@ -727,9 +727,9 @@ function showDuplicateModal(duplicates) {
                             ${duplicates.map((dup, i) => `
                                 <tr style="border-bottom: 1px solid #333;">
                                     <td style="padding: 10px; color: #888;">${i + 1}</td>
-                                    <td style="padding: 10px; color: #fff;"><strong>${dup.original.en || '-'}</strong></td>
-                                    <td style="padding: 10px; color: #ccc;">${dup.original.vn || '-'}</td>
-                                    <td style="padding: 10px;"><span style="background: #f39c12; color: #000; padding: 2px 8px; border-radius: 4px; font-size: 12px;">${dup.original.part || '-'}</span></td>
+                                    <td style="padding: 10px; color: #fff;"><strong>${esc(dup.original.en || '-')}</strong></td>
+                                    <td style="padding: 10px; color: #ccc;">${esc(dup.original.vn || '-')}</td>
+                                    <td style="padding: 10px;"><span style="background: #f39c12; color: #000; padding: 2px 8px; border-radius: 4px; font-size: 12px;">${esc(dup.original.part || '-')}</span></td>
                                     <td style="padding: 10px; color: #e74c3c;"><i class="fas fa-exclamation-triangle"></i> Trùng lặp</td>
                                 </tr>
                             `).join('')}
@@ -817,7 +817,7 @@ function removeDuplicatesFromArray(arr) {
     const result = [];
 
     arr.forEach(word => {
-        const key = `${(word.en || '').toLowerCase().trim()}|${(word.vn || '').toLowerCase().trim()}|${(word.part || '').toLowerCase().trim()}`;
+        const key = `${esc((word.en || '').toLowerCase().trim())}|${esc((word.vn || '').toLowerCase().trim())}|${esc((word.part || '').toLowerCase().trim())}`;
         if (!seen.has(key)) {
             seen.set(key, true);
             result.push(word);
@@ -1154,12 +1154,12 @@ function showFilterDeleteVocabModal() {
                 loadVocabularyStats();
                 loadRecentActivities();
             } else {
-                document.getElementById('fd-preview').innerHTML = `<span style="color:#f87171;">❌ ${data.message}</span>`;
+                document.getElementById('fd-preview').innerHTML = `<span style="color:#f87171;">❌ ${esc(data.message)}</span>`;
                 confirmBtn.disabled = false;
                 confirmBtn.innerHTML = '<i class="fas fa-trash"></i> Xóa';
             }
         } catch (err) {
-            showToast(`❌ Lỗi kết nối: ${err.message}`, 'error');
+            showToast(`❌ Lỗi kết nối: ${esc(err.message)}`, 'error');
             confirmBtn.disabled = false;
             confirmBtn.innerHTML = '<i class="fas fa-trash"></i> Xóa';
         }
@@ -1241,7 +1241,7 @@ function deleteAllVocabulary() {
                 confirmBtn.innerHTML = '<i class="fas fa-database"></i> Xóa tất cả';
             }
         } catch (err) {
-            showToast(`❌ Lỗi kết nối: ${err.message}`, 'error');
+            showToast(`❌ Lỗi kết nối: ${esc(err.message)}`, 'error');
             confirmBtn.disabled = false;
             confirmBtn.innerHTML = '<i class="fas fa-database"></i> Xóa tất cả';
         }
