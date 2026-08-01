@@ -55,19 +55,20 @@ export function testMatchesKeys(test, keys) {
 export const OTHER_CHIP_ID = '__other__';
 
 /**
- * Dựng danh sách nút lọc cho Full Test.
+ * Dựng danh sách nút lọc.
  *
- * - Có danh mục → mỗi bộ CÓ ĐỀ THẬT thành một nút (nút không bao giờ trỏ vào
- *   danh sách rỗng), cộng nút "Khác" nếu còn đề chưa thuộc bộ nào — nhờ vậy
- *   không đề nào biến mất chỉ vì admin quên khai.
+ * - Có danh mục → hiện MỌI bộ đang bật, kể cả bộ chưa có đề nào ở tab này; bấm
+ *   vào thì danh sách tự báo "chưa có đề". Ẩn bộ rỗng đi thì admin khai xong
+ *   không thấy bộ đâu, tưởng mình khai hụt — mà đó mới là lúc cần thấy nhất.
+ *   Thêm nút "Khác" nếu còn đề chưa thuộc bộ nào, để không đề nào biến mất.
  * - Chưa khai bộ nào → lui về cắt tên đề như cũ, để thanh lọc không trống trơn
  *   ngay lúc tính năng vừa lên.
  */
 export function buildSeriesChips(tests = [], catalog = []) {
     if (catalog.length) {
-        const chips = catalog
-            .filter(s => tests.some(t => testMatchesKeys(t, s.keys)))
-            .map(s => ({ id: String(s._id), label: s.displayName, keys: s.keys }));
+        const chips = catalog.map(s => ({
+            id: String(s._id), label: s.displayName, keys: s.keys,
+        }));
         const ungrouped = tests.some(t => !catalog.some(s => testMatchesKeys(t, s.keys)));
         if (ungrouped) chips.push({ id: OTHER_CHIP_ID, label: 'Khác', keys: null });
         return chips;

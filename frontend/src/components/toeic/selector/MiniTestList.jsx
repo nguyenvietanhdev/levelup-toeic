@@ -26,7 +26,12 @@ export default function MiniTestList({ tests, loading, onStart, partFilter = 'ne
     if (partFilter === 'new' && !chip) miniTests = miniTests.slice(0, NEW_TESTS_LIMIT);
 
     if (miniTests.length === 0) {
-        return (
+        return chip ? (
+            <EmptyState
+                title={`Bộ ${chip.label} chưa có Mini Test nào`}
+                text="Chọn bộ khác, hoặc quay về “Tất cả bộ đề”"
+            />
+        ) : (
             <EmptyState
                 title="Chưa có Mini Test nào được xuất bản"
                 text="Admin cần tạo và xuất bản Mini Test trước"

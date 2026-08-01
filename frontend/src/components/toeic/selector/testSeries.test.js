@@ -86,15 +86,21 @@ describe('buildSeriesChips', () => {
     const tests = [src('ets26t1'), src('ets26t2'), src('ets25t1')];
     const catalog = [cat('a', 'ETS 2026', ['ets26']), cat('b', 'ETS 2025', ['ets25'])];
 
-    test('mỗi bộ CÓ đề thật thành một nút, nhãn là tên bộ', () => {
+    test('mỗi bộ thành một nút, nhãn là tên bộ, giữ thứ tự danh mục', () => {
         expect(buildSeriesChips(tests, catalog).map(c => c.label))
             .toEqual(['ETS 2026', 'ETS 2025']);
     });
 
-    test('bộ không có đề nào thì KHÔNG dựng nút (nút rỗng là nút chết)', () => {
+    test('bộ CHƯA có đề nào vẫn hiện nút — admin khai xong phải thấy bộ mình khai', () => {
         const withEmpty = [...catalog, cat('c', 'ETS 2022', ['ets22'])];
         expect(buildSeriesChips(tests, withEmpty).map(c => c.label))
-            .toEqual(['ETS 2026', 'ETS 2025']);
+            .toEqual(['ETS 2026', 'ETS 2025', 'ETS 2022']);
+    });
+
+    test('bộ rỗng lọc ra danh sách rỗng (để danh sách tự báo "chưa có đề")', () => {
+        const empty = cat('c', 'ETS 2022', ['ets22']);
+        expect(filterByChip(tests, { id: 'c', label: 'ETS 2022', keys: empty.keys }, catalog))
+            .toEqual([]);
     });
 
     test('còn đề chưa thuộc bộ nào → thêm nút "Khác" để không đề nào biến mất', () => {

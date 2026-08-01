@@ -31,7 +31,9 @@ export default function FillBlankList({ tests, loading, onStart, partFilter = 'n
                 <div className="toeic-empty-icon">
                     <i className="fas fa-pen-square"></i>
                 </div>
-                <h3 className="toeic-empty-title">Chưa có bài thi Đục lỗ</h3>
+                <h3 className="toeic-empty-title">
+                    {chip ? `Bộ ${chip.label} chưa có bài Đục lỗ nào` : 'Chưa có bài thi Đục lỗ'}
+                </h3>
                 <p className="toeic-empty-text">
                     Chế độ này áp dụng cho các Mini Test Part 1-4 (Listening) có định nghĩa keyword.
                 </p>

@@ -16,8 +16,15 @@ export default function FullTestList({ tests, loading, onStart, chip = null, cat
     // chip rỗng = xem hết; chọn một bộ trên thanh menu thì còn MỌI đề của bộ đó.
     const fullTests = filterByChip(tests.filter(isFullTestType), chip, catalog);
 
+    // Rỗng vì đang lọc một bộ thì nói thẳng là bộ đó chưa có đề — báo chung
+    // "hệ thống đang cập nhật" sẽ khiến người dùng tưởng kho trống hẳn.
     if (fullTests.length === 0) {
-        return (
+        return chip ? (
+            <EmptyState
+                title={`Bộ ${chip.label} chưa có Full Test nào`}
+                text="Chọn bộ khác, hoặc bấm “Tất cả” để xem toàn bộ đề"
+            />
+        ) : (
             <EmptyState
                 title="Chưa có bài thi Full Test"
                 text="Hệ thống đang cập nhật các bài thi mới"
