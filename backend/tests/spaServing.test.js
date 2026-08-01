@@ -125,6 +125,61 @@ describe('SPA serving — origin phục vụ index.html phải phục vụ luôn
         expect(catchAll).toMatch(/return next\(\)/);
     });
 
+    test('mọi host ngoài mà bản build nạp đều phải có trong CSP', () => {
+        // Vá từng directive một khi người dùng báo lỗi là cách làm sai: mỗi lần chỉ
+        // lộ đúng tính năng vừa bấm trúng. Test này quét bản build và bắt cả những
+        // host chưa ai bấm tới. Không có dist (CI chưa build) thì bỏ qua — không
+        // giả vờ xanh.
+        const DIST = path.join(__dirname, '..', '..', 'frontend', 'dist');
+        if (!fs.existsSync(DIST)) return;
+
+        // Host xuất hiện trong bundle dưới dạng CHỮ, không phải tài nguyên được nạp.
+        // Mỗi dòng phải kèm lý do.
+        const NOT_LOADED = {
+            'www.w3.org': 'xmlns của SVG — không phải request',
+            'react.dev': 'URL trong thông báo lỗi của React',
+            'fontawesome.com': 'chuỗi bản quyền trong CSS',
+            'translate.google.com.vn': 'link mở tab mới (điều hướng), không phải subresource',
+        };
+
+        const files = [];
+        const walk = (d) => {
+            for (const e of fs.readdirSync(d, { withFileTypes: true })) {
+                const p = path.join(d, e.name);
+                if (e.isDirectory()) walk(p);
+                else if (/\.(js|css|html)$/.test(e.name)) files.push(p);
+            }
+        };
+        walk(DIST);
+
+        // PHẢI bỏ comment trước khi đối chiếu. Các directive ở đây có comment nhắc
+        // tên host để giải thích vì sao chúng cần — nếu so khớp cả comment thì gỡ
+        // host khỏi directive vẫn xanh, và test thành đồ trang trí. Đã dính đúng
+        // bẫy này một lần lúc reverse-verify.
+        const csp = serverSrc
+            .slice(serverSrc.indexOf('contentSecurityPolicy'), serverSrc.indexOf('app.use(compression'))
+            .replace(/^\s*\/\/.*$/gm, '');   // CHỈ dòng comment thuần — `/\/\/.*$/` cắt luôn `//` trong chính URL
+        const missing = new Set();
+        for (const f of files) {
+            const text = fs.readFileSync(f, 'utf8');
+            for (const m of text.matchAll(/https:\/\/([a-zA-Z0-9.-]+\.[a-z]{2,})/g)) {
+                const host = m[1];
+                if (NOT_LOADED[host]) continue;
+                if (csp.includes(host)) continue;
+                missing.add(host);
+            }
+        }
+        expect([...missing]).toEqual([]);
+    });
+
+    test('CSP cho phép font dạng data: — FontAwesome nhúng woff2 base64', () => {
+        // Thiếu `data:` ở fontSrc thì mọi icon thành ô vuông trống. `imgSrc` có
+        // `data:` từ trước nên ẢNH vẫn chạy — lại một lệch nữa làm lỗi khó đọc.
+        const font = serverSrc.match(/fontSrc:\s*\[([^\]]*)\]/);
+        expect(font).not.toBeNull();
+        expect(font[1]).toMatch(/["']data:["']/);
+    });
+
     test('CSP phải khai báo mediaSrc cho Cloudinary', () => {
         // Hệ quả trực tiếp của việc backend phục vụ SPA: bản build giờ chạy DƯỚI
         // CSP của helmet, thứ mà `vite dev` không hề gửi. Thiếu `mediaSrc` thì media

@@ -50,19 +50,35 @@ app.use(helmet({
     contentSecurityPolicy: {
         directives: {
             defaultSrc: ["'self'"],
-            scriptSrc: ["'self'", "https://cdn.jsdelivr.net", "https://cdnjs.cloudflare.com"],
-            scriptSrcElem: ["'self'", "https://cdn.jsdelivr.net", "https://cdnjs.cloudflare.com"],
+            // ── Mọi mục dưới đây là tài nguyên bản build THẬT SỰ nạp ────────────
+            // CSP này viết từ thời chỉ có admin panel chạy dưới nó. Từ khi backend
+            // phục vụ luôn bản build React, frontend mới vào nằm dưới cùng chính
+            // sách — và `vite dev` chưa bao giờ gửi CSP nên không chỗ nào lộ ra lúc
+            // dev. Mỗi dòng thêm ở đây tương ứng một tính năng đã chết im lặng.
+
+            // `accounts.google.com/gsi/client` nạp bằng document.createElement
+            // ('script') trong GoogleSignInButton.jsx:12-19 → cần cả scriptSrcElem.
+            scriptSrc: ["'self'", "https://cdn.jsdelivr.net", "https://cdnjs.cloudflare.com", "https://accounts.google.com"],
+            scriptSrcElem: ["'self'", "https://cdn.jsdelivr.net", "https://cdnjs.cloudflare.com", "https://accounts.google.com"],
             styleSrc: ["'self'", "'unsafe-inline'", "https://cdnjs.cloudflare.com"],
-            fontSrc: ["'self'", "https://cdnjs.cloudflare.com"],
+            // FontAwesome nhúng woff2 dạng `data:font/woff2;base64,...` thẳng trong
+            // CSS đã build. Thiếu `data:` là mọi icon biến thành ô vuông trống.
+            fontSrc: ["'self'", "data:", "https://cdnjs.cloudflare.com"],
             imgSrc: ["'self'", "data:", "https:"],
+            // Nút "Đăng nhập bằng Google" render trong iframe của GSI.
+            frameSrc: ["'self'", "https://accounts.google.com"],
             // Audio đề TOEIC nằm trên Cloudinary (699 URL trong `toeic_question_sets`).
             // KHÔNG có directive này thì media rơi về `defaultSrc: 'self'` và trình
             // duyệt CHẶN THẲNG mọi file audio ngoài origin — không request, không log,
             // chỉ có "Không thể phát file audio" ở client. Lúc frontend còn chạy bằng
             // `vite dev` thì không lộ, vì dev server không gửi CSP nào cả; nó chỉ xuất
             // hiện từ khi backend phục vụ luôn bản build.
-            mediaSrc: ["'self'", "https://res.cloudinary.com"],
-            connectSrc: ["'self'", "https://cdn.jsdelivr.net", "https://cdnjs.cloudflare.com", "https://*.onrender.com"],
+            // `translate.google.com/translate_tts` phát qua `new Audio(url)` ở
+            // TranslateModal.jsx:45-49 — cũng là media, không phải connect.
+            mediaSrc: ["'self'", "https://res.cloudinary.com", "https://translate.google.com"],
+            // `translate.googleapis.com` là fetch dịch nhanh (Shift+Enter) ở
+            // TranslateModal.jsx:108 và exampleFillBlank.js:17.
+            connectSrc: ["'self'", "https://cdn.jsdelivr.net", "https://cdnjs.cloudflare.com", "https://*.onrender.com", "https://translate.googleapis.com", "https://accounts.google.com"],
         }
     }
 }));
