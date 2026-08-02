@@ -17,7 +17,7 @@ const PART_START = { 1: 1, 2: 7, 3: 32, 4: 71, 5: 101, 6: 131, 7: 147 };
 const APPLY = process.argv.includes('--apply');
 
 (async () => {
-    await mongoose.connect(process.env.MONGODB_URI || process.env.MONGO_URI);
+    await mongoose.connect(process.env.MONGODB_URI);
     const ops = [];
 
     // Đánh số theo TỪNG BỘ ĐỀ (source) — mỗi bộ có dải số chuẩn riêng.

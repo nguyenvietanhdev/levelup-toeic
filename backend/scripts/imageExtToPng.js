@@ -18,7 +18,7 @@ const convert = (u) => REVERT
     : u.replace(/\.jpe?g$/i, '.png');
 
 (async () => {
-    await mongoose.connect(process.env.MONGODB_URI || process.env.MONGO_URI);
+    await mongoose.connect(process.env.MONGODB_URI);
 
     const match = REVERT ? /\.png$/i : /\.jpe?g$/i;
     const rows = await ToeicQuestion.find({ 'imageUrls.0': { $exists: true } })

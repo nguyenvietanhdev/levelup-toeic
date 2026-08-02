@@ -26,7 +26,7 @@ const MAP_PATH = path.join('backups', 'legacy-question-map.json');
         process.exit(1);
     }
     const map = JSON.parse(fs.readFileSync(MAP_PATH, 'utf8'));
-    await mongoose.connect(process.env.MONGODB_URI || process.env.MONGO_URI);
+    await mongoose.connect(process.env.MONGODB_URI);
 
     // Số câu của mỗi set (để tính lại questionsCount).
     const sizeOf = new Map();

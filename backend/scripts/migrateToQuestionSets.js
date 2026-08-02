@@ -31,7 +31,7 @@ const firstOf = (rows, pick) => {
 };
 
 (async () => {
-    await mongoose.connect(process.env.MONGODB_URI || process.env.MONGO_URI);
+    await mongoose.connect(process.env.MONGODB_URI);
 
     if (RESET && APPLY) {
         const del = await ToeicQuestionSet.deleteMany({});

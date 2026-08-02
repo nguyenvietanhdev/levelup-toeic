@@ -44,7 +44,7 @@ function resolveImage(url, groupId) {
 }
 
 (async () => {
-    await mongoose.connect(process.env.MONGODB_URI || process.env.MONGO_URI);
+    await mongoose.connect(process.env.MONGODB_URI);
     const rows = await ToeicQuestion.find({ groupId: { $ne: null } })
         .select('questionNumber part groupId questionIndex audioUrl imageUrls passages passageCount').lean();
 
