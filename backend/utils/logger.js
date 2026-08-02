@@ -3,11 +3,9 @@ const DailyRotateFile = require('winston-daily-rotate-file');
 const path = require('path');
 const fs = require('fs');
 
-// Đảm bảo thư mục logs tồn tại (chỉ trong production)
+// Thư mục logs chỉ tạo khi THẬT SỰ ghi file — cùng điều kiện với transport bên
+// dưới. Tạo theo NODE_ENV như cũ là đẻ một thư mục rỗng trong mọi container.
 const LOG_DIR = path.join(__dirname, '..', 'logs');
-if (process.env.NODE_ENV === 'production') {
-    if (!fs.existsSync(LOG_DIR)) fs.mkdirSync(LOG_DIR, { recursive: true });
-}
 
 const { combine, timestamp, printf, colorize, errors, json } = format;
 
@@ -40,8 +38,15 @@ const logTransports = [
     }),
 ];
 
-// File rotation — chỉ trong production
-if (isProd) {
+// File rotation — phải BẬT TƯỜNG MINH, không suy ra từ NODE_ENV.
+// Trên Render/Railway thư mục logs nằm trong container ephemeral: không shell nào
+// với tới, và mất sạch mỗi lần redeploy — hai transport dưới đây khai retention
+// 14/30 ngày cho những file không sống nổi một ngày, lại còn gzip mỗi lần xoay.
+// Transport console ở trên đã đẩy JSON ra stdout, tức nền tảng đã thu log rồi.
+// Deploy kiểu VPS + docker-compose thì đặt LOG_TO_FILE=true và mount /app/logs.
+const logToFile = isProd && process.env.LOG_TO_FILE === 'true';
+if (logToFile) {
+    if (!fs.existsSync(LOG_DIR)) fs.mkdirSync(LOG_DIR, { recursive: true });
     logTransports.push(
         // Tất cả log từ info trở lên
         new DailyRotateFile({

@@ -35,12 +35,17 @@ ENV NODE_ENV=production
 
 USER appuser
 
-# Port the app listens on (matches PORT env var)
-EXPOSE 5000
+# Comment cũ bảo "matches PORT env var" nhưng KHÔNG có gì bắt buộc điều đó — cả
+# EXPOSE lẫn URL của probe đều là số gõ cứng. App thì bind theo `process.env.PORT`
+# (server.js). Render/Railway tiêm PORT riêng → probe gõ 5000 sẽ trượt, container
+# bị đánh dấu unhealthy rồi restart-loop TRONG KHI app đang phục vụ bình thường.
+# Log lúc đó nhìn hoàn toàn khoẻ mạnh — kiểu hỏng tốn thời gian nhất.
+ENV PORT=5000
+EXPOSE ${PORT}
 
 # Health check — hits the /health endpoint every 30s
 HEALTHCHECK --interval=30s --timeout=10s --start-period=15s --retries=3 \
-    CMD wget -qO- http://localhost:5000/health || exit 1
+    CMD wget -qO- "http://127.0.0.1:${PORT}/health" || exit 1
 
 # Production start — no nodemon
 CMD ["node", "server.js"]

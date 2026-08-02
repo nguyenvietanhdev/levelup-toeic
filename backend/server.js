@@ -58,12 +58,19 @@ app.use(helmet({
 
             // `accounts.google.com/gsi/client` nạp bằng document.createElement
             // ('script') trong GoogleSignInButton.jsx:12-19 → cần cả scriptSrcElem.
-            scriptSrc: ["'self'", "https://cdn.jsdelivr.net", "https://cdnjs.cloudflare.com", "https://accounts.google.com"],
-            scriptSrcElem: ["'self'", "https://cdn.jsdelivr.net", "https://cdnjs.cloudflare.com", "https://accounts.google.com"],
-            styleSrc: ["'self'", "'unsafe-inline'", "https://cdnjs.cloudflare.com"],
+            // Đã BỎ cdn.jsdelivr.net và cdnjs.cloudflare.com: grep cả repo ra 0 chỗ
+            // nạp: panel admin dùng FontAwesome vendored cục bộ
+            // (`/admin/vendor/fontawesome/`), frontend dùng gói npm. Origin thừa
+            // trong scriptSrc là một nơi mà thẻ <script src> chèn được vẫn tải mã
+            // về — jsdelivr phục vụ mọi gói npm/GitHub theo URL nên không phải một
+            // khoản cấp hẹp. Nó nằm ngay dưới lớp vừa dựng: 211 chỗ innerHTML đã
+            // escape + adminEscaping.test.js.
+            scriptSrc: ["'self'", "https://accounts.google.com"],
+            scriptSrcElem: ["'self'", "https://accounts.google.com"],
+            styleSrc: ["'self'", "'unsafe-inline'"],
             // FontAwesome nhúng woff2 dạng `data:font/woff2;base64,...` thẳng trong
             // CSS đã build. Thiếu `data:` là mọi icon biến thành ô vuông trống.
-            fontSrc: ["'self'", "data:", "https://cdnjs.cloudflare.com"],
+            fontSrc: ["'self'", "data:"],
             imgSrc: ["'self'", "data:", "https:"],
             // Nút "Đăng nhập bằng Google" render trong iframe của GSI.
             frameSrc: ["'self'", "https://accounts.google.com"],
@@ -78,7 +85,12 @@ app.use(helmet({
             mediaSrc: ["'self'", "https://res.cloudinary.com", "https://translate.google.com"],
             // `translate.googleapis.com` là fetch dịch nhanh (Shift+Enter) ở
             // TranslateModal.jsx:108 và exampleFillBlank.js:17.
-            connectSrc: ["'self'", "https://cdn.jsdelivr.net", "https://cdnjs.cloudflare.com", "https://*.onrender.com", "https://translate.googleapis.com", "https://accounts.google.com"],
+            // `https://*.onrender.com` cũng bỏ: nó có nghĩa khi frontend nằm ở host
+            // khác và gọi chéo sang backend. Từ khi backend phục vụ luôn bản build
+            // thì mọi lời gọi là cùng origin, `'self'` phủ hết — giữ lại chỉ là cấp
+            // quyền cho MỌI subdomain onrender.com mà không ai dùng. Tách host trở
+            // lại thì thêm đúng origin cụ thể, đừng thêm wildcard.
+            connectSrc: ["'self'", "https://translate.googleapis.com", "https://accounts.google.com"],
         }
     }
 }));
@@ -184,12 +196,17 @@ app.get('/health', async (_, res) => {
 
     let vocabularyCount = 0;
     try {
-        vocabularyCount = await Vocabulary.countDocuments();
+        // `estimatedDocumentCount` đọc metadata (O(1)); `countDocuments()` không
+        // lọc là aggregation QUÉT CẢ COLLECTION. Docker healthcheck gọi mỗi 30s
+        // → ~2.880 lượt quét/ngày trên Atlas, cho hai con số mà chính liveness
+        // không dùng: status quyết định bởi `readyState` ở dưới. Con số này chỉ
+        // để hiển thị lên dashboard, xấp xỉ là đủ.
+        vocabularyCount = await Vocabulary.estimatedDocumentCount();
     } catch (_) {}
 
     let usersCount = 0;
     try {
-        usersCount = await require('./models/User').countDocuments();
+        usersCount = await require('./models/User').estimatedDocumentCount();
     } catch (_) {}
 
     const status = mongoOk ? 'OK' : 'DEGRADED';

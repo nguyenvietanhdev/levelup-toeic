@@ -172,6 +172,48 @@ describe('SPA serving — origin phục vụ index.html phải phục vụ luôn
         expect([...missing]).toEqual([]);
     });
 
+    test('CSP không cấp quyền cho host mà không ai nạp', () => {
+        // Chiều NGƯỢC của test trên. Test kia bắt "nạp mà chưa cấp"; test này bắt
+        // "cấp mà không nạp". Mỗi origin thừa trong `scriptSrc` là một nơi mà thẻ
+        // <script src> chèn được vẫn tải mã về — và `cdn.jsdelivr.net` phục vụ mọi
+        // gói npm/GitHub theo URL, nên đó không phải một khoản cấp hẹp. Nó nằm ngay
+        // dưới lớp phòng thủ vừa dựng: 211 chỗ innerHTML đã escape + adminEscaping.
+        const DIST = path.join(__dirname, '..', '..', 'frontend', 'dist');
+        const ADMIN = path.join(__dirname, '..', 'public', 'admin');
+
+        // Host được cấp trong CSP (bỏ dòng comment — xem ghi chú ở test trên).
+        const csp = serverSrc
+            .slice(serverSrc.indexOf('contentSecurityPolicy'), serverSrc.indexOf('app.use(compression'))
+            .replace(/^\s*\/\/.*$/gm, '');
+        const granted = new Set([...csp.matchAll(/https:\/\/([a-zA-Z0-9.*-]+\.[a-z]{2,})/g)].map(m => m[1]));
+
+        // Host thực sự xuất hiện trong mã đã build + panel admin.
+        const referenced = new Set();
+        const scan = (dir) => {
+            if (!fs.existsSync(dir)) return;
+            for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
+                const p = path.join(dir, e.name);
+                if (e.isDirectory()) { scan(p); continue; }
+                if (!/\.(js|css|html)$/.test(e.name)) continue;
+                for (const m of fs.readFileSync(p, 'utf8').matchAll(/https:\/\/([a-zA-Z0-9.-]+\.[a-z]{2,})/g)) {
+                    referenced.add(m[1]);
+                }
+            }
+        };
+        scan(DIST);
+        scan(ADMIN);
+        if (referenced.size === 0) return;   // chưa build → không kết luận được
+
+        // Host mà nguồn dùng nằm ở DỮ LIỆU chứ không ở mã — quét source không thể
+        // thấy. Mỗi dòng phải kèm lý do và cách kiểm lại.
+        const DATA_DRIVEN = {
+            'res.cloudinary.com': 'URL nằm trong DB, không trong mã: 699 URL ở toeic_question_sets.audioUrl + ảnh upload. Kiểm: db.toeic_question_sets.findOne({audioUrl:/cloudinary/})',
+        };
+
+        const dead = [...granted].filter(h => !referenced.has(h) && !DATA_DRIVEN[h]);
+        expect(dead).toEqual([]);
+    });
+
     test('CSP cho phép font dạng data: — FontAwesome nhúng woff2 base64', () => {
         // Thiếu `data:` ở fontSrc thì mọi icon thành ô vuông trống. `imgSrc` có
         // `data:` từ trước nên ẢNH vẫn chạy — lại một lệch nữa làm lỗi khó đọc.
