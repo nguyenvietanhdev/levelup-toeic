@@ -21,6 +21,9 @@ export default function PracticeScreen({ active }) {
     const [timerVisible, setTimerVisible] = useState(
         () => GameState.state?.settings?.timeLimitEnabled !== false
     );
+    // { left, total } giây của CÂU hiện tại, do questionTimer đẩy sang. null = tắt
+    // giới hạn thời gian trong cài đặt.
+    const [pace, setPace] = useState(null);
 
     // Expose React state setters to window so vanilla JS can update practice header
     useEffect(() => {
@@ -40,6 +43,7 @@ export default function PracticeScreen({ active }) {
         };
         window._reactSetFreezeCount = (n) => setFreezeCount(n);
         window._reactSetTimerVisible = (v) => setTimerVisible(v);
+        window._reactSetPracticePace = (p) => setPace(p);
         return () => {
             delete window._reactSetPracticeHeader;
             delete window._reactSetPracticeScore;
@@ -47,6 +51,7 @@ export default function PracticeScreen({ active }) {
             delete window._reactSetPracticeProgress;
             delete window._reactSetFreezeCount;
             delete window._reactSetTimerVisible;
+            delete window._reactSetPracticePace;
         };
     }, []);
 
@@ -127,6 +132,19 @@ export default function PracticeScreen({ active }) {
                     <div className="practice-timer">
                         <i className="fas fa-clock"></i>
                         <span id="practice-timer">{timer}</span>
+                    </div>
+                )}
+
+                {/* Thanh nhịp câu hiện tại — cùng cách đọc với màn thi TOEIC
+                    (RunnerHeader.jsx). Ngưỡng đỏ tính theo GIÂY còn lại chứ không
+                    theo tỉ lệ: 5 giây cuối của câu 10 giây và của câu 60 giây đều
+                    gấp như nhau, còn theo tỉ lệ thì câu ngắn sẽ chẳng bao giờ đỏ. */}
+                {pace && pace.total > 0 && (
+                    <div className="practice-pace-bar">
+                        <div
+                            className={`practice-pace-fill${pace.left <= 5 ? ' urgent' : ''}`}
+                            style={{ width: `${Math.max(0, Math.min(100, (pace.left / pace.total) * 100))}%` }}
+                        />
                     </div>
                 )}
             </div>

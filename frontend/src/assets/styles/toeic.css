@@ -2818,7 +2818,10 @@
    của riêng câu đó, trong khi 06:50 là giờ của cả bài.
    =================================================================== */
 /* .toeic-test-header-bar vốn đã position:sticky → tự làm mốc cho thanh absolute. */
-.toeic-pace-bar {
+/* Thanh nhịp của câu hiện tại. Dùng chung cho màn thi TOEIC và màn luyện từ vựng
+   (PracticeScreen.jsx) — một định nghĩa để hai chỗ không lệch nhau khi sửa. */
+.toeic-pace-bar,
+.practice-pace-bar {
   position: absolute;
   left: 0;
   right: 0;
@@ -2829,13 +2832,15 @@
   overflow: hidden;
 }
 
-.toeic-pace-fill {
+.toeic-pace-fill,
+.practice-pace-fill {
   height: 100%;
   background: var(--primary-color);
   transition: width 1s linear, background-color 0.3s;
 }
 
-.toeic-pace-fill.urgent { background: #dc2626; }
+.toeic-pace-fill.urgent,
+.practice-pace-fill.urgent { background: #dc2626; }
 
 /* ===================================================================
    XEM ẢNH CỠ LỚN (ImageLightbox) — thay cho mở tab mới.

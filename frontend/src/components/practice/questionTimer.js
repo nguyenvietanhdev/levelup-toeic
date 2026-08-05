@@ -9,6 +9,7 @@ import { getQuestionTime } from './questionTime.js';
 
 let interval = null;
 let remaining = 0;
+let total = 0;
 let onExpire = null;
 
 function isEnabled() {
@@ -20,7 +21,16 @@ function isEnabled() {
 // đổi tiến độ sau mỗi câu) → đồng hồ nhảy về 00:00.
 function render(hide = false) {
     window._reactSetTimerVisible?.(!hide);
-    if (hide) return;
+    if (hide) {
+        window._reactSetPracticePace?.(null);
+        return;
+    }
+    // Thanh nhịp dán mép dưới header — cùng cách đọc với màn thi TOEIC
+    // (RunnerHeader.jsx): cùng khối với đồng hồ nên hiểu là "thời gian", và
+    // KHÔNG thêm con số thứ hai vì con số cạnh thanh sẽ bị đọc nhầm thành một
+    // đồng hồ riêng. Đẩy cả `left` lẫn `total` chứ không đẩy sẵn phần trăm:
+    // ngưỡng "sắp hết" tính theo GIÂY còn lại, không theo tỉ lệ.
+    window._reactSetPracticePace?.({ left: remaining, total });
     const m = Math.floor(remaining / 60);
     const s = remaining % 60;
     window._reactSetPracticeTimer?.(`${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`);
@@ -51,6 +61,7 @@ export function startQuestionTimer(modeId, expireCb) {
     stopQuestionTimer();
     if (!isEnabled()) { render(true); return; }
     remaining = getQuestionTime(modeId);
+    total = remaining;
     onExpire = expireCb;
     render();
     interval = setInterval(tick, 1000);
