@@ -745,12 +745,17 @@
   text-overflow: ellipsis;
 }
 .practice-meta { justify-content: flex-start; }
-/* Thanh điểm ⭐✓✗ nằm chính giữa header */
+/* Thanh điểm ⭐✓✗.
+   TRƯỚC ĐÂY căn giữa bằng position:absolute + left:50%. Nhìn cân, nhưng nó bị
+   lấy KHỎI LUỒNG trong khi .practice-info bên trái lại có `flex: 1` — tức phần
+   tên chế độ nở hết chỗ trống rồi CHẠY NGẦM BÊN DƯỚI thanh điểm khi tên dài.
+   `text-overflow: ellipsis` không cứu được: nó cắt theo bề rộng ô chứa, không
+   biết gì về một phần tử absolute đang nằm đè lên.
+   Trả về trong luồng: mất căn giữa tuyệt đối, đổi lại không còn chữ chồng chữ.
+   Vẫn đủ chỗ cho MỘT hàng ở dải 641–768px — các mục cố định chỉ chiếm ~340px. */
 .practice-header .practice-score-bar {
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  transform: translate(-50%, -50%);
+  position: static;
+  transform: none;
   background: transparent;
   box-shadow: none;
   padding: 0;
@@ -759,8 +764,11 @@
   flex-shrink: 0;
 }
 @media (max-width: 640px) {
-  /* Màn nhỏ: header xuống dòng → trả thanh điểm về trong luồng */
-  .practice-header .practice-score-bar { position: static; transform: none; }
+  /* Màn nhỏ: header xuống dòng. Bỏ badge độ khó ("Tự động • Tuần tự") — thông tin
+     đó chỉ có giá trị lúc CHỌN chế độ; giữa lúc làm bài không ai đọc, mà nó lại
+     chiếm nguyên một dòng ở chỗ chật nhất. Tiến độ "1 /13" thì giữ: đó là thứ
+     người học thật sự liếc. */
+  .practice-header .difficulty-badge { display: none; }
 }
 
 .practice-content {
