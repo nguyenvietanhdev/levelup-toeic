@@ -2819,7 +2819,9 @@
    =================================================================== */
 /* .toeic-test-header-bar vốn đã position:sticky → tự làm mốc cho thanh absolute. */
 /* Thanh nhịp của câu hiện tại. Dùng chung cho màn thi TOEIC và màn luyện từ vựng
-   (PracticeScreen.jsx) — một định nghĩa để hai chỗ không lệch nhau khi sửa. */
+   (PracticeScreen.jsx) — một định nghĩa để hai chỗ không lệch nhau khi sửa.
+   Thanh bám đáy header bằng position:absolute nên header có xuống dòng ở màn nhỏ
+   (<640px, xem components.css) thì nó vẫn nằm đúng mép dưới. */
 .toeic-pace-bar,
 .practice-pace-bar {
   position: absolute;
@@ -2828,7 +2830,15 @@
   bottom: 0;
   height: 3px;
   background: var(--border-color);
-  border-radius: 0 0 var(--border-radius-large) var(--border-radius-large);
+  /* THEO khung chứa, không gõ số: hai header bo khác nhau —
+     .toeic-test-header-bar dùng --border-radius-large (16px) còn .practice-header
+     dùng --border-radius (12px). Gõ cứng 16px thì ở màn luyện tập hai góc dưới
+     của thanh tròn hơn cả header và thò ra ngoài mép. `inherit` cũng miễn nhiễm
+     nếu sau này ai đổi giá trị của một trong hai biến. */
+  border-bottom-left-radius: inherit;
+  border-bottom-right-radius: inherit;
+  border-top-left-radius: 0;
+  border-top-right-radius: 0;
   overflow: hidden;
 }
 
