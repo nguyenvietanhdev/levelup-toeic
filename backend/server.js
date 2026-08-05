@@ -104,22 +104,14 @@ app.use(compression({
         return compression.filter(req, res);
     }
 }));
-const allowedOrigins = process.env.CORS_ORIGIN
-    ? process.env.CORS_ORIGIN.split(',').map(o => o.trim())
-    : ['http://localhost:3000', 'http://127.0.0.1:3000', 'http://localhost:5500', 'http://127.0.0.1:5500', 'http://localhost:5173', 'http://127.0.0.1:5173', `http://localhost:${process.env.PORT || 5000}`];
-
-app.use(cors({
-    origin: (origin, callback) => {
-        // same-origin requests have no Origin header — always allow
-        if (!origin) return callback(null, true);
-        // wildcard or no explicit whitelist → echo back the requesting origin
-        if (!allowedOrigins) return callback(null, origin);
-        // explicit whitelist
-        if (allowedOrigins.includes(origin)) return callback(null, true);
-        callback(new Error(`CORS: origin ${origin} not allowed`));
-    },
-    credentials: true,
-}));
+// Delegate dạng `cors(fn(req, cb))` — cần `req` chứ không chỉ chuỗi origin, vì
+// luật quan trọng nhất là "origin của CHÍNH request luôn được phép" mà chỉ `req`
+// mới biết. Bản cũ chỉ nhận `origin` nên phải khai domain production vào env, và
+// quên là hỏng IM LẶNG: GET không gửi header `Origin` nên trang vẫn load đẹp,
+// chỉ POST mới chết — nhìn hệt như app đã ổn cho tới lúc ai đó bấm Đăng nhập.
+// Chi tiết luật ở utils/corsPolicy.js.
+const { corsOptionsDelegate } = require('./utils/corsPolicy');
+app.use(cors(corsOptionsDelegate));
 app.use(express.json({ limit: '2mb' }));
 app.use(express.urlencoded({ extended: true, limit: '2mb' }));
 app.use(morgan(process.env.NODE_ENV === 'production' ? 'combined' : 'dev', { stream: logger.stream }));

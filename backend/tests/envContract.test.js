@@ -31,6 +31,10 @@ const EXAMPLE = path.join(BACKEND, '.env.example');
 const INDIRECT = {
     DEEPSEEK_API_KEY: 'services/aiProviders.js:46 — tra qua envKey',
     GEMINI_API_KEY:   'services/aiProviders.js:60 — tra qua envKey',
+    // Đọc qua tham số `env` tiêm vào `corsOptionsDelegate(req, cb, env)` — tách ra
+    // để test chính sách CORS mà không phải nạp cả app. Kiểm: utils/corsPolicy.js
+    // hàm `allowedFromEnv`.
+    CORS_ORIGIN: 'utils/corsPolicy.js — đọc qua tham số env tiêm vào, không qua process.env trực tiếp',
 };
 
 /** Biến chỉ dùng trong `scripts/` chạy tay, không thuộc hợp đồng deploy. */
