@@ -24,12 +24,14 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # Node 20 để KHỚP production (backend/Dockerfile dùng node:20-alpine).
-      # Máy dev đang chạy v22 — nếu code lỡ dùng API chỉ có ở 22 thì đây là chỗ
-      # phải đỏ, chứ không phải lúc container khởi động.
+      # Node 22 — phải KHỚP `.node-version` (Render đọc file đó) và Dockerfile.
+      # Lần deploy đầu lên Render chạy Node 24 vì repo không ghim gì cả, trong khi
+      # chỗ này ghi 20 và máy dev là 22: bốn môi trường, ba phiên bản. Chọn 22 vì
+      # đó là phiên bản duy nhất 448 test thật sự đã chạy qua.
+      # `prodPosture.test.js` chốt ba nơi khai báo phải trùng nhau.
       - uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
           cache: npm
           cache-dependency-path: |
             backend/package-lock.json

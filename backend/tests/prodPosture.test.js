@@ -106,6 +106,34 @@ describe('Tư thế production — thứ chỉ sai khi rời máy dev', () => {
         expect(gate).toMatch(/LOG_TO_FILE/);
     });
 
+    test('phiên bản Node khai ở ba nơi phải khớp nhau', () => {
+        // Lần deploy đầu lên Render chạy Node 24 (mặc định của nền tảng) trong khi
+        // Dockerfile ghi 20 và CI ghi 20, còn máy dev là 22 — bốn môi trường, ba
+        // phiên bản, repo không ghim cái nào. CI xanh lúc đó chứng minh được rất ít.
+        const ROOT = path.join(__dirname, '..', '..');
+        const nodeVersion = fs.readFileSync(path.join(ROOT, '.node-version'), 'utf8').trim();
+        const major = nodeVersion.split('.')[0];
+
+        const ci = fs.readFileSync(path.join(ROOT, '.github', 'workflows', 'ci.yml'), 'utf8');
+        const ciNode = /node-version:\s*['"]?(\d+)/.exec(ci);
+        expect(ciNode).not.toBeNull();
+        expect(ciNode[1]).toBe(major);
+
+        const from = /^FROM node:(\d+)/m.exec(dockerfile);
+        expect(from).not.toBeNull();
+        expect(from[1]).toBe(major);
+    });
+
+    test('lệnh build deploy cài cả devDependencies cho frontend', () => {
+        // `vite` là devDependency. Render đặt NODE_ENV=production, và `npm ci` bỏ
+        // devDependencies khi thấy biến đó → `vite: not found`, build đỏ. Backend thì
+        // KHÔNG cần devDeps lúc chạy nên để nguyên là đúng.
+        const rootPkg = JSON.parse(fs.readFileSync(path.join(__dirname, '..', '..', 'package.json'), 'utf8'));
+        const cmd = rootPkg.scripts['build:deploy'];
+        expect(cmd).toBeDefined();
+        expect(cmd).toMatch(/--include=dev[^&]*--prefix frontend|--prefix frontend[^&]*--include=dev/);
+    });
+
     test('self-check: bộ dò phân biệt được fail-open với fail-closed', () => {
         const open = "if (process.env.NODE_ENV !== 'production' || x) {";
         const closed = "if (process.env.NODE_ENV === 'development' || x) {";
