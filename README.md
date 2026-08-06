@@ -2,6 +2,13 @@
 
 Ứng dụng web học từ vựng TOEIC theo phong cách gamification — kết hợp 12 chế độ luyện tập tương tác, hệ thống thi TOEIC 7 Part đầy đủ, và cơ chế XP/level/streak để duy trì động lực học tập.
 
+**▶ Bản chạy thật: https://levelup-toeic.onrender.com**
+
+> **Về lịch sử commit.** Dự án bắt đầu ngày **18/05/2026** tại
+> [`Cherrykill/TOEIC-PLATFORM`](https://github.com/Cherrykill/TOEIC-PLATFORM) và tích luỹ
+> **244 commit** ở đó. Tháng 7/2026 tôi chuyển sang tài khoản GitHub này; lịch sử cũ không đi
+> theo, nên repo này chỉ hiện phần commit từ lúc chuyển. Repo cũ vẫn public để đối chiếu.
+
 ---
 
 ## Tính năng chính
