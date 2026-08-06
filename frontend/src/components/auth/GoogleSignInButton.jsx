@@ -3,6 +3,18 @@ import { useEffect, useRef } from 'react';
 const GIS_SRC = 'https://accounts.google.com/gsi/client';
 const CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
 
+// VITE_* là biến LÚC BUILD. `frontend/.env` bị gitignore nên máy build của
+// platform không có nó, và thiếu thì nút chỉ đơn giản không render — không lỗi,
+// không log, không dấu vết. Đã mất đúng kiểu đó một lần trên Render: build xanh,
+// deploy xanh, mà tính năng đăng nhập Google thì biến mất.
+// Kêu một tiếng ngay lúc nạp module để lần sau còn lần ra được.
+if (!CLIENT_ID) {
+    console.warn(
+        '[GoogleSignInButton] Thiếu VITE_GOOGLE_CLIENT_ID lúc build → nút "Đăng nhập ' +
+        'bằng Google" sẽ KHÔNG hiện. Đặt biến này trên môi trường build rồi build lại.'
+    );
+}
+
 // Nạp script Google Identity Services một lần, dùng chung mọi nơi.
 let gisPromise = null;
 function loadGis() {

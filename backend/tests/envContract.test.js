@@ -117,6 +117,47 @@ describe('Hợp đồng env — .env.example phải khớp code', () => {
         expect(exampleVal[1].trim()).toBe(codeDefault[1]);
     });
 
+    test('biến VITE_ của frontend đều có trong frontend/.env.example', () => {
+        // Biến `VITE_*` được thay THẲNG VÀO MÃ lúc `vite build`, không đọc lúc chạy.
+        // `frontend/.env` nằm trong .gitignore nên máy build của platform KHÔNG có
+        // nó — thiếu khai trên platform là biến thành `undefined` ngay trong bundle.
+        //
+        // Đã xảy ra thật: `VITE_GOOGLE_CLIENT_ID` không được đặt trên Render, và
+        // `GoogleSignInButton.jsx:56` có `if (!CLIENT_ID) return null` nên nút
+        // "Đăng nhập bằng Google" BIẾN MẤT không một dòng lỗi. Build xanh, deploy
+        // xanh, tính năng không còn.
+        const FE = path.join(BACKEND, '..', 'frontend');
+        const example = fs.readFileSync(path.join(FE, '.env.example'), 'utf8');
+        const documented = new Set(
+            example.split('\n').map(l => /^(VITE_[A-Z0-9_]*)=/.exec(l)?.[1]).filter(Boolean)
+        );
+
+        const used = new Map();
+        const walk = (d) => {
+            for (const e of fs.readdirSync(d, { withFileTypes: true })) {
+                const p = path.join(d, e.name);
+                if (e.isDirectory()) { walk(p); continue; }
+                if (!/\.(js|jsx)$/.test(e.name) || /\.test\./.test(e.name)) continue;
+                const rel = path.relative(FE, p).replace(/\\/g, '/');
+                fs.readFileSync(p, 'utf8').split('\n').forEach((line, i) => {
+                    if (/^\s*\/\//.test(line)) return;
+                    for (const m of line.matchAll(/import\.meta\.env\.(VITE_[A-Z0-9_]*)/g)) {
+                        if (!used.has(m[1])) used.set(m[1], `${rel}:${i + 1}`);
+                    }
+                });
+            }
+        };
+        walk(path.join(FE, 'src'));
+
+        const missing = [...used].filter(([n]) => !documented.has(n)).map(([n, w]) => `${n}  (${w})`);
+        expect(missing).toEqual([]);
+
+        // Chiều ngược: khai mà không ai đọc → người deploy đặt giá trị rồi thắc mắc
+        // vì sao không có tác dụng.
+        const dead = [...documented].filter(n => !used.has(n));
+        expect(dead).toEqual([]);
+    });
+
     test('self-check: bộ dò thấy được cả hai cách đọc env', () => {
         const dir = path.join(require('os').tmpdir(), 'envcontract-selfcheck');
         fs.mkdirSync(dir, { recursive: true });
