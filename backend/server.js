@@ -92,7 +92,19 @@ app.use(helmet({
             // lại thì thêm đúng origin cụ thể, đừng thêm wildcard.
             connectSrc: ["'self'", "https://translate.googleapis.com", "https://accounts.google.com"],
         }
-    }
+    },
+    // COOP KHÔNG nằm trong CSP — khai CSP đủ cho Google vẫn không cứu được.
+    // Mặc định của helmet là 'same-origin', header đó CẮT window.opener của mọi
+    // popup. Đăng nhập Google xong, popup gọi opener.postMessage(credential) để
+    // trả ID token về → opener là null → TypeError trong gsi/transform, popup
+    // trắng và không tự đóng, không có lỗi nào ở phía app chỉ ra nguyên nhân.
+    //
+    // Cùng loại bẫy với mediaSrc ở trên: `vite dev` không gửi header nào cả nên
+    // chạy máy mình vẫn đăng nhập được, chỉ hỏng từ khi backend phục vụ bản build.
+    //
+    // 'same-origin-allow-popups' chỉ nới đúng phần popup do chính trang mở ra trả
+    // kết quả về; vẫn chặn tab-nabbing (trang khác mở mình thì không với tới được).
+    crossOriginOpenerPolicy: { policy: 'same-origin-allow-popups' },
 }));
 app.use(compression({
     level: 6,           // Compression level (0-9, 6 is good balance)
