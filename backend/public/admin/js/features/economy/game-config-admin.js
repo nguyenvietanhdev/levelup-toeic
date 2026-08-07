@@ -1,6 +1,7 @@
 // modules/game-config-admin.js — chỉnh hằng số game (GameConfig singleton).
 (function () {
   const FIELDS = ['maxUploadWords', 'maxFavorites', 'extendCostPerWord', 'vipBoostCards'];
+  const BOOLS = ['featureUnlockEnabled'];   // ô đánh dấu — đọc/ghi bằng .checked
   let inited = false;
 
   function setStatus(msg, ok) {
@@ -17,6 +18,12 @@
         const el = document.getElementById('gc-' + f);
         if (el) el.value = j.data[f] ?? 0;
       });
+      BOOLS.forEach(f => {
+        const el = document.getElementById('gc-' + f);
+        // Thiếu trường (config lưu từ trước khi có ô này) → coi như ĐANG BẬT,
+        // khớp default của model. Để trống thành ra tắt khoá là mở toang oan.
+        if (el) el.checked = j.data[f] !== false;
+      });
     } catch (e) { setStatus(e.message, false); }
   }
 
@@ -24,6 +31,7 @@
     e.preventDefault();
     const body = {};
     FIELDS.forEach(f => { body[f] = Number(document.getElementById('gc-' + f).value) || 0; });
+    BOOLS.forEach(f => { body[f] = !!document.getElementById('gc-' + f)?.checked; });
     setStatus('Đang lưu...', true);
     try {
       const r = await fetch(`${API_URL}/admin/game-config`, {

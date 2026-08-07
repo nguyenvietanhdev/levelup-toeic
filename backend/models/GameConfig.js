@@ -7,6 +7,14 @@ const mongoose = require('mongoose');
 const gameConfigSchema = new mongoose.Schema(
     {
         key: { type: String, default: 'default', unique: true },
+        // CÔNG TẮC TỔNG cho khoá tính năng theo Level. false = mở hết cho mọi
+        // người, khỏi phải gạt isActive từng dòng ở tab "Mốc mở khoá" rồi phải
+        // nhớ đã gạt những dòng nào để bật lại.
+        // Khác `User.bypassFeatureLock`: cờ kia miễn cho MỘT tài khoản (tài khoản
+        // demo), cái này tắt cho TẤT CẢ.
+        // Mặc định true — thiếu trường (config lưu từ trước khi có ô này) phải
+        // hiểu là ĐANG KHOÁ, không được mở toang.
+        featureUnlockEnabled: { type: Boolean, default: true },
         // Giới hạn kho từ vựng cá nhân / từ yêu thích (bảo vệ DB).
         maxUploadWords: { type: Number, default: 500 },
         maxFavorites: { type: Number, default: 100 },

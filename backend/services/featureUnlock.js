@@ -1,5 +1,23 @@
 const FeatureUnlock = require('../models/FeatureUnlock');
 const UserProfile = require('../models/UserProfile');
+const { getGameConfig } = require('./gameConfig');
+
+/**
+ * Cơ chế khoá theo Level có đang bật không (công tắc tổng ở GameConfig).
+ * Tắt = mở hết cho mọi người.
+ *
+ * Mặc định BẬT khi có sự cố: thiếu trường trong config cũ, hoặc đọc config lỗi,
+ * đều trả true. Một lần mất kết nối DB không được phép mở toang mọi tính năng —
+ * hỏng thì phải khoá, không phải mở.
+ */
+async function lockingEnabled() {
+    try {
+        const cfg = await getGameConfig();
+        return cfg?.featureUnlockEnabled !== false;
+    } catch {
+        return true;
+    }
+}
 
 // Cache 30s: mốc mở khoá đổi rất ít, tránh truy DB mỗi request.
 let _cache = null;
@@ -36,6 +54,9 @@ function requireLevel(keyOf) {
             // Tài khoản ngoại lệ: full tính năng, không xét Level.
             if (req.user?.bypassFeatureLock) return next();
 
+            // Công tắc tổng tắt → mở hết cho mọi người.
+            if (!(await lockingEnabled())) return next();
+
             const key = typeof keyOf === 'function' ? keyOf(req) : keyOf;
             if (!key) return next();
 
@@ -56,4 +77,4 @@ function requireLevel(keyOf) {
     };
 }
 
-module.exports = { getUnlocks, clearUnlockCache, requiredLevelFor, requireLevel };
+module.exports = { getUnlocks, clearUnlockCache, requiredLevelFor, requireLevel, lockingEnabled };

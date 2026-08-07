@@ -516,6 +516,9 @@ router.put('/channel-config/:channel', admin, async (req, res) => {
 
 // ===== Hằng số game (GameConfig singleton) =====
 const GAME_CONFIG_FIELDS = ['maxUploadWords', 'maxFavorites', 'extendCostPerWord', 'vipBoostCards'];
+// Boolean phải tách khỏi vòng lặp số ở dưới: Number(false) = 0, vẫn lọt qua
+// `n >= 0` rồi ghi số 0 vào ô Boolean. Tắt/bật sẽ chạy sai một cách khó lần ra.
+const GAME_CONFIG_BOOLS = ['featureUnlockEnabled'];
 
 router.get('/game-config', admin, async (req, res) => {
     try {
@@ -534,6 +537,10 @@ router.put('/game-config', admin, async (req, res) => {
                 const n = Number(req.body[f]);
                 if (Number.isFinite(n) && n >= 0) cfg[f] = n;
             }
+        });
+        GAME_CONFIG_BOOLS.forEach(f => {
+            // Nhận cả true/false lẫn 'true'/'false' — form có thể gửi dạng chuỗi.
+            if (req.body[f] !== undefined) cfg[f] = req.body[f] === true || req.body[f] === 'true';
         });
         await cfg.save();
         clearGameConfigCache();
