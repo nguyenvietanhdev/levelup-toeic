@@ -1558,6 +1558,55 @@
     background: var(--border-color);
 }
 
+/* ── Nút micro trong ô tìm kiếm ───────────────────────────────────────────────
+   Nằm sát mép phải; khi có nút xoá thì lùi vào để không đè lên nhau. */
+.mic-btn {
+    position: absolute;
+    right: 8px;
+    top: 0;
+    bottom: 0;
+    height: fit-content;
+    margin: auto;
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    cursor: pointer;
+    padding: 4px;
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: color 0.2s, background-color 0.2s;
+}
+.search-bar:has(.clear-search-btn) .mic-btn { right: 34px; }
+.mic-btn:hover { color: var(--text-primary); background: var(--border-color); }
+.mic-btn:focus-visible { outline: 2px solid var(--primary-color); outline-offset: 1px; }
+
+/* Đang nghe: đỏ + nhịp đập. Trạng thái này phải NHÌN LÀ BIẾT — micro bật mà
+   người dùng tưởng đã tắt là vấn đề riêng tư, không phải chuyện thẩm mỹ. */
+.mic-btn.is-listening {
+    color: #fff;
+    background: #dc2626;
+    animation: mic-pulse 1.4s ease-in-out infinite;
+}
+.mic-btn.is-listening:hover { background: #b91c1c; color: #fff; }
+
+@keyframes mic-pulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.55); }
+    70%      { box-shadow: 0 0 0 7px rgba(220, 38, 38, 0); }
+}
+
+/* Người bật "giảm chuyển động" vẫn phải thấy được trạng thái — giữ màu đỏ, bỏ
+   nhịp đập, thay bằng viền tĩnh. */
+@media (prefers-reduced-motion: reduce) {
+    .mic-btn.is-listening {
+        animation: none;
+        box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.35);
+    }
+}
+
 /* ===================================
    SEARCH RESULTS DROPDOWN
    =================================== */

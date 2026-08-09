@@ -15,6 +15,9 @@ import TopicModal from '@components/vocab/topic/TopicModal.jsx';
 import { openUploadModal } from '@components/vocab/upload/openUploadModal.js';
 import SpinWheelModal from '@components/spin/SpinWheelModal.jsx';
 import TranslateModal from '@components/translate/TranslateModal.jsx';
+import { isSpeechSupported, speechLangFor, createSpeechInput } from '@lib/speechInput.js';
+import { createHoldGesture } from '@lib/holdGesture.js';
+import { getVocabLang } from '@api/vocabulary.js';
 
 export default function TopNav() {
     const { user, resources, setMenuOpen, showScreen, menuOpen, currentScreen } = useGame();
@@ -34,6 +37,11 @@ export default function TopNav() {
     const menuHasDot = menuRewardCount === 0 && (menuBadges.online > 0 || menuBadges.shopDiscount > 0);
     const [searchQuery, setSearchQuery] = useState('');
     const [searchFocused, setSearchFocused] = useState(false);
+    // Nhập bằng giọng nói. `speechOn` là trạng thái ĐANG NGHE để vẽ nút; bản thân
+    // phiên nhận dạng nằm trong ref vì nó không phải dữ liệu render.
+    const [speechOn, setSpeechOn] = useState(false);
+    const speechRef = useRef(null);
+    const speechSupported = isSpeechSupported();
     // readOnly cho tới khi user tương tác → chặn Edge autofill email lúc load trang
     const [searchReadOnly, setSearchReadOnly] = useState(true);
     const [favOpen, setFavOpen] = useState(false);
@@ -127,6 +135,91 @@ export default function TopNav() {
         message: `${name} mở khi bạn đạt Level ${requiredLevel}.`,
         duration: 3500,
     });
+
+    // ── Nhập bằng giọng nói ───────────────────────────────────────────────────
+    // Phiên nhận dạng tạo MỘT lần và giữ trong ref: tạo lại mỗi lần render sẽ ngắt
+    // giữa chừng lúc người dùng đang nói (mỗi ký tự nghe được là một lần setState).
+    useEffect(() => {
+        if (!speechSupported) return;
+        const s = createSpeechInput({
+            lang: speechLangFor(getVocabLang()),
+            onText: (text) => {
+                setSearchReadOnly(false);
+                setSearchQuery(text);
+            },
+            onStateChange: setSpeechOn,
+            onError: (code) => {
+                Notification.show({
+                    type: 'warning',
+                    title: code === 'not-allowed' ? '🎤 Chưa cấp quyền micro' : '🎤 Không nghe được',
+                    message: code === 'not-allowed'
+                        ? 'Cho phép trang này dùng micro trong cài đặt trình duyệt rồi thử lại.'
+                        : 'Trình duyệt báo lỗi khi nhận giọng nói. Thử lại hoặc gõ tay.',
+                    duration: 4000,
+                });
+            },
+        });
+        speechRef.current = s;
+        return () => { s.destroy(); speechRef.current = null; };
+    }, [speechSupported]);
+
+    const stopSpeech = useCallback(() => speechRef.current?.stop(), []);
+    const startSpeech = useCallback(() => {
+        if (isInPractice) return;   // đang luyện tập thì ô tìm kiếm khoá
+        speechRef.current?.start();
+    }, [isInPractice]);
+    const toggleSpeech = useCallback(() => {
+        if (speechRef.current?.isListening()) stopSpeech();
+        else startSpeech();
+    }, [startSpeech, stopSpeech]);
+
+    // GIỮ Shift để nói, thả ra thì dừng. Ngưỡng giữ + huỷ khi có phím khác nằm
+    // trong `createHoldGesture` — nếu không có hai lớp đó thì mỗi lần gõ chữ hoa
+    // là một lần bật micro, và `Shift+Enter` (dịch nhanh) sẽ không dùng được nữa.
+    useEffect(() => {
+        if (!speechSupported) return;
+
+        const gesture = createHoldGesture({
+            thresholdMs: 350,
+            onStart: startSpeech,
+            onStop: stopSpeech,
+        });
+
+        // Chỉ nhận cử chỉ khi người dùng KHÔNG đang gõ ở ô nhập nào khác — dictate
+        // vào ô tìm kiếm thì được, chứ đang soạn trong popup dịch mà Shift cướp
+        // micro thì rất khó chịu.
+        const busyElsewhere = () => {
+            const el = document.activeElement;
+            if (!el || el.id === 'search-input') return false;
+            return el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.isContentEditable;
+        };
+
+        const onKeyDown = (e) => {
+            if (e.key === 'Shift') {
+                if (busyElsewhere() || isInPractice) return;
+                gesture.keyDown({ repeat: e.repeat });
+            } else {
+                gesture.otherKeyDown();
+            }
+        };
+        const onKeyUp = (e) => { if (e.key === 'Shift') gesture.keyUp(); };
+        // Alt-Tab ra khỏi trang khi đang giữ Shift → không bao giờ nhận được keyup,
+        // micro sẽ kẹt ở trạng thái nghe. Dừng chủ động.
+        const onBlur = () => { gesture.reset(); stopSpeech(); };
+
+        window.addEventListener('keydown', onKeyDown);
+        window.addEventListener('keyup', onKeyUp);
+        window.addEventListener('blur', onBlur);
+        return () => {
+            window.removeEventListener('keydown', onKeyDown);
+            window.removeEventListener('keyup', onKeyUp);
+            window.removeEventListener('blur', onBlur);
+            gesture.reset();
+        };
+    }, [speechSupported, isInPractice, startSpeech, stopSpeech]);
+
+    // Vào màn luyện tập giữa chừng thì ngắt luôn, không để micro chạy nền.
+    useEffect(() => { if (isInPractice) stopSpeech(); }, [isInPractice, stopSpeech]);
 
     // Expose spin opener globally + check availability
     useEffect(() => {
@@ -232,9 +325,11 @@ export default function TopNav() {
                         id="search-input"
                         placeholder={isInPractice
                             ? 'Đang luyện tập — tạm khoá tìm kiếm'
-                            : translateLock.locked
-                                ? `Tìm từ vựng... (Dịch nhanh mở ở Level ${translateLock.requiredLevel})`
-                                : 'Tìm từ vựng... (Shift+Enter: dịch Google)'}
+                            : speechOn
+                                ? '🎤 Đang nghe... nói từ bạn muốn tìm'
+                                : translateLock.locked
+                                    ? `Tìm từ vựng... (Dịch nhanh mở ở Level ${translateLock.requiredLevel})`
+                                    : 'Tìm từ vựng... (Shift+Enter: dịch · giữ Shift: nói)'}
                         autoComplete="off"
                         readOnly={searchReadOnly || isInPractice}
                         disabled={isInPractice}
@@ -256,6 +351,22 @@ export default function TopNav() {
                     {searchQuery && !isInPractice && (
                         <button id="clear-search-btn" className="clear-search-btn" onClick={() => { setSearchQuery(''); window._reactClearSearch?.(); }}>
                             <i className="fas fa-times"></i>
+                        </button>
+                    )}
+                    {/* Ẩn hẳn nếu trình duyệt không hỗ trợ (Firefox) — một nút bấm
+                        vào mà không xảy ra gì còn tệ hơn là không có nút. */}
+                    {speechSupported && !isInPractice && (
+                        <button
+                            type="button"
+                            className={`mic-btn${speechOn ? ' is-listening' : ''}`}
+                            onClick={toggleSpeech}
+                            aria-pressed={speechOn}
+                            aria-label={speechOn ? 'Dừng nhập bằng giọng nói' : 'Nhập bằng giọng nói'}
+                            title={speechOn
+                                ? 'Đang nghe — bấm để dừng'
+                                : 'Nói để tìm (hoặc giữ Shift)'}
+                        >
+                            <i className={`fas ${speechOn ? 'fa-stop' : 'fa-microphone'}`}></i>
                         </button>
                     )}
                 </div>
