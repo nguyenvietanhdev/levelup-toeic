@@ -1607,6 +1607,12 @@
     }
 }
 
+/* Trình duyệt không hỗ trợ: mờ đi nhưng VẪN BẤM ĐƯỢC — bấm vào mới hiện thông báo
+   giải thích. Dùng `opacity` chứ không `disabled`, vì nút disabled không nhận sự
+   kiện click nên không nói được lý do cho người dùng. */
+.mic-btn.is-unsupported { opacity: 0.4; cursor: help; }
+.mic-btn.is-unsupported:hover { opacity: 0.7; color: var(--text-secondary); background: none; }
+
 /* ===================================
    SEARCH RESULTS DROPDOWN
    =================================== */

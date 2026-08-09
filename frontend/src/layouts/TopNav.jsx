@@ -163,6 +163,15 @@ export default function TopNav() {
         return () => { s.destroy(); speechRef.current = null; };
     }, [speechSupported]);
 
+    // Firefox chưa cài đặt SpeechRecognition (tính tới 2026). Nói thẳng tên trình
+    // duyệt dùng được, đừng chỉ báo "không hỗ trợ" rồi để người dùng tự đoán.
+    const warnNoSpeech = useCallback(() => Notification.show({
+        type: 'info',
+        title: '🎤 Trình duyệt chưa hỗ trợ',
+        message: 'Nhập bằng giọng nói cần Chrome, Edge hoặc Safari. Firefox chưa có tính năng này — bạn vẫn gõ tay bình thường nhé.',
+        duration: 5000,
+    }), []);
+
     const stopSpeech = useCallback(() => speechRef.current?.stop(), []);
     const startSpeech = useCallback(() => {
         if (isInPractice) return;   // đang luyện tập thì ô tìm kiếm khoá
@@ -353,20 +362,26 @@ export default function TopNav() {
                             <i className="fas fa-times"></i>
                         </button>
                     )}
-                    {/* Ẩn hẳn nếu trình duyệt không hỗ trợ (Firefox) — một nút bấm
-                        vào mà không xảy ra gì còn tệ hơn là không có nút. */}
-                    {speechSupported && !isInPractice && (
+                    {/* Trình duyệt không hỗ trợ (Firefox) thì VẪN HIỆN nút, ở dạng mờ
+                        + gạch chéo, bấm vào nói rõ lý do. Bản đầu tôi ẩn hẳn — và nó
+                        lặp đúng lỗi của nút đăng nhập Google: tính năng biến mất mà
+                        người dùng phải mở Console mới biết vì sao. Ẩn im lặng khiến
+                        người ta nghĩ app hỏng; nút mờ khiến người ta biết phải đổi
+                        trình duyệt. */}
+                    {!isInPractice && (
                         <button
                             type="button"
-                            className={`mic-btn${speechOn ? ' is-listening' : ''}`}
-                            onClick={toggleSpeech}
-                            aria-pressed={speechOn}
-                            aria-label={speechOn ? 'Dừng nhập bằng giọng nói' : 'Nhập bằng giọng nói'}
-                            title={speechOn
-                                ? 'Đang nghe — bấm để dừng'
-                                : 'Nói để tìm (hoặc giữ Shift)'}
+                            className={`mic-btn${speechOn ? ' is-listening' : ''}${speechSupported ? '' : ' is-unsupported'}`}
+                            onClick={speechSupported ? toggleSpeech : warnNoSpeech}
+                            aria-pressed={speechSupported ? speechOn : undefined}
+                            aria-label={!speechSupported
+                                ? 'Nhập bằng giọng nói — trình duyệt này không hỗ trợ'
+                                : speechOn ? 'Dừng nhập bằng giọng nói' : 'Nhập bằng giọng nói'}
+                            title={!speechSupported
+                                ? 'Trình duyệt này không hỗ trợ nhập giọng nói — dùng Chrome hoặc Edge'
+                                : speechOn ? 'Đang nghe — bấm để dừng' : 'Nói để tìm (hoặc giữ Shift)'}
                         >
-                            <i className={`fas ${speechOn ? 'fa-stop' : 'fa-microphone'}`}></i>
+                            <i className={`fas ${!speechSupported ? 'fa-microphone-slash' : speechOn ? 'fa-stop' : 'fa-microphone'}`}></i>
                         </button>
                     )}
                 </div>
