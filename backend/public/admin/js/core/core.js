@@ -518,6 +518,7 @@ async function initDashboard() {
   if (dashboardInitialized) return;
   dashboardInitialized = true;
   await loadDashboard();
+  stampOverviewUpdated();
   initMainTabs();
   loadRecentUsers();
   loadGrowthChart(30);
@@ -854,8 +855,36 @@ function setupOfflineSearchHandler() {
   console.log("✅ Offline search handler ready");
 }
 
-function refreshData() {
-  // Allow re-initialization on explicit refresh
-  dashboardInitialized = false;
-  loadDashboard();
+async function refreshData() {
+  const btn = document.getElementById("btn-refresh");
+  if (btn?.disabled) return; // chặn bấm dồn khi lần trước chưa xong
+
+  // Khoá nút trong lúc tải. Không có phản hồi thì người dùng bấm liên tục, mỗi
+  // lần lại đặt lịch một loạt request nữa — và trên server ngủ đông, mỗi lần chờ
+  // tới 60 giây.
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-rotate fa-spin"></i> Đang tải…';
+  }
+
+  dashboardInitialized = false; // cho phép khởi tạo lại
+  try {
+    await loadDashboard();
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fas fa-rotate"></i> Tải lại';
+    }
+    stampOverviewUpdated();
+  }
+}
+
+/** Ghi mốc thời gian cập nhật gần nhất — để biết số đang xem có còn mới không. */
+function stampOverviewUpdated() {
+  const el = document.getElementById("overview-updated");
+  if (!el) return;
+  const t = new Date();
+  const hh = String(t.getHours()).padStart(2, "0");
+  const mm = String(t.getMinutes()).padStart(2, "0");
+  el.textContent = `Cập nhật lúc ${hh}:${mm}`;
 }

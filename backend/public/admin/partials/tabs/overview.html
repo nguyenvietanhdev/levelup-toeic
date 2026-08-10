@@ -1,5 +1,18 @@
           <!-- ===== OVERVIEW TAB (default) ===== -->
           <div id="main-tab-overview" class="main-tab-content active">
+            <!-- Thanh làm mới. `refreshData()` và handler cho #btn-refresh đã tồn
+                 tại sẵn trong ui-init.js từ lâu, nhưng CÁI NÚT thì chưa bao giờ có
+                 trong HTML — handler mồ côi, nối vào một id không tồn tại.
+                 Trang này cần nút nhất: nó là trang đầu tiên mở ra, và là trang dễ
+                 hiển thị sai nhất khi server ngủ đông dậy chậm. Không có nút thì
+                 cách duy nhất để thử lại là F5 cả trang. -->
+            <div class="overview-toolbar">
+              <span class="overview-updated" id="overview-updated"></span>
+              <button class="btn btn-secondary" id="btn-refresh" title="Tải lại số liệu">
+                <i class="fas fa-rotate"></i> Tải lại
+              </button>
+            </div>
+
             <!-- Stats Grid -->
             <div class="stats-grid">
               <div class="stat-card">

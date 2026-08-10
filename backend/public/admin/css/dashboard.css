@@ -490,6 +490,22 @@ body {
    ĐANG CHỜ, cái kia là ĐÃ HỎNG, và người xem cần biết mình đang ở tình huống nào. */
 .status-dot.waking  { color: #b45309; background: #fef3c7; }
 
+/* Thanh làm mới của tab Tổng quan. Mốc thời gian đứng bên trái nút: người xem cần
+   biết số đang nhìn có còn mới không TRƯỚC khi quyết định có bấm tải lại hay không. */
+.overview-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.overview-updated {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+#btn-refresh[disabled] { opacity: 0.6; cursor: wait; }
+
 [data-theme="dark"] .status-dot.online  { background: rgba(16,185,129,0.15); }
 [data-theme="dark"] .status-dot.offline { background: rgba(239,68,68,0.15); }
 

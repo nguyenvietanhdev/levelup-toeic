@@ -321,9 +321,10 @@ document.getElementById("user-form")?.addEventListener("submit", async (e) => {
 // ===================================
 
 document.addEventListener("DOMContentLoaded", () => {
-  document
-    .getElementById("btn-refresh")
-    ?.addEventListener("click", refreshData);
+  // #btn-refresh do ui-init.js nối. Trước đây CẢ HAI file cùng nối vào id này,
+  // nhưng nút chưa tồn tại trong HTML nên không ai thấy. Từ lúc nút được thêm vào
+  // tab Tổng quan, đăng ký trùng nghĩa là mỗi lần bấm chạy refreshData hai lần —
+  // gấp đôi request lên một server có khi đang ngủ đông.
 
   const usersModal = document.getElementById("manage-users-modal");
 
