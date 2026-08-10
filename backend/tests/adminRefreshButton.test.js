@@ -68,6 +68,33 @@ describe('Admin — nút Tải lại ở tab Tổng quan', () => {
         expect(fn[0]).toMatch(/finally/);
     });
 
+    test('bấm Tải lại cập nhật CẢ 4 ô, không sót ô TOEIC', () => {
+        // Hai ô "Câu hỏi TOEIC" (#total-sessions) và "Đề thi TOEIC"
+        // (#toeic-tests-count) do loadToeicStats() ghi, không phải /health. Nếu
+        // loadDashboard() không gọi hàm đó thì bấm Tải lại chỉ mới được 2/4 ô.
+        const core = fs.readFileSync(path.join(ADMIN_JS, 'core', 'core.js'), 'utf8');
+        const fn = /async function loadDashboard\(\)[\s\S]*?\n\}/.exec(core);
+        expect(fn).not.toBeNull();
+        // PHẢI lọc dòng comment trước khi so. Không lọc thì comment out lời gọi
+        // (`// await loadToeicStats();`) vẫn khớp và test vẫn xanh — đã dính đúng
+        // bẫy này lúc reverse-verify.
+        const code = fn[0].split('\n').filter(l => !/^\s*\/\//.test(l)).join('\n');
+        expect(code).toMatch(/await loadToeicStats\(\)/);
+    });
+
+    test('loadToeicStats hỏng thì XOÁ số cũ, không để nguyên', () => {
+        // Giữ số của lần trước khiến người xem tin đó là số vừa lấy về — sai mà
+        // im lặng. Cùng khuôn với ô Từ vựng từng hiện 0 lúc server ngủ đông.
+        const toeic = fs.readFileSync(path.join(ADMIN_JS, 'features', 'toeic', 'toeic.js'), 'utf8');
+        const fn = /async function loadToeicStats\(\)[\s\S]*?\n\}/.exec(toeic);
+        expect(fn).not.toBeNull();
+        const katch = /catch\s*\([\s\S]*$/.exec(fn[0]);
+        expect(katch).not.toBeNull();
+        expect(katch[0]).toMatch(/toeic-tests-count/);
+        expect(katch[0]).toMatch(/total-sessions/);
+        expect(katch[0]).toMatch(/'—'/);
+    });
+
     test('có mốc thời gian cập nhật gần nhất', () => {
         // Số liệu không kèm thời điểm thì không biết nó còn mới hay đã cũ.
         expect(html).toContain('id="overview-updated"');

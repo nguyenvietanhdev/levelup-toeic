@@ -23,6 +23,14 @@ async function loadToeicStats() {
         }
     } catch (error) {
         console.error('Error loading TOEIC stats:', error);
+        // KHÔNG để nguyên số cũ khi tải hỏng. Bấm "Tải lại" mà hai ô này vẫn hiện
+        // số của lần trước thì người xem tin đó là số vừa lấy về — im lặng nhưng
+        // sai, tệ hơn là hiện dấu gạch. Cùng khuôn với ô Từ vựng từng hiện 0 lúc
+        // server ngủ đông (xem adminOfflineFallback.test.js).
+        const testsEl = document.getElementById('toeic-tests-count');
+        const questionsEl = document.getElementById('total-sessions');
+        if (testsEl) testsEl.textContent = '—';
+        if (questionsEl) questionsEl.textContent = '—';
     }
 }
 
