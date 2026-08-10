@@ -6,6 +6,7 @@
 // Presentational — state/handlers truyền từ SettingsScreen.
 import { useState } from 'react';
 import CommitNumberInput from './CommitNumberInput.jsx';
+import Toggle from './Toggle.jsx';
 
 const GOAL_PRESETS = [10, 15, 30, 60, 90, 120, 180];
 const TARGET_PRESETS = [0, 450, 600, 700, 800, 900];
@@ -27,6 +28,8 @@ const COLOR_PRESETS = [
 export default function GeneralPanel({
     s,
     updateSetting,
+    reverseMode,
+    handleReverseMode,
     canCustomizeColor = true,
     handleTheme,
     colorPrimary,
@@ -117,6 +120,21 @@ export default function GeneralPanel({
                         )}
                         {isGoalCustom && <span style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>phút</span>}
                     </div>
+                </div>
+            </div>
+
+            {/* Đảo chiều đứng RIÊNG một mục, không nhét vào "Giao diện". Lần trước
+                nó nằm lẫn trong Giao diện nên không ai tìm ra — mà đây đâu phải cài
+                đặt hiển thị, nó đổi hẳn nội dung câu hỏi. Để riêng thì tên mục tự
+                nói ra nó làm gì. */}
+            <div className="settings-section">
+                <h3>Chiều luyện tập</h3>
+                <div className="setting-item">
+                    <div className="setting-info">
+                        <h4>Đảo chiều luyện tập</h4>
+                        <p>Chuyển EN→VN ⇄ VN→EN. Áp dụng cho: Trắc nghiệm, Điền từ, Nghe &amp; chọn, Thẻ từ vựng, Tốc độ, Ôn lại từ sai.</p>
+                    </div>
+                    <Toggle checked={reverseMode} onChange={handleReverseMode} />
                 </div>
             </div>
 

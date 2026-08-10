@@ -316,6 +316,8 @@ export default function SettingsScreen({ active }) {
                         <GeneralPanel
                             s={s}
                             updateSetting={updateSetting}
+                            reverseMode={reverseMode}
+                            handleReverseMode={handleReverseMode}
                             canCustomizeColor={isLoggedIn}
                             handleTheme={handleTheme}
                             colorPrimary={colorPrimary}
@@ -351,8 +353,6 @@ export default function SettingsScreen({ active }) {
                             handleQPS={handleQPS}
                             updateSetting={updateSetting}
                             handleDifficulty={handleDifficulty}
-                            reverseMode={reverseMode}
-                            handleReverseMode={handleReverseMode}
                         />
                     </div>
 

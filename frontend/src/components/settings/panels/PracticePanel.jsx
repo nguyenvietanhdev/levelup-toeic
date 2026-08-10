@@ -8,7 +8,7 @@ const SEC_OPTIONS = [10, 15, 20, 25, 30, 45, 60, 90, 120];
 // Thụt lề + vạch trái cho cài đặt PHỤ THUỘC một toggle phía trên → nhìn ra quan hệ cha–con.
 const NESTED = { paddingLeft: 14, borderLeft: '2px solid var(--border-color)' };
 
-export default function PracticePanel({ s, handleQPS, updateSetting, handleDifficulty, reverseMode, handleReverseMode }) {
+export default function PracticePanel({ s, handleQPS, updateSetting, handleDifficulty }) {
     // Thời gian mỗi câu (per-mode). Select 1 chọn chế độ ("all" = toàn bộ).
     // Fallback: giá trị cũ timePerQuestion (dùng chung) nếu chế độ chưa có riêng.
     const [tmMode, setTmMode] = useState('all');
@@ -96,15 +96,6 @@ export default function PracticePanel({ s, handleQPS, updateSetting, handleDiffi
                     <p>Tắt để tự bấm ← Trước / Tiếp → sau mỗi câu</p>
                 </div>
                 <Toggle checked={s.autoAdvance !== false} onChange={v => updateSetting('autoAdvance', v)} />
-            </div>
-            {/* Chuyển từ tab Chung sang: đây là cài đặt cách LUYỆN TẬP, không phải
-                giao diện — trước nó nằm dưới mục "Giao diện" nên không ai tìm ra. */}
-            <div className="setting-item">
-                <div className="setting-info">
-                    <h4>Đảo chiều luyện tập</h4>
-                    <p>Chuyển EN→VN ⇄ VN→EN. Áp dụng cho: Trắc nghiệm, Điền từ, Nghe &amp; chọn, Thẻ từ vựng, Tốc độ, Ôn lại từ sai.</p>
-                </div>
-                <Toggle checked={reverseMode} onChange={handleReverseMode} />
             </div>
             <div className="setting-item">
                 <label>Độ khó</label>
