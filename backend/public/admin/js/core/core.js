@@ -70,23 +70,49 @@ function initSimpleSearch() {
 /**
  * Check if API is available
  */
+// Ngưỡng cũ 3 giây quá ngắn cho server ngủ đông: gói free của Render tắt máy sau
+// 15 phút không ai truy cập, lần gọi đầu phải chờ nó khởi động lại — thường 30-50
+// giây. Quá 3 giây là panel rơi vào "chế độ offline", ghi "-" người dùng và "0" từ
+// vựng (vì `localVocabularyData` rỗng, deploy không kèm file JSON local). Nhìn
+// giống dữ liệu THẬT chứ không giống lỗi, nên rất dễ tưởng mất sạch dữ liệu.
+//
+// Thử hai lần: lần đầu ngắn để máy đã thức vào nhanh; thất bại thì thử lại với
+// ngưỡng dài, đủ để server ngủ đông kịp dậy.
+const API_PROBE_MS = [5000, 60000];
+
 async function checkApiAvailability() {
-  try {
+  const url = `${API_URL}/vocabulary/stats?lang=${encodeURIComponent(vocabCurrentLang || "en")}`;
+
+  for (let i = 0; i < API_PROBE_MS.length; i++) {
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 3000);
+    const timeoutId = setTimeout(() => controller.abort(), API_PROBE_MS[i]);
+    try {
+      const res = await fetch(url, { signal: controller.signal });
+      clearTimeout(timeoutId);
+      if (res.ok) return true;
+      // Server trả lời nhưng lỗi (4xx/5xx) → thử lại cũng vô ích.
+      console.warn(`⚠️ API trả ${res.status}`);
+      return false;
+    } catch {
+      clearTimeout(timeoutId);
+      if (i === 0) {
+        console.warn("⏳ Chưa thấy API — có thể server đang khởi động, chờ thêm...");
+        showWakingUpHint();
+      }
+    }
+  }
 
-    const res = await fetch(
-      `${API_URL}/vocabulary/stats?lang=${encodeURIComponent(vocabCurrentLang || "en")}`,
-      {
-        signal: controller.signal,
-      },
-    );
-    clearTimeout(timeoutId);
+  console.warn("⚠️ API không khả dụng, chuyển sang chế độ offline");
+  return false;
+}
 
-    return res.ok;
-  } catch (error) {
-    console.warn("⚠️ API không khả dụng, chuyển sang chế độ offline");
-    return false;
+// Báo cho người dùng biết đang CHỜ chứ không phải hỏng — nếu không, màn hình đứng
+// im 30 giây sẽ bị hiểu là treo.
+function showWakingUpHint() {
+  const dot = document.getElementById("topbar-server-status");
+  if (dot) {
+    dot.textContent = "Đang khởi động…";
+    dot.className = "status-dot waking";
   }
 }
 
@@ -667,10 +693,13 @@ async function loadDashboard() {
       // Setup simple search
       initSimpleSearch();
 
-      // Update server info to show offline
-      document.getElementById("total-users").textContent = "-";
+      // Update server info to show offline.
+      // Ghi "—" chứ KHÔNG ghi 0 khi không có dữ liệu local: số 0 trông y như dữ
+      // liệu thật và khiến người xem tưởng kho từ vựng đã mất sạch. Dấu gạch nói
+      // rõ "không đọc được", khác hẳn với "đọc được và bằng không".
+      document.getElementById("total-users").textContent = "—";
       document.getElementById("total-vocabulary").textContent =
-        localVocabularyData.length;
+        localVocabularyData.length || "—";
       document.getElementById("server-uptime").textContent = "Offline";
       document.getElementById("total-sessions").textContent = "-";
       document.getElementById("toeic-tests-count").textContent = "-";

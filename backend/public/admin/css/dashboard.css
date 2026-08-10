@@ -485,6 +485,10 @@ body {
 
 .status-dot.online  { color: #10b981; background: #d1fae5; }
 .status-dot.offline { color: #ef4444; background: #fee2e2; }
+/* Đang chờ server ngủ đông khởi động lại (gói free Render tắt máy sau 15 phút
+   không ai vào). Màu hổ phách để phân biệt rõ với "offline" đỏ — một cái là
+   ĐANG CHỜ, cái kia là ĐÃ HỎNG, và người xem cần biết mình đang ở tình huống nào. */
+.status-dot.waking  { color: #b45309; background: #fef3c7; }
 
 [data-theme="dark"] .status-dot.online  { background: rgba(16,185,129,0.15); }
 [data-theme="dark"] .status-dot.offline { background: rgba(239,68,68,0.15); }
