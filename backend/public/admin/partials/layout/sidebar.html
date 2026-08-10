@@ -3,8 +3,14 @@
         <div class="sidebar-brand">
           <i class="fas fa-chart-line"></i>
           <span>TOEIC Admin</span>
+          <!-- Đóng menu KHÔNG phụ thuộc vào window.collapseSidebar. Hàm đó chỉ được
+               gán bên trong initMainTabs(), mà initMainTabs() lại chạy SAU
+               `await loadDashboard()` — nên trong lúc dashboard còn đang tải (hoặc
+               nếu bước đó lỗi), bấm X không xảy ra gì và cũng không báo gì.
+               Thao tác đóng chỉ là gỡ một class, không cần chờ dữ liệu nào cả. -->
           <button class="sidebar-close-btn" id="sidebar-close-brand" title="Đóng menu"
-            onclick="window.collapseSidebar && window.collapseSidebar()">
+            onclick="document.getElementById('admin-sidebar').classList.add('collapsed');
+                     document.getElementById('sidebar-overlay')?.classList.remove('visible');">
             <i class="fas fa-xmark"></i>
           </button>
         </div>
