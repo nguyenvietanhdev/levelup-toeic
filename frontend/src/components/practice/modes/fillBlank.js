@@ -214,17 +214,24 @@ export const FillBlank = {
     },
 
     setupHintSkipListeners() {
-        EventBus.on(GameEvents.HINT_USED, () => {
-            if (this.currentIndex < this.questions.length) {
-                this.showHint();
-            }
-        });
-
-        EventBus.on(GameEvents.QUESTION_SKIPPED, () => {
-            if (this.currentIndex < this.questions.length) {
-                this.skipCurrentQuestion();
-            }
-        });
+        // GIỮ tham chiếu handler để `cleanup()` gỡ ĐÚNG cái của mình.
+        // Trước đây đăng ký hàm ẩn danh rồi gỡ bằng `EventBus.off(EVENT)` không
+        // kèm handler — mà `off` không có handler thì XOÁ SẠCH listener của sự
+        // kiện đó, kể cả của chế độ khác. Vì `start()` là async (đăng ký nằm sau
+        // `await generateQuestions()`), lần dọn dẹp của chế độ vừa thoát có thể
+        // chạy SAU khi chế độ mới đã đăng ký → nút Gợi ý chết im lặng sau mỗi
+        // lần đổi chế độ.
+        // Gỡ hai lần cho chắc: đăng ký chồng thì mỗi lần bấm gợi ý sẽ lộ 2 ký tự.
+        this._onHint = () => {
+            if (this.currentIndex < this.questions.length) this.showHint();
+        };
+        this._onSkip = () => {
+            if (this.currentIndex < this.questions.length) this.skipCurrentQuestion();
+        };
+        EventBus.off(GameEvents.HINT_USED, this._onHint);
+        EventBus.off(GameEvents.QUESTION_SKIPPED, this._onSkip);
+        EventBus.on(GameEvents.HINT_USED, this._onHint);
+        EventBus.on(GameEvents.QUESTION_SKIPPED, this._onSkip);
     },
 
     showHint() {
@@ -283,8 +290,13 @@ export const FillBlank = {
     },
 
     cleanup() {
-        EventBus.off(GameEvents.HINT_USED);
-        EventBus.off(GameEvents.QUESTION_SKIPPED);
+        // Gỡ ĐÚNG handler của mình. Gọi `off(EVENT)` trống tay sẽ xoá luôn
+        // listener mà chế độ kế tiếp vừa đăng ký — xem ghi chú ở
+        // setupHintSkipListeners().
+        EventBus.off(GameEvents.HINT_USED, this._onHint);
+        EventBus.off(GameEvents.QUESTION_SKIPPED, this._onSkip);
+        this._onHint = null;
+        this._onSkip = null;
 
         this.questions = [];
         this.currentIndex = 0;

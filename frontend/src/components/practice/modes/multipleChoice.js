@@ -282,17 +282,22 @@ export const MultipleChoice = {
     },
 
     setupHintSkipListeners() {
-        EventBus.on(GameEvents.HINT_USED, () => {
+        // Giữ tham chiếu handler để cleanup() gỡ ĐÚNG cái của mình — EventBus.off
+        // không kèm handler sẽ XOÁ SẠCH listener của sự kiện, kể cả của chế độ khác.
+        this._onHint = () => {
             if (!this.hintUsed && this.currentIndex < this.questions.length) {
                 this.showHint();
             }
-        });
-
-        EventBus.on(GameEvents.QUESTION_SKIPPED, () => {
+        };
+        this._onSkip = () => {
             if (this.currentIndex < this.questions.length) {
                 this.skipCurrentQuestion();
             }
-        });
+        };
+        EventBus.off(GameEvents.HINT_USED, this._onHint);
+        EventBus.off(GameEvents.QUESTION_SKIPPED, this._onSkip);
+        EventBus.on(GameEvents.HINT_USED, this._onHint);
+        EventBus.on(GameEvents.QUESTION_SKIPPED, this._onSkip);
     },
 
     showHint() {
@@ -344,8 +349,10 @@ export const MultipleChoice = {
     },
 
     cleanup() {
-        EventBus.off(GameEvents.HINT_USED);
-        EventBus.off(GameEvents.QUESTION_SKIPPED);
+        EventBus.off(GameEvents.HINT_USED, this._onHint);
+        EventBus.off(GameEvents.QUESTION_SKIPPED, this._onSkip);
+        this._onHint = null;
+        this._onSkip = null;
 
         this.questions = [];
         this.currentIndex = 0;

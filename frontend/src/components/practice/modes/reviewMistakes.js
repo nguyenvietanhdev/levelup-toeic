@@ -250,11 +250,15 @@ export const ReviewMistakes = {
     },
 
     setupHintSkipListeners() {
-        EventBus.on(GameEvents.HINT_USED, () => {
+        // Giữ tham chiếu handler để cleanup() gỡ ĐÚNG cái của mình — EventBus.off
+        // không kèm handler sẽ XOÁ SẠCH listener của sự kiện, kể cả của chế độ khác.
+        this._onHint = () => {
             if (!this.hintUsed && this.currentIndex < this.questions.length) {
                 this.showHint();
             }
-        });
+        };
+        EventBus.off(GameEvents.HINT_USED, this._onHint);
+        EventBus.on(GameEvents.HINT_USED, this._onHint);
 
         const skipBtn = document.getElementById('skip-btn');
         if (skipBtn) {
@@ -309,7 +313,8 @@ export const ReviewMistakes = {
     },
 
     cleanup() {
-        EventBus.off(GameEvents.HINT_USED);
+        EventBus.off(GameEvents.HINT_USED, this._onHint);
+        this._onHint = null;
         this.questions = [];
         this.currentIndex = 0;
         this.selectedAnswer = null;
