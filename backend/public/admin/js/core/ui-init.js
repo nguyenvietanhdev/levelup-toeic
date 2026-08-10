@@ -202,6 +202,17 @@ window.activateActivitySubtab = activateActivitySubtab;
 document.addEventListener("DOMContentLoaded", () => {
     document.getElementById("btn-refresh")?.addEventListener("click", refreshData);
 
+    // Nút X đóng sidebar (chỉ hiện ở màn hẹp). Nối Ở ĐÂY chứ không nối trong
+    // initMainTabs(): hàm đó chạy sau `await loadDashboard()`, nên bấm X lúc
+    // dashboard còn tải sẽ không xảy ra gì. DOMContentLoaded thì chắc chắn có
+    // trước mọi thao tác của người dùng.
+    // Cũng KHÔNG dùng onclick= trong HTML: CSP đặt `script-src-attr 'none'` nên
+    // mọi thuộc tính sự kiện inline bị chặn thẳng — nút im lặng không chạy.
+    document.getElementById('sidebar-close-brand')?.addEventListener('click', () => {
+        document.getElementById('admin-sidebar')?.classList.add('collapsed');
+        document.getElementById('sidebar-overlay')?.classList.remove('visible');
+    });
+
     // --- TOEIC QUESTION EVENTS ---
     document.getElementById('filter-part')?.addEventListener('change', (e) => {
         loadQuestions(e.target.value, 1);
