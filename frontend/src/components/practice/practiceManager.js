@@ -360,35 +360,7 @@ export const PracticeManager = {
                 await SentenceBuilder.start(config);
                 break;
             case 'pronunciation':
-                if (vocabLang() === 'zh') {
-                    await new Promise((resolve) => {
-                        Modal.show({
-                            title: '⚠️ Tính năng đang phát triển',
-                            content: 'Chế độ phát âm tiếng Trung hiện đang trong giai đoạn phát triển, chưa hoàn thiện. Trong quá trình sử dụng có thể không được như ý. Bạn có chắc muốn tiếp tục?',
-                            buttons: [
-                                {
-                                    text: 'Quay lại',
-                                    className: 'btn-secondary',
-                                    onClick: () => { Modal.close(); resolve(false); }
-                                },
-                                {
-                                    text: 'Tiếp tục',
-                                    className: 'btn-primary',
-                                    onClick: () => { Modal.close(); resolve(true); }
-                                },
-                            ],
-                            onClose: () => resolve(false),
-                        });
-                    }).then(async (confirmed) => {
-                        if (confirmed) await PronunciationMode.start(config);
-                        // `?.` ở đây từng che một hàm KHÔNG TỒN TẠI: exitPractice
-                        // chưa bao giờ được định nghĩa, nên bấm "Quay lại" không
-                        // làm gì cả — hộp thoại đóng, màn hình luyện tập đứng im.
-                        else PracticeManager.complete();
-                    });
-                } else {
-                    await PronunciationMode.start(config);
-                }
+                await PronunciationMode.start(config);
                 break;
             case 'context-learning':
                 await ContextLearning.start(config);
