@@ -35,7 +35,13 @@ export const PronunciationMode = {
                 message: 'Trình duyệt của bạn không hỗ trợ nhận dạng giọng nói. Vui lòng sử dụng Chrome hoặc Edge.',
                 duration: 5000
             });
-            PracticeManager.exitPractice();
+            // `complete()` chứ KHÔNG phải `exitPractice()`: hàm đó chưa từng tồn
+            // tại trên PracticeManager. Gọi trần nó ném TypeError ngay giữa
+            // start(), không câu nào render — mà header "Phát âm 1/10" và đồng hồ
+            // đã dựng từ trước nên vẫn chạy. Nhìn màn hình y như bài luyện đang
+            // mở, chỉ là trống trơn. Firefox không có Web Speech API nên nhánh
+            // này chạy mỗi lần vào chế độ Phát âm bằng Firefox.
+            PracticeManager.complete();
             return;
         }
 

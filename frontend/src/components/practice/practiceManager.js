@@ -381,7 +381,10 @@ export const PracticeManager = {
                         });
                     }).then(async (confirmed) => {
                         if (confirmed) await PronunciationMode.start(config);
-                        else PracticeManager.exitPractice?.();
+                        // `?.` ở đây từng che một hàm KHÔNG TỒN TẠI: exitPractice
+                        // chưa bao giờ được định nghĩa, nên bấm "Quay lại" không
+                        // làm gì cả — hộp thoại đóng, màn hình luyện tập đứng im.
+                        else PracticeManager.complete();
                     });
                 } else {
                     await PronunciationMode.start(config);
