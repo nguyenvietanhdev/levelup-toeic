@@ -94,3 +94,56 @@ describe('generateQuestions — một câu là trọn một từ', () => {
         expect(await gen(null)).toEqual([]);
     });
 });
+
+/**
+ * "Xem mẫu" phải MỞ LẠI quiz sau khi diễn xong.
+ *
+ * Lỗi đã gặp: `animateCharacter()` huỷ quiz đang chạy (hành vi của thư viện).
+ * Bấm Xem mẫu xong là không tô tiếp được — chữ vẫn hiện, chuột vẫn di, nhưng
+ * không nét nào ăn và không có lỗi nào trong console. Bài luyện chết đứng mà
+ * nhìn màn hình thì mọi thứ trông bình thường.
+ */
+describe('showDemo — diễn xong phải mở lại quiz', () => {
+    function stub({ autoComplete = true } = {}) {
+        const mode = Object.create(HanziWriting);
+        mode.questions = [{ word: '品牌', chars: ['品', '牌'], pinyin: 'pǐnpái', meaning: 'Thương hiệu' }];
+        mode.currentIndex = 0;
+        mode.charIndex = 1;
+        mode.strokeNum = 4;
+        mode._demoing = false;
+        mode.quizCalls = [];
+        mode.writer = {
+            quiz: (opts) => mode.quizCalls.push(opts),
+            animateCharacter: (opts) => { if (autoComplete) opts?.onComplete?.(); },
+        };
+        return mode;
+    }
+
+    test('mở lại quiz sau khi diễn xong', () => {
+        const mode = stub();
+        mode.showDemo();
+        expect(mode.quizCalls).toHaveLength(1);
+    });
+
+    test('mở lại ĐÚNG nét đang dở, không bắt tô lại từ đầu', () => {
+        const mode = stub();
+        mode.showDemo();
+        expect(mode.quizCalls[0].quizStartStrokeNum).toBe(4);
+    });
+
+    test('bấm dồn khi đang diễn không xếp chồng quiz', () => {
+        // animateCharacter chưa gọi onComplete → vẫn đang diễn.
+        const mode = stub({ autoComplete: false });
+        mode.showDemo();
+        mode.showDemo();
+        mode.showDemo();
+        expect(mode.quizCalls).toHaveLength(0);   // chưa diễn xong thì chưa mở lại
+        expect(mode._demoing).toBe(true);
+    });
+
+    test('chưa có writer thì bỏ qua, không ném lỗi', () => {
+        const mode = stub();
+        mode.writer = null;
+        expect(() => mode.showDemo()).not.toThrow();
+    });
+});

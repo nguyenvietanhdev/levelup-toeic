@@ -29,6 +29,8 @@ export const HanziWriting = {
     writer: null,
     _writers: [],          // mọi writer của TỪ hiện tại — để huỷ hết khi sang câu
     charIndex: 0,          // đang viết chữ thứ mấy TRONG TỪ
+    strokeNum: 0,          // nét kế tiếp cần tô — để mở lại quiz sau khi Xem mẫu
+    _demoing: false,       // đang diễn mẫu, chặn bấm dồn
     mistakesThisWord: 0,   // đếm theo TỪ, không theo chữ — điểm tính trọn từ
 
     async start(config) {
@@ -85,6 +87,7 @@ export const HanziWriting = {
         if (!q) return this.finish();
         this.charIndex = 0;
         this.mistakesThisWord = 0;
+        this._demoing = false;
 
         const container = document.getElementById('practice-content');
         if (!container) return;
@@ -113,10 +116,7 @@ export const HanziWriting = {
         // Gắn ở ĐÂY chứ không trong mountWriter: mountWriter chạy lại cho từng chữ,
         // gắn trong đó thì từ 3 chữ có 3 listener chồng lên nhau và bấm một lần chạy
         // ba lần. Nút do showQuestion tạo nên mỗi câu đúng một listener.
-        document.getElementById('hanzi-demo')?.addEventListener('click', () => {
-            // Đọc this.writer lúc BẤM để luôn diễn chữ đang viết dở.
-            this.writer?.animateCharacter();
-        });
+        document.getElementById('hanzi-demo')?.addEventListener('click', () => this.showDemo());
 
         this.mountWriter(q);
         startQuestionTimer('hanzi-writing', () => this.timeUp());
@@ -160,14 +160,48 @@ export const HanziWriting = {
         });
 
         this._writers.push(this.writer);
+        this.strokeNum = 0;
+        this.openQuiz(q);
+    },
 
-        this.writer.quiz({
+    /**
+     * Mở quiz trên chữ đang viết, bắt đầu từ nét `this.strokeNum`.
+     *
+     * Tách riêng vì "Xem mẫu" phải mở LẠI quiz sau khi diễn: animateCharacter()
+     * huỷ quiz đang chạy (hành vi của thư viện), nên trước đây bấm Xem mẫu xong
+     * là không tô tiếp được nữa — chữ vẫn hiện, chuột vẫn di, mà không nét nào ăn.
+     * Không có thông báo lỗi nào; người học chỉ thấy bài luyện chết đứng.
+     */
+    openQuiz(q) {
+        this.writer?.quiz({
+            // Mở lại từ đúng nét đang dở, không bắt tô lại từ đầu.
+            quizStartStrokeNum: this.strokeNum,
             onMistake: (s) => {
                 this.mistakesThisWord++;
+                this.strokeNum = s.strokeNum;
                 this.updateStrokeInfo(q, s);
             },
-            onCorrectStroke: (s) => this.updateStrokeInfo(q, s),
+            onCorrectStroke: (s) => {
+                // +1: nét vừa xong, lần mở lại phải bắt đầu từ nét KẾ.
+                this.strokeNum = s.strokeNum + 1;
+                this.updateStrokeInfo(q, s);
+            },
             onComplete: () => this.completeChar(q),
+        });
+    },
+
+    showDemo() {
+        const q = this.questions[this.currentIndex];
+        if (!q || !this.writer) return;
+        if (this._demoing) return;          // bấm dồn thì bỏ qua, không xếp chồng
+        this._demoing = true;
+
+        this.writer.animateCharacter({
+            onComplete: () => {
+                this._demoing = false;
+                // Diễn xong PHẢI mở lại quiz — đây chính là chỗ hỏng trước đây.
+                this.openQuiz(q);
+            },
         });
     },
 
@@ -229,7 +263,9 @@ export const HanziWriting = {
     setupHintSkipListeners() {
         // Giữ tham chiếu handler để cleanup() gỡ ĐÚNG cái của mình — `EventBus.off`
         // không kèm handler sẽ XOÁ SẠCH listener của sự kiện, kể cả của chế độ khác.
-        this._onHint = () => this.writer?.animateCharacter();
+        // Qua showDemo() chứ không gọi thẳng animateCharacter: gọi thẳng là huỷ
+        // quiz và không mở lại — bài luyện chết đứng y như nút "Xem mẫu" từng bị.
+        this._onHint = () => this.showDemo();
         this._onSkip = () => this.nextQuestion();
         EventBus.off(GameEvents.HINT_USED, this._onHint);
         EventBus.off(GameEvents.QUESTION_SKIPPED, this._onSkip);
