@@ -4,6 +4,7 @@ import { PartSelector } from '@components/vocab/part/partSelector.js';
 import { Config } from '@game/config.js';
 import { Utils } from '@lib/utils.js';
 import { Notification } from '@ui/Toaster.jsx';
+import { scoreAttempt, feedbackMessage } from './pronunciationScoring.js';
 
 export const PronunciationMode = {
 
@@ -88,7 +89,11 @@ export const PronunciationMode = {
         const rec = new this._SpeechRecognition();
         rec.lang = this._recogLang();
         rec.continuous = false;
-        rec.interimResults = false;
+        // Bật kết quả tạm để hiện chữ NGAY khi người học đang nói. Tắt nó thì
+        // màn hình đứng im 1–2 giây sau khi nói xong (thời gian Google chốt kết
+        // quả cuối) — khoảng lặng đó khiến người dùng tưởng mic không ăn và bấm
+        // lại, huỷ mất lượt đang nhận.
+        rec.interimResults = true;
         rec.maxAlternatives = 5;
 
         rec.onstart = () => {
@@ -100,23 +105,35 @@ export const PronunciationMode = {
         rec.onresult = (event) => {
             if (this._resultHandled) return;
 
-            const result = event.results[0];
+            const result = event.results[event.resultIndex] ?? event.results[0];
+            if (!result) return;
             const transcript = result[0].transcript.trim();
-            const isFinal = result.isFinal;
 
-            if (isFinal) {
-                this._resultHandled = true;
-                const results = Array.from(result);
-                this.handleRecognitionResult(transcript, results);
+            if (!result.isFinal) {
+                // Kết quả tạm: chỉ hiện chữ cho người học thấy máy đang nghe được
+                // gì. TUYỆT ĐỐI không chấm ở đây — bản tạm thay đổi liên tục
+                // trong lúc nói, chấm sớm là ăn ngay một lượt thử oan.
+                this.showInterim(transcript);
+                return;
             }
+
+            this._resultHandled = true;
+            this.handleRecognitionResult(transcript, Array.from(result));
         };
 
         rec.onend = () => {
             this.isListening = false;
             this.updateMicButton(false);
-            // Nếu onresult không fire → nói không rõ/ngôn ngữ sai → tính 1 lần thử thất bại
+            // Không nghe được gì thì KHÔNG trừ lượt — chỉ có 3 lượt, mà lỡ tay bấm
+            // mic rồi chưa kịp nói là mất luôn 1/3 dù chưa phát âm sai chữ nào.
+            // Phạt phải dành cho lỗi phát âm, không phải cho việc mic không bắt
+            // được tiếng. Vẫn báo để người học biết máy chưa nghe thấy gì.
             if (!this._resultHandled && !this.wordCompleted) {
-                this.handleRecognitionResult('', []);
+                const el = document.getElementById('mic-status');
+                if (el) {
+                    el.textContent = 'Chưa nghe thấy gì — bấm mic thử lại';
+                    el.className = 'mic-status';
+                }
             }
         };
 
@@ -294,6 +311,14 @@ export const PronunciationMode = {
         }
     },
 
+    /** Hiện chữ máy đang nghe được, theo thời gian thực. Chưa chấm gì cả. */
+    showInterim(transcript) {
+        const el = document.getElementById('mic-status');
+        if (!el || !transcript) return;
+        el.textContent = `Nghe: ${transcript}`;
+        el.className = 'mic-status listening';
+    },
+
     updateMicButton(listening) {
         const micBtn = document.getElementById('mic-btn');
         if (!micBtn) return;
@@ -312,33 +337,31 @@ export const PronunciationMode = {
         this.currentAttempts++;
         this.updateAttemptsDisplay();
 
-        const isZh = this._isZh();
-        const normalize = (t) => isZh
-            ? t.replace(/[\s　　-〿＀-￯.,!?;:'"。！？，、：；""'']/g, '')
-            : t.toLowerCase().replace(/[.,!?;:'"]/g, '').replace(/\s+/g, ' ').trim();
+        // Chấm qua pronunciationScoring: so `===` tuyệt đối coi `你好` nghe thành
+        // `你好吗` (máy tự chèn trợ từ) là SAI hoàn toàn, ngang với nói sai hẳn.
+        const alts = (alternatives || []).map(a => a?.transcript?.trim()).filter(Boolean);
+        const result = scoreAttempt(transcript, alts, this.currentWord, this._isZh());
+        this._lastResult = result;
 
-        const normalizedTranscript = normalize(transcript);
-        const normalizedTarget    = normalize(this.currentWord);
+        this.showRecognitionResult(transcript, result.correct, result);
 
-        const isCorrect = normalizedTranscript === normalizedTarget;
-        const isAlternativeCorrect = alternatives.some(alt =>
-            normalize(alt.transcript.trim()) === normalizedTarget
-        );
-
-        const finalCorrect = isCorrect || isAlternativeCorrect;
-
-        this.showRecognitionResult(transcript, finalCorrect);
-
-        if (finalCorrect) {
+        if (result.correct) {
             this.handleCorrectAnswer();
         } else {
             this.handleWrongAnswer(transcript);
         }
     },
 
-    showRecognitionResult(transcript, isCorrect) {
+    showRecognitionResult(transcript, isCorrect, result = null) {
         const resultDiv = document.getElementById('recognition-result');
         if (!resultDiv) return;
+
+        // "Chưa đúng" không dạy được gì. Nói rõ máy nghe thành cái gì và sai kiểu
+        // gì thì người học biết phải sửa gì ở lần sau.
+        const detail = result ? feedbackMessage(result, this.currentWord, this._isZh()) : '';
+        const title = isCorrect
+            ? (result?.near ? 'Gần đúng!' : 'Chính xác!')
+            : 'Chưa đúng';
 
         resultDiv.style.display = 'block';
         resultDiv.className = `recognition-result ${isCorrect ? 'correct' : 'wrong'}`;
@@ -347,8 +370,9 @@ export const PronunciationMode = {
                 <i class="fas fa-${isCorrect ? 'check-circle' : 'times-circle'}"></i>
             </div>
             <div class="result-text">
-                <strong>${isCorrect ? 'Chính xác!' : 'Chưa đúng'}</strong><br>
-                Bạn nói: "<span class="heard-text">${transcript}</span>"
+                <strong>${escapeText(title)}</strong><br>
+                Bạn nói: "<span class="heard-text">${escapeText(transcript)}</span>"
+                ${detail ? `<div style="margin-top:4px;font-size:0.9em;opacity:0.85;">${escapeText(detail)}</div>` : ''}
             </div>
         `;
 
@@ -504,5 +528,14 @@ export const PronunciationMode = {
         this.isListening = false;
         this.currentWord = null;
         this._resultHandled = false;
+        this._lastResult = null;
     }
 };
+
+/** Escape trước khi đưa vào innerHTML — transcript là chuỗi do máy nhận dạng
+ *  trả về từ tiếng nói của người dùng, không phải hằng số trong code. */
+function escapeText(s) {
+    return String(s ?? '').replace(/[&<>"']/g, c => (
+        { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]
+    ));
+}
