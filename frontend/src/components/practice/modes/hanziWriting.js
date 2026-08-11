@@ -11,6 +11,7 @@
 
 import HanziWriter from 'hanzi-writer';
 import { GameState } from '@game/state.js';
+import { PartSelector } from '@components/vocab/part/partSelector.js';
 import { EventBus, GameEvents } from '@game/eventBus.js';
 import { Notification } from '@ui/Toaster.jsx';
 import { PracticeManager } from '../practiceManager.js';
@@ -49,7 +50,14 @@ export const HanziWriting = {
     },
 
     async generateQuestions() {
-        const words = this.config?.words || [];
+        // Lấy từ qua PartSelector giống mọi chế độ khác. Bản đầu tôi đọc
+        // `this.config.words` — trường đó KHÔNG TỒN TẠI, nên mảng luôn rỗng, lượt
+        // luyện kết thúc ngay lúc bắt đầu mà không hiện chữ nào.
+        const selectedPart = GameState.state?.settings?.selectedPart || null;
+        const requestCount = selectedPart ? 9999 : (this.config?.questionsPerRound || 8);
+        const words = await PartSelector.getWordsForPractice(requestCount);
+        if (!Array.isArray(words)) { this.questions = []; return; }
+
         const seen = new Set();
         const out = [];
 

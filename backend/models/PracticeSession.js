@@ -1,4 +1,20 @@
 const mongoose = require('mongoose');
+const { PRACTICE_COSTS } = require('../utils/energyCosts');
+
+// Danh sách chế độ hợp lệ SINH TỪ bảng giá năng lượng, không gõ tay lần thứ hai.
+//
+// Trước đây enum này là một mảng gõ cứng và đã tụt lại 9 chế độ: example-fill-blank,
+// review-mistakes, sentence-builder, pronunciation, context-learning, dictation,
+// sentence-listening, phonetic-quiz và hanzi-writing đều KHÔNG có trong enum. Hệ quả:
+// chơi xong, `POST /api/practice/submit` trả 400 "not a valid enum value" — phiên
+// luyện tập không được lưu, thống kê thiếu, mà người dùng không thấy lỗi gì vì
+// client đã cộng điểm lạc quan từ trước.
+//
+// Bảng giá là nơi bắt buộc phải khai khi thêm chế độ (practiceEnergyCost trả null
+// nếu thiếu, chặn ngay ở /start). Lấy nó làm nguồn duy nhất thì không thể thêm
+// chế độ mà quên enum nữa. `word-scramble` giữ riêng vì là chế độ cũ còn dữ liệu
+// lịch sử nhưng không còn trong bảng giá.
+const PRACTICE_MODES = [...new Set([...Object.keys(PRACTICE_COSTS), 'word-scramble'])];
 
 const PracticeSessionSchema = new mongoose.Schema({
     user: {
@@ -9,7 +25,7 @@ const PracticeSessionSchema = new mongoose.Schema({
     mode: {
         type: String,
         required: true,
-        enum: ['multiple-choice', 'fill-blank', 'listening', 'matching', 'word-scramble', 'speed-quiz', 'flashcard', 'synonym-check', 'word-type-check'],
+        enum: PRACTICE_MODES,
     },
     questionsCount: {
         type: Number,
