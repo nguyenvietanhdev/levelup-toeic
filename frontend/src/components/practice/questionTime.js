@@ -17,6 +17,10 @@ export const QUESTION_TIME_MODES = [
     { id: 'phonetic-quiz',      name: 'Đọc phiên âm',   def: 25 },
     { id: 'review-mistakes',    name: 'Ôn lại từ sai',  def: 30 },
     { id: 'sentence-listening', name: 'Nghe chuỗi từ',  def: 40 },
+    // Viết tay chậm hơn hẳn mọi thao tác khác: một chữ Hán có thể tới 15-20 nét,
+    // mỗi nét là một lần kéo chuột/ngón tay. 20s như trắc nghiệm là ép người học
+    // bỏ dở giữa chừng.
+    { id: 'hanzi-writing',      name: 'Viết chữ Hán',   def: 60 },
 ];
 
 const DEFAULTS = Object.fromEntries(QUESTION_TIME_MODES.map(m => [m.id, m.def]));

@@ -12,6 +12,7 @@ import { Utils } from '@lib/utils.js';
 import { Config } from '@game/config.js';
 import { Notification } from '@ui/Toaster.jsx';
 import { loadUnlocks, lockInfo } from '@game/featureUnlocks.js';
+import { getVocabLang } from '@api/vocabulary.js';
 
 // 4 tầng ĐỘ KHÓ (màu = độ khó): 🟢 Dễ < 🔵 Trung bình < 🟣 Khó < 🔴 Thử thách.
 // Trong mỗi tầng, sắp theo cost (dễ → khó).
@@ -42,6 +43,10 @@ const gameModes = [
         { mode: 'example-fill-blank', icon: 'fa-pen-to-square', label: 'Điền vào câu', desc: 'Điền từ đúng vào câu ví dụ', cost: 12, color: C_HARD },
         { mode: 'phonetic-quiz', icon: 'fa-spell-check', label: 'Đọc phiên âm', desc: 'Nhìn ký hiệu IPA, tìm từ tiếng Anh tương ứng', cost: 12, color: C_HARD },
         { mode: 'fill-blank', icon: 'fa-pen', label: 'Điền từ', desc: 'Điền từ tiếng Anh vào chỗ trống', cost: 15, color: C_HARD },
+        // Chỉ hiện khi đang học tiếng Trung — chế độ này viết chữ Hán, vào bằng bộ
+        // từ vựng tiếng Anh thì không có gì để viết. practiceManager cũng chặn lại
+        // lần nữa, nhưng ẩn ở đây thì người dùng không phải bấm vào mới biết.
+        { mode: 'hanzi-writing', icon: 'fa-paintbrush', label: 'Luyện viết chữ Hán', desc: 'Tô theo nét mẫu, chấm đúng thứ tự nét', cost: 15, color: C_HARD, zhOnly: true },
     ]},
     { group: 'Nâng cao & Thử thách', icon: 'fa-brain', modes: [
         { mode: 'context-learning', icon: 'fa-book-reader', label: 'Hiểu qua câu', desc: 'Đọc câu ví dụ, suy luận nghĩa tiếng Việt', cost: 10, color: C_MAX, weekendOnly: true },
@@ -487,7 +492,12 @@ export default function HomeScreen({ active }) {
                             <div className="mode-group-label">
                                 <i className={`fas ${group.icon}`}></i> {group.group}
                             </div>
-                            {group.modes.map(m => {
+                            {group.modes
+                                // Chế độ gắn cờ `zhOnly` chỉ có nghĩa với bộ từ vựng
+                                // tiếng Trung — ẨN HẲN thay vì khoá, vì đây không phải
+                                // phần thưởng để mở mà là chuyện "không áp dụng được".
+                                .filter(m => !m.zhOnly || getVocabLang() === 'zh')
+                                .map(m => {
                                 // 3 loại khoá: khách chưa login, theo LEVEL, theo cuối tuần.
                                 const guestLocked = !isLoggedIn && !GUEST_FREE_MODES.has(m.mode);
                                 const lv = lockInfo(`mode:${m.mode}`);

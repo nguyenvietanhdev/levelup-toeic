@@ -264,7 +264,16 @@ describe('SPA serving — origin phục vụ index.html phải phục vụ luôn
     });
 
     test('mọi prefix frontend fetch() đều được backend phục vụ', () => {
-        const served = new Set([...mountedPrefixes(serverSrc), ...staticPrefixes(PUBLIC_DIR)]);
+        // Backend phục vụ HAI thư mục tĩnh: `backend/public` và `frontend/dist`
+        // (xem server.js). Bỏ sót cái thứ hai thì scanner báo oan mọi thứ nằm
+        // trong bản build — ví dụ `/hanzi` (dữ liệu nét chữ Hán) thật ra ĐANG
+        // được phục vụ, chỉ là từ dist chứ không từ public.
+        const DIST_DIR = path.join(__dirname, '..', '..', 'frontend', 'dist');
+        const served = new Set([
+            ...mountedPrefixes(serverSrc),
+            ...staticPrefixes(PUBLIC_DIR),
+            ...staticPrefixes(DIST_DIR),
+        ]);
         const requested = fetchedPrefixes(FRONTEND_SRC);
 
         const unserved = [];

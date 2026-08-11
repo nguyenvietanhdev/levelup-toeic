@@ -8037,3 +8037,46 @@ mark {
     box-shadow: 0 2px 10px rgba(245, 158, 11, 0.35);
 }
 .energy-refill-modal .energy-pack-full:not(:disabled):hover { filter: brightness(1.06); }
+
+/* ── Chế độ luyện viết chữ Hán ───────────────────────────────────────────────
+   Khung vẽ để giữa, pinyin + nghĩa ở trên để người học biết mình đang viết chữ
+   gì mà không lộ mặt chữ. HanziWriter tự chèn <svg> vào .hanzi-canvas. */
+.hanzi-mode {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--spacing-md);
+    padding: var(--spacing-md) 0;
+}
+.hanzi-prompt { text-align: center; }
+.hanzi-pinyin {
+    font-size: 1.6rem;
+    font-weight: 700;
+    color: var(--primary-color);
+    letter-spacing: 0.02em;
+}
+.hanzi-meaning { color: var(--text-secondary); margin-top: 2px; }
+
+/* Ô vuông có lưới mờ giống vở tập viết — người học căn nét theo tâm và trục. */
+.hanzi-canvas {
+    width: 260px;
+    height: 260px;
+    border: 2px solid var(--border-color);
+    border-radius: var(--border-radius);
+    background:
+        linear-gradient(to right, var(--border-color) 1px, transparent 1px) 50% 0 / 1px 100% no-repeat,
+        linear-gradient(to bottom, var(--border-color) 1px, transparent 1px) 0 50% / 100% 1px no-repeat,
+        var(--bg-primary);
+    touch-action: none;   /* không thì kéo nét trên điện thoại bị cuộn trang */
+    cursor: crosshair;
+}
+.hanzi-actions {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-md);
+}
+.hanzi-progress {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    font-variant-numeric: tabular-nums;
+}

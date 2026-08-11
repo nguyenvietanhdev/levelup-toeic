@@ -45,6 +45,7 @@ import { ContextLearning } from './modes/contextLearning.js';
 import { SynonymCheck } from './modes/synonymCheck.js';
 import { SpeedQuiz } from './modes/speedQuiz.js';
 import { ReviewMistakes } from './modes/reviewMistakes.js';
+import { HanziWriting } from './modes/hanziWriting.js';
 import { MILESTONES, getMilestoneMessage } from './milestoneMessages.js';
 
 // Các chế độ thực sự xử lý gợi ý (lắng nghe GameEvents.HINT_USED). Ngoài danh
@@ -339,6 +340,21 @@ export const PracticeManager = {
                 break;
             case 'review-mistakes':
                 await ReviewMistakes.start(config);
+                break;
+            case 'hanzi-writing':
+                // Chỉ có nghĩa với bộ từ vựng tiếng Trung. Vào bằng tiếng Anh thì
+                // `splitHanzi` không tìm được chữ Hán nào và người dùng chỉ thấy
+                // màn hình rỗng — nói rõ lý do thay vì để họ tự đoán.
+                if (vocabLang() !== 'zh') {
+                    Notification.show({
+                        type: 'warning',
+                        title: '🇨🇳 Cần bộ từ vựng tiếng Trung',
+                        message: 'Luyện viết chữ Hán chỉ dùng được khi Ngôn ngữ từ vựng là Tiếng Trung. Đổi trong Cài đặt → Luyện tập.',
+                        duration: 4500,
+                    });
+                    return false;
+                }
+                await HanziWriting.start(config);
                 break;
             case 'sentence-builder':
                 await SentenceBuilder.start(config);
@@ -840,7 +856,8 @@ export const PracticeManager = {
             'context-learning': ContextLearning,
             'dictation': Dictation,
             'sentence-listening': SentenceListening,
-            'phonetic-quiz': PhoneticQuiz
+            'phonetic-quiz': PhoneticQuiz,
+            'hanzi-writing': HanziWriting
         };
 
         const modeModule = modeMap[mode];
