@@ -1,5 +1,6 @@
 import { GameLogic, wordPk, ttsLang, vocabLang } from '@game/gameLogic.js';
 import { GameState } from '@game/state.js';
+import { PartSelector } from '@components/vocab/part/partSelector.js';
 import { Config } from '@game/config.js';
 import { Utils } from '@lib/utils.js';
 import { Notification } from '@ui/Toaster.jsx';
@@ -42,9 +43,20 @@ export const PronunciationMode = {
 
         await this.generateQuestions();
 
-        if (this.questions.length > 0) {
-            this.showQuestion();
+        // Không có từ thì PHẢI báo và thoát. Trước đây chỉ có `if (length > 0)`
+        // mà không có else: không từ nào là không render gì, không báo gì, không
+        // thoát — màn hình trắng trơn, console sạch, người dùng ngồi nhìn.
+        if (this.questions.length === 0) {
+            PracticeManager.complete();
+            Notification.show({
+                type: 'warning',
+                title: 'Không có từ vựng',
+                message: 'Bộ từ đang chọn không có từ nào. Thử đổi chủ đề hoặc bỏ bớt bộ lọc cấp độ.',
+                duration: 4000,
+            });
+            return;
         }
+        this.showQuestion();
     },
 
     checkBrowserSupport() {
@@ -123,7 +135,17 @@ export const PronunciationMode = {
     },
 
     async generateQuestions() {
-        const words = GameLogic.getRandomWords(this.config.questionsPerRound);
+        // Lấy từ qua PartSelector giống 15 chế độ khác.
+        //
+        // Trước đây dùng GameLogic.getRandomWords(), hàm này đọc thẳng
+        // `vocabularyData` và KHÔNG biết tới bộ chủ đề đang chọn. Chọn chủ đề
+        // 动物 rồi vào luyện phát âm thì ra từ của chủ đề khác, hoặc không ra từ
+        // nào cả — mà không có dấu hiệu gì báo là đã bỏ qua bộ lọc.
+        const selectedPart = GameState.state?.settings?.selectedPart || null;
+        const requestCount = selectedPart ? 9999 : (this.config?.questionsPerRound || 10);
+        const all = await PartSelector.getWordsForPractice(requestCount);
+        const words = Array.isArray(all) ? all.slice(0, this.config?.questionsPerRound || 10) : [];
+
         this.questions = words.map(word => ({
             word,
             wordPk:   wordPk(word),

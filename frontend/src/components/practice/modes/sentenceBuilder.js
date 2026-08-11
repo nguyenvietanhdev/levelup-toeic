@@ -1,5 +1,6 @@
 import { GameLogic } from '@game/gameLogic.js';
 import { GameState } from '@game/state.js';
+import { PartSelector } from '@components/vocab/part/partSelector.js';
 import { Config } from '@game/config.js';
 import { Utils } from '@lib/utils.js';
 import { Notification } from '@ui/Toaster.jsx';
@@ -22,13 +23,29 @@ export const SentenceBuilder = {
 
         this.setupHintSkipListeners();
 
-        if (this.questions.length > 0) {
-            this.showQuestion();
+        // Không có câu nào thì PHẢI báo và thoát — xem ghi chú cùng nội dung ở
+        // pronunciationMode. `if (length > 0)` không else = màn hình trắng câm.
+        if (this.questions.length === 0) {
+            PracticeManager.complete();
+            Notification.show({
+                type: 'warning',
+                title: 'Không có câu ví dụ',
+                message: 'Bộ từ đang chọn không có từ nào kèm câu ví dụ. Thử đổi chủ đề khác.',
+                duration: 4000,
+            });
+            return;
         }
+        this.showQuestion();
     },
 
     async generateQuestions() {
-        const words = GameLogic.getRandomWords(this.config.questionsPerRound);
+        // Qua PartSelector để tôn trọng chủ đề đang chọn — getRandomWords() đọc
+        // thẳng vocabularyData và bỏ qua bộ lọc. Lấy dư rồi cắt, vì phía dưới còn
+        // lọc tiếp những từ có câu ví dụ.
+        const selectedPart = GameState.state?.settings?.selectedPart || null;
+        const perRound = this.config?.questionsPerRound || 10;
+        const all = await PartSelector.getWordsForPractice(selectedPart ? 9999 : perRound * 4);
+        const words = Array.isArray(all) ? all : [];
 
         this.questions = words.filter(word => {
             return word.example && word.example.length > 0;
@@ -52,7 +69,7 @@ export const SentenceBuilder = {
                 wordEn: word.en,
                 translation: this.getVietnameseTranslation(word)
             };
-        });
+        }).slice(0, perRound);   // lấy dư 4× ở trên nên phải cắt lại
     },
 
     splitIntoPhrases(sentence) {
