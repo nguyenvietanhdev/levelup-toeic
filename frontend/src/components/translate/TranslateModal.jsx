@@ -293,21 +293,24 @@ export default function TranslateModal({ text, onClose, onOpenFavorites }) {
                     <div className="translate-arrow">
                         <button
                             className={`translate-save-btn${saved ? ' saved' : ''}`}
-                            title={saved ? 'Đã lưu yêu thích' : 'Lưu yêu thích'}
+                            title={saved ? 'Từ này đã có trong danh sách yêu thích' : 'Đánh dấu từ này để ôn lại sau'}
                             onClick={handleSaveFavorite}
                             disabled={loading || !!error || saved}
                         >
+                            {/* Ghi rõ hành động sẽ xảy ra, và khi đã lưu thì nói rõ
+                                lưu vào ĐÂU — hai nút cùng hiện "Đã lưu" thì không
+                                phân biệt được cái nào đã bấm. */}
                             <i className="fas fa-star"></i>
-                            {saved ? ' Đã lưu' : ' Yêu thích'}
+                            {saved ? ' Đã ở yêu thích' : ' Thêm vào yêu thích'}
                         </button>
                         <button
                             className={`translate-save-btn${savedVocab ? ' saved' : ''}`}
-                            title={savedVocab ? 'Đã lưu vào từ vựng riêng' : 'Lưu vào từ vựng riêng'}
+                            title={savedVocab ? 'Từ này đã có trong bộ từ vựng riêng' : 'Thêm vào bộ từ vựng riêng để đưa vào bài luyện tập'}
                             onClick={handleSaveVocab}
                             disabled={loading || !!error || savedVocab}
                         >
                             <i className="fas fa-cloud-arrow-up"></i>
-                            {savedVocab ? ' Đã lưu' : ' Từ vựng riêng'}
+                            {savedVocab ? ' Đã ở từ vựng riêng' : ' Thêm vào từ vựng riêng'}
                         </button>
                     </div>
 
@@ -342,14 +345,16 @@ export default function TranslateModal({ text, onClose, onOpenFavorites }) {
                     <div className="translate-actions">
                         {onOpenFavorites && (
                             <button className="btn btn-primary btn-sm" onClick={onOpenFavorites}>
-                                <i className="fas fa-star"></i> DS Yêu thích
+                                {/* "Xem" để phân biệt với nút THÊM ở trên — hai
+                                    hàng nút cùng chữ "Yêu thích" dễ bấm nhầm. */}
+                                <i className="fas fa-star"></i> Xem yêu thích
                             </button>
                         )}
                         <button
                             className="btn btn-secondary btn-sm"
                             onClick={() => openUploadModal({ tab: 'manage' })}
                         >
-                            <i className="fas fa-cloud"></i> DS Từ riêng
+                            <i className="fas fa-cloud"></i> Xem từ vựng riêng
                         </button>
                     </div>
                 </div>
