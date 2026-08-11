@@ -6,7 +6,7 @@
  * (，。！), chữ Latin trong ví dụ, khoảng trắng. Lọt một ký tự không phải Hán là
  * `fetch('/hanzi/，.json')` trả 404 và màn hình trắng.
  */
-import { describe, test, expect, vi } from 'vitest';
+import { describe, test, expect, vi, beforeEach, afterEach } from 'vitest';
 import { splitHanzi, HanziWriting } from './hanziWriting.js';
 import { PartSelector } from '@components/vocab/part/partSelector.js';
 
@@ -145,5 +145,61 @@ describe('showDemo — diễn xong phải mở lại quiz', () => {
         const mode = stub();
         mode.writer = null;
         expect(() => mode.showDemo()).not.toThrow();
+    });
+});
+
+/**
+ * Từ dài: hàng ô cuộn ngang, nên ô đang viết phải TỰ cuộn vào tầm nhìn.
+ *
+ * Không có bước này thì viết xong chữ thứ 4 là màn hình đứng im — ô kế tiếp đã
+ * sẵn sàng và đang nhận chuột, nhưng nằm ngoài vùng nhìn nên người học không
+ * biết phải viết ở đâu. Lại đúng hình dạng "hỏng mà trông như bình thường".
+ */
+describe('mountWriter — cuộn ô đang viết vào tầm nhìn', () => {
+    // mountWriter tạo HanziWriter thật, mà nó gọi charDataLoader → fetch() với
+    // đường dẫn tương đối. jsdom không có base URL nên fetch ném ERR_INVALID_URL
+    // ngoài promise: test vẫn xanh nhưng vitest báo "Unhandled Errors". Chặn ở
+    // đây để test chỉ nói về việc cuộn, không kéo theo tiếng ồn của mạng.
+    beforeEach(() => {
+        vi.stubGlobal('fetch', vi.fn(() => new Promise(() => {})));
+    });
+    afterEach(() => { vi.unstubAllGlobals(); });
+
+    test('gọi scrollIntoView trên ĐÚNG ô đang viết', async () => {
+        const { HanziWriting } = await import('./hanziWriting.js');
+        const q = { word: '这是谁', chars: ['这', '是', '谁'], pinyin: '', meaning: '' };
+
+        document.body.innerHTML = q.chars
+            .map((_, i) => `<div class="hanzi-canvas" id="hanzi-box-${i}"></div>`).join('');
+
+        const calls = [];
+        q.chars.forEach((_, i) => {
+            document.getElementById(`hanzi-box-${i}`).scrollIntoView = () => calls.push(i);
+        });
+
+        const mode = Object.create(HanziWriting);
+        mode._writers = [];
+        mode.charIndex = 2;                 // đang viết chữ thứ 3
+        mode.questions = [q];
+        mode.currentIndex = 0;
+        mode.openQuiz = () => {};           // không dựng quiz thật trong test
+        mode.mountWriter(q);
+
+        expect(calls).toEqual([2]);         // cuộn tới ô 2, không phải ô nào khác
+    });
+
+    test('trình duyệt cũ không có scrollIntoView thì bỏ qua, không ném lỗi', async () => {
+        const { HanziWriting } = await import('./hanziWriting.js');
+        const q = { word: '你好', chars: ['你', '好'], pinyin: '', meaning: '' };
+        document.body.innerHTML = '<div class="hanzi-canvas" id="hanzi-box-0"></div>';
+        document.getElementById('hanzi-box-0').scrollIntoView = undefined;
+
+        const mode = Object.create(HanziWriting);
+        mode._writers = [];
+        mode.charIndex = 0;
+        mode.questions = [q];
+        mode.currentIndex = 0;
+        mode.openQuiz = () => {};
+        expect(() => mode.mountWriter(q)).not.toThrow();
     });
 });

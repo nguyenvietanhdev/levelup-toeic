@@ -8060,13 +8060,36 @@ mark {
 .hanzi-meaning { color: var(--text-secondary); margin-top: 2px; }
 
 /* Ô vuông có lưới mờ giống vở tập viết — người học căn nét theo tâm và trục. */
-/* Nhiều ô nằm ngang — mỗi chữ một ô, xuống dòng khi từ dài hoặc màn hẹp. */
+/* Nhiều ô nằm ngang — mỗi chữ một ô. Từ dài thì CUỘN NGANG, không xuống hàng:
+   người học cần nhìn thấy cả từ theo đúng thứ tự trên một hàng, giống như viết
+   trên giấy. Xuống hàng làm mất cảm giác đó. */
 .hanzi-boxes {
     display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
+    flex-wrap: nowrap;
+    justify-content: flex-start;
     gap: var(--spacing-sm);
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding-bottom: 6px;         /* chỗ cho thanh cuộn, không đè lên viền ô */
+    scroll-behavior: smooth;
+    scroll-padding: var(--spacing-sm);
+    /* Từ ngắn thì vẫn căn giữa; từ dài tràn ra thì bám mép trái để bắt đầu từ
+       chữ đầu tiên. `safe` tránh lỗi kinh điển của center: khi nội dung rộng
+       hơn khung, phần tràn ở ĐẦU bị cắt và không cuộn tới được. */
+    justify-content: safe center;
 }
+
+/* Ô không được co lại — thiếu dòng này thì flex bóp ô nhỏ dần cho vừa khung
+   thay vì cuộn, và ô cuối cùng méo hẳn so với ô đầu. */
+.hanzi-boxes .hanzi-canvas { flex: 0 0 auto; }
+
+/* Thanh cuộn mảnh, chỉ hiện khi cần */
+.hanzi-boxes::-webkit-scrollbar { height: 6px; }
+.hanzi-boxes::-webkit-scrollbar-thumb {
+    background: var(--border-color);
+    border-radius: 3px;
+}
+.hanzi-boxes::-webkit-scrollbar-track { background: transparent; }
 
 /* Ô chưa tới lượt: mờ và KHÔNG nhận chuột. Bỏ pointer-events thì người học vẽ
    vào ô bên cạnh mà không hiểu vì sao nét không ăn. */
@@ -8076,10 +8099,18 @@ mark {
 }
 .hanzi-canvas.is-active { border-color: var(--primary-color); }
 
-/* Từ càng nhiều chữ, ô càng nhỏ để cả từ vẫn nằm trên một hàng. Từ 4-5 chữ ở
-   260px mỗi ô là tràn ngang cả trên desktop. */
+/* Từ nhiều chữ thì thu ô lại một mức cho thấy được nhiều chữ cùng lúc — nhưng
+   KHÔNG thu tiếp theo số chữ nữa, vì giờ đã cuộn ngang được. Ô quá nhỏ thì
+   không tô nét nổi, mà đó mới là việc chính. */
 .hanzi-boxes:has(> :nth-child(3)) .hanzi-canvas { width: 180px; height: 180px; }
-.hanzi-boxes:has(> :nth-child(4)) .hanzi-canvas { width: 150px; height: 150px; }
+
+/* Điện thoại: ô 260px gần kín màn hình 360px, người học không thấy được chữ nào
+   khác ngoài chữ đang viết. Thu lại để nhìn thấy ô kế bên — biết còn mấy chữ
+   nữa là phần quan trọng của việc viết trọn một từ. */
+@media (max-width: 480px) {
+    .hanzi-boxes .hanzi-canvas,
+    .hanzi-boxes:has(> :nth-child(3)) .hanzi-canvas { width: 170px; height: 170px; }
+}
 
 .hanzi-canvas {
     width: 260px;

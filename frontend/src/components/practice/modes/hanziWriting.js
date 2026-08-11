@@ -134,9 +134,13 @@ export const HanziWriting = {
         });
 
         // HanziWriter nhận kích thước LÚC TẠO, không đọc CSS — truyền số lệch với
-        // CSS thì SVG tràn ra ngoài hoặc để lại viền trống. Giữ khớp bảng trong
-        // components.css (.hanzi-boxes:has(...)).
-        const size = q.chars.length >= 4 ? 150 : q.chars.length >= 3 ? 180 : 260;
+        // CSS thì SVG tràn ra ngoài hoặc để lại viền trống.
+        //
+        // Đọc thẳng từ ô đã dựng thay vì chép lại bảng ngưỡng của CSS. Chép tay
+        // là hai nơi phải sửa song song, mà lệch nhau thì hỏng ÂM THẦM: chữ vẫn
+        // hiện, chỉ là lệch khỏi khung hoặc chừa viền trống. Lấy từ DOM thì CSS
+        // đổi ngưỡng lúc nào cũng tự khớp.
+        const size = Math.round(target.getBoundingClientRect().width) || 260;
 
         this.writer = HanziWriter.create(target, q.chars[i], {
             width: size,
@@ -162,6 +166,11 @@ export const HanziWriting = {
         this._writers.push(this.writer);
         this.strokeNum = 0;
         this.openQuiz(q);
+
+        // Từ dài thì hàng ô cuộn ngang, và chữ thứ 5-6 nằm NGOÀI vùng nhìn. Không
+        // cuộn tới thì người học viết xong chữ 4 là màn hình đứng im — ô kế đã
+        // sẵn sàng nhưng không ai thấy nó ở đâu.
+        target.scrollIntoView?.({ behavior: 'smooth', block: 'nearest', inline: 'center' });
     },
 
     /**
