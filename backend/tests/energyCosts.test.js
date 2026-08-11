@@ -36,6 +36,40 @@ describe('practiceEnergyCost — giá tra từ bảng, không nhận từ ngoài
         expect(practiceEnergyCost(mode)).toBeNull();
     });
 
+    test('bảng giá server KHỚP bảng client — hai nguồn sự thật cho một con số', () => {
+        // Comment đầu file này TUYÊN BỐ "chốt sự khớp đó bằng cách đọc thẳng file
+        // config của frontend" — nhưng không hề có test nào làm. Lời hứa trong
+        // comment mà không có mã đằng sau còn tệ hơn im lặng: người đọc tin là đã
+        // được bảo vệ.
+        //
+        // Trả giá thật: thêm chế độ luyện viết chữ Hán, khai giá ở client mà quên
+        // server → `practiceEnergyCost` trả null → không vào được chế độ, và thông
+        // báo lỗi không nói gì về nguyên nhân.
+        const fs = require('fs');
+        const path = require('path');
+        const cfg = fs.readFileSync(
+            path.join(__dirname, '..', '..', 'frontend', 'src', 'game', 'config.js'), 'utf8'
+        );
+
+        const block = /energyCosts:\s*\{([\s\S]*?)\n\s*\},/.exec(cfg);
+        expect(block).not.toBeNull();
+
+        const clientCosts = {};
+        for (const m of block[1].matchAll(/'([a-z-]+)'\s*:\s*(\d+)/g)) {
+            clientCosts[m[1]] = Number(m[2]);
+        }
+        expect(Object.keys(clientCosts).length).toBeGreaterThan(5); // quét được thật
+
+        const onlyServer = Object.keys(PRACTICE_COSTS).filter(k => !(k in clientCosts));
+        const onlyClient = Object.keys(clientCosts).filter(k => !(k in PRACTICE_COSTS));
+        const different = Object.keys(clientCosts)
+            .filter(k => k in PRACTICE_COSTS && clientCosts[k] !== PRACTICE_COSTS[k])
+            .map(k => `${k}: client ${clientCosts[k]} ≠ server ${PRACTICE_COSTS[k]}`);
+
+        expect({ onlyServer, onlyClient, different })
+            .toEqual({ onlyServer: [], onlyClient: [], different: [] });
+    });
+
     test('mọi giá đều là số dương — một giá âm là vòi bơm năng lượng', () => {
         for (const [mode, cost] of Object.entries(PRACTICE_COSTS)) {
             expect(Number.isFinite(cost)).toBe(true);

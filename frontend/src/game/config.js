@@ -31,7 +31,8 @@ export const Config = {
         'context-learning': 10, // Học từ qua câu ví dụ
         'dictation': 15,          // Chép chính tả - nghe gõ lại
         'sentence-listening': 12, // Nghe câu, tìm từ
-        'phonetic-quiz': 12       // Nhận diện phiên âm IPA
+        'phonetic-quiz': 12,      // Nhận diện phiên âm IPA
+        'hanzi-writing': 15       // Viết chữ Hán theo nét — phải khớp backend/utils/energyCosts.js
     },
 
     // XP rewards
@@ -461,6 +462,13 @@ export const Config = {
             timeLimit: 300,
             optionsCount: 4,
             pointsPerCorrect: 140
+        },
+        'hanzi-writing': {
+            // Ít câu hơn các chế độ khác: viết tay một chữ 15-20 nét mất hàng chục
+            // giây, 10 chữ là một lượt dài hơn hẳn 10 câu trắc nghiệm.
+            questionsPerRound: 8,
+            timeLimit: 600,
+            pointsPerCorrect: 150
         }
     },
 

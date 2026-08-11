@@ -140,6 +140,12 @@ describe('SPA serving — origin phục vụ index.html phải phục vụ luôn
             'react.dev': 'URL trong thông báo lỗi của React',
             'fontawesome.com': 'chuỗi bản quyền trong CSS',
             'translate.google.com.vn': 'link mở tab mới (điều hướng), không phải subresource',
+            // hanzi-writer mang sẵn URL CDN làm charDataLoader MẶC ĐỊNH. Ta truyền
+            // loader riêng đọc từ /hanzi/ cùng origin (hanziWriting.js), nên nhánh
+            // đó không bao giờ chạy — đã chứng minh bằng cách nạp thư viện thật:
+            // loader riêng được gọi, jsdelivr không bị chạm. Chuỗi vẫn nằm trong
+            // bundle vì bundler không cắt được nhánh chết đó.
+            'cdn.jsdelivr.net': 'URL mặc định của hanzi-writer, đã ghi đè bằng charDataLoader riêng → không có request thật',
         };
 
         const files = [];

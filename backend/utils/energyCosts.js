@@ -33,6 +33,7 @@ const PRACTICE_COSTS = {
     'dictation': 15,
     'sentence-listening': 12,
     'phonetic-quiz': 12,
+    'hanzi-writing': 15,
 };
 
 /**
