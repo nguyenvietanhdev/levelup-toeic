@@ -27,7 +27,9 @@ export const HanziWriting = {
     questions: [],
     currentIndex: 0,
     writer: null,
-    mistakesThisChar: 0,
+    _writers: [],          // mọi writer của TỪ hiện tại — để huỷ hết khi sang câu
+    charIndex: 0,          // đang viết chữ thứ mấy TRONG TỪ
+    mistakesThisWord: 0,   // đếm theo TỪ, không theo chữ — điểm tính trọn từ
 
     async start(config) {
         this.config = config;
@@ -58,28 +60,41 @@ export const HanziWriting = {
         const words = await PartSelector.getWordsForPractice(requestCount);
         if (!Array.isArray(words)) { this.questions = []; return; }
 
-        const seen = new Set();
+        // Một câu hỏi = MỘT TỪ, viết lần lượt từng chữ trong từ đó.
+        //
+        // Bản đầu tôi tách mỗi chữ thành một câu riêng, nghĩ rằng luyện `你` rồi
+        // `好` ở hai lượt khác nhau là đủ. Sai về mặt học: người học thấy pinyin
+        // "nǐ hǎo" và nghĩa "Xin chào" nhưng chỉ được viết một chữ — mất luôn mối
+        // liên hệ giữa mặt chữ và từ. Viết trọn `你好` mới là thứ họ cần làm được.
         const out = [];
-
-        // Một câu hỏi = MỘT chữ đơn. Bỏ trùng: `好` xuất hiện trong rất nhiều từ,
-        // luyện lại cùng một chữ năm lần trong một lượt thì vừa chán vừa vô ích.
         for (const w of words) {
-            for (const ch of splitHanzi(w.zh || w.word)) {
-                if (seen.has(ch)) continue;
-                seen.add(ch);
-                out.push({ char: ch, pinyin: w.phonetic || '', meaning: w.vn || '', from: w.zh || '' });
-            }
+            const chars = splitHanzi(w.zh || w.word);
+            if (chars.length === 0) continue;
+            out.push({
+                word: w.zh || w.word,
+                chars,
+                pinyin: w.phonetic || '',
+                meaning: w.vn || '',
+            });
         }
-        this.questions = out.slice(0, this.config?.questionCount || 10);
+        this.questions = out.slice(0, this.config?.questionsPerRound || 8);
     },
 
     showQuestion() {
         const q = this.questions[this.currentIndex];
         if (!q) return this.finish();
-        this.mistakesThisChar = 0;
+        this.charIndex = 0;
+        this.mistakesThisWord = 0;
 
         const container = document.getElementById('practice-content');
         if (!container) return;
+
+        // Một ô cho mỗi chữ trong từ. Ô đang viết sáng lên, ô đã xong giữ nét đã
+        // viết để người học nhìn thấy cả từ dần hiện ra — đó là phần thưởng thị
+        // giác của việc viết trọn một từ.
+        const boxes = q.chars.map((_, i) =>
+            `<div class="hanzi-canvas${i === 0 ? ' is-active' : ''}" id="hanzi-box-${i}"></div>`
+        ).join('');
 
         container.innerHTML = `
             <div class="hanzi-mode">
@@ -87,7 +102,7 @@ export const HanziWriting = {
                     <div class="hanzi-pinyin">${escapeText(q.pinyin)}</div>
                     <div class="hanzi-meaning">${escapeText(q.meaning)}</div>
                 </div>
-                <div class="hanzi-canvas" id="hanzi-target"></div>
+                <div class="hanzi-boxes">${boxes}</div>
                 <div class="hanzi-actions">
                     <button class="btn btn-secondary" id="hanzi-demo">Xem mẫu</button>
                     <span class="hanzi-progress" id="hanzi-strokes"></span>
@@ -95,17 +110,37 @@ export const HanziWriting = {
             </div>
         `;
 
+        // Gắn ở ĐÂY chứ không trong mountWriter: mountWriter chạy lại cho từng chữ,
+        // gắn trong đó thì từ 3 chữ có 3 listener chồng lên nhau và bấm một lần chạy
+        // ba lần. Nút do showQuestion tạo nên mỗi câu đúng một listener.
+        document.getElementById('hanzi-demo')?.addEventListener('click', () => {
+            // Đọc this.writer lúc BẤM để luôn diễn chữ đang viết dở.
+            this.writer?.animateCharacter();
+        });
+
         this.mountWriter(q);
         startQuestionTimer('hanzi-writing', () => this.timeUp());
     },
 
     mountWriter(q) {
-        const target = document.getElementById('hanzi-target');
+        const i = this.charIndex;
+        const target = document.getElementById(`hanzi-box-${i}`);
         if (!target) return;
 
-        this.writer = HanziWriter.create(target, q.char, {
-            width: 260,
-            height: 260,
+        // Ô đang viết sáng, các ô khác mờ đi — không thì người học không biết phải
+        // vẽ vào ô nào, và HanziWriter chỉ nhận chuột ở ô đang gắn.
+        q.chars.forEach((_, k) => {
+            document.getElementById(`hanzi-box-${k}`)?.classList.toggle('is-active', k === i);
+        });
+
+        // HanziWriter nhận kích thước LÚC TẠO, không đọc CSS — truyền số lệch với
+        // CSS thì SVG tràn ra ngoài hoặc để lại viền trống. Giữ khớp bảng trong
+        // components.css (.hanzi-boxes:has(...)).
+        const size = q.chars.length >= 4 ? 150 : q.chars.length >= 3 ? 180 : 260;
+
+        this.writer = HanziWriter.create(target, q.chars[i], {
+            width: size,
+            height: size,
             padding: 12,
             showCharacter: false,
             showOutline: true,          // nét mờ để tô theo — đây là mức "tô mẫu"
@@ -124,40 +159,50 @@ export const HanziWriting = {
             },
         });
 
+        this._writers.push(this.writer);
+
         this.writer.quiz({
             onMistake: (s) => {
-                this.mistakesThisChar++;
-                this.updateStrokeInfo(s);
+                this.mistakesThisWord++;
+                this.updateStrokeInfo(q, s);
             },
-            onCorrectStroke: (s) => this.updateStrokeInfo(s),
+            onCorrectStroke: (s) => this.updateStrokeInfo(q, s),
             onComplete: () => this.completeChar(q),
-        });
-
-        document.getElementById('hanzi-demo')?.addEventListener('click', () => {
-            // Xem mẫu = dùng một lượt gợi ý, tính như các chế độ khác.
-            this.writer?.animateCharacter();
         });
     },
 
-    updateStrokeInfo(s) {
+    updateStrokeInfo(q, s) {
         const el = document.getElementById('hanzi-strokes');
-        if (el) el.textContent = `Nét ${s.strokeNum + 1}/${s.strokesRemaining + s.strokeNum + 1}`;
+        if (!el) return;
+        const total = s.strokesRemaining + s.strokeNum + 1;
+        const chuOf = q.chars.length > 1 ? `Chữ ${this.charIndex + 1}/${q.chars.length} · ` : '';
+        el.textContent = `${chuOf}Nét ${s.strokeNum + 1}/${total}`;
     },
 
     completeChar(q) {
+        // Còn chữ nữa trong từ → sang ô kế, CHƯA tính điểm. Điểm tính theo TỪ.
+        if (this.charIndex < q.chars.length - 1) {
+            // KHÔNG cleanup ở đây: chữ vừa viết xong phải ở lại trên màn hình để
+            // người học nhìn thấy cả từ dần thành hình. Writer cũ được giữ trong
+            // `_writers` và huỷ một thể khi sang câu sau.
+            this.charIndex++;
+            this.mountWriter(q);
+            return;
+        }
+
         stopQuestionTimer();
         // Sai càng ít nét thì điểm càng cao. Chấm ở CLIENT là tạm chấp nhận được vì
         // đây là bài luyện, không phải thi — nhưng XP phải do server cộng, giống mọi
         // chế độ khác (xem practiceManager).
-        const perfect = this.mistakesThisChar === 0;
+        const perfect = this.mistakesThisWord === 0;
         PracticeManager.recordAnswer?.(perfect);
 
         Notification.show({
             type: perfect ? 'success' : 'info',
             title: perfect ? '✅ Viết đúng!' : '✍️ Hoàn thành',
             message: perfect
-                ? `${q.char} — ${q.pinyin}`
-                : `${q.char} — sai ${this.mistakesThisChar} nét, thử lại lần sau nhé`,
+                ? `${q.word} — ${q.pinyin}`
+                : `${q.word} — sai ${this.mistakesThisWord} nét, thử lại lần sau nhé`,
             duration: 1600,
         });
 
@@ -195,7 +240,14 @@ export const HanziWriting = {
     cleanupWriter() {
         // HanziWriter gắn SVG + listener vào DOM; không huỷ thì mỗi câu để lại một
         // bộ, và chuột vẽ vào chữ cũ vẫn ăn.
-        try { this.writer?.cancelQuiz(); } catch { /* chưa mở quiz */ }
+        //
+        // Một TỪ tạo nhiều writer (mỗi chữ một cái). Chỉ huỷ `this.writer` là bỏ sót
+        // các chữ đã viết xong trước đó — chúng vẫn còn quiz đang mở, listener vẫn
+        // sống, và sang câu sau thì rò ra cả đống. Nên gom lại mà huỷ hết.
+        for (const w of this._writers) {
+            try { w.cancelQuiz(); } catch { /* chưa mở quiz */ }
+        }
+        this._writers = [];
         this.writer = null;
     },
 

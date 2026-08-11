@@ -6,8 +6,9 @@
  * (，。！), chữ Latin trong ví dụ, khoảng trắng. Lọt một ký tự không phải Hán là
  * `fetch('/hanzi/，.json')` trả 404 và màn hình trắng.
  */
-import { describe, test, expect } from 'vitest';
-import { splitHanzi } from './hanziWriting.js';
+import { describe, test, expect, vi } from 'vitest';
+import { splitHanzi, HanziWriting } from './hanziWriting.js';
+import { PartSelector } from '@components/vocab/part/partSelector.js';
 
 describe('splitHanzi', () => {
     test('tách từ ghép thành từng chữ', () => {
@@ -41,5 +42,55 @@ describe('splitHanzi', () => {
     test('giữ nguyên thứ tự xuất hiện', () => {
         // Thứ tự quan trọng: người học viết theo thứ tự chữ trong từ.
         expect(splitHanzi('中国人')).toEqual(['中', '国', '人']);
+    });
+});
+
+/**
+ * MỘT CÂU HỎI = MỘT TỪ, không phải một chữ.
+ *
+ * Bản đầu tôi tách mỗi chữ thành một câu riêng. Người học thấy pinyin "nǐ hǎo"
+ * và nghĩa "Xin chào" nhưng chỉ được viết mỗi chữ `你` — mất luôn mối liên hệ
+ * giữa mặt chữ và cái từ họ đang học, mà nhìn màn hình thì không thấy sai ở đâu.
+ */
+describe('generateQuestions — một câu là trọn một từ', () => {
+    async function gen(words, config = {}) {
+        vi.spyOn(PartSelector, 'getWordsForPractice').mockResolvedValue(words);
+        const mode = Object.create(HanziWriting);
+        mode.config = config;
+        await mode.generateQuestions();
+        return mode.questions;
+    }
+
+    test('từ nhiều chữ nằm TRỌN trong một câu, không bị xé lẻ', async () => {
+        const qs = await gen([{ zh: '你好', phonetic: 'nǐ hǎo', vn: 'Xin chào' }]);
+        expect(qs).toHaveLength(1);           // một từ → một câu, không phải hai
+        expect(qs[0].word).toBe('你好');
+        expect(qs[0].chars).toEqual(['你', '好']);
+    });
+
+    test('giữ pinyin từ key `phonetic` — KHÔNG phải key `pinyin`', async () => {
+        // Dữ liệu thật lưu pinyin trong `phonetic`; đọc nhầm key thì mọi câu hiện
+        // pinyin rỗng mà không có lỗi nào.
+        const qs = await gen([{ zh: '学', phonetic: 'xué', vn: 'học' }]);
+        expect(qs[0].pinyin).toBe('xué');
+        expect(qs[0].meaning).toBe('học');
+    });
+
+    test('bỏ từ không có chữ Hán nào thay vì tạo câu rỗng', async () => {
+        const qs = await gen([
+            { zh: 'hello', phonetic: '', vn: 'xin chào' },
+            { zh: '好', phonetic: 'hǎo', vn: 'tốt' },
+        ]);
+        expect(qs.map(q => q.word)).toEqual(['好']);
+    });
+
+    test('cắt đúng số câu mỗi lượt', async () => {
+        const words = ['一', '二', '三', '四', '五'].map(z => ({ zh: z, phonetic: '', vn: '' }));
+        const qs = await gen(words, { questionsPerRound: 3 });
+        expect(qs).toHaveLength(3);
+    });
+
+    test('nguồn từ hỏng trả mảng rỗng, không ném lỗi', async () => {
+        expect(await gen(null)).toEqual([]);
     });
 });
