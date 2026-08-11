@@ -214,6 +214,35 @@ describe('SPA serving — origin phục vụ index.html phải phục vụ luôn
         expect(dead).toEqual([]);
     });
 
+    test('CSP cho phép blob: nếu frontend tạo Object URL', () => {
+        // Bộ dò host ở trên CHỈ quét chuỗi `https://...` trong bundle, nên nó
+        // không bao giờ thấy `blob:` — URL đó do `URL.createObjectURL()` SINH RA
+        // LÚC CHẠY, không tồn tại dưới dạng chuỗi tĩnh trong mã đã build.
+        //
+        // Đã trả giá thật: `/api/tts` stream audio/mpeg về, client bọc thành
+        // Object URL rồi phát (api/tts.js). Thiếu `blob:` trong mediaSrc thì trình
+        // duyệt chặn, TTS lặng lẽ rơi về giọng mặc định của hệ điều hành — chọn
+        // giọng nào cũng nghe ra CÙNG MỘT giọng.
+        const FE_SRC = path.join(__dirname, '..', '..', 'frontend', 'src');
+        if (!fs.existsSync(FE_SRC)) return;
+
+        let makesBlob = false;
+        const walk = (d) => {
+            for (const e of fs.readdirSync(d, { withFileTypes: true })) {
+                const p = path.join(d, e.name);
+                if (e.isDirectory()) { walk(p); continue; }
+                if (!/\.(js|jsx)$/.test(e.name) || /\.test\./.test(e.name)) continue;
+                if (/URL\.createObjectURL/.test(fs.readFileSync(p, 'utf8'))) makesBlob = true;
+            }
+        };
+        walk(FE_SRC);
+        if (!makesBlob) return;   // không tạo blob thì không cần khai
+
+        const media = serverSrc.match(/mediaSrc:\s*\[([^\]]*)\]/);
+        expect(media).not.toBeNull();
+        expect(media[1]).toMatch(/["']blob:["']/);
+    });
+
     test('CSP cho phép font dạng data: — FontAwesome nhúng woff2 base64', () => {
         // Thiếu `data:` ở fontSrc thì mọi icon thành ô vuông trống. `imgSrc` có
         // `data:` từ trước nên ẢNH vẫn chạy — lại một lệch nữa làm lỗi khó đọc.

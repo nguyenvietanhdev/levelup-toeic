@@ -82,7 +82,14 @@ app.use(helmet({
             // hiện từ khi backend phục vụ luôn bản build.
             // `translate.google.com/translate_tts` phát qua `new Audio(url)` ở
             // TranslateModal.jsx:45-49 — cũng là media, không phải connect.
-            mediaSrc: ["'self'", "https://res.cloudinary.com", "https://translate.google.com"],
+            // `blob:` là BẮT BUỘC, không phải nới lỏng cho tiện: `/api/tts` stream
+            // audio/mpeg về, client bọc thành Object URL rồi mới phát
+            // (frontend/src/api/tts.js:15). Thiếu `blob:` thì trình duyệt chặn, TTS
+            // rơi về giọng mặc định của hệ điều hành — người dùng chọn giọng nào
+            // cũng nghe ra CÙNG MỘT giọng, mà không có lỗi nào ngoài console.
+            // `blob:` chỉ cho phép nội dung do CHÍNH trang này tạo ra, không mở
+            // cửa cho nguồn ngoài.
+            mediaSrc: ["'self'", "blob:", "https://res.cloudinary.com", "https://translate.google.com"],
             // `translate.googleapis.com` là fetch dịch nhanh (Shift+Enter) ở
             // TranslateModal.jsx:108 và exampleFillBlank.js:17.
             // `https://*.onrender.com` cũng bỏ: nó có nghĩa khi frontend nằm ở host
