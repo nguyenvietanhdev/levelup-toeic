@@ -293,7 +293,7 @@ export default function TranslateModal({ text, onClose, onOpenFavorites }) {
                     <div className="translate-arrow">
                         <button
                             className={`translate-save-btn${saved ? ' saved' : ''}`}
-                            title={saved ? 'Từ này đã có trong danh sách yêu thích' : 'Đánh dấu từ này để ôn lại sau'}
+                            title={saved ? 'Từ này đã có trong danh sách từ yêu thích' : 'Đánh dấu từ này để ôn lại sau'}
                             onClick={handleSaveFavorite}
                             disabled={loading || !!error || saved}
                         >
@@ -301,7 +301,7 @@ export default function TranslateModal({ text, onClose, onOpenFavorites }) {
                                 lưu vào ĐÂU — hai nút cùng hiện "Đã lưu" thì không
                                 phân biệt được cái nào đã bấm. */}
                             <i className="fas fa-star"></i>
-                            {saved ? ' Đã ở yêu thích' : ' Thêm vào yêu thích'}
+                            {saved ? ' Đã ở từ yêu thích' : ' Thêm vào từ yêu thích'}
                         </button>
                         <button
                             className={`translate-save-btn${savedVocab ? ' saved' : ''}`}
@@ -347,7 +347,7 @@ export default function TranslateModal({ text, onClose, onOpenFavorites }) {
                             <button className="btn btn-primary btn-sm" onClick={onOpenFavorites}>
                                 {/* "Xem" để phân biệt với nút THÊM ở trên — hai
                                     hàng nút cùng chữ "Yêu thích" dễ bấm nhầm. */}
-                                <i className="fas fa-star"></i> Xem yêu thích
+                                <i className="fas fa-star"></i> Xem từ yêu thích
                             </button>
                         )}
                         <button
