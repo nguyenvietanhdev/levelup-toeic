@@ -11,6 +11,8 @@ const {
   shareSource,
   unshareSource,
   listSharees,
+  getSharedTopics,
+  getSharedVocabulary,
   deleteMySource,
   extendMySource,
   getMonitoring,
@@ -37,6 +39,12 @@ router.put('/my-vocabulary/:wordId', protect, updateMyWord);
 router.post('/share/:source', protect, shareSource);
 router.delete('/share/:source/:granteeEmail', protect, unshareSource);
 router.get('/share/:source', protect, listSharees);
+
+// Đường đọc của NGƯỜI ĐƯỢC chia sẻ. Route riêng chứ không nới getMyVocabulary:
+// 9 handler kia đang cùng một khuôn `ownerEmail: <người gọi>`, làm một cái thành
+// có điều kiện là người viết handler thứ 10 chép nhầm khuôn.
+router.get('/shared-topics', protect, getSharedTopics);
+router.get('/shared-vocabulary/:ownerEmail/:source', protect, getSharedVocabulary);
 router.post('/extend/:source', protect, extendMySource);
 router.delete('/my-source/:source', protect, deleteMySource);
 

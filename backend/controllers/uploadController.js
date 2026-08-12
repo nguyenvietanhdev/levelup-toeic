@@ -486,3 +486,99 @@ exports.listSharees = async (req, res, next) => {
     next(err);
   }
 };
+
+// GET /api/upload/shared-topics — những bộ từ NGƯỜI KHÁC đã chia sẻ cho tôi.
+exports.getSharedTopics = async (req, res, next) => {
+  try {
+    const me = req.user.email;
+    const grants = await VocabShare.find({ granteeEmail: me })
+      .select('ownerEmail source createdAt')
+      .lean();
+    if (grants.length === 0) return res.json({ success: true, data: [] });
+
+    const soonThreshold = new Date(Date.now() + EXPIRY_WARN_DAYS * DAY_MS);
+
+    // Đếm từ cho đúng các cặp (chủ, bộ) được cấp quyền.
+    const stats = await UserUpload.aggregate([
+      { $match: { $or: grants.map(g => ({ ownerEmail: g.ownerEmail, source: g.source })) } },
+      {
+        $group: {
+          _id: { ownerEmail: '$ownerEmail', source: '$source' },
+          wordCount: { $sum: 1 },
+          lastUpload: { $max: '$createdAt' },
+          expiringSoon: {
+            $sum: { $cond: [{ $and: [{ $ne: ['$expiresAt', null] }, { $lte: ['$expiresAt', soonThreshold] }] }, 1, 0] },
+          },
+          nearestExpiry: { $min: '$expiresAt' },
+        },
+      },
+    ]);
+
+    const byKey = new Map(stats.map(s => [`${s._id.ownerEmail}|${s._id.source}`, s]));
+
+    // GHÉP TỪ PHÍA GRANT, không phải từ phía số liệu.
+    //
+    // Đây là chỗ dễ sai nhất của cả tính năng. Nếu chỉ trả những cặp có từ (kiểu
+    // inner join, hoặc thêm `$match: { wordCount: { $gt: 0 } }`), thì bộ đã bị TTL
+    // xoá sạch sẽ BIẾN MẤT khỏi danh sách — người nhận từng thấy nó, giờ không
+    // thấy nữa, và không có gì giải thích. Grant mồ côi ở lại chính là để hiện
+    // "bộ này đã hết hạn".
+    const data = grants.map(g => {
+      const s = byKey.get(`${g.ownerEmail}|${g.source}`);
+      const wordCount = s?.wordCount || 0;
+      return {
+        ownerEmail: g.ownerEmail,
+        source: g.source,
+        wordCount,
+        lastUpload: s?.lastUpload || null,
+        // Người nhận không gia hạn được (không phải dữ liệu của họ) nhưng PHẢI
+        // thấy ngày chết — không thì bộ từ biến mất mà không báo trước.
+        expiringSoon: s?.expiringSoon || 0,
+        nearestExpiry: s?.nearestExpiry || null,
+        expired: wordCount === 0,
+        sharedAt: g.createdAt,
+      };
+    });
+
+    // Bộ còn dùng được lên trước, bia mộ xuống cuối.
+    data.sort((a, b) => (a.expired - b.expired) || (new Date(b.sharedAt) - new Date(a.sharedAt)));
+
+    res.json({ success: true, warnDays: EXPIRY_WARN_DAYS, data });
+  } catch (err) {
+    console.error('getSharedTopics error:', err);
+    next(err);
+  }
+};
+
+// GET /api/upload/shared-vocabulary/:ownerEmail/:source — từ của một bộ được chia sẻ.
+exports.getSharedVocabulary = async (req, res, next) => {
+  try {
+    const me = req.user.email;
+    const ownerEmail = String(req.params.ownerEmail || '').trim().toLowerCase();
+    const source = String(req.params.source || '').trim().toLowerCase();
+
+    if (!EMAIL_RE.test(ownerEmail)) {
+      return res.status(400).json({ success: false, message: 'Email chủ sở hữu không hợp lệ' });
+    }
+
+    // TRA GRANT TRƯỚC, rồi mới đọc từ.
+    //
+    // Đảo thứ tự là lỗ IDOR: đọc từ theo `ownerEmail` client gửi rồi mới kiểm,
+    // hoặc kiểm hời hợt, thì ai cũng đọc được kho của người khác chỉ bằng cách
+    // đoán email + tên bộ. Truy vấn từ phải dùng giá trị ĐÃ QUA grant.
+    const grant = await VocabShare.findOne({ ownerEmail, source, granteeEmail: me })
+      .select('ownerEmail source')
+      .lean();
+    if (!grant) {
+      return res.status(403).json({ success: false, message: 'Bạn không có quyền xem bộ từ này' });
+    }
+
+    const words = await UserUpload.find({ ownerEmail: grant.ownerEmail, source: grant.source })
+      .sort({ createdAt: -1 });
+
+    res.json({ success: true, data: words, ownerEmail: grant.ownerEmail, source: grant.source });
+  } catch (err) {
+    console.error('getSharedVocabulary error:', err);
+    next(err);
+  }
+};
