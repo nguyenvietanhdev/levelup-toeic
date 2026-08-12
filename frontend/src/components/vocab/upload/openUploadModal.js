@@ -297,8 +297,8 @@ Danh sách từ vựng cần chuyển:
                             </div>
                             <button class="topic-export-json btn btn-secondary" title="Xuất JSON" style="padding:4px 10px;font-size:12px;white-space:nowrap"><i class="fas fa-file-code"></i> JSON</button>
                             <button class="topic-export-excel btn btn-secondary" title="Xuất Excel (CSV)" style="padding:4px 10px;font-size:12px;white-space:nowrap"><i class="fas fa-file-excel"></i> Excel</button>
-                            <button class="topic-expand-btn btn btn-secondary" style="padding:4px 10px;font-size:12px;white-space:nowrap"><i class="fas fa-chevron-down"></i> Xem</button>
                             <button class="topic-delete-all-btn btn" style="padding:4px 10px;font-size:12px;background:#fee2e2;color:#dc2626;border:1px solid #fca5a5;border-radius:6px;white-space:nowrap"><i class="fas fa-trash"></i> Xóa tất</button>
+                            <button class="topic-expand-btn btn btn-secondary" style="padding:4px 10px;font-size:12px;white-space:nowrap"><i class="fas fa-chevron-down"></i> Xem</button>
                           </div>
                           <div class="topic-words" data-source="${t.source}" style="display:none;margin-top:4px"></div>
                         </div>`;
