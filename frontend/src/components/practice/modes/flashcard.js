@@ -147,7 +147,7 @@ export const Flashcard = {
                                 ${word.image ? `
                                     <div class="card-image-col">
                                         <img src="${word.image}" class="card-image" alt="${word.en}"
-                                             onerror="this.closest('.card-image-col').style.display='none'">
+                                             class="js-hide-on-error" data-hide-closest=".card-image-col">
                                     </div>
                                 ` : ''}
                                 <div class="card-text-col">

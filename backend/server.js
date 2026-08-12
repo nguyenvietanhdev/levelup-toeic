@@ -67,7 +67,14 @@ app.use(helmet({
             // escape + adminEscaping.test.js.
             scriptSrc: ["'self'", "https://accounts.google.com"],
             scriptSrcElem: ["'self'", "https://accounts.google.com"],
-            styleSrc: ["'self'", "'unsafe-inline'"],
+            styleSrc: ["'self'", "'unsafe-inline'", "https://accounts.google.com"],
+            // GSI nạp stylesheet riêng `accounts.google.com/gsi/style` bằng thẻ
+            // <link>. `styleSrc` KHÔNG phủ được nó khi trình duyệt hỗ trợ
+            // style-src-elem: thiếu dòng này thì nút "Đăng nhập bằng Google" hiện
+            // ra không có CSS — hoặc không hiện gì cả. Đây là lần thứ tư CSP làm
+            // chết im lặng một tính năng: mỗi loại tài nguyên có directive riêng,
+            // khai thiếu một cái là hỏng đúng một chỗ mà server không thấy gì.
+            styleSrcElem: ["'self'", "'unsafe-inline'", "https://accounts.google.com"],
             // FontAwesome nhúng woff2 dạng `data:font/woff2;base64,...` thẳng trong
             // CSS đã build. Thiếu `data:` là mọi icon biến thành ô vuông trống.
             fontSrc: ["'self'", "data:"],

@@ -142,3 +142,69 @@ describe('Tư thế production — thứ chỉ sai khi rời máy dev', () => {
         expect(isFailOpen(closed)).toBe(false);
     });
 });
+
+/**
+ * CSP phải khai ĐỦ directive cho từng loại tài nguyên bên thứ ba.
+ *
+ * Mỗi loại tài nguyên có directive riêng, khai thiếu một cái là chết đúng một
+ * tính năng — mà server KHÔNG thấy gì: trình duyệt chặn ở phía client, không có
+ * request nào tới, không có dòng log nào. Đã xảy ra bốn lần:
+ *
+ *   1. thiếu media-src        → audio đề TOEIC không phát
+ *   2. thiếu blob: trong đó   → chọn giọng nào cũng ra một giọng
+ *   3. thiếu font-src data:   → icon FontAwesome thành ô vuông
+ *   4. thiếu style-src-elem   → nút "Đăng nhập bằng Google" không có CSS
+ *
+ * Lần 4 đáng chú ý: style-src ĐÃ có 'unsafe-inline' nhưng GSI nạp stylesheet
+ * bằng thẻ <link>, mà trình duyệt hỗ trợ style-src-elem thì directive đó thắng
+ * và KHÔNG kế thừa từ style-src.
+ */
+describe('CSP — đủ directive cho tài nguyên bên thứ ba', () => {
+    const fs = require('fs');
+    const path = require('path');
+    // Chỉ bỏ dòng comment ĐỨNG RIÊNG (^\s*//). Dùng /\/\/.*$/ là cắt luôn `//`
+    // trong "https://accounts.google.com" — mọi directive thành rỗng và cả 6 test
+    // đỏ oan. Đã dính đúng bẫy này khi viết test.
+    const server = fs.readFileSync(path.join(__dirname, '..', 'server.js'), 'utf8')
+        .replace(/\/\*[\s\S]*?\*\//g, '')
+        .split('\n').filter(l => !/^\s*\/\//.test(l)).join('\n');
+
+    function directive(name) {
+        // Escape phải viết \\ trong template literal — `\s` trong đó thành ký tự
+        // "s" chứ không phải lớp khoảng trắng, và regex sẽ không khớp gì cả.
+        const m = server.match(new RegExp(`${name}:\\s*\\[([^\\]]*)\\]`));
+        return m ? m[1] : null;
+    }
+
+    test('style-src-elem có mặt và cho phép Google — nút đăng nhập cần CSS của GSI', () => {
+        const d = directive('styleSrcElem');
+        expect(d).not.toBeNull();
+        expect(d).toMatch(/accounts\.google\.com/);
+    });
+
+    test('script-src-elem cho phép Google — GSI nạp bằng createElement("script")', () => {
+        expect(directive('scriptSrcElem')).toMatch(/accounts\.google\.com/);
+    });
+
+    test('media-src có blob: — TTS stream về rồi bọc thành Object URL', () => {
+        expect(directive('mediaSrc')).toMatch(/blob:/);
+    });
+
+    test('font-src có data: — FontAwesome nhúng woff2 base64 trong CSS', () => {
+        expect(directive('fontSrc')).toMatch(/data:/);
+    });
+
+    test('frame-src cho phép Google — nút đăng nhập render trong iframe GSI', () => {
+        expect(directive('frameSrc')).toMatch(/accounts\.google\.com/);
+    });
+
+    test('script-src-attr KHÔNG bị nới lỏng để chữa inline handler', () => {
+        // helmet mặc định đã đặt `script-src-attr 'none'`, code không khai lại.
+        // Nên điều cần chốt không phải "có khai chưa" mà là "có ai mở ra không":
+        // cách chữa đúng cho inline onclick là BỎ inline handler (xem
+        // noInlineHandlers.test.js bên frontend), không phải nới CSP cho nó chạy.
+        const d = directive('scriptSrcAttr');
+        if (d === null) return;                       // không khai = giữ mặc định 'none'
+        expect(d).not.toMatch(/unsafe-inline|unsafe-hashes/);
+    });
+});

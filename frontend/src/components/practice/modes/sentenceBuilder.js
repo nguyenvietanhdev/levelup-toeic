@@ -264,13 +264,30 @@ export const SentenceBuilder = {
                     ${this.selectedWords.map((phrase, index) => `
                         <span class="selected-word selected-phrase animate-pop" data-index="${index}">
                             ${phrase}
-                            <button class="remove-word" onclick="SentenceBuilder.removeWord(${index})" title="Xóa cụm">
+                            <!-- Không inline onclick: CSP production chặn
+                                 (script-src-attr 'none'). Nó còn phụ thuộc
+                                 window.SentenceBuilder tồn tại đúng lúc bấm —
+                                 hai điều kiện ngầm cho một cái nút. -->
+                            <button class="remove-word js-remove-phrase" title="Xóa cụm">
                                 <i class="fas fa-times"></i>
                             </button>
                         </span>
                     `).join(' ')}
                 </div>
             `;
+        }
+
+        // Uỷ quyền trên sentenceArea: innerHTML ở trên dựng lại toàn bộ mỗi lần
+        // chọn/bỏ một cụm, nên gắn listener vào từng nút là gắn lại liên tục.
+        // Cờ tránh gắn chồng khi hàm này chạy nhiều lần trên cùng phần tử.
+        if (sentenceArea && !sentenceArea._removeBound) {
+            sentenceArea._removeBound = true;
+            sentenceArea.addEventListener('click', (e) => {
+                const btn = e.target.closest('.js-remove-phrase');
+                if (!btn) return;
+                const idx = Number(btn.closest('[data-index]')?.dataset.index);
+                if (Number.isInteger(idx)) this.removeWord(idx);
+            });
         }
     },
 

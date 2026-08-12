@@ -122,7 +122,7 @@ export const ReviewOverlay = {
             <div class="review-card ${a.isCorrect ? 'correct' : 'wrong'}">
                 <div class="review-card-num">Câu ${num}</div>
 
-                ${word?.image ? `<img src="${word.image}" class="review-card-img" alt="${word.en}" onerror="this.style.display='none'">` : ''}
+                ${word?.image ? `<img src="${word.image}" class="review-card-img js-hide-on-error" alt="${word.en}">` : ''}
 
                 <div class="review-card-question">
                     ${questionPrompt}

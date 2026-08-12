@@ -333,7 +333,12 @@ export const Dictation = {
             <div class="dictation-full-sentence">
                 <i class="fas fa-quote-left"></i>
                 <em>${this._escapeHtml(word.example)}</em>
-                <button class="btn-speak-mini" onclick="GameLogic.speakWord('${word.example.replace(/'/g, "\\'")}', 'en-US')" title="Nghe lại">
+                <!-- Không dùng inline onclick: CSP production đặt script-src-attr
+                     'none' nên bấm nút không có gì xảy ra. Ngoài ra nhúng thẳng
+                     word.example vào mã JS mà chỉ escape dấu nháy đơn thì câu có
+                     dấu \ hoặc xuống dòng là vỡ cú pháp. Đưa qua data-* rồi đọc
+                     bằng listener: dữ liệu ở lại là dữ liệu, không thành mã. -->
+                <button class="btn-speak-mini js-speak-example" data-text="${this._escapeHtml(word.example)}" title="Nghe lại">
                     <i class="fas fa-volume-up"></i>
                 </button>
             </div>
@@ -341,6 +346,11 @@ export const Dictation = {
                 <i class="fas fa-spinner fa-spin"></i> Đang dịch...
             </div>
         `;
+
+        // Gắn sau khi innerHTML đã dựng xong — nút chỉ tồn tại từ lúc này.
+        resultEl.querySelector('.js-speak-example')?.addEventListener('click', (e) => {
+            GameLogic.speakWord(e.currentTarget.dataset.text || word.example, 'en-US');
+        });
 
         if (!allCorrect) {
             setTimeout(() => GameLogic.speakWord(word.example, 'en-US'), 700);

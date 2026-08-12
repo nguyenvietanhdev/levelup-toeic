@@ -124,7 +124,7 @@ export const ReviewMistakes = {
                     <div class="word-type">${question.word.type || ''}</div>
                     ${question.word.image ? `
                         <img src="${question.word.image}" class="word-image" alt="${question.word.en}"
-                              onerror="this.style.display='none'">
+                              class="js-hide-on-error">
                     ` : ''}
                 </div>
 

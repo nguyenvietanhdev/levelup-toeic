@@ -400,7 +400,26 @@ Danh sách từ vựng cần chuyển:
         };
 
         // "Quản lý từ vựng" ở header → đổi tab qua sự kiện (component React lắng nghe).
-        const manageBtnHtml = `<button type="button" id="upload-tab-manage" onclick="document.dispatchEvent(new CustomEvent('upload-set-tab',{detail:'manage'}))" style="display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border:1px solid var(--border-color);border-radius:8px;background:var(--bg-secondary);color:var(--text-primary);cursor:pointer;font-size:12px;font-weight:600;white-space:nowrap"><i class="fas fa-list"></i> Quản lý từ vựng</button>`;
+        //
+        // KHÔNG dùng inline onclick: CSP production đặt `script-src-attr 'none'`
+        // nên trình duyệt chặn thẳng, bấm nút không có gì xảy ra và không có lỗi
+        // nào ngoài một dòng trong console. Nút vẫn hiện, vẫn đổi màu khi rê
+        // chuột — nhìn như đang hoạt động. Đây là lần thứ hai inline handler
+        // chết vì CSP (lần trước là nút X đóng sidebar bên admin).
+        //
+        // Nút được chèn bằng dangerouslySetInnerHTML nên không gắn listener
+        // trực tiếp lúc tạo chuỗi được. Uỷ quyền ở document là cách không phụ
+        // thuộc thời điểm nút xuất hiện trong DOM.
+        const manageBtnHtml = `<button type="button" id="upload-tab-manage" style="display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border:1px solid var(--border-color);border-radius:8px;background:var(--bg-secondary);color:var(--text-primary);cursor:pointer;font-size:12px;font-weight:600;white-space:nowrap"><i class="fas fa-list"></i> Quản lý từ vựng</button>`;
+
+        if (!document._uploadManageBound) {
+            document._uploadManageBound = true;
+            document.addEventListener('click', (e) => {
+                if (e.target?.closest?.('#upload-tab-manage')) {
+                    document.dispatchEvent(new CustomEvent('upload-set-tab', { detail: 'manage' }));
+                }
+            });
+        }
 
         const contentJsx = createElement(TabbedModalBody, {
             tabs: [

@@ -127,7 +127,7 @@ export const Listening = {
                     ${question.word.image ? `
                         <div class="question-image-col">
                             <img src="${question.word.image}" class="word-image" alt="Vocabulary"
-                                 onerror="this.closest('.question-image-col').style.display='none'">
+                                 class="js-hide-on-error" data-hide-closest=".question-image-col">
                         </div>
                     ` : ''}
                 </div>

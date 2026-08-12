@@ -120,7 +120,7 @@ export const SynonymCheck = {
                     ${question.word.image ? `
                         <div class="question-image-col">
                             <img src="${question.word.image}" class="word-image" alt="${question.word.en}"
-                                 onerror="this.closest('.question-image-col').style.display='none'">
+                                 class="js-hide-on-error" data-hide-closest=".question-image-col">
                         </div>
                     ` : ''}
                 </div>

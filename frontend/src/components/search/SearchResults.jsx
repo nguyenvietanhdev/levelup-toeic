@@ -105,7 +105,7 @@ export default function SearchResults() {
                 <div class="word-detail">
                     ${word.image ? `
                         <img src="${escapeHtml(word.image)}" class="word-detail-image" alt="${escapeHtml(word.en)}"
-                             onerror="this.style.display='none'">
+                             class="js-hide-on-error">
                     ` : ''}
 
                     <div class="word-detail-phonetic">${escapeHtml(word.phonetic || '')}</div>
