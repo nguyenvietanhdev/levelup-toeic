@@ -15,6 +15,16 @@ import { downloadWords } from '@/services/vocabExport.js';
 import { GameLogic } from '@game/gameLogic.js';
 import { wordLang, ttsLangOf } from '@lib/wordLang.js';
 
+// Tên hiển thị cho các nguồn do hệ thống tạo. Nguồn người dùng tự đặt thì giữ
+// nguyên tên họ gõ — đổi tên của họ là làm họ mất dấu bộ từ của mình.
+const SOURCE_LABELS = {
+    'dich-nhanh': 'Dịch nhanh · Tiếng Anh',
+    'dich-nhanh-zh': 'Dịch nhanh · Tiếng Trung',
+};
+function sourceLabel(source) {
+    return SOURCE_LABELS[source] || source;
+}
+
 /** Escape trước khi vào innerHTML — `en`/`vn` là chữ người dùng tự nhập. */
 function esc(s) {
     return String(s ?? '').replace(/[&<>"']/g, c => (
@@ -301,7 +311,7 @@ Danh sách từ vựng cần chuyển:
                           <div class="topic-row${soon > 0 ? ' topic-row--expiring' : ''}" data-source="${t.source}" data-count="${t.wordCount}"
                             style="display:flex;align-items:center;gap:8px;padding:8px 10px;border:1px solid var(--border-color);border-radius:8px;background:var(--bg-secondary)">
                             <div style="flex:1;min-width:0">
-                                <div style="font-weight:600;font-size:13px;color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${t.source}</div>
+                                <div style="font-weight:600;font-size:13px;color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(sourceLabel(t.source))}</div>
                                 <div style="font-size:11px;color:var(--text-secondary)">${t.wordCount} từ · ${date}${expInfo}</div>
                             </div>
                             <button class="topic-export-json btn btn-secondary" title="Xuất JSON" style="padding:4px 10px;font-size:12px;white-space:nowrap"><i class="fas fa-file-code"></i> JSON</button>

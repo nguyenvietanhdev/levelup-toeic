@@ -228,10 +228,25 @@ export default function TranslateModal({ text, onClose, onOpenFavorites }) {
             const langOfEn = result.sourceLang === 'vi' ? targetLang : result.sourceLang;
             const savedLang = baseLang(langOfEn) === 'zh' ? 'zh' : 'en';
 
+            // Tách kho theo NGÔN NGỮ, không dồn chung một chỗ.
+            //
+            // Trước đây mọi từ đều vào source 'dich-nhanh' / part 'DICH-NHANH'.
+            // Mà luyện tập lọc theo `part` (practiceManager.js:76), nên chọn Part
+            // đó lúc đang học tiếng Anh sẽ ra lẫn chữ Hán — và ngược lại. Trường
+            // `lang` thêm ở commit trước chỉ chọn được GIỌNG ĐỌC, không tách được
+            // kho, vì bộ lọc không nhìn tới nó.
+            //
+            // Từ tiếng Anh GIỮ NGUYÊN 'dich-nhanh' để mọi bản ghi cũ không mồ côi:
+            // đổi cả hai là 13 từ đang có trong kho cũ biến mất khỏi nguồn mà
+            // người dùng vẫn thấy tên cũ trong danh sách.
+            const isZhWord = savedLang === 'zh';
+            const source = isZhWord ? 'dich-nhanh-zh' : 'dich-nhanh';
+            const part = isZhWord ? 'DICH-NHANH-ZH' : 'DICH-NHANH';
+
             const res = await UploadVocabAPI.create({
                 en, vn, lang: savedLang,
-                source: 'dich-nhanh',
-                part: 'DICH-NHANH',
+                source,
+                part,
                 type: result.part || '',
                 phonetic: result.phonetic || '',
                 synonyms: result.synonyms || '',
