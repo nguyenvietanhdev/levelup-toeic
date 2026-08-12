@@ -273,11 +273,12 @@ export default function TranslateModal({ text, onClose, onOpenFavorites, editWor
             // `lang` thêm ở commit trước chỉ chọn được GIỌNG ĐỌC, không tách được
             // kho, vì bộ lọc không nhìn tới nó.
             //
-            // Từ tiếng Anh giữ 'dich-nhanh'; 20 bản ghi tiếng Trung có sẵn trong
-            // kho đó đã được chuyển sang kho mới bằng scripts/splitDichNhanhByLang.js.
+            // Cả hai kho đều mang hậu tố ngôn ngữ — 'dich-nhanh' trơ trọi không
+            // nói được nó chứa thứ tiếng gì, mà giờ có tới hai kho. Bản ghi cũ
+            // trong 'dich-nhanh' đã chuyển hết bằng scripts/splitDichNhanhByLang.js.
             const isZhWord = savedLang === 'zh';
-            const source = isZhWord ? 'dich-nhanh-zh' : 'dich-nhanh';
-            const part = isZhWord ? 'DICH-NHANH-ZH' : 'DICH-NHANH';
+            const source = isZhWord ? 'dich-nhanh-zh' : 'dich-nhanh-en';
+            const part = isZhWord ? 'DICH-NHANH-ZH' : 'DICH-NHANH-EN';
 
             const res = await UploadVocabAPI.create({
                 en, vn, lang: savedLang,

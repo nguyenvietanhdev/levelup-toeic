@@ -18,8 +18,11 @@ import { wordLang, ttsLangOf } from '@lib/wordLang.js';
 // Tên hiển thị cho các nguồn do hệ thống tạo. Nguồn người dùng tự đặt thì giữ
 // nguyên tên họ gõ — đổi tên của họ là làm họ mất dấu bộ từ của mình.
 const SOURCE_LABELS = {
-    'dich-nhanh': 'Dịch nhanh · Tiếng Anh',
+    'dich-nhanh-en': 'Dịch nhanh · Tiếng Anh',
     'dich-nhanh-zh': 'Dịch nhanh · Tiếng Trung',
+    // Tên cũ trước khi tách theo ngôn ngữ. Giữ lại phòng còn bản ghi sót — mất
+    // nhãn thì nó hiện ra dưới dạng chuỗi kỹ thuật chứ không phải biến mất.
+    'dich-nhanh': 'Dịch nhanh (cũ)',
 };
 function sourceLabel(source) {
     return SOURCE_LABELS[source] || source;

@@ -18,8 +18,8 @@ import { describe, test, expect } from 'vitest';
 function targetStore(savedLang) {
     const isZh = savedLang === 'zh';
     return {
-        source: isZh ? 'dich-nhanh-zh' : 'dich-nhanh',
-        part: isZh ? 'DICH-NHANH-ZH' : 'DICH-NHANH',
+        source: isZh ? 'dich-nhanh-zh' : 'dich-nhanh-en',
+        part: isZh ? 'DICH-NHANH-ZH' : 'DICH-NHANH-EN',
     };
 }
 
@@ -28,8 +28,10 @@ describe('chọn kho theo ngôn ngữ', () => {
         expect(targetStore('zh')).toEqual({ source: 'dich-nhanh-zh', part: 'DICH-NHANH-ZH' });
     });
 
-    test('tiếng Anh giữ kho cũ — bản ghi cũ không mồ côi', () => {
-        expect(targetStore('en')).toEqual({ source: 'dich-nhanh', part: 'DICH-NHANH' });
+    test('tiếng Anh có kho riêng, tên nói rõ ngôn ngữ', () => {
+        // Kho 'dich-nhanh' trơ trọi không nói được nó chứa thứ tiếng gì, mà giờ
+        // có tới hai kho. Bản ghi cũ đã chuyển hết sang hai kho có hậu tố.
+        expect(targetStore('en')).toEqual({ source: 'dich-nhanh-en', part: 'DICH-NHANH-EN' });
     });
 
     test('hai ngôn ngữ KHÔNG dùng chung part — đây là điều kiện để lọc đúng', () => {
@@ -37,8 +39,8 @@ describe('chọn kho theo ngôn ngữ', () => {
     });
 
     test('giá trị lang lạ rơi về tiếng Anh, không tạo kho thứ ba', () => {
-        expect(targetStore('fr').source).toBe('dich-nhanh');
-        expect(targetStore(undefined).source).toBe('dich-nhanh');
+        expect(targetStore('fr').source).toBe('dich-nhanh-en');
+        expect(targetStore(undefined).source).toBe('dich-nhanh-en');
     });
 });
 
@@ -60,11 +62,15 @@ describe('TranslateModal thực sự tách kho', () => {
     test('có nhánh chọn kho theo ngôn ngữ', () => {
         expect(src).toMatch(/dich-nhanh-zh/);
         expect(src).toMatch(/DICH-NHANH-ZH/);
+        expect(src).toMatch(/dich-nhanh-en/);
+        expect(src).toMatch(/DICH-NHANH-EN/);
     });
 
     test('KHÔNG còn gán cứng source/part cho mọi từ', () => {
         // Đây là hình dạng cũ đã gây lỗi.
         expect(src).not.toMatch(/source:\s*['"]dich-nhanh['"]\s*,/);
         expect(src).not.toMatch(/part:\s*['"]DICH-NHANH['"]\s*,/);
+        // Và không còn kho trơ không hậu tố ngôn ngữ ở bất kỳ đâu.
+        expect(src).not.toMatch(/['"]dich-nhanh['"]/);
     });
 });

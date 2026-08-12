@@ -23,8 +23,13 @@ const UserUpload = require('../models/UserUpload');
 const HANZI = /[一-鿿㐀-䶿]/;
 const APPLY = process.argv.includes('--apply');
 
+// Cả hai kho đều mang hậu tố ngôn ngữ. 'dich-nhanh' trơ trọi không nói được nó
+// chứa thứ tiếng gì, mà giờ có hai kho — nên kho cũ được dọn sạch, không giữ lại
+// làm kho tiếng Anh.
 const ZH_SOURCE = 'dich-nhanh-zh';
 const ZH_PART = 'DICH-NHANH-ZH';
+const EN_SOURCE = 'dich-nhanh-en';
+const EN_PART = 'DICH-NHANH-EN';
 
 async function main() {
     await mongoose.connect(process.env.MONGODB_URI);
@@ -34,37 +39,49 @@ async function main() {
     const rows = await UserUpload.find({ source: 'dich-nhanh' })
         .select('en lang source part ownerEmail').lean();
 
-    const toMove = rows.filter(r =>
-        r.lang === 'zh' || (r.lang !== 'en' && HANZI.test(r.en || ''))
-    );
+    const isZh = r => r.lang === 'zh' || (r.lang !== 'en' && HANZI.test(r.en || ''));
+    const toZh = rows.filter(isZh);
+    const toEn = rows.filter(r => !isZh(r));
 
     console.log(`Kho 'dich-nhanh': ${rows.length} từ`);
-    console.log(`  cần chuyển sang '${ZH_SOURCE}': ${toMove.length}`);
-    console.log(`  giữ nguyên (tiếng Anh): ${rows.length - toMove.length}`);
+    console.log(`  → '${ZH_SOURCE}': ${toZh.length}`);
+    console.log(`  → '${EN_SOURCE}': ${toEn.length}`);
 
-    if (toMove.length === 0) {
-        console.log('Không có gì để chuyển.');
+    if (rows.length === 0) {
+        console.log('Kho cũ đã rỗng, không có gì để chuyển.');
         return mongoose.disconnect();
     }
 
-    console.log('\nVí dụ:', toMove.slice(0, 5).map(r => r.en).join(' · '));
+    if (toZh.length) console.log('\nTiếng Trung:', toZh.slice(0, 5).map(r => r.en).join(' · '));
+    if (toEn.length) console.log('Tiếng Anh:  ', toEn.slice(0, 5).map(r => r.en).join(' · '));
 
     if (!APPLY) {
         console.log('\n[CHẠY THỬ] Chưa ghi gì. Thêm --apply để thực hiện.');
         return mongoose.disconnect();
     }
 
-    const res = await UserUpload.updateMany(
-        { _id: { $in: toMove.map(r => r._id) } },
-        { $set: { source: ZH_SOURCE, part: ZH_PART, lang: 'zh' } }
-    );
-    console.log(`\nĐã chuyển ${res.modifiedCount} từ sang '${ZH_SOURCE}'.`);
+    if (toZh.length) {
+        const r = await UserUpload.updateMany(
+            { _id: { $in: toZh.map(x => x._id) } },
+            { $set: { source: ZH_SOURCE, part: ZH_PART, lang: 'zh' } }
+        );
+        console.log(`\nĐã chuyển ${r.modifiedCount} từ sang '${ZH_SOURCE}'.`);
+    }
+    if (toEn.length) {
+        const r = await UserUpload.updateMany(
+            { _id: { $in: toEn.map(x => x._id) } },
+            { $set: { source: EN_SOURCE, part: EN_PART, lang: 'en' } }
+        );
+        console.log(`Đã chuyển ${r.modifiedCount} từ sang '${EN_SOURCE}'.`);
+    }
 
     // Đối chiếu lại từ DB thay vì tin vào modifiedCount — số đó chỉ nói lệnh chạy,
-    // không nói kết quả đúng.
+    // không nói kết quả đúng. Kho cũ phải về 0.
     const left = await UserUpload.countDocuments({ source: 'dich-nhanh' });
-    const moved = await UserUpload.countDocuments({ source: ZH_SOURCE });
-    console.log(`Kiểm lại: 'dich-nhanh' còn ${left} · '${ZH_SOURCE}' có ${moved}`);
+    const zh = await UserUpload.countDocuments({ source: ZH_SOURCE });
+    const en = await UserUpload.countDocuments({ source: EN_SOURCE });
+    console.log(`Kiểm lại: 'dich-nhanh' còn ${left} · '${ZH_SOURCE}' ${zh} · '${EN_SOURCE}' ${en}`);
+    if (left > 0) console.log('CẢNH BÁO: kho cũ vẫn còn từ — kiểm tra lại.');
 
     await mongoose.disconnect();
 }
