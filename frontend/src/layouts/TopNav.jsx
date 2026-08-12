@@ -41,6 +41,17 @@ export default function TopNav() {
     // phiên nhận dạng nằm trong ref vì nó không phải dữ liệu render.
     const [speechOn, setSpeechOn] = useState(false);
     const speechRef = useRef(null);
+    // Chữ cuối cùng nghe được trong phiên đang chạy. Phải là ref chứ không phải
+    // state: callback `onStateChange` do effect tạo một lần, closure của nó giữ
+    // giá trị `searchQuery` của lần render đó và không bao giờ thấy chữ mới.
+    const lastHeardRef = useRef('');
+    // Nói xong có TỰ mở popup dịch không. Bật khi vào bằng cử chỉ giữ Shift, tắt
+    // khi bấm nút micro — bấm nút là muốn điền vào ô tìm kiếm, tự nhảy popup lên
+    // là cướp thao tác.
+    const autoTranslateRef = useRef(false);
+    // Hàm mở popup dịch, đặt trong ref để `onStateChange` gọi được mà không phải
+    // dựng lại phiên nhận dạng mỗi lần hàm đó đổi.
+    const openTranslateRef = useRef(null);
     const speechSupported = isSpeechSupported();
     // readOnly cho tới khi user tương tác → chặn Edge autofill email lúc load trang
     const [searchReadOnly, setSearchReadOnly] = useState(true);
@@ -157,8 +168,29 @@ export default function TopNav() {
             onText: (text) => {
                 setSearchReadOnly(false);
                 setSearchQuery(text);
+                // Nhớ lại chữ cuối cùng nghe được, để lúc dừng còn biết mở popup
+                // dịch với nội dung gì. Không đọc `searchQuery` trong onStateChange
+                // được: closure ở đó giữ giá trị cũ của lần render tạo ra nó.
+                lastHeardRef.current = text;
             },
-            onStateChange: setSpeechOn,
+            onStateChange: (listening) => {
+                setSpeechOn(listening);
+                if (listening) {
+                    // Bắt đầu phiên mới thì quên chữ của phiên trước, không thì
+                    // bấm nói rồi im lặng sẽ mở popup với nội dung nói lần trước.
+                    lastHeardRef.current = '';
+                    return;
+                }
+                // Vừa dừng nghe = người dùng nói xong. Mở popup dịch.
+                //
+                // Mốc là lúc DỪNG chứ không phải `isFinal`: một phiên có thể chốt
+                // nhiều đoạn giữa chừng, mở popup ở đó là cắt ngang lúc còn đang nói.
+                const text = (lastHeardRef.current || '').trim();
+                lastHeardRef.current = '';
+                if (!text || !autoTranslateRef.current) return;
+                autoTranslateRef.current = false;
+                openTranslateRef.current?.(text);
+            },
             onError: (code) => {
                 Notification.show({
                     type: 'warning',
@@ -183,25 +215,51 @@ export default function TopNav() {
         duration: 5000,
     }), []);
 
+    // Đặt vào ref để callback nhận dạng giọng nói (tạo một lần trong effect) luôn
+    // gọi được bản mới nhất, mà không phải dựng lại cả phiên mỗi lần khoá đổi.
+    openTranslateRef.current = (text) => {
+        if (translateLock.locked) return warnLocked('Dịch nhanh', translateLock.requiredLevel);
+        setTranslateEdit(null);     // vào bằng giọng nói luôn là dịch mới, không phải sửa
+        setTranslateText(text);
+    };
+
     const stopSpeech = useCallback(() => speechRef.current?.stop(), []);
     const startSpeech = useCallback(() => {
         if (isInPractice) return;   // đang luyện tập thì ô tìm kiếm khoá
+
+        // Kéo con trỏ về ô tìm kiếm trước khi nghe. Không có bước này thì đang ở
+        // giữa trang bấm phím nói xong, chữ hiện ra ở một ô mà con trỏ không nằm
+        // trong đó — gõ sửa tiếp là gõ vào chỗ khác.
+        setSearchReadOnly(false);
+        document.getElementById('search-input')?.focus();
+
         speechRef.current?.start();
     }, [isInPractice]);
     const toggleSpeech = useCallback(() => {
         if (speechRef.current?.isListening()) stopSpeech();
-        else startSpeech();
+        else {
+            // Bấm nút micro = muốn điền vào ô tìm kiếm. Tự nhảy popup dịch lên
+            // là cướp thao tác, nên KHÔNG bật cờ tự dịch ở đây.
+            autoTranslateRef.current = false;
+            startSpeech();
+        }
     }, [startSpeech, stopSpeech]);
 
-    // GIỮ Shift để nói, thả ra thì dừng. Ngưỡng giữ + huỷ khi có phím khác nằm
-    // trong `createHoldGesture` — nếu không có hai lớp đó thì mỗi lần gõ chữ hoa
-    // là một lần bật micro, và `Shift+Enter` (dịch nhanh) sẽ không dùng được nữa.
+    // GIỮ Shift để nói, thả ra thì dừng — và thả xong TỰ MỞ popup dịch với nội
+    // dung vừa nói (xem autoTranslateRef trong onStateChange). Dùng được ở bất kỳ
+    // đâu trong trang, không cần bấm vào ô tìm kiếm trước: `startSpeech` tự kéo
+    // con trỏ về đó.
+    //
+    // Ngưỡng giữ + huỷ khi có phím khác nằm trong `createHoldGesture` — không có
+    // hai lớp đó thì mỗi lần gõ chữ hoa là một lần bật micro.
     useEffect(() => {
         if (!speechSupported) return;
 
         const gesture = createHoldGesture({
             thresholdMs: 350,
-            onStart: startSpeech,
+            // Vào bằng phím tắt thì nói xong tự mở popup dịch; bấm nút micro thì
+            // không (xem toggleSpeech).
+            onStart: () => { autoTranslateRef.current = true; startSpeech(); },
             onStop: stopSpeech,
         });
 
@@ -349,7 +407,7 @@ export default function TopNav() {
                                 ? '🎤 Đang nghe... nói từ bạn muốn tìm'
                                 : translateLock.locked
                                     ? `Tìm từ vựng... (Dịch nhanh mở ở Level ${translateLock.requiredLevel})`
-                                    : 'Tìm từ vựng... (Enter: dịch · Esc: xoá · giữ Shift: nói)'}
+                                    : 'Tìm từ vựng... (Enter: dịch · giữ Shift: nói · Esc: xoá)'}
                         autoComplete="off"
                         readOnly={searchReadOnly || isInPractice}
                         disabled={isInPractice}
