@@ -8134,3 +8134,81 @@ mark {
     color: var(--text-secondary);
     font-variant-numeric: tabular-nums;
 }
+
+/* ============================================================
+   Bảng "Từ vựng riêng" — mỗi dòng một từ, có nút nghe phát âm.
+   Trước đây toàn bộ style viết inline trong chuỗi HTML: dài, khó
+   sửa, và không đổi được theo theme.
+   ============================================================ */
+.uv-th {
+    padding: 8px 10px;
+    text-align: left;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    color: var(--text-tertiary, #94a3b8);
+    border-bottom: 1px solid var(--border-color);
+    white-space: nowrap;
+}
+
+.uv-row { border-bottom: 1px solid var(--border-color); transition: background 0.12s; }
+.uv-row:last-child { border-bottom: none; }
+.uv-row:hover { background: var(--bg-secondary); }
+
+.uv-row td { padding: 8px 10px; vertical-align: middle; }
+
+.uv-word { color: var(--text-primary); font-weight: 600; }
+/* Chữ Hán ở cỡ chữ Latin thì rối nét — phóng to và giãn ra cho đọc được. */
+.uv-word.is-zh { font-size: 1.15em; letter-spacing: 2px; }
+
+.uv-phonetic {
+    display: block;
+    margin-top: 1px;
+    font-size: 11px;
+    font-weight: 400;
+    color: var(--text-tertiary, #94a3b8);
+    letter-spacing: 0;
+}
+
+.uv-vn { color: var(--text-secondary); }
+
+.uv-part {
+    display: inline-block;
+    padding: 2px 7px;
+    border-radius: 999px;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    white-space: nowrap;
+}
+
+.uv-exp { color: var(--text-tertiary, #94a3b8); font-size: 11px; white-space: nowrap; }
+
+.uv-actions { text-align: right; white-space: nowrap; }
+
+.uv-btn {
+    width: 26px;
+    height: 26px;
+    margin-left: 4px;
+    border-radius: 6px;
+    border: 1px solid var(--border-color);
+    background: var(--bg-secondary);
+    color: var(--text-secondary);
+    font-size: 11px;
+    cursor: pointer;
+    transition: background 0.12s, color 0.12s, border-color 0.12s;
+}
+.uv-btn:hover { background: var(--primary-color); border-color: var(--primary-color); color: #fff; }
+
+/* Nút xoá chỉ đỏ khi rê chuột — đỏ thường trực làm cả bảng trông như đang báo
+   lỗi, mà đây là danh sách bình thường. */
+.uv-del-btn:hover { background: #dc2626; border-color: #dc2626; }
+
+@media (max-width: 560px) {
+    /* Điện thoại: bỏ cột Part và Ngày hết hạn, giữ từ - nghĩa - nút. */
+    .uv-th:nth-child(3), .uv-th:nth-child(4),
+    .uv-row td:nth-child(3), .uv-row td:nth-child(4) { display: none; }
+}

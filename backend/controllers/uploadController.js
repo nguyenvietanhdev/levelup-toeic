@@ -47,7 +47,7 @@ exports.uploadVocabulary = async (req, res, next) => {
     const email = userDoc?.email;
     const {
       en, vn, phonetic, part, synonyms,
-      type, image, example, level, source, retentionDays
+      type, image, example, level, source, retentionDays, lang
     } = req.body;
 
     if (!en || !String(en).trim()) {
@@ -84,6 +84,9 @@ exports.uploadVocabulary = async (req, res, next) => {
       filter,
       {
         $set: {
+          // Chỉ nhận đúng hai giá trị — client gửi gì khác thì coi như 'en',
+          // không để giá trị lạ lọt vào rồi TTS đọc bằng giọng không tồn tại.
+          lang: lang === 'zh' ? 'zh' : 'en',
           en: enL,
           vn: lower(vn),
           phonetic: lower(phonetic),

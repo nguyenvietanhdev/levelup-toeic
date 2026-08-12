@@ -10,6 +10,16 @@ const mongoose = require('mongoose');
  */
 const userUploadSchema = new mongoose.Schema(
     {
+        // Ngôn ngữ của trường `en`. Bộ từ vựng riêng trộn lẫn tiếng Anh và tiếng
+        // Trung: gõ `你会吗` vào ô Dịch nhanh rồi lưu là chữ Hán nằm trong `en`,
+        // ngay cạnh những từ tiếng Anh thật. Không có trường này thì không cách
+        // nào biết phải đọc bằng giọng nào — TTS đọc `你会吗` bằng giọng Anh ra
+        // một tràng vô nghĩa, mà không có lỗi gì cả.
+        //
+        // Mặc định 'en' để 100% bản ghi cũ giữ nguyên hành vi; chỉ từ mới lưu từ
+        // Dịch nhanh mới mang 'zh'. Từ cũ đã lẫn chữ Hán thì đoán bằng mặt chữ
+        // (xem detectLang ở frontend), không cần backfill.
+        lang: { type: String, enum: ['en', 'zh'], default: 'en' },
         en: { type: String, required: true, trim: true },
         vn: { type: String, trim: true, default: '' },
         phonetic: { type: String, default: '' },

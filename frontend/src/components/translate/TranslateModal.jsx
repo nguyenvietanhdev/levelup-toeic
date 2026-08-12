@@ -189,8 +189,21 @@ export default function TranslateModal({ text, onClose, onOpenFavorites }) {
         if (result.sourceLang === 'vi') { en = vnText; vn = inputText.trim(); }
 
         try {
+            // Ghi lại NGÔN NGỮ của từ được lưu. Bộ từ vựng riêng trộn Anh–Trung:
+            // gõ `你会吗` rồi lưu là chữ Hán nằm trong trường `en` cạnh từ tiếng
+            // Anh thật. Không có cờ này thì nút phát âm đọc `你会吗` bằng giọng
+            // Anh — ra một tràng vô nghĩa mà không có lỗi nào.
+            // Trường `en` chứa BẢN DỊCH khi người dùng gõ tiếng Việt (xem dòng
+            // hoán đổi ngay trên), nên ngôn ngữ của nó là ngôn ngữ ĐÍCH; còn lại
+            // thì là ngôn ngữ NGUỒN. `targetLang` là state riêng, không nằm trong
+            // `result` — dùng result.targetLang là undefined và mọi từ Trung bị
+            // ghi nhầm thành 'en'.
+            // baseLang() vì Google trả 'zh-CN'/'zh-TW', không phải 'zh'.
+            const langOfEn = result.sourceLang === 'vi' ? targetLang : result.sourceLang;
+            const savedLang = baseLang(langOfEn) === 'zh' ? 'zh' : 'en';
+
             const res = await UploadVocabAPI.create({
-                en, vn,
+                en, vn, lang: savedLang,
                 source: 'dich-nhanh',
                 part: 'DICH-NHANH',
                 type: result.part || '',

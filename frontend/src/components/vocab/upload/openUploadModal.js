@@ -12,6 +12,15 @@ import TabbedModalBody from './TabbedModalBody.jsx';
 import { UploadVocabAPI } from '@api/uploadVocab.js';
 import { normalizeVocabItem } from '@/services/vocabUpload.js';
 import { downloadWords } from '@/services/vocabExport.js';
+import { GameLogic } from '@game/gameLogic.js';
+import { wordLang, ttsLangOf } from '@lib/wordLang.js';
+
+/** Escape trước khi vào innerHTML — `en`/`vn` là chữ người dùng tự nhập. */
+function esc(s) {
+    return String(s ?? '').replace(/[&<>"']/g, c => (
+        { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]
+    ));
+}
 
 // Retention options (days) the user can pick when uploading private vocab.
 const RETENTION_OPTIONS = [3, 7, 14, 30];
@@ -343,31 +352,52 @@ Danh sách từ vựng cần chuyển:
                     <div style="max-height:260px;overflow-y:auto;border:1px solid var(--border-color);border-radius:8px">
                         <table style="width:100%;border-collapse:collapse;font-size:12px">
                             <thead><tr style="background:var(--bg-tertiary,var(--bg-secondary))">
-                                <th style="padding:6px 8px;text-align:left;color:var(--text-secondary);font-weight:600;border-bottom:1px solid var(--border-color)">English</th>
-                                <th style="padding:6px 8px;text-align:left;color:var(--text-secondary);font-weight:600;border-bottom:1px solid var(--border-color)">Vietnamese</th>
-                                <th style="padding:6px 8px;text-align:left;color:var(--text-secondary);font-weight:600;border-bottom:1px solid var(--border-color)">Part</th>
-                                <th style="padding:6px 8px;text-align:left;color:var(--text-secondary);font-weight:600;border-bottom:1px solid var(--border-color)">Ngày hết hạn</th>
-                                <th style="padding:6px 8px;border-bottom:1px solid var(--border-color)"></th>
+                                <th class="uv-th">English</th>
+                                <th class="uv-th">Vietnamese</th>
+                                <th class="uv-th">Part</th>
+                                <th class="uv-th">Ngày hết hạn</th>
+                                <th class="uv-th"></th>
                             </tr></thead>
                             <tbody id="word-rows">
-                                ${res.data.map(w => `
-                                    <tr id="word-row-${w._id}" style="border-bottom:1px solid var(--border-color)">
-                                        <td style="padding:6px 8px;color:var(--text-primary);font-weight:500">${w.en}</td>
-                                        <td style="padding:6px 8px;color:var(--text-secondary)">${w.vn || '—'}</td>
-                                        <td style="padding:6px 8px;color:var(--text-secondary)">${w.part || '—'}</td>
-                                        <td style="padding:6px 8px;color:var(--text-secondary)">${w.expiresAt ? new Date(w.expiresAt).toLocaleDateString('vi-VN') : 'Không hết hạn'}</td>
-                                        <td style="padding:6px 8px;text-align:right">
-                                            <button class="word-delete-btn" data-id="${w._id}" data-en="${w.en}"
-                                                style="padding:3px 8px;background:#fee2e2;color:#dc2626;border:1px solid #fca5a5;border-radius:4px;font-size:11px;cursor:pointer">
+                                ${res.data.map(w => {
+                                    // `en` và `vn` là dữ liệu người dùng nhập, phải escape
+                                    // trước khi vào innerHTML — trước đây nhét thẳng.
+                                    const en = esc(w.en);
+                                    const isZh = wordLang(w) === 'zh';
+                                    return `
+                                    <tr class="uv-row" id="word-row-${w._id}">
+                                        <td class="uv-word ${isZh ? 'is-zh' : ''}">
+                                            ${en}
+                                            ${w.phonetic ? `<span class="uv-phonetic">${esc(w.phonetic)}</span>` : ''}
+                                        </td>
+                                        <td class="uv-vn">${esc(w.vn) || '—'}</td>
+                                        <td><span class="uv-part">${esc(w.part) || '—'}</span></td>
+                                        <td class="uv-exp">${w.expiresAt ? new Date(w.expiresAt).toLocaleDateString('vi-VN') : 'Không hết hạn'}</td>
+                                        <td class="uv-actions">
+                                            <button class="uv-btn uv-speak-btn" title="Nghe phát âm"
+                                                data-text="${en}" data-lang="${ttsLangOf(w)}">
+                                                <i class="fas fa-volume-up"></i>
+                                            </button>
+                                            <button class="uv-btn uv-del-btn word-delete-btn" title="Xoá từ này"
+                                                data-id="${w._id}" data-en="${en}">
                                                 <i class="fas fa-times"></i>
                                             </button>
                                         </td>
-                                    </tr>`).join('')}
+                                    </tr>`;
+                                }).join('')}
                             </tbody>
                         </table>
                     </div>`;
                 panel.querySelectorAll('.word-delete-btn').forEach(btn => {
                     btn.addEventListener('click', () => deleteWord(btn.dataset.id, btn.dataset.en, source));
+                });
+
+                // Nghe phát âm. `data-lang` đã tính sẵn theo từng từ (xem wordLang):
+                // bộ này trộn Anh–Trung nên đọc cả bảng bằng một giọng là sai.
+                panel.querySelectorAll('.uv-speak-btn').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        GameLogic.speakWord(btn.dataset.text, btn.dataset.lang || 'en-US');
+                    });
                 });
             } catch (err) { panel.innerHTML = `<p style="color:#dc2626;font-size:13px">Lỗi: ${err.message}</p>`; }
         };
