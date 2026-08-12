@@ -1,5 +1,7 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useEscapeToClose } from '@lib/useEscapeToClose.js';
+import { isSpeechSupported, speechLangFor, createSpeechInput } from '@lib/speechInput.js';
+import { createHoldGesture } from '@lib/holdGesture.js';
 import { GameState } from '@game/state.js';
 import { getVocabLang } from '@api/vocabulary.js';
 import { FavoritesAPI } from '@api/favorites.js';
@@ -104,6 +106,79 @@ export default function TranslateModal({ text, onClose, onOpenFavorites, editWor
     const [srcLang, setSrcLang] = useState('auto');    // ngôn ngữ nguồn (auto = tự phát hiện)
 
     useEscapeToClose(onClose);
+
+    // ── Giữ Shift để nói NGAY TRONG popup ────────────────────────────────────
+    //
+    // Xung đột phải giải: thanh nav cũng bắt phím Shift để nói vào ô tìm kiếm.
+    // Hai listener cùng nghe một phím thì popup đang mở mà giữ Shift là chữ chui
+    // vào ô tìm kiếm sau lưng — đúng thứ vừa xảy ra trên màn hình.
+    //
+    // Cách giải KHÔNG phải là thêm điều kiện ở mỗi bên (rồi bên thứ ba lại quên),
+    // mà là NHƯỜNG QUYỀN: popup đăng ký `window._speechOwner` khi mở, nav thấy có
+    // chủ khác thì đứng im. Ai mở sau thì chiếm, đóng thì trả lại.
+    const speechRef = useRef(null);
+    const [listening, setListening] = useState(false);
+    const heardRef = useRef('');
+
+    useEffect(() => {
+        if (!isSpeechSupported()) return;
+
+        const s = createSpeechInput({
+            lang: speechLangFor(getVocabLang()),
+            onText: (t) => { heardRef.current = t; setSrcDraft(t); },
+            onStateChange: (on) => {
+                setListening(on);
+                if (on) { heardRef.current = ''; return; }
+                // Nói xong thì dịch luôn nội dung mới — không bắt bấm thêm.
+                const t = heardRef.current.trim();
+                heardRef.current = '';
+                if (t) setInputText(t);
+            },
+            onError: () => Notification.show({
+                type: 'warning', title: '🎤 Không nghe được',
+                message: 'Thử lại hoặc gõ tay.', duration: 3000,
+            }),
+        });
+        speechRef.current = s;
+
+        const gesture = createHoldGesture({
+            thresholdMs: 350,
+            onStart: () => { setSrcDraft(''); s.start(); },   // xoá chữ cũ trước khi nghe
+            onStop: () => s.stop(),
+        });
+
+        // Đang gõ trong một ô của chính popup thì đừng cướp phím.
+        const typing = () => {
+            const el = document.activeElement;
+            return el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.isContentEditable);
+        };
+
+        const onKeyDown = (e) => {
+            if (e.key === 'Shift') { if (!typing()) gesture.keyDown({ repeat: e.repeat }); }
+            else gesture.otherKeyDown();
+        };
+        const onKeyUp = (e) => { if (e.key === 'Shift') gesture.keyUp(); };
+        const onBlur = () => { gesture.reset(); s.stop(); };
+
+        // Chiếm quyền. Nav đọc cờ này để tự đứng im.
+        const prevOwner = window._speechOwner;
+        window._speechOwner = 'translate-modal';
+
+        window.addEventListener('keydown', onKeyDown);
+        window.addEventListener('keyup', onKeyUp);
+        window.addEventListener('blur', onBlur);
+        return () => {
+            window.removeEventListener('keydown', onKeyDown);
+            window.removeEventListener('keyup', onKeyUp);
+            window.removeEventListener('blur', onBlur);
+            gesture.reset();
+            s.destroy();
+            speechRef.current = null;
+            // Trả quyền về đúng chủ trước đó, không xoá trắng — lồng hai popup
+            // thì cái trong đóng phải trả lại cho cái ngoài, không phải cho nav.
+            window._speechOwner = prevOwner;
+        };
+    }, []);
 
     // Số từ yêu thích đọc thẳng từ GameState — có sẵn tại chỗ, không tốn request.
     // Đặt trong state để còn tăng lên ngay khi bấm Thêm (xem hai handler bên dưới).

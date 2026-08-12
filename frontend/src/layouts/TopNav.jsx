@@ -233,6 +233,11 @@ export default function TopNav() {
         setSearchReadOnly(false);
         document.getElementById('search-input')?.focus();
 
+        // Xoá chữ cũ trước khi nghe. Không xoá thì chữ mới NỐI ĐUÔI chữ cũ —
+        // ô còn `管家爱华。` mà nói `你好` sẽ ra một câu vô nghĩa, và popup dịch
+        // mở lên với nội dung đó.
+        setSearchQuery('');
+
         speechRef.current?.start();
     }, [isInPractice]);
     const toggleSpeech = useCallback(() => {
@@ -267,9 +272,21 @@ export default function TopNav() {
         // vào ô tìm kiếm thì được, chứ đang soạn trong popup dịch mà Shift cướp
         // micro thì rất khó chịu.
         const busyElsewhere = () => {
+            // Có cửa sổ khác đang CHIẾM phím nói (popup Dịch nhanh) thì nav đứng
+            // im. Không có lớp này thì hai listener cùng nghe một phím: popup mở
+            // ra, giữ Shift, chữ chui vào ô tìm kiếm sau lưng người dùng.
+            //
+            // Kiểm bằng quyền sở hữu chứ không bằng focus: popup vừa mở thì
+            // activeElement còn là <body>, kiểm focus không phát hiện được gì.
+            if (window._speechOwner) return true;
+
             const el = document.activeElement;
             if (!el || el.id === 'search-input') return false;
-            return el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.isContentEditable;
+            // `!!` vì `isContentEditable` không có trên mọi phần tử (undefined trên
+            // <body>) — thiếu nó thì hàm trả undefined thay vì false. Ở đây
+            // undefined vẫn falsy nên hành vi không đổi, nhưng một hàm tên
+            // `busyElsewhere` mà trả undefined là chỗ dễ đọc nhầm về sau.
+            return !!(el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.isContentEditable);
         };
 
         const onKeyDown = (e) => {
