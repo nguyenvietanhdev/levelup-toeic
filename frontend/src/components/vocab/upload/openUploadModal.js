@@ -14,6 +14,7 @@ import { normalizeVocabItem } from '@/services/vocabUpload.js';
 import { downloadWords } from '@/services/vocabExport.js';
 import { GameLogic } from '@game/gameLogic.js';
 import { wordLang, ttsLangOf } from '@lib/wordLang.js';
+import { Notification } from '@ui/Toaster.jsx';
 
 // Tên hiển thị cho các nguồn do hệ thống tạo. Nguồn người dùng tự đặt thì giữ
 // nguyên tên họ gõ — đổi tên của họ là làm họ mất dấu bộ từ của mình.
@@ -320,8 +321,10 @@ Danh sách từ vựng cần chuyển:
                             <button class="topic-export-json btn btn-secondary" title="Xuất JSON" style="padding:4px 10px;font-size:12px;white-space:nowrap"><i class="fas fa-file-code"></i> JSON</button>
                             <button class="topic-export-excel btn btn-secondary" title="Xuất Excel (CSV)" style="padding:4px 10px;font-size:12px;white-space:nowrap"><i class="fas fa-file-excel"></i> Excel</button>
                             <button class="topic-delete-all-btn btn" style="padding:4px 10px;font-size:12px;background:#fee2e2;color:#dc2626;border:1px solid #fca5a5;border-radius:6px;white-space:nowrap"><i class="fas fa-trash"></i> Xóa tất</button>
+                            <button class="topic-share-btn btn btn-secondary" title="Chia sẻ bộ này cho tài khoản khác" style="padding:4px 10px;font-size:12px;white-space:nowrap"><i class="fas fa-user-plus"></i> Chia sẻ</button>
                             <button class="topic-expand-btn btn btn-secondary" style="padding:4px 10px;font-size:12px;white-space:nowrap"><i class="fas fa-chevron-down"></i> Xem</button>
                           </div>
+                          <div class="topic-share-panel" data-source="${t.source}" style="display:none;margin-top:4px"></div>
                           <div class="topic-words" data-source="${t.source}" style="display:none;margin-top:4px"></div>
                         </div>`;
                     }).join('')}</div>`;
@@ -331,8 +334,92 @@ Danh sách từ vựng cần chuyển:
                     row.querySelector('.topic-export-json')?.addEventListener('click', () => exportSource(row.dataset.source, 'json'));
                     row.querySelector('.topic-export-excel')?.addEventListener('click', () => exportSource(row.dataset.source, 'csv'));
                     row.querySelector('.topic-delete-all-btn')?.addEventListener('click', () => deleteSource(row.dataset.source, row.dataset.count));
+                    row.querySelector('.topic-share-btn')?.addEventListener('click', () => toggleShare(row));
                 });
             } catch (err) { container.innerHTML = `<p style="color:#dc2626;font-size:13px">Lỗi: ${err.message}</p>`; }
+        };
+
+        // Mở/đóng khung chia sẻ. Để trong panel riêng chứ không nhét thêm nút vào
+        // hàng ngang — hàng đã 5 nút, thêm ô nhập email nữa là tràn trên mọi màn.
+        const toggleShare = (row) => {
+            const item = row.closest('.topic-item');
+            const panel = item?.querySelector('.topic-share-panel');
+            if (!panel) return;
+            if (panel.dataset.open === '1') {
+                panel.style.display = 'none';
+                panel.innerHTML = '';
+                delete panel.dataset.open;
+            } else {
+                panel.style.display = '';
+                panel.dataset.open = '1';
+                loadShare(row.dataset.source, panel);
+            }
+        };
+
+        const loadShare = async (source, panel) => {
+            panel.innerHTML = '<p style="font-size:12px;color:var(--text-secondary);padding:6px">Đang tải…</p>';
+            try {
+                const res = await UploadVocabAPI.listSharees(source);
+                const rows = res?.success ? (res.data || []) : [];
+
+                const list = rows.length === 0
+                    ? '<p style="font-size:12px;color:var(--text-tertiary,#94a3b8);margin:6px 0">Chưa chia sẻ cho ai.</p>'
+                    : rows.map(r => `
+                        <div class="share-row" style="display:flex;align-items:center;gap:8px;padding:4px 0">
+                            <i class="fas fa-user" style="font-size:11px;color:var(--text-tertiary,#94a3b8)"></i>
+                            <span style="flex:1;min-width:0;font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(r.granteeEmail)}</span>
+                            <button class="share-revoke-btn" data-email="${esc(r.granteeEmail)}"
+                                title="Thu hồi quyền"
+                                style="padding:2px 8px;font-size:11px;background:#fee2e2;color:#dc2626;border:1px solid #fca5a5;border-radius:5px;cursor:pointer;white-space:nowrap">Thu hồi</button>
+                        </div>`).join('');
+
+                panel.innerHTML = `
+                    <div style="padding:8px 10px;background:var(--bg-secondary);border:1px solid var(--border-color);border-radius:8px">
+                        <div style="display:flex;gap:6px;margin-bottom:6px">
+                            <input class="share-email-input" type="email" placeholder="Email người nhận…"
+                                style="flex:1;min-width:0;padding:5px 9px;font-size:12px;border:1px solid var(--border-color);border-radius:6px;background:var(--bg-primary);color:var(--text-primary)">
+                            <button class="share-add-btn btn btn-primary" style="padding:4px 12px;font-size:12px;white-space:nowrap">Chia sẻ</button>
+                        </div>
+                        <div style="font-size:11px;color:var(--text-tertiary,#94a3b8);margin-bottom:4px">
+                            Người nhận LUYỆN TẬP và sao chép được, không sửa/xoá được bộ của bạn.
+                        </div>
+                        ${list}
+                    </div>`;
+
+                const input = panel.querySelector('.share-email-input');
+                const submit = async () => {
+                    const email = input.value.trim();
+                    if (!email) return;
+                    const r = await UploadVocabAPI.shareSource(source, email);
+                    if (r?.success) {
+                        Notification.show({ type: 'success', message: r.message, duration: 2200 });
+                        input.value = '';
+                        loadShare(source, panel);       // dựng lại để thấy tên vừa thêm
+                    } else {
+                        Notification.error(r?.message || 'Chia sẻ thất bại');
+                    }
+                };
+                panel.querySelector('.share-add-btn')?.addEventListener('click', submit);
+                // Enter trong ô email = bấm Chia sẻ. Không có thì người dùng gõ xong
+                // bấm Enter theo phản xạ và tưởng nút hỏng.
+                input?.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); submit(); } });
+
+                panel.querySelectorAll('.share-revoke-btn').forEach(btn => {
+                    btn.addEventListener('click', async () => {
+                        const email = btn.dataset.email;
+                        if (!window.confirm(`Thu hồi quyền xem "${source}" của ${email}?`)) return;
+                        const r = await UploadVocabAPI.unshareSource(source, email);
+                        if (r?.success) {
+                            Notification.show({ type: 'success', message: r.message, duration: 2000 });
+                            loadShare(source, panel);
+                        } else {
+                            Notification.error(r?.message || 'Thu hồi thất bại');
+                        }
+                    });
+                });
+            } catch (err) {
+                panel.innerHTML = `<p style="color:#dc2626;font-size:12px;padding:6px">Lỗi: ${esc(err.message)}</p>`;
+            }
         };
 
         // Mở/đóng danh sách từ ngay dưới nguồn (dropdown). Mở lần đầu mới tải.

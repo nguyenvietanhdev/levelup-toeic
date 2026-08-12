@@ -57,6 +57,54 @@ export const UploadVocabAPI = {
         }).then(r => r.json());
     },
 
+    // ── Chia sẻ bộ từ cho tài khoản khác ────────────────────────────────────
+
+    /** Cấp quyền xem một bộ cho `granteeEmail`. Gọi lại là không-thao-tác. */
+    async shareSource(source, granteeEmail) {
+        return fetch(`/api/upload/share/${encodeURIComponent(source)}`, {
+            method: 'POST',
+            headers: { ...JSON_HEADERS, ...authHeaders() },
+            body: JSON.stringify({ granteeEmail }),
+        }).then(r => r.json());
+    },
+
+    /** Thu hồi quyền của một người. */
+    async unshareSource(source, granteeEmail) {
+        return fetch(
+            `/api/upload/share/${encodeURIComponent(source)}/${encodeURIComponent(granteeEmail)}`,
+            { method: 'DELETE', headers: authHeaders() },
+        ).then(r => r.json());
+    },
+
+    /** Ai đang được xem bộ này. */
+    async listSharees(source) {
+        return fetch(`/api/upload/share/${encodeURIComponent(source)}`, { headers: authHeaders() })
+            .then(r => r.json());
+    },
+
+    /** Những bộ NGƯỜI KHÁC đã chia sẻ cho tôi (kèm cờ `expired` cho bộ đã hết hạn). */
+    async sharedTopics() {
+        return fetch('/api/upload/shared-topics', { headers: authHeaders() })
+            .then(r => r.json())
+            .catch(() => ({ success: false, data: [] }));
+    },
+
+    /** Từ của một bộ được chia sẻ. */
+    async sharedVocabulary(ownerEmail, source) {
+        return fetch(
+            `/api/upload/shared-vocabulary/${encodeURIComponent(ownerEmail)}/${encodeURIComponent(source)}`,
+            { headers: authHeaders() },
+        ).then(r => r.json());
+    },
+
+    /** Sao chép một bộ được chia sẻ về kho của mình. */
+    async copySharedSource(ownerEmail, source) {
+        return fetch(
+            `/api/upload/shared-vocabulary/${encodeURIComponent(ownerEmail)}/${encodeURIComponent(source)}/copy`,
+            { method: 'POST', headers: authHeaders() },
+        ).then(r => r.json());
+    },
+
     /** Extend (renew) a source's expiry by the default retention. */
     async extendSource(source) {
         return fetch(`/api/upload/extend/${encodeURIComponent(source)}`, {
