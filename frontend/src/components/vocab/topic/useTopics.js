@@ -24,12 +24,24 @@ export function useTopics({ enabled = true } = {}) {
         setLoadingShared(false);
     }, []);
 
+    // Gộp kho CỦA MÌNH và kho ĐƯỢC CHIA SẺ vào cùng một danh sách.
+    //
+    // Không tách tab thứ tư: thanh tab đã 3 nút chữ dài ("Từ vựng chung" / "Từ
+    // vựng riêng" / "Từ vựng sai"), thêm nữa là xuống dòng trên mobile. Với người
+    // học thì cả hai đều là "bộ từ tôi luyện được" — khác nhau ở nguồn gốc, mà
+    // đó là việc của cái badge.
     const loadPersonal = useCallback(async () => {
         if (!getToken()) { setPersonal([]); return; }
         setLoadingPersonal(true);
         try {
-            const res = await UploadVocabAPI.myTopics();
-            setPersonal(res.success ? (res.data || []) : []);
+            const [mine, shared] = await Promise.all([
+                UploadVocabAPI.myTopics(),
+                UploadVocabAPI.sharedTopics(),
+            ]);
+            const own = (mine?.success ? mine.data || [] : []).map(t => ({ ...t, isShared: false }));
+            const got = (shared?.success ? shared.data || [] : []).map(t => ({ ...t, isShared: true }));
+            // Kho của mình lên trước — đó là thứ người dùng tìm thường xuyên hơn.
+            setPersonal([...own, ...got]);
         } catch {
             setPersonal([]);
         }
@@ -76,6 +88,22 @@ export function useTopics({ enabled = true } = {}) {
         return topic;
     }, []);
 
+    // Tên là `selectSharedWithMe`, KHÔNG phải `selectShared` — cái tên đó đã dùng
+    // cho "từ vựng chung" (đề công khai) ở trên. Hai nghĩa của chữ "shared" trong
+    // cùng một file: đề dùng chung cho mọi người, và bộ riêng được ai đó chia sẻ.
+    const selectSharedWithMe = useCallback(async (ownerEmail, source) => {
+        const topic = await TopicSelector.selectSharedTopic(ownerEmail, source);
+        setCurrent(topic);
+        return topic;
+    }, []);
+
+    /** Sao chép bộ được chia sẻ về kho riêng, rồi tải lại danh sách. */
+    const copyShared = useCallback(async (ownerEmail, source) => {
+        const res = await UploadVocabAPI.copySharedSource(ownerEmail, source);
+        if (res?.success) await loadPersonal();
+        return res;
+    }, [loadPersonal]);
+
     useEffect(() => {
         if (enabled) loadShared();
     }, [enabled, loadShared]);
@@ -85,5 +113,6 @@ export function useTopics({ enabled = true } = {}) {
         loadingShared, loadingPersonal, loadingWrong,
         loadShared, loadPersonal, loadWrong,
         selectShared, selectPersonal, selectWrong,
+        selectSharedWithMe, copyShared,
     };
 }

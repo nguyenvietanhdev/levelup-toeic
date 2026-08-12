@@ -84,6 +84,33 @@ export const TopicSelector = {
         return topic;
     },
 
+    // Bộ từ NGƯỜI KHÁC chia sẻ cho mình. Cùng khuôn với selectPersonalTopic, chỉ
+    // khác đường lấy dữ liệu (route riêng có kiểm quyền) và `id` mang cả email
+    // chủ sở hữu — bộ được chia sẻ có thể TRÙNG TÊN với bộ của chính mình.
+    async selectSharedTopic(ownerEmail, source) {
+        const data = await UploadVocabAPI.sharedVocabulary(ownerEmail, source);
+        if (!data.success) throw new Error(data.message || 'Không tải được bộ từ');
+        const words = normalizeVocabularyWords(data.data || []);
+        if (words.length === 0) throw new Error('Bộ từ này đã hết hạn, không còn từ nào');
+
+        GameLogic.vocabularyData = words;
+        GameLogic.currentSource = source;
+        const topic = {
+            id: `shared:${ownerEmail}:${source}`,
+            name: source, source, ownerEmail,
+            wordCount: words.length, icon: '🤝', isShared: true,
+        };
+        this.currentTopic = topic;
+
+        PartSelector.clearSelection();
+        await PartSelector.reloadParts();
+
+        await Storage.set('selectedTopic', topic.id);
+        EventBus.emit('topic:changed', { topic });
+        Notification.success(`${source} (của ${ownerEmail}) — ${words.length} từ`);
+        return topic;
+    },
+
     // "Từ vựng sai" — nạp các từ active trong user_wrongwords thuộc một
     // source làm pool luyện tập, giống selectPersonalTopic.
     async selectWrongWordsTopic(source = '') {

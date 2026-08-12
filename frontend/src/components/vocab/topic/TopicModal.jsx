@@ -17,6 +17,8 @@ export default function TopicModal({ open, onClose, onSelected }) {
     loadPersonal,
     loadWrong,
     selectShared,
+    selectSharedWithMe,
+    copyShared,
     selectPersonal,
     selectWrong,
   } = useTopics({ enabled: open });
@@ -79,6 +81,38 @@ export default function TopicModal({ open, onClose, onSelected }) {
       afterSelect();
     } catch (err) {
       Notification.error(err.message || "Không thể tải từ vựng này");
+    } finally {
+      setBusyId(null);
+    }
+  }
+
+  async function handleSelectSharedWithMe(ownerEmail, source) {
+    if (busyId) return;
+    setBusyId(`shared:${ownerEmail}:${source}`);
+    try {
+      await selectSharedWithMe(ownerEmail, source);
+      afterSelect();
+    } catch (err) {
+      Notification.error(err.message || "Không thể tải bộ từ này");
+    } finally {
+      setBusyId(null);
+    }
+  }
+
+  async function handleCopyShared(ownerEmail, source) {
+    if (busyId) return;
+    setBusyId(`copy:${ownerEmail}:${source}`);
+    try {
+      const res = await copyShared(ownerEmail, source);
+      if (res?.success) {
+        Notification.success(res.message || "Đã sao chép về kho của bạn");
+      } else {
+        // Server nói rõ lý do (vượt hạn mức, bộ đã hết hạn…) — hiện nguyên văn
+        // thay vì nuốt đi rồi báo chung chung.
+        Notification.error(res?.message || "Sao chép thất bại");
+      }
+    } catch (err) {
+      Notification.error(err.message || "Không kết nối được máy chủ");
     } finally {
       setBusyId(null);
     }
@@ -277,23 +311,59 @@ export default function TopicModal({ open, onClose, onSelected }) {
                     </div>
                   ) : (
                     personal.map((t) => {
-                      const isSelected = current?.source === t.source;
-                      const isBusy = busyId === `personal:${t.source}`;
+                      // Khoá PHỨC HỢP (chủ + tên bộ), không chỉ `t.source`.
+                      //
+                      // Bộ được chia sẻ có thể TRÙNG TÊN với bộ của chính mình.
+                      // Dùng mỗi `source` thì key React đụng nhau và `isSelected`
+                      // sáng nhầm thẻ: chọn bộ được chia sẻ mà thẻ của mình sáng
+                      // lên. Đây là bẫy dễ dính nhất của cả tính năng.
+                      const uid = t.isShared ? `shared:${t.ownerEmail}:${t.source}` : `personal:${t.source}`;
+                      const curId = current?.isShared
+                        ? `shared:${current.ownerEmail}:${current.source}`
+                        : current?.source ? `personal:${current.source}` : null;
+                      const isSelected = curId === uid;
+                      const isBusy = busyId === uid;
+                      // Grant còn nhưng từ đã bị TTL xoá sạch → bia mộ. Vẫn hiện,
+                      // không im lặng biến mất.
+                      const dead = t.isShared && t.expired;
                       return (
                         <div
-                          key={t.source}
-                          className={`topic-card ${isSelected ? "selected" : ""} ${isBusy ? "loading" : ""}`}
-                          onClick={() => handleSelectPersonal(t.source)}
+                          key={uid}
+                          className={`topic-card ${isSelected ? "selected" : ""} ${isBusy ? "loading" : ""} ${dead ? "expired" : ""}`}
+                          style={dead ? { opacity: 0.55 } : undefined}
+                          onClick={() => {
+                            if (dead) return;   // không có từ nào để luyện
+                            if (t.isShared) handleSelectSharedWithMe(t.ownerEmail, t.source);
+                            else handleSelectPersonal(t.source);
+                          }}
                         >
-                          <div className="topic-icon">📤</div>
+                          <div className="topic-icon">{t.isShared ? "🤝" : "📤"}</div>
                           <div className="topic-details">
                             <h4 title={t.source}>{t.source}</h4>
                             <div className="topic-meta">
                               <span className="word-count">
-                                <i className="fas fa-book"></i> {t.wordCount} từ
+                                <i className="fas fa-book"></i>{" "}
+                                {dead ? "Đã hết hạn" : `${t.wordCount} từ`}
                               </span>
+                              {t.isShared && (
+                                <span className="shared-owner" title={`Chia sẻ bởi ${t.ownerEmail}`}>
+                                  <i className="fas fa-user"></i> {t.ownerEmail}
+                                </span>
+                              )}
                             </div>
                           </div>
+                          {/* Sao chép về kho riêng — lối thoát khỏi TTL: bộ gốc
+                              hết hạn thì bản sao vẫn còn. Bộ đã chết thì không
+                              còn gì để chép. */}
+                          {t.isShared && !dead && (
+                            <button
+                              className="topic-copy-btn"
+                              title="Sao chép về kho của tôi"
+                              onClick={(e) => { e.stopPropagation(); handleCopyShared(t.ownerEmail, t.source); }}
+                            >
+                              <i className="fas fa-copy"></i>
+                            </button>
+                          )}
                           {isSelected && (
                             <div className="current-badge">
                               <i className="fas fa-check-circle"></i> Đang chọn

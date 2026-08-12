@@ -8316,3 +8316,42 @@ mark {
     color: var(--text-secondary);
     border: 1px solid var(--border-color);
 }
+
+/* ============================================================
+   Bộ từ ĐƯỢC CHIA SẺ trong tab "Từ vựng riêng" — badge chủ sở
+   hữu và nút sao chép về kho mình.
+   ============================================================ */
+.topic-card .shared-owner {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 11px;
+    color: var(--text-tertiary, #94a3b8);
+}
+
+/* Bộ đã hết hạn: còn grant nhưng TTL đã xoá hết từ. Vẫn hiện làm bia mộ —
+   biến mất im lặng mới là thứ người dùng không hiểu nổi. */
+.topic-card.expired { cursor: not-allowed; }
+.topic-card.expired .word-count { color: #dc2626; }
+
+.topic-copy-btn {
+    flex-shrink: 0;
+    width: 28px;
+    height: 28px;
+    border-radius: 7px;
+    border: 1px solid var(--border-color);
+    background: var(--bg-secondary);
+    color: var(--text-secondary);
+    font-size: 12px;
+    cursor: pointer;
+    transition: background 0.12s, color 0.12s, border-color 0.12s;
+}
+.topic-copy-btn:hover {
+    background: var(--primary-color);
+    border-color: var(--primary-color);
+    color: #fff;
+}
