@@ -7,6 +7,7 @@ const {
   getExpiringTopics,
   getMyVocabulary,
   deleteMyWord,
+  updateMyWord,
   deleteMySource,
   extendMySource,
   getMonitoring,
@@ -24,6 +25,8 @@ router.get('/my-topics', protect, getMyTopics);
 router.get('/expiring', protect, getExpiringTopics);
 router.get('/my-vocabulary/:source', protect, getMyVocabulary);
 router.delete('/my-vocabulary/:wordId', protect, deleteMyWord);
+// Sửa từ: cùng quyền với xoá (protect + lọc theo ownerEmail trong controller).
+router.put('/my-vocabulary/:wordId', protect, updateMyWord);
 router.post('/extend/:source', protect, extendMySource);
 router.delete('/my-source/:source', protect, deleteMySource);
 

@@ -48,6 +48,15 @@ export const UploadVocabAPI = {
         }).then(r => r.json());
     },
 
+    /** Update one word's content by id. @returns parsed JSON. */
+    async updateWord(wordId, payload) {
+        return fetch(`/api/upload/my-vocabulary/${wordId}`, {
+            method: 'PUT',
+            headers: { ...JSON_HEADERS, ...authHeaders() },
+            body: JSON.stringify(payload),
+        }).then(r => r.json());
+    },
+
     /** Extend (renew) a source's expiry by the default retention. */
     async extendSource(source) {
         return fetch(`/api/upload/extend/${encodeURIComponent(source)}`, {

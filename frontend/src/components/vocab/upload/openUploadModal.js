@@ -388,6 +388,10 @@ Danh sách từ vựng cần chuyển:
                                                 data-text="${en}" data-lang="${ttsLangOf(w)}">
                                                 <i class="fas fa-volume-up"></i>
                                             </button>
+                                            <button class="uv-btn uv-edit-btn" title="Sửa từ này"
+                                                data-id="${w._id}">
+                                                <i class="fas fa-pen"></i>
+                                            </button>
                                             <button class="uv-btn uv-del-btn word-delete-btn" title="Xoá từ này"
                                                 data-id="${w._id}" data-en="${en}">
                                                 <i class="fas fa-times"></i>
@@ -407,6 +411,24 @@ Danh sách từ vựng cần chuyển:
                 panel.querySelectorAll('.uv-speak-btn').forEach(btn => {
                     btn.addEventListener('click', () => {
                         GameLogic.speakWord(btn.dataset.text, btn.dataset.lang || 'en-US');
+                    });
+                });
+
+                // Sửa từ — tái dùng chính popup Dịch nhanh ở chế độ sửa, thay vì
+                // dựng một form riêng: nó đã có sẵn ô sửa cả từ lẫn nghĩa, nút
+                // phát âm và tra nghĩa. Truyền nguyên bản ghi lấy từ res.data,
+                // không dựng lại từ DOM — đọc ngược từ HTML là mất `lang`,
+                // `source` và mọi trường không hiển thị.
+                panel.querySelectorAll('.uv-edit-btn').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        const w = res.data.find(x => String(x._id) === btn.dataset.id);
+                        if (!w) return;
+                        window._reactOpenTranslate?.({
+                            text: w.en,
+                            editWord: w,
+                            // Tải lại đúng bảng đang mở để thấy nội dung vừa sửa.
+                            onSaved: () => loadWords(source, panel),
+                        });
                     });
                 });
             } catch (err) { panel.innerHTML = `<p style="color:#dc2626;font-size:13px">Lỗi: ${err.message}</p>`; }

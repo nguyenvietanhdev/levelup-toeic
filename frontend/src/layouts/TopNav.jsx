@@ -48,6 +48,17 @@ export default function TopNav() {
     const [topicOpen, setTopicOpen] = useState(false);
     const [spinOpen, setSpinOpen] = useState(false);
     const [translateText, setTranslateText] = useState(null); // từ đang dịch (popup)
+    // Bản ghi đang SỬA (null = popup dịch bình thường). Modal Từ vựng riêng dựng
+    // bằng vanilla JS nên không truyền prop xuống được — mở qua cửa toàn cục.
+    const [translateEdit, setTranslateEdit] = useState(null);
+
+    useEffect(() => {
+        window._reactOpenTranslate = ({ text, editWord = null, onSaved = null } = {}) => {
+            setTranslateEdit(editWord ? { word: editWord, onSaved } : null);
+            setTranslateText(text || '');
+        };
+        return () => { delete window._reactOpenTranslate; };
+    }, []);
     const [spinAvailable, setSpinAvailable] = useState(false);
     const pendingModeRef = useRef(null);
 
@@ -461,8 +472,12 @@ export default function TopNav() {
         {translateText && (
             <TranslateModal
                 text={translateText}
-                onClose={() => setTranslateText(null)}
+                // Xoá luôn translateEdit khi đóng — giữ lại thì lần sau mở popup
+                // dịch bình thường lại rơi vào chế độ sửa của từ cũ.
+                onClose={() => { setTranslateText(null); setTranslateEdit(null); }}
                 onOpenFavorites={() => setFavOpen(true)}
+                editWord={translateEdit?.word || null}
+                onSaved={translateEdit?.onSaved}
             />
         )}
         </>

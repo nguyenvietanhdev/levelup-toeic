@@ -228,6 +228,61 @@ exports.deleteMyWord = async (req, res, next) => {
   }
 };
 
+// PUT /api/upload/my-vocabulary/:wordId — sửa một từ trong bộ từ vựng riêng.
+//
+// Chỉ cho sửa NỘI DUNG (en/vn/phonetic/synonyms/type/example/level). KHÔNG cho
+// đổi `source`/`part`/`ownerEmail` qua đây: source quyết định từ nằm ở kho nào
+// và part quyết định nó xuất hiện trong bài luyện nào — đổi được hai thứ đó
+// nghĩa là một request sửa từ có thể chuyển từ sang kho người khác đang dùng.
+// Muốn đổi kho thì xoá rồi thêm lại.
+exports.updateMyWord = async (req, res, next) => {
+  try {
+    const userDoc = await User.findById(req.user.id).select('email').lean();
+    const email = userDoc?.email;
+    const { wordId } = req.params;
+
+    // Lọc kèm ownerEmail: thiếu nó là ai biết _id cũng sửa được từ của người khác.
+    const word = await UserUpload.findOne({ _id: wordId, ownerEmail: email });
+    if (!word) {
+      return res.status(404).json({ success: false, message: 'Không tìm thấy từ hoặc bạn không có quyền sửa' });
+    }
+
+    const { en, vn, phonetic, synonyms, type, example, level, lang } = req.body;
+
+    if (en !== undefined) {
+      if (!String(en).trim()) {
+        return res.status(400).json({ success: false, message: 'English is required' });
+      }
+      const enL = lower(en);
+      // Đổi `en` có thể đụng bản ghi khác cùng (ownerEmail, source, en) — đó là
+      // khoá upsert lúc thêm. Không chặn thì hai từ trùng tên trong một kho.
+      if (enL !== word.en) {
+        const dup = await UserUpload.findOne({
+          ownerEmail: email, source: word.source, en: enL, _id: { $ne: word._id },
+        }).select('_id').lean();
+        if (dup) {
+          return res.status(409).json({ success: false, message: `"${enL}" đã có trong bộ từ này` });
+        }
+        word.en = enL;
+      }
+    }
+
+    if (vn !== undefined) word.vn = lower(vn);
+    if (phonetic !== undefined) word.phonetic = lower(phonetic);
+    if (synonyms !== undefined) word.synonyms = lower(synonyms);
+    if (type !== undefined) word.type = lower(type);
+    if (example !== undefined) word.example = capFirst(example);
+    if (level !== undefined) word.level = upper(level);
+    if (lang !== undefined) word.lang = lang === 'zh' ? 'zh' : 'en';
+
+    await word.save();
+    res.json({ success: true, data: word, message: `Đã cập nhật "${word.en}"` });
+  } catch (err) {
+    console.error('updateMyWord error:', err);
+    next(err);
+  }
+};
+
 // POST /api/upload/extend/:source — push expiry of all words in a private
 // source forward by DEFAULT_RETENTION_DAYS (renew, no data loss).
 exports.extendMySource = async (req, res, next) => {

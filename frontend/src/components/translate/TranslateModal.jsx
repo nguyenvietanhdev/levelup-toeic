@@ -83,7 +83,13 @@ function isAlreadyFavorite(en) {
  * Popup dịch trong app — gọi API công khai của Google Translate (không cần key).
  * Hỗ trợ phát âm, đổi ngôn ngữ đích (gồm tiếng Trung) và dịch đảo ngược.
  */
-export default function TranslateModal({ text, onClose, onOpenFavorites }) {
+/**
+ * @param {object|null} editWord  Bản ghi từ vựng riêng đang SỬA. Có nó thì modal
+ *   chạy ở chế độ sửa: nút lưu thành "Cập nhật" và gọi PUT thay vì tạo bản ghi
+ *   mới. Không có thì đây là popup dịch bình thường như trước.
+ */
+export default function TranslateModal({ text, onClose, onOpenFavorites, editWord = null, onSaved }) {
+    const isEditing = !!editWord?._id;
     const [inputText, setInputText] = useState(text);
     // Mặc định dịch sang ngôn ngữ hệ thống đang học (Anh/Trung); nếu nguồn trùng
     // ngôn ngữ này thì sẽ tự đổi sang Tiếng Việt (xử lý sau khi phát hiện nguồn).
@@ -206,6 +212,37 @@ export default function TranslateModal({ text, onClose, onOpenFavorites }) {
         Notification.show({ type: 'success', message: `Đã lưu "${en}" vào từ vựng yêu thích`, duration: 1800 });
     };
 
+    // Chế độ SỬA: cập nhật bản ghi có sẵn thay vì tạo mới.
+    //
+    // Chỉ gửi nội dung, KHÔNG gửi source/part — từ đang nằm ở kho nào thì ở
+    // nguyên đó. Sửa nội dung mà từ nhảy sang kho khác là điều không ai chờ đợi,
+    // và backend cũng từ chối đổi hai trường đó qua route này.
+    const handleUpdateWord = async () => {
+        const vnText = editedVn.trim() || result?.translated || editWord.vn || '';
+        const enText = srcDraft.trim() || editWord.en;
+        if (!enText) return;
+
+        try {
+            const res = await UploadVocabAPI.updateWord(editWord._id, {
+                en: enText,
+                vn: vnText,
+                phonetic: result?.phonetic || editWord.phonetic || '',
+                synonyms: result?.synonyms || editWord.synonyms || '',
+            });
+            if (res?.success) {
+                Notification.show({ type: 'success', message: `Đã cập nhật "${enText}"`, duration: 1800 });
+                onSaved?.();
+                onClose?.();
+            } else {
+                // 409 = trùng tên trong cùng kho. Thông báo của server đã nói rõ,
+                // nên hiện nguyên văn thay vì nuốt đi rồi báo chung chung.
+                Notification.error(res?.message || 'Cập nhật thất bại');
+            }
+        } catch {
+            Notification.error('Không kết nối được máy chủ');
+        }
+    };
+
     // Lưu vào "Từ vựng riêng" (user upload) — gom vào source "dich-nhanh".
     const handleSaveVocab = async () => {
         if (!result?.translated || savedVocab) return;
@@ -236,9 +273,8 @@ export default function TranslateModal({ text, onClose, onOpenFavorites }) {
             // `lang` thêm ở commit trước chỉ chọn được GIỌNG ĐỌC, không tách được
             // kho, vì bộ lọc không nhìn tới nó.
             //
-            // Từ tiếng Anh GIỮ NGUYÊN 'dich-nhanh' để mọi bản ghi cũ không mồ côi:
-            // đổi cả hai là 13 từ đang có trong kho cũ biến mất khỏi nguồn mà
-            // người dùng vẫn thấy tên cũ trong danh sách.
+            // Từ tiếng Anh giữ 'dich-nhanh'; 20 bản ghi tiếng Trung có sẵn trong
+            // kho đó đã được chuyển sang kho mới bằng scripts/splitDichNhanhByLang.js.
             const isZhWord = savedLang === 'zh';
             const source = isZhWord ? 'dich-nhanh-zh' : 'dich-nhanh';
             const part = isZhWord ? 'DICH-NHANH-ZH' : 'DICH-NHANH';
@@ -271,7 +307,10 @@ export default function TranslateModal({ text, onClose, onOpenFavorites }) {
             <div className="modal-backdrop" onClick={onClose}></div>
             <div className="modal translate-modal" style={{ maxWidth: 480, width: '92vw' }}>
                 <div className="modal-header">
-                    <h3><i className="fas fa-language"></i> Dịch nhanh</h3>
+                    <h3>
+                        <i className={`fas ${isEditing ? 'fa-pen' : 'fa-language'}`}></i>
+                        {isEditing ? ' Sửa từ' : ' Dịch nhanh'}
+                    </h3>
                     <button className="icon-btn modal-close-btn" onClick={onClose}>
                         <i className="fas fa-times"></i>
                     </button>
@@ -346,6 +385,24 @@ export default function TranslateModal({ text, onClose, onOpenFavorites }) {
                     </div>
 
                     <div className="translate-arrow">
+                        {/* Chế độ SỬA: chỉ có Cập nhật / Huỷ. Hai nút "Thêm vào..."
+                            ở đây sẽ tạo bản ghi THỨ HAI thay vì sửa cái đang mở —
+                            đúng thứ người dùng không chờ đợi khi đang bấm Sửa. */}
+                        {isEditing ? (
+                            <>
+                                <button
+                                    className="translate-save-btn"
+                                    onClick={handleUpdateWord}
+                                    disabled={!srcDraft.trim()}
+                                >
+                                    <i className="fas fa-check"></i> Cập nhật
+                                </button>
+                                <button className="translate-save-btn" onClick={onClose}>
+                                    <i className="fas fa-times"></i> Huỷ
+                                </button>
+                            </>
+                        ) : (
+                        <>
                         <button
                             className={`translate-save-btn${saved ? ' saved' : ''}`}
                             title={saved ? 'Từ này đã có trong danh sách từ yêu thích' : 'Đánh dấu từ này để ôn lại sau'}
@@ -367,6 +424,8 @@ export default function TranslateModal({ text, onClose, onOpenFavorites }) {
                             <i className="fas fa-cloud-arrow-up"></i>
                             {savedVocab ? ' Đã ở từ vựng riêng' : ' Thêm vào từ vựng riêng'}
                         </button>
+                        </>
+                        )}
                     </div>
 
                     <div className="translate-target">
@@ -397,7 +456,9 @@ export default function TranslateModal({ text, onClose, onOpenFavorites }) {
                         )}
                     </div>
 
-                    <div className="translate-actions">
+                    {/* Đang sửa thì ẩn hai nút "Xem ..." — bấm vào là mở modal khác
+                        đè lên, mất luôn nội dung đang sửa dở. */}
+                    <div className="translate-actions" style={isEditing ? { display: 'none' } : undefined}>
                         {onOpenFavorites && (
                             <button className="btn btn-primary btn-sm" onClick={onOpenFavorites}>
                                 {/* "Xem" để phân biệt với nút THÊM ở trên — hai
