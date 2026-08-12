@@ -8294,3 +8294,25 @@ mark {
     .uv-th:nth-child(3), .uv-th:nth-child(4),
     .uv-row td:nth-child(3), .uv-row td:nth-child(4) { display: none; }
 }
+
+/* Số lượng trên hai nút "Xem ..." của Dịch nhanh. Badge riêng thay vì nhét số
+   vào chuỗi nhãn — nhét vào chuỗi thì khi chưa biết số phải hiện "0", mà 0 là
+   một khẳng định sai (khác hẳn "chưa tải xong"). */
+.tm-count {
+    display: inline-block;
+    min-width: 18px;
+    margin-left: 6px;
+    padding: 1px 6px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.22);
+    font-size: 11px;
+    font-weight: 700;
+    line-height: 1.5;
+    text-align: center;
+}
+/* Nút phụ nền nhạt — badge trắng mờ trên đó không đọc được. */
+.btn-secondary .tm-count {
+    background: var(--bg-primary);
+    color: var(--text-secondary);
+    border: 1px solid var(--border-color);
+}

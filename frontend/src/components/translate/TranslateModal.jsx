@@ -99,6 +99,26 @@ export default function TranslateModal({ text, onClose, onOpenFavorites }) {
 
     useEscapeToClose(onClose);
 
+    // Số từ yêu thích đọc thẳng từ GameState — có sẵn tại chỗ, không tốn request.
+    // Đặt trong state để còn tăng lên ngay khi bấm Thêm (xem hai handler bên dưới).
+    const [favCount, setFavCount] = useState(
+        () => (GameState.state?.progress?.favoriteWords || []).length
+    );
+    // Từ vựng riêng phải hỏi server: tổng = cộng wordCount của mọi nguồn.
+    const [vocabCount, setVocabCount] = useState(null);   // null = chưa biết
+
+    useEffect(() => {
+        let alive = true;
+        UploadVocabAPI.myTopics()
+            .then(res => {
+                if (!alive || !res?.success || !Array.isArray(res.data)) return;
+                setVocabCount(res.data.reduce((n, t) => n + (t.wordCount || 0), 0));
+            })
+            // Hỏng thì để null — nút chỉ không hiện số, chứ không hiện "0" sai sự thật.
+            .catch(() => {});
+        return () => { alive = false; };
+    }, []);
+
     const fullUrl = `https://translate.google.com.vn/?sl=${srcLang}&tl=${targetLang}&text=${encodeURIComponent(inputText)}&op=translate`;
 
     useEffect(() => {
@@ -180,6 +200,9 @@ export default function TranslateModal({ text, onClose, onOpenFavorites }) {
             GameState.save?.();
         }
         setSaved(true);
+        // Tăng ngay để số trên nút khớp với việc vừa làm. Không cập nhật thì bấm
+        // Thêm xong vẫn thấy số cũ, người dùng tưởng lưu hỏng và bấm lại.
+        setFavCount(n => n + 1);
         Notification.show({ type: 'success', message: `Đã lưu "${en}" vào từ vựng yêu thích`, duration: 1800 });
     };
 
@@ -216,6 +239,7 @@ export default function TranslateModal({ text, onClose, onOpenFavorites }) {
             });
             if (res?.success) {
                 setSavedVocab(true);
+                setVocabCount(n => (n === null ? null : n + 1));
                 Notification.show({ type: 'success', message: `Đã lưu "${en}" vào từ vựng riêng`, duration: 1800 });
             } else {
                 Notification.error(res?.message || 'Lưu thất bại (cần đăng nhập?)');
@@ -363,7 +387,11 @@ export default function TranslateModal({ text, onClose, onOpenFavorites }) {
                             <button className="btn btn-primary btn-sm" onClick={onOpenFavorites}>
                                 {/* "Xem" để phân biệt với nút THÊM ở trên — hai
                                     hàng nút cùng chữ "Yêu thích" dễ bấm nhầm. */}
+                                {/* Số hiện trong badge riêng, không nhét vào chuỗi:
+                                    chưa biết số (API chưa trả / lỗi) thì KHÔNG hiện
+                                    gì, chứ không hiện "0" — 0 là một khẳng định sai. */}
                                 <i className="fas fa-star"></i> Xem từ yêu thích
+                                <span className="tm-count">{favCount}</span>
                             </button>
                         )}
                         <button
@@ -371,6 +399,7 @@ export default function TranslateModal({ text, onClose, onOpenFavorites }) {
                             onClick={() => openUploadModal({ tab: 'manage' })}
                         >
                             <i className="fas fa-cloud"></i> Xem từ vựng riêng
+                            {vocabCount !== null && <span className="tm-count">{vocabCount}</span>}
                         </button>
                     </div>
                 </div>
