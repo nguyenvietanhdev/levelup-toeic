@@ -582,3 +582,90 @@ exports.getSharedVocabulary = async (req, res, next) => {
     next(err);
   }
 };
+
+// POST /api/upload/shared-vocabulary/:ownerEmail/:source/copy
+// Sao chép một bộ được chia sẻ về kho của CHÍNH người gọi.
+//
+// Đây là lối thoát khỏi vấn đề TTL: bộ gốc hết hạn thì bản sao vẫn còn. Bản sao
+// mang `ownerEmail` của người gọi nên tính vào giới hạn từ của họ và có hạn
+// riêng — đúng như họ tự thêm vào.
+exports.copySharedSource = async (req, res, next) => {
+  try {
+    const me = req.user.email;
+    const ownerEmail = String(req.params.ownerEmail || '').trim().toLowerCase();
+    const source = String(req.params.source || '').trim().toLowerCase();
+
+    if (!EMAIL_RE.test(ownerEmail)) {
+      return res.status(400).json({ success: false, message: 'Email chủ sở hữu không hợp lệ' });
+    }
+    if (ownerEmail === me) {
+      return res.status(400).json({ success: false, message: 'Đây đã là bộ từ của bạn' });
+    }
+
+    // Tra grant TRƯỚC — cùng lý do như getSharedVocabulary: không có bước này thì
+    // đoán đúng email + tên bộ là chép được kho của bất kỳ ai.
+    const grant = await VocabShare.findOne({ ownerEmail, source, granteeEmail: me })
+      .select('ownerEmail source').lean();
+    if (!grant) {
+      return res.status(403).json({ success: false, message: 'Bạn không có quyền sao chép bộ từ này' });
+    }
+
+    const words = await UserUpload.find({ ownerEmail: grant.ownerEmail, source: grant.source }).lean();
+    if (words.length === 0) {
+      return res.status(404).json({ success: false, message: 'Bộ từ này đã hết hạn, không còn từ nào để sao chép' });
+    }
+
+    // Không trộn vào bộ trùng tên sẵn có của người gọi — họ sẽ không phân biệt
+    // được từ nào của mình, từ nào vừa chép về.
+    let target = source;
+    if (await UserUpload.exists({ ownerEmail: me, source: target })) {
+      target = `${source}-copy`;
+    }
+
+    // ĐẾM TRƯỚC KHI GHI. Ghi rồi mới phát hiện vượt hạn là để lại nửa bộ từ trong
+    // kho, người dùng không biết thiếu những từ nào — mà lệnh ghi thì không hoàn
+    // tác được (không có transaction ở đây).
+    const MAX_UPLOAD_WORDS = (await getGameConfig()).maxUploadWords;
+    const current = await UserUpload.countDocuments({ ownerEmail: me });
+    // Chỉ đếm từ THỰC SỰ mới: chép đè lên bộ cũ cùng tên thì phần trùng không tăng số.
+    const existing = await UserUpload.countDocuments({
+      ownerEmail: me, source: target, en: { $in: words.map(w => w.en) },
+    });
+    const willAdd = words.length - existing;
+    if (current + willAdd > MAX_UPLOAD_WORDS) {
+      return res.status(400).json({
+        success: false, limitReached: true,
+        message: `Sao chép ${willAdd} từ sẽ vượt giới hạn ${MAX_UPLOAD_WORDS} từ vựng riêng (đang có ${current}). Hãy xoá bớt trước.`,
+      });
+    }
+
+    // Hạn MỚI, không kế thừa hạn bộ gốc — kế thừa thì bản sao chết cùng lúc với
+    // bản gốc, tức là chép xong cũng vô nghĩa.
+    const expiresAt = new Date(Date.now() + DEFAULT_RETENTION_DAYS * DAY_MS);
+
+    await UserUpload.bulkWrite(words.map(w => ({
+      updateOne: {
+        filter: { ownerEmail: me, source: target, en: w.en },
+        update: {
+          $set: {
+            en: w.en, vn: w.vn, phonetic: w.phonetic, part: w.part,
+            synonyms: w.synonyms, type: w.type, image: w.image,
+            example: w.example, level: w.level, lang: w.lang,
+            source: target, ownerId: req.user.id, ownerEmail: me, expiresAt,
+          },
+        },
+        upsert: true,
+      },
+    })));
+
+    const copied = await UserUpload.countDocuments({ ownerEmail: me, source: target });
+    res.json({
+      success: true,
+      data: { source: target, wordCount: copied },
+      message: `Đã sao chép ${words.length} từ vào bộ "${target}"`,
+    });
+  } catch (err) {
+    console.error('copySharedSource error:', err);
+    next(err);
+  }
+};
