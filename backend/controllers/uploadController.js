@@ -1,4 +1,6 @@
 const UserUpload = require('../models/UserUpload');
+const VocabShare = require('../models/VocabShare');
+const { EMAIL_RE } = require('../models/VocabShare');
 const UserStats = require('../models/UserStats');
 const { logTxn } = require('../utils/economyLog');
 const { getGameConfig } = require('../services/gameConfig');
@@ -390,6 +392,97 @@ exports.getStats = async (req, res, next) => {
     });
   } catch (err) {
     console.error('getStats error:', err);
+    next(err);
+  }
+};
+
+// ===================================
+// CHIA SẺ BỘ TỪ VỰNG RIÊNG
+// ===================================
+// Chủ bộ từ mời người khác theo email. Người được mời LUYỆN TẬP được bằng bộ đó
+// nhưng không sửa/xoá được — điều đó do cấu trúc bảo đảm chứ không phải một cờ:
+// mọi handler sửa/xoá đều lọc `ownerEmail: <người gọi>`, nên người nhận gọi vào
+// chỉ nhận 404. Đường đọc của người nhận là ROUTE RIÊNG (xem getSharedTopics /
+// getSharedVocabulary), không phải nới lỏng getMyVocabulary — 9 handler kia đang
+// cùng một khuôn `ownerEmail: email`, làm một cái thành có điều kiện là người
+// viết handler thứ 10 chép nhầm khuôn.
+
+// POST /api/upload/share/:source — cấp quyền xem cho một email.
+exports.shareSource = async (req, res, next) => {
+  try {
+    const ownerEmail = req.user.email;
+    const source = String(req.params.source || '').trim().toLowerCase();
+    const granteeEmail = String(req.body?.granteeEmail || '').trim().toLowerCase();
+
+    if (!source) {
+      return res.status(400).json({ success: false, message: 'Thiếu tên bộ từ' });
+    }
+    if (!EMAIL_RE.test(granteeEmail)) {
+      return res.status(400).json({ success: false, message: 'Email không hợp lệ' });
+    }
+    if (granteeEmail === ownerEmail) {
+      return res.status(400).json({ success: false, message: 'Không cần chia sẻ cho chính mình' });
+    }
+
+    // Phải THẬT SỰ sở hữu bộ này. "Bộ từ" không phải một document nên không có
+    // chỗ nào khác để kiểm quyền — thiếu bước này thì ai cũng cấp được quyền
+    // trên bộ của người khác chỉ bằng cách đoán đúng tên `source`.
+    const owns = await UserUpload.exists({ ownerEmail, source });
+    if (!owns) {
+      return res.status(404).json({ success: false, message: 'Không tìm thấy bộ từ này trong kho của bạn' });
+    }
+
+    // Chia sẻ lại cho cùng người là không-thao-tác. Dùng upsert thay vì bắt lỗi
+    // trùng khoá: kết quả giống nhau mà không phải phân biệt hai đường thành công.
+    await VocabShare.findOneAndUpdate(
+      { ownerEmail, source, granteeEmail },
+      { $setOnInsert: { ownerEmail, source, granteeEmail } },
+      { upsert: true, new: true, setDefaultsOnInsert: true },
+    );
+
+    res.json({ success: true, message: `Đã chia sẻ "${source}" cho ${granteeEmail}` });
+  } catch (err) {
+    console.error('shareSource error:', err);
+    next(err);
+  }
+};
+
+// DELETE /api/upload/share/:source/:granteeEmail — thu hồi quyền.
+exports.unshareSource = async (req, res, next) => {
+  try {
+    const ownerEmail = req.user.email;
+    const source = String(req.params.source || '').trim().toLowerCase();
+    const granteeEmail = String(req.params.granteeEmail || '').trim().toLowerCase();
+
+    // `ownerEmail` trong filter là thứ chặn người khác thu hồi grant KHÔNG PHẢI
+    // của họ. Bỏ nó ra thì bất kỳ ai cũng huỷ được chia sẻ của bất kỳ ai, chỉ
+    // cần biết tên bộ và email người nhận.
+    const r = await VocabShare.deleteOne({ ownerEmail, source, granteeEmail });
+    if (r.deletedCount === 0) {
+      return res.status(404).json({ success: false, message: 'Không tìm thấy lượt chia sẻ này' });
+    }
+
+    res.json({ success: true, message: `Đã thu hồi quyền của ${granteeEmail}` });
+  } catch (err) {
+    console.error('unshareSource error:', err);
+    next(err);
+  }
+};
+
+// GET /api/upload/share/:source — ai đang được xem bộ này.
+exports.listSharees = async (req, res, next) => {
+  try {
+    const ownerEmail = req.user.email;
+    const source = String(req.params.source || '').trim().toLowerCase();
+
+    const rows = await VocabShare.find({ ownerEmail, source })
+      .select('granteeEmail createdAt')
+      .sort({ createdAt: -1 })
+      .lean();
+
+    res.json({ success: true, data: rows });
+  } catch (err) {
+    console.error('listSharees error:', err);
     next(err);
   }
 };
