@@ -27,11 +27,28 @@ function loadShareBody() {
 }
 
 describe('khung chia sẻ', () => {
-    test('email người nhận được escape trước khi vào innerHTML', () => {
+    test('tên người nhận được escape trước khi vào innerHTML', () => {
         const b = loadShareBody();
-        expect(b).toMatch(/esc\(r\.granteeEmail\)/);
-        // Và không có chỗ nào nhét thẳng.
-        expect(b).not.toMatch(/\$\{r\.granteeEmail\}/);
+        expect(b).toMatch(/esc\(r\.name\)/);
+        expect(b).not.toMatch(/\$\{r\.name\}/);
+    });
+
+    test('KHÔNG hiện email người nhận — chia sẻ bằng ID để giữ kín', () => {
+        // Chủ bộ từ nhận ra người mình chia sẻ qua TÊN + đuôi ID, không cần email.
+        const b = loadShareBody();
+        expect(b).not.toMatch(/granteeEmail/);
+        expect(b).toMatch(/granteeId/);
+    });
+
+    test('ô nhập là ID người chơi, không phải email', () => {
+        const b = loadShareBody();
+        expect(b).toMatch(/share-id-input/);
+        expect(b).not.toMatch(/share-email-input/);
+    });
+
+    test('chỉ đường lấy ID ở Bảng xếp hạng', () => {
+        // Không nói thì người dùng không biết ID lấy ở đâu ra.
+        expect(loadShareBody()).toMatch(/Bảng xếp hạng/);
     });
 
     test('không dùng inline onclick — CSP production chặn', () => {

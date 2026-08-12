@@ -42,7 +42,7 @@ function openPersonalTab(personal, current = null) {
 }
 
 const MINE = { source: 'verb_pattern', wordCount: 114, isShared: false };
-const THEIRS = { source: 'verb_pattern', wordCount: 114, isShared: true, ownerEmail: 'a@b.com', expired: false };
+const THEIRS = { source: 'verb_pattern', wordCount: 114, isShared: true, ownerEmail: 'a@b.com', ownerName: 'Chien than toc do', expired: false };
 const DEAD = { source: 'bo-het-han', wordCount: 0, isShared: true, ownerEmail: 'a@b.com', expired: true };
 
 beforeEach(() => {
@@ -115,8 +115,10 @@ describe('sao chép về kho riêng', () => {
         expect(selectSharedWithMe).not.toHaveBeenCalled();
     });
 
-    test('hiện email chủ sở hữu để biết bộ này của ai', () => {
+    test('hiện TÊN chủ sở hữu, KHÔNG hiện email', () => {
+        // Đối xứng với việc chủ cũng không thấy email người nhận.
         openPersonalTab([THEIRS]);
-        expect(screen.getByText(/a@b\.com/)).toBeTruthy();
+        expect(screen.getByText(/Chien than toc do/)).toBeTruthy();
+        expect(screen.queryByText(/a@b\.com/)).toBeNull();
     });
 });

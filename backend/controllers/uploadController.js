@@ -1,6 +1,13 @@
+const mongoose = require('mongoose');
 const UserUpload = require('../models/UserUpload');
 const VocabShare = require('../models/VocabShare');
 const { EMAIL_RE } = require('../models/VocabShare');
+// `User` quay lại đây SAU KHI đã gỡ ở lượt bỏ 9 truy vấn email thừa — lần này
+// dùng cho việc khác hẳn: tra ID người chơi ra email lúc cấp quyền, và tra
+// ngược ra tên hiển thị lúc liệt kê. Không phải để lấy email của CHÍNH người
+// gọi (cái đó `req.user.email` lo).
+const User = require('../models/User');
+const UserProfile = require('../models/UserProfile');
 const UserStats = require('../models/UserStats');
 const { logTxn } = require('../utils/economyLog');
 const { getGameConfig } = require('../services/gameConfig');
@@ -412,14 +419,32 @@ exports.shareSource = async (req, res, next) => {
   try {
     const ownerEmail = req.user.email;
     const source = String(req.params.source || '').trim().toLowerCase();
-    const granteeEmail = String(req.body?.granteeEmail || '').trim().toLowerCase();
+
+    // Nhận ID NGƯỜI CHƠI, không phải email.
+    //
+    // Bảng xếp hạng đã có nút "Sao chép ID" (LeaderboardScreen.jsx:331) nên đây
+    // là thứ người dùng lấy được sẵn. Quan trọng hơn: chủ bộ từ KHÔNG cần biết
+    // email của ai để chia sẻ, và cũng không thấy email người nhận ở bất kỳ đâu.
+    // Nhận email thì màn hình này thành công cụ dò: gõ thử một địa chỉ, phản hồi
+    // khác nhau giữa "có tài khoản" và "không có" là đã lộ thông tin.
+    //
+    // Grant vẫn LƯU theo email vì `UserUpload.ownerEmail` là khoá sở hữu của cả
+    // hệ thống — đổi sang ID là phải sửa 9 handler khác. ID chỉ là cách NHẬP.
+    const granteeId = String(req.body?.granteeId || '').trim();
 
     if (!source) {
       return res.status(400).json({ success: false, message: 'Thiếu tên bộ từ' });
     }
-    if (!EMAIL_RE.test(granteeEmail)) {
-      return res.status(400).json({ success: false, message: 'Email không hợp lệ' });
+    if (!mongoose.Types.ObjectId.isValid(granteeId)) {
+      return res.status(400).json({ success: false, message: 'ID người chơi không hợp lệ' });
     }
+
+    const grantee = await User.findById(granteeId).select('email').lean();
+    if (!grantee?.email) {
+      return res.status(404).json({ success: false, message: 'Không tìm thấy người chơi với ID này' });
+    }
+    const granteeEmail = String(grantee.email).trim().toLowerCase();
+
     if (granteeEmail === ownerEmail) {
       return res.status(400).json({ success: false, message: 'Không cần chia sẻ cho chính mình' });
     }
@@ -440,7 +465,12 @@ exports.shareSource = async (req, res, next) => {
       { upsert: true, new: true, setDefaultsOnInsert: true },
     );
 
-    res.json({ success: true, message: `Đã chia sẻ "${source}" cho ${granteeEmail}` });
+    // Thông báo dùng TÊN HIỂN THỊ, không phải email — cả mục đích của việc đổi
+    // sang ID là để chủ bộ từ không bao giờ thấy email người khác.
+    const prof = await UserProfile.findOne({ userId: granteeId })
+      .select('displayName username').lean();
+    const who = prof?.displayName || prof?.username || 'người chơi này';
+    res.json({ success: true, message: `Đã chia sẻ "${source}" cho ${who}` });
   } catch (err) {
     console.error('shareSource error:', err);
     next(err);
@@ -452,17 +482,29 @@ exports.unshareSource = async (req, res, next) => {
   try {
     const ownerEmail = req.user.email;
     const source = String(req.params.source || '').trim().toLowerCase();
-    const granteeEmail = String(req.params.granteeEmail || '').trim().toLowerCase();
+    // Nhận ID, không phải email — client không bao giờ cầm email người nhận nên
+    // cũng không gửi lại được. Tra ra email để khớp với grant đã lưu.
+    const granteeId = String(req.params.granteeId || '').trim();
+    if (!mongoose.Types.ObjectId.isValid(granteeId)) {
+      return res.status(400).json({ success: false, message: 'ID người chơi không hợp lệ' });
+    }
+
+    const grantee = await User.findById(granteeId).select('email').lean();
+    if (!grantee?.email) {
+      return res.status(404).json({ success: false, message: 'Không tìm thấy người chơi với ID này' });
+    }
+    const granteeEmail = String(grantee.email).trim().toLowerCase();
 
     // `ownerEmail` trong filter là thứ chặn người khác thu hồi grant KHÔNG PHẢI
     // của họ. Bỏ nó ra thì bất kỳ ai cũng huỷ được chia sẻ của bất kỳ ai, chỉ
-    // cần biết tên bộ và email người nhận.
+    // cần biết tên bộ và ID người nhận.
     const r = await VocabShare.deleteOne({ ownerEmail, source, granteeEmail });
     if (r.deletedCount === 0) {
       return res.status(404).json({ success: false, message: 'Không tìm thấy lượt chia sẻ này' });
     }
 
-    res.json({ success: true, message: `Đã thu hồi quyền của ${granteeEmail}` });
+    // Không nhắc lại email trong thông báo — chủ không cần thấy nó.
+    res.json({ success: true, message: 'Đã thu hồi quyền chia sẻ' });
   } catch (err) {
     console.error('unshareSource error:', err);
     next(err);
@@ -479,8 +521,32 @@ exports.listSharees = async (req, res, next) => {
       .select('granteeEmail createdAt')
       .sort({ createdAt: -1 })
       .lean();
+    if (rows.length === 0) return res.json({ success: true, data: [] });
 
-    res.json({ success: true, data: rows });
+    // KHÔNG trả email ra client. Chủ bộ từ cần nhận ra mình đã chia sẻ cho ai,
+    // nhưng không cần — và không nên — thấy địa chỉ email của người khác.
+    // Trả tên hiển thị + ID để còn thu hồi đúng người.
+    const emails = rows.map(r => r.granteeEmail);
+    const users = await User.find({ email: { $in: emails } }).select('_id email').lean();
+    const byEmail = new Map(users.map(u => [u.email, u]));
+
+    const profiles = await UserProfile.find({ userId: { $in: users.map(u => u._id) } })
+      .select('userId displayName username').lean();
+    const byUserId = new Map(profiles.map(p => [String(p.userId), p]));
+
+    const data = rows.map(r => {
+      const u = byEmail.get(r.granteeEmail);
+      const p = u ? byUserId.get(String(u._id)) : null;
+      return {
+        granteeId: u ? String(u._id) : null,
+        // Tài khoản đã xoá thì không còn tên — nói thẳng thay vì để trống, chủ
+        // vẫn phải thu hồi được grant mồ côi đó.
+        name: p?.displayName || p?.username || (u ? 'Người chơi' : 'Tài khoản không còn'),
+        createdAt: r.createdAt,
+      };
+    });
+
+    res.json({ success: true, data });
   } catch (err) {
     console.error('listSharees error:', err);
     next(err);
@@ -516,6 +582,16 @@ exports.getSharedTopics = async (req, res, next) => {
 
     const byKey = new Map(stats.map(s => [`${s._id.ownerEmail}|${s._id.source}`, s]));
 
+    // Tên hiển thị của CHỦ bộ từ. Người nhận cần biết bộ này của ai, nhưng không
+    // cần thấy email — đối xứng với việc chủ cũng không thấy email người nhận.
+    const owners = await User.find({ email: { $in: [...new Set(grants.map(g => g.ownerEmail))] } })
+      .select('_id email').lean();
+    const ownerIdByEmail = new Map(owners.map(u => [u.email, String(u._id)]));
+    const ownerProfiles = await UserProfile.find({ userId: { $in: owners.map(u => u._id) } })
+      .select('userId displayName username').lean();
+    const nameByUserId = new Map(ownerProfiles.map(p => [String(p.userId), p.displayName || p.username]));
+    const ownerNameOf = (email) => nameByUserId.get(ownerIdByEmail.get(email)) || 'Người chơi';
+
     // GHÉP TỪ PHÍA GRANT, không phải từ phía số liệu.
     //
     // Đây là chỗ dễ sai nhất của cả tính năng. Nếu chỉ trả những cặp có từ (kiểu
@@ -527,7 +603,10 @@ exports.getSharedTopics = async (req, res, next) => {
       const s = byKey.get(`${g.ownerEmail}|${g.source}`);
       const wordCount = s?.wordCount || 0;
       return {
+        // `ownerEmail` vẫn phải trả: client dùng nó làm khoá gọi
+        // /shared-vocabulary/:ownerEmail/:source. Giao diện thì hiện `ownerName`.
         ownerEmail: g.ownerEmail,
+        ownerName: ownerNameOf(g.ownerEmail),
         source: g.source,
         wordCount,
         lastUpload: s?.lastUpload || null,

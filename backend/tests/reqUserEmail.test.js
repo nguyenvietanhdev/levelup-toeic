@@ -39,10 +39,14 @@ describe('req.user.email — nguồn duy nhất của email người gọi', () 
         expect(authSrc).toMatch(/req\.user\s*=\s*\{[^}]*email:\s*user\.email/s);
     });
 
-    test('uploadController KHÔNG còn tự truy vấn email', () => {
-        // Mỗi chỗ còn lại là một lượt đi về DB thừa, và một nhánh `?.` có thể
-        // sinh ra filter thiếu phạm vi.
-        expect(controller).not.toMatch(/select\(\s*['"]email['"]\s*\)/);
+    test('uploadController KHÔNG còn tự truy vấn email CỦA NGƯỜI GỌI', () => {
+        // Điều cấm là tra lại email của chính người gọi — cái đó `req.user.email`
+        // đã có, và nhánh `userDoc?.email` là chỗ sinh ra filter thiếu phạm vi.
+        //
+        // KHÔNG cấm mọi `select('email')`: từ khi chia sẻ bằng ID, controller
+        // phải tra email của NGƯỜI KHÁC theo id (`User.findById(granteeId)`) —
+        // việc hoàn toàn khác, và bản đầu của test này chặn nhầm luôn cả nó.
+        expect(controller).not.toMatch(/User\.findById\(\s*req\.user\.id\s*\)\s*\.select\(\s*['"]email['"]/);
         expect(controller).not.toMatch(/userDoc\?\.email/);
     });
 

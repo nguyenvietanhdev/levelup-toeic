@@ -362,13 +362,19 @@ Danh sách từ vựng cần chuyển:
                 const res = await UploadVocabAPI.listSharees(source);
                 const rows = res?.success ? (res.data || []) : [];
 
+                // Hiện TÊN + 8 ký tự cuối của ID, không hiện email. Đủ để nhận ra
+                // mình đã chia sẻ cho ai (hai người trùng tên thì phần ID phân
+                // biệt) mà không lộ địa chỉ email của người khác.
                 const list = rows.length === 0
                     ? '<p style="font-size:12px;color:var(--text-tertiary,#94a3b8);margin:6px 0">Chưa chia sẻ cho ai.</p>'
                     : rows.map(r => `
                         <div class="share-row" style="display:flex;align-items:center;gap:8px;padding:4px 0">
                             <i class="fas fa-user" style="font-size:11px;color:var(--text-tertiary,#94a3b8)"></i>
-                            <span style="flex:1;min-width:0;font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(r.granteeEmail)}</span>
-                            <button class="share-revoke-btn" data-email="${esc(r.granteeEmail)}"
+                            <span style="flex:1;min-width:0;font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">
+                                ${esc(r.name)}
+                                ${r.granteeId ? `<span style="color:var(--text-tertiary,#94a3b8)">· …${esc(String(r.granteeId).slice(-8))}</span>` : ''}
+                            </span>
+                            <button class="share-revoke-btn" data-id="${esc(r.granteeId || '')}" data-name="${esc(r.name)}"
                                 title="Thu hồi quyền"
                                 style="padding:2px 8px;font-size:11px;background:#fee2e2;color:#dc2626;border:1px solid #fca5a5;border-radius:5px;cursor:pointer;white-space:nowrap">Thu hồi</button>
                         </div>`).join('');
@@ -376,21 +382,22 @@ Danh sách từ vựng cần chuyển:
                 panel.innerHTML = `
                     <div style="padding:8px 10px;background:var(--bg-secondary);border:1px solid var(--border-color);border-radius:8px">
                         <div style="display:flex;gap:6px;margin-bottom:6px">
-                            <input class="share-email-input" type="email" placeholder="Email người nhận…"
+                            <input class="share-id-input" type="text" placeholder="Dán ID người chơi…"
                                 style="flex:1;min-width:0;padding:5px 9px;font-size:12px;border:1px solid var(--border-color);border-radius:6px;background:var(--bg-primary);color:var(--text-primary)">
                             <button class="share-add-btn btn btn-primary" style="padding:4px 12px;font-size:12px;white-space:nowrap">Chia sẻ</button>
                         </div>
                         <div style="font-size:11px;color:var(--text-tertiary,#94a3b8);margin-bottom:4px">
+                            Lấy ID ở <b>Bảng xếp hạng</b> → bấm vào người chơi → nút <i class="fas fa-copy"></i>.
                             Người nhận LUYỆN TẬP và sao chép được, không sửa/xoá được bộ của bạn.
                         </div>
                         ${list}
                     </div>`;
 
-                const input = panel.querySelector('.share-email-input');
+                const input = panel.querySelector('.share-id-input');
                 const submit = async () => {
-                    const email = input.value.trim();
-                    if (!email) return;
-                    const r = await UploadVocabAPI.shareSource(source, email);
+                    const id = input.value.trim();
+                    if (!id) return;
+                    const r = await UploadVocabAPI.shareSource(source, id);
                     if (r?.success) {
                         Notification.show({ type: 'success', message: r.message, duration: 2200 });
                         input.value = '';
@@ -406,9 +413,10 @@ Danh sách từ vựng cần chuyển:
 
                 panel.querySelectorAll('.share-revoke-btn').forEach(btn => {
                     btn.addEventListener('click', async () => {
-                        const email = btn.dataset.email;
-                        if (!window.confirm(`Thu hồi quyền xem "${source}" của ${email}?`)) return;
-                        const r = await UploadVocabAPI.unshareSource(source, email);
+                        const id = btn.dataset.id;
+                        if (!id) return;
+                        if (!window.confirm(`Thu hồi quyền xem "${source}" của ${btn.dataset.name}?`)) return;
+                        const r = await UploadVocabAPI.unshareSource(source, id);
                         if (r?.success) {
                             Notification.show({ type: 'success', message: r.message, duration: 2000 });
                             loadShare(source, panel);

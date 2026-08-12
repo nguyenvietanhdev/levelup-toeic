@@ -59,19 +59,25 @@ export const UploadVocabAPI = {
 
     // ── Chia sẻ bộ từ cho tài khoản khác ────────────────────────────────────
 
-    /** Cấp quyền xem một bộ cho `granteeEmail`. Gọi lại là không-thao-tác. */
-    async shareSource(source, granteeEmail) {
+    /**
+     * Cấp quyền xem một bộ cho một NGƯỜI CHƠI theo ID (lấy từ nút "Sao chép ID"
+     * ở Bảng xếp hạng). Gọi lại là không-thao-tác.
+     *
+     * Dùng ID chứ không phải email: chủ bộ từ không cần biết email của ai, và
+     * không thấy email người nhận ở bất kỳ đâu.
+     */
+    async shareSource(source, granteeId) {
         return fetch(`/api/upload/share/${encodeURIComponent(source)}`, {
             method: 'POST',
             headers: { ...JSON_HEADERS, ...authHeaders() },
-            body: JSON.stringify({ granteeEmail }),
+            body: JSON.stringify({ granteeId }),
         }).then(r => r.json());
     },
 
-    /** Thu hồi quyền của một người. */
-    async unshareSource(source, granteeEmail) {
+    /** Thu hồi quyền của một người, theo ID. */
+    async unshareSource(source, granteeId) {
         return fetch(
-            `/api/upload/share/${encodeURIComponent(source)}/${encodeURIComponent(granteeEmail)}`,
+            `/api/upload/share/${encodeURIComponent(source)}/${encodeURIComponent(granteeId)}`,
             { method: 'DELETE', headers: authHeaders() },
         ).then(r => r.json());
     },

@@ -345,9 +345,11 @@ export default function TopicModal({ open, onClose, onSelected }) {
                                 <i className="fas fa-book"></i>{" "}
                                 {dead ? "Đã hết hạn" : `${t.wordCount} từ`}
                               </span>
+                              {/* Hiện TÊN chủ, không phải email — đối xứng với việc
+                                  chủ cũng không thấy email người nhận. */}
                               {t.isShared && (
-                                <span className="shared-owner" title={`Chia sẻ bởi ${t.ownerEmail}`}>
-                                  <i className="fas fa-user"></i> {t.ownerEmail}
+                                <span className="shared-owner" title={`Chia sẻ bởi ${t.ownerName || "người chơi khác"}`}>
+                                  <i className="fas fa-user"></i> {t.ownerName || "Người chơi"}
                                 </span>
                               )}
                             </div>

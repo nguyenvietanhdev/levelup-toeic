@@ -121,10 +121,25 @@ describe('shareSource — cấp quyền', () => {
         expect(bodyOf('shareSource')).toMatch(/granteeEmail === ownerEmail/);
     });
 
-    test('validate email trước khi chạm DB', () => {
+    test('nhận ID người chơi, KHÔNG nhận email', () => {
+        // Chủ bộ từ không cần biết email của ai. Nhận email thì màn hình này thành
+        // công cụ dò: phản hồi khác nhau giữa "có tài khoản" và "không có" đã lộ
+        // thông tin. ID lấy sẵn từ nút "Sao chép ID" ở Bảng xếp hạng.
         const body = bodyOf('shareSource');
-        expect(body).toMatch(/EMAIL_RE\.test\(granteeEmail\)/);
-        expect(body.indexOf('EMAIL_RE.test')).toBeLessThan(body.indexOf('UserUpload.exists'));
+        expect(body).toMatch(/req\.body\?\.granteeId/);
+        expect(body).not.toMatch(/req\.body\?\.granteeEmail/);
+    });
+
+    test('validate ID hợp lệ trước khi chạm DB', () => {
+        const body = bodyOf('shareSource');
+        expect(body).toMatch(/ObjectId\.isValid\(granteeId\)/);
+        expect(body.indexOf('isValid')).toBeLessThan(body.indexOf('User.findById'));
+    });
+
+    test('KHÔNG trả email người nhận về client', () => {
+        // Cả mục đích của việc đổi sang ID.
+        const body = bodyOf('shareSource');
+        expect(body).not.toMatch(/message:\s*`[^`]*\$\{granteeEmail\}/);
     });
 
     test('chia sẻ lại là không-thao-tác (upsert), không phải lỗi', () => {
@@ -133,6 +148,12 @@ describe('shareSource — cấp quyền', () => {
 });
 
 describe('unshareSource — thu hồi', () => {
+    test('nhận ID trên URL, không phải email', () => {
+        const body = bodyOf('unshareSource');
+        expect(body).toMatch(/req\.params\.granteeId/);
+        expect(body).not.toMatch(/req\.params\.granteeEmail/);
+    });
+
     test('LỌC KÈM ownerEmail — nếu không ai cũng thu hồi được của người khác', () => {
         const body = bodyOf('unshareSource');
         expect(body).toMatch(/deleteOne\(\{\s*ownerEmail\s*,\s*source\s*,\s*granteeEmail\s*\}\)/);
@@ -149,12 +170,20 @@ describe('listSharees — xem ai đang được chia sẻ', () => {
     test('chỉ liệt kê grant của CHÍNH chủ gọi', () => {
         expect(bodyOf('listSharees')).toMatch(/find\(\{\s*ownerEmail\s*,\s*source\s*\}\)/);
     });
+
+    test('trả TÊN + ID, KHÔNG trả email người nhận', () => {
+        const body = bodyOf('listSharees');
+        expect(body).toMatch(/granteeId:/);
+        expect(body).toMatch(/name:/);
+        // Mảng trả về không được mang trường email.
+        expect(body).not.toMatch(/granteeEmail:\s*r\.granteeEmail/);
+    });
 });
 
 describe('route', () => {
     test('cả ba route đều có protect', () => {
         expect(routes).toMatch(/router\.post\(\s*['"]\/share\/:source['"]\s*,\s*protect\s*,\s*shareSource/);
-        expect(routes).toMatch(/router\.delete\(\s*['"]\/share\/:source\/:granteeEmail['"]\s*,\s*protect\s*,\s*unshareSource/);
+        expect(routes).toMatch(/router\.delete\(\s*['"]\/share\/:source\/:granteeId['"]\s*,\s*protect\s*,\s*unshareSource/);
         expect(routes).toMatch(/router\.get\(\s*['"]\/share\/:source['"]\s*,\s*protect\s*,\s*listSharees/);
     });
 

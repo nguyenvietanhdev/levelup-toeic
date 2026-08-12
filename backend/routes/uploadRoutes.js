@@ -38,7 +38,7 @@ router.put('/my-vocabulary/:wordId', protect, updateMyWord);
 // kiểm bên trong handler bằng `ownerEmail: req.user.email`, không có middleware
 // riêng cho từng tài nguyên (repo này chưa có mô hình đó).
 router.post('/share/:source', protect, shareSource);
-router.delete('/share/:source/:granteeEmail', protect, unshareSource);
+router.delete('/share/:source/:granteeId', protect, unshareSource);
 router.get('/share/:source', protect, listSharees);
 
 // Đường đọc của NGƯỜI ĐƯỢC chia sẻ. Route riêng chứ không nới getMyVocabulary:
