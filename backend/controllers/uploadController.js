@@ -1,5 +1,4 @@
 const UserUpload = require('../models/UserUpload');
-const User = require('../models/User');
 const UserStats = require('../models/UserStats');
 const { logTxn } = require('../utils/economyLog');
 const { getGameConfig } = require('../services/gameConfig');
@@ -43,8 +42,7 @@ exports.checkPermission = async (req, res, next) => {
 exports.uploadVocabulary = async (req, res, next) => {
   try {
     const userId = req.user.id;
-    const userDoc = await User.findById(userId).select('email').lean();
-    const email = userDoc?.email;
+    const email = req.user.email;
     const {
       en, vn, phonetic, part, synonyms,
       type, image, example, level, source, retentionDays, lang
@@ -122,8 +120,7 @@ exports.uploadVocabulary = async (req, res, next) => {
 // GET /api/upload/my-topics - list unique private sources for current user
 exports.getMyTopics = async (req, res, next) => {
   try {
-    const userDoc = await User.findById(req.user.id).select('email').lean();
-    const email = userDoc?.email;
+    const email = req.user.email;
     const soonThreshold = new Date(Date.now() + EXPIRY_WARN_DAYS * DAY_MS);
     const topics = await UserUpload.aggregate([
       { $match: { ownerEmail: email } },
@@ -162,8 +159,7 @@ exports.getMyTopics = async (req, res, next) => {
 // Used to force the user to export before auto-deletion.
 exports.getExpiringTopics = async (req, res, next) => {
   try {
-    const userDoc = await User.findById(req.user.id).select('email').lean();
-    const email = userDoc?.email;
+    const email = req.user.email;
     const threshold = new Date(Date.now() + EXPIRY_WARN_DAYS * DAY_MS);
 
     const topics = await UserUpload.aggregate([
@@ -196,8 +192,7 @@ exports.getExpiringTopics = async (req, res, next) => {
 // GET /api/upload/my-vocabulary/:source - load words by source for current user
 exports.getMyVocabulary = async (req, res, next) => {
   try {
-    const userDoc = await User.findById(req.user.id).select('email').lean();
-    const email = userDoc?.email;
+    const email = req.user.email;
     const { source } = req.params;
     const words = await UserUpload.find({
       ownerEmail: email,
@@ -213,8 +208,7 @@ exports.getMyVocabulary = async (req, res, next) => {
 // DELETE /api/upload/my-vocabulary/:wordId — delete a single word owned by current user
 exports.deleteMyWord = async (req, res, next) => {
   try {
-    const userDoc = await User.findById(req.user.id).select('email').lean();
-    const email = userDoc?.email;
+    const email = req.user.email;
     const { wordId } = req.params;
 
     const word = await UserUpload.findOne({ _id: wordId, ownerEmail: email });
@@ -237,8 +231,7 @@ exports.deleteMyWord = async (req, res, next) => {
 // Muốn đổi kho thì xoá rồi thêm lại.
 exports.updateMyWord = async (req, res, next) => {
   try {
-    const userDoc = await User.findById(req.user.id).select('email').lean();
-    const email = userDoc?.email;
+    const email = req.user.email;
     const { wordId } = req.params;
 
     // Lọc kèm ownerEmail: thiếu nó là ai biết _id cũng sửa được từ của người khác.
@@ -287,8 +280,7 @@ exports.updateMyWord = async (req, res, next) => {
 // source forward by DEFAULT_RETENTION_DAYS (renew, no data loss).
 exports.extendMySource = async (req, res, next) => {
   try {
-    const userDoc = await User.findById(req.user.id).select('email').lean();
-    const email = userDoc?.email;
+    const email = req.user.email;
     const { source } = req.params;
 
     // Phí gia hạn = số từ × EXTEND_COST_PER_WORD (coins). VIP miễn phí.
@@ -342,8 +334,7 @@ exports.extendMySource = async (req, res, next) => {
 // DELETE /api/upload/my-source/:source — delete all words in a source owned by current user
 exports.deleteMySource = async (req, res, next) => {
   try {
-    const userDoc = await User.findById(req.user.id).select('email').lean();
-    const email = userDoc?.email;
+    const email = req.user.email;
     const { source } = req.params;
 
     const result = await UserUpload.deleteMany({ ownerEmail: email, source });

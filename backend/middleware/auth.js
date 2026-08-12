@@ -65,8 +65,20 @@ const protect = async (req, res, next) => {
         //
         // Ai muốn CẤM một tài khoản thì dùng isLocked ở trên, đó mới là ý định rõ ràng.
 
+        // `email` phải có mặt ở đây, không phải để tiện.
+        //
+        // Quyền sở hữu của từ vựng riêng biểu diễn bằng CHUỖI `ownerEmail`
+        // (UserUpload.js:40), nên 9 handler trong uploadController đều phải tự
+        // truy vấn lại email — thừa một lượt đi về DB mỗi request. Tệ hơn: chúng
+        // đọc `userDoc?.email`, mà nếu doc là null thì email là `undefined`, và
+        // Mongoose BỎ HẲN key đó khỏi filter. `{ownerEmail: undefined, source}`
+        // trở thành `{source}` — quét dữ liệu của MỌI người dùng.
+        //
+        // Doc đã nạp sẵn ở trên rồi, lấy luôn email thì các handler đọc thẳng
+        // `req.user.email`, không còn nhánh `?.` nào để rơi vào trạng thái đó.
         req.user = {
             id: user._id,
+            email: user.email,
             role: user.role,
             bypassFeatureLock: user.bypassFeatureLock === true,
         };

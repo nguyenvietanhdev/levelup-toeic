@@ -37,6 +37,10 @@ function mkCtx(token = 'valid-token') {
 
 const baseUser = (over = {}) => ({
     _id: 'u1',
+    // Fixture PHẢI có email: `protect` giờ chép nó sang req.user, và quyền sở
+    // hữu của từ vựng riêng biểu diễn bằng chuỗi email. Thiếu ở đây thì test
+    // mới chỉ khẳng định `undefined === undefined` — xanh mà không chứng minh gì.
+    email: 'u1@example.com',
     role: 'user',
     isActive: true,
     isLocked: false,
