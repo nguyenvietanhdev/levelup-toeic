@@ -6780,15 +6780,97 @@ mark {
 .favorites-close-btn:hover { background: rgba(0, 0, 0, 0.32); }
 
 .favorites-toolbar {
-    display: flex; align-items: center; justify-content: space-between;
+    display: flex; align-items: center;
+    gap: 10px;
     padding: 12px 22px;
     background: var(--bg-secondary);
     border-bottom: 1px solid var(--border-color);
+    flex-wrap: wrap;
+}
+
+/* Ô tìm chiếm phần dư; các thứ còn lại giữ nguyên bề ngang.
+   `min-width: 0` là bắt buộc — thiếu nó thì flex item không co dưới kích thước
+   nội dung và ô tìm đẩy nút "Xoá tất cả" tràn ra ngoài trên màn hẹp. */
+.fav-search {
+    position: relative;
+    flex: 1 1 160px;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+}
+.fav-search > i.fa-search {
+    position: absolute; left: 10px;
+    font-size: 12px; color: var(--text-tertiary, #94a3b8);
+    pointer-events: none;
+}
+.fav-search input {
+    width: 100%;
+    padding: 7px 28px 7px 30px;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    font-size: 13px;
+    outline: none;
+}
+.fav-search input:focus { border-color: var(--primary-color); }
+.fav-search-clear {
+    position: absolute; right: 6px;
+    width: 20px; height: 20px;
+    border: none; border-radius: 50%;
+    background: transparent;
+    color: var(--text-tertiary, #94a3b8);
+    font-size: 11px; cursor: pointer;
+}
+.fav-search-clear:hover { color: var(--text-primary); }
+
+.fav-langs { display: flex; gap: 4px; flex-shrink: 0; }
+.fav-lang-btn {
+    padding: 6px 11px;
+    border: 1px solid var(--border-color);
+    border-radius: 7px;
+    background: var(--bg-primary);
+    color: var(--text-secondary);
+    font-size: 12px; font-weight: 600;
+    cursor: pointer;
+    transition: background 0.12s, color 0.12s, border-color 0.12s;
+}
+.fav-lang-btn:hover { border-color: var(--primary-color); color: var(--text-primary); }
+.fav-lang-btn.is-active {
+    background: var(--primary-color);
+    border-color: var(--primary-color);
+    color: #fff;
+}
+
+.fav-reset-btn {
+    display: block;
+    margin: 10px auto 0;
+    padding: 6px 14px;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    background: var(--bg-secondary);
+    color: var(--text-secondary);
+    font-size: 12px; font-weight: 600;
+    cursor: pointer;
+}
+.fav-reset-btn:hover { border-color: var(--primary-color); color: var(--text-primary); }
+
+/* Chữ Hán ở cỡ chữ Latin thì rối nét — phóng to và giãn ra cho đọc được. */
+.favorites-en.is-zh { font-size: 1.15em; letter-spacing: 2px; }
+
+@media (max-width: 560px) {
+    /* Màn hẹp: ô tìm chiếm trọn một hàng, nhóm còn lại xuống dưới. */
+    .fav-search { flex-basis: 100%; order: -1; }
 }
 .favorites-count {
     font-size: 13px;
     color: var(--text-secondary);
     font-weight: 600;
+    /* Bỏ space-between ở container (giờ có 4 phần tử, dàn đều thì rời rạc), nên
+       đẩy phần đếm + nút xoá về sát mép phải bằng margin. */
+    margin-left: auto;
+    white-space: nowrap;
+    flex-shrink: 0;
 }
 .favorites-clear-btn {
     background: transparent;
