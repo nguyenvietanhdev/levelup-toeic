@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useEscapeToClose } from '@lib/useEscapeToClose.js';
 import { toeicEnergyCost } from '../toeicCost.js';
 import { customTotalSeconds, isFullTestType } from '../toeicPartTime.js';
 
@@ -9,6 +10,7 @@ import { customTotalSeconds, isFullTestType } from '../toeicPartTime.js';
  *   3. ∞ Không giới hạn — tắt mọi đồng hồ từng câu
  */
 export default function StartTestModal({ test, onConfirm, onCancel }) {
+    useEscapeToClose(onCancel);
     const [selected, setSelected] = useState('suggested');
 
     const suggestedMin = Math.round((test?.totalTime || 7200) / 60);

@@ -34,6 +34,21 @@ export default function ModalContainer() {
         return () => { _showModal = null; _closeModal = null; };
     }, [show, close]);
 
+    // Esc đóng modal đang mở.
+    //
+    // Gắn ở document chứ không ở khung modal: focus thường nằm trong một <input>
+    // bên trong (ô Dịch nhanh, form thêm từ), mà sự kiện bàn phím ở đó không tới
+    // được khung ngoài nếu chỉ gắn onKeyDown trên đó.
+    //
+    // Modal nào KHÔNG cho đóng bằng Esc thì khai `dismissible: false` — dùng cho
+    // hộp thoại bắt buộc chọn, để một phím lỡ tay không bỏ qua mất quyết định.
+    useEffect(() => {
+        if (!modal || modal.dismissible === false) return;
+        const onKey = (e) => { if (e.key === 'Escape') close(); };
+        document.addEventListener('keydown', onKey);
+        return () => document.removeEventListener('keydown', onKey);
+    }, [modal, close]);
+
     if (!modal) return <div id="modal-container" />;
 
 

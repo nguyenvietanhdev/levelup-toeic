@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useEscapeToClose } from '@lib/useEscapeToClose.js';
 import { GameState } from '@game/state.js';
 import { getVocabLang } from '@api/vocabulary.js';
 import { FavoritesAPI } from '@api/favorites.js';
@@ -95,6 +96,8 @@ export default function TranslateModal({ text, onClose, onOpenFavorites }) {
     const [srcDraft, setSrcDraft] = useState(text);   // ô GỐC sửa được
     const [editedVn, setEditedVn] = useState('');      // ô bản dịch sửa được
     const [srcLang, setSrcLang] = useState('auto');    // ngôn ngữ nguồn (auto = tự phát hiện)
+
+    useEscapeToClose(onClose);
 
     const fullUrl = `https://translate.google.com.vn/?sl=${srcLang}&tl=${targetLang}&text=${encodeURIComponent(inputText)}&op=translate`;
 

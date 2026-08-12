@@ -1,8 +1,10 @@
 import { useState, useEffect, useMemo } from "react";
+import { useEscapeToClose } from '@lib/useEscapeToClose.js';
 import { Notification } from "@ui/Toaster.jsx";
 import { useTopics } from "./useTopics.js";
 
 export default function TopicModal({ open, onClose, onSelected }) {
+    useEscapeToClose(onClose, open);
   const {
     shared,
     personal,

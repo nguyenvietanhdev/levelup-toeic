@@ -338,7 +338,7 @@ export default function TopNav() {
                                 ? '🎤 Đang nghe... nói từ bạn muốn tìm'
                                 : translateLock.locked
                                     ? `Tìm từ vựng... (Dịch nhanh mở ở Level ${translateLock.requiredLevel})`
-                                    : 'Tìm từ vựng... (Shift+Enter: dịch · giữ Shift: nói)'}
+                                    : 'Tìm từ vựng... (Enter: dịch · Esc: xoá · giữ Shift: nói)'}
                         autoComplete="off"
                         readOnly={searchReadOnly || isInPractice}
                         disabled={isInPractice}
@@ -348,8 +348,20 @@ export default function TopNav() {
                         onMouseDown={() => setSearchReadOnly(false)}
                         onBlur={() => setSearchFocused(false)}
                         onKeyDown={(e) => {
-                            // Shift+Enter → mở popup dịch nhanh ngay trong app (khi không tìm thấy trong app)
-                            if (e.key === 'Enter' && e.shiftKey) {
+                            // Esc → xoá ô tìm kiếm và bỏ focus. Đặt TRƯỚC nhánh Enter
+                            // vì đây là lối thoát, phải luôn chạy được.
+                            if (e.key === 'Escape') {
+                                e.preventDefault();
+                                setSearchQuery('');
+                                window._reactClearSearch?.();
+                                e.currentTarget.blur();
+                                return;
+                            }
+                            // Enter → mở Dịch nhanh. Trước đây phải Shift+Enter, nhưng
+                            // Enter thường KHÔNG làm gì cả (tìm kiếm lọc theo onChange),
+                            // nên gán Enter cho việc này không cướp mất hành vi nào.
+                            // Vẫn nhận Shift+Enter để thói quen cũ không gãy.
+                            if (e.key === 'Enter') {
                                 e.preventDefault();
                                 if (translateLock.locked) return warnLocked('Dịch nhanh', translateLock.requiredLevel);
                                 const q = searchQuery.trim();

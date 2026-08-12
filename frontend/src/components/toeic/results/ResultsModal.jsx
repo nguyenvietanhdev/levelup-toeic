@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useEscapeToClose } from '@lib/useEscapeToClose.js';
 
 function QuestionReviewItem({ q, index, expanded, onToggle }) {
     const isCorrect = q.userAnswer === q.correctAnswer;
@@ -83,6 +84,7 @@ function QuestionReviewItem({ q, index, expanded, onToggle }) {
 }
 
 export default function ResultsModal({ data, onClose }) {
+    useEscapeToClose(onClose);
     const [expandedIndex, setExpandedIndex] = useState(null);
 
     if (!data?.scores || !data?.stats) return null;

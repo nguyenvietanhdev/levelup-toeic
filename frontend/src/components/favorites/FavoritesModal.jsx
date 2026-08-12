@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { useEscapeToClose } from '@lib/useEscapeToClose.js';
 import { useAuth } from '@components/auth/AuthContext.jsx';
 import { useFavorites } from './useFavorites.js';
 
@@ -12,6 +13,7 @@ function speak(text) {
 }
 
 export default function FavoritesModal({ open, onClose }) {
+    useEscapeToClose(onClose, open);
     const { isLoggedIn } = useAuth();
     const { words, loading, remove, removeAll, reload } = useFavorites(isLoggedIn);
 
