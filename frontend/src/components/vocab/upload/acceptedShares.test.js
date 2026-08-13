@@ -88,7 +88,15 @@ describe('nút Đồng bộ — ở HEADER, cạnh nút đóng', () => {
         const i = src.indexOf('id="upload-sync"');
         const h = src.slice(i, i + 500);
         expect(h).toMatch(/aria-label="Đồng bộ"/);   // nghĩa vẫn còn cho trình đọc
-        expect(h).toMatch(/<i class="fas fa-rotate"><\/i><\/button>/);
+        // `fa-rotate-right` (mũi tên xoay đơn), cùng icon 4 chỗ khác trong app
+        // đã dùng cho nút làm mới — không phải `fa-rotate` (hai mũi tên).
+        expect(h).toMatch(/<i class="fas fa-rotate-right"><\/i><\/button>/);
+    });
+
+    test('nút Đồng bộ đứng SAU nút "Quản lý từ vựng"', () => {
+        // Cả cụm dồn về mép phải, nút làm mới nằm ngoài cùng.
+        expect(src.indexOf('id="upload-tab-manage"'))
+            .toBeLessThan(src.indexOf('id="upload-sync"'));
     });
 
     test('_currentTab được cập nhật khi đổi tab', () => {

@@ -966,14 +966,14 @@ Danh sách từ vựng cần chuyển:
         // cả ba mục (bộ của mình, lời mời, bộ đã nhận) chứ không riêng mục nào.
         const manageBtnHtml = `
             <div style="display:flex;align-items:center;gap:8px">
-                <button type="button" id="upload-sync" title="Đồng bộ — tải lại toàn bộ từ máy chủ"
-                    aria-label="Đồng bộ"
-                    style="display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;padding:0;border:1px solid var(--border-color);border-radius:8px;background:var(--bg-secondary);color:var(--text-primary);cursor:pointer;font-size:14px"><i class="fas fa-rotate"></i></button>
                 <select id="upload-retention" title="Thời hạn lưu — hết hạn sẽ tự xoá"
                     style="padding:6px 10px;border:1px solid var(--border-color);border-radius:8px;background:var(--bg-secondary);color:var(--text-primary);font-size:12px;font-weight:600;cursor:pointer">
                     ${RETENTION_OPTIONS.map(d => `<option value="${d}"${d === DEFAULT_RETENTION ? ' selected' : ''}>${d} ngày</option>`).join('')}
                 </select>
                 <button type="button" id="upload-tab-manage" style="display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border:1px solid var(--border-color);border-radius:8px;background:var(--bg-secondary);color:var(--text-primary);cursor:pointer;font-size:12px;font-weight:600;white-space:nowrap"><i class="fas fa-list"></i> Quản lý từ vựng</button>
+                <button type="button" id="upload-sync" title="Đồng bộ — tải lại toàn bộ từ máy chủ"
+                    aria-label="Đồng bộ"
+                    style="display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;padding:0;border:1px solid var(--border-color);border-radius:8px;background:var(--bg-secondary);color:var(--text-primary);cursor:pointer;font-size:14px"><i class="fas fa-rotate-right"></i></button>
             </div>`;
 
         if (!document._uploadManageBound) {
