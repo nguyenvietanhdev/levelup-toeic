@@ -232,10 +232,34 @@ describe('hàng nút Gợi ý / Dừng thời gian / Bỏ qua', () => {
 });
 
 describe('chế độ viết chữ Hán', () => {
-    test('ô vẽ co theo bề ngang màn hình, có chặn trên', () => {
-        // Cố định 170px thì màn 320px và màn 430px dùng chung một cỡ.
-        const block = mobileBlock();
-        expect(block).toMatch(/width:\s*min\(\d+vw,\s*\d+px\)/);
+    test('ĐỔI TRỤC: xếp ô theo cột, cuộn DỌC', () => {
+        // Desktop xếp ngang/cuộn ngang (giống viết trên giấy). Bê nguyên xuống
+        // mobile thì chiều ngang phải chia cho nhiều ô, viết bằng ngón tay trên
+        // ô nhỏ rất khó chuẩn.
+        const r = ruleFor('.hanzi-boxes');
+        expect(r).toMatch(/flex-direction:\s*column/);
+        expect(r).toMatch(/overflow-y:\s*auto/);
+        expect(r).toMatch(/overflow-x:\s*hidden/);
+    });
+
+    test('ghim về ĐẦU, không để `safe center` của quy tắc gốc căn dọc', () => {
+        // Quy tắc gốc đặt `justify-content: safe center` cho trục ngang. Đổi sang
+        // cột là nó thành căn dọc — từ dài bị dồn giữa, chữ đầu trôi khỏi vùng nhìn.
+        expect(ruleFor('.hanzi-boxes')).toMatch(/justify-content:\s*flex-start/);
+    });
+
+    test('chặn chiều cao để nút "Xem mẫu" không bị đẩy khỏi màn hình', () => {
+        // Không chặn thì từ 6 chữ dựng một cột cao 6 ô, nút điều khiển trôi xuống
+        // dưới cùng và người học không biết nó còn ở đó.
+        expect(ruleFor('.hanzi-boxes')).toMatch(/max-height:\s*\d+vh/);
+    });
+
+    test('ô vẽ chiếm TRỌN chiều ngang, có chặn trên', () => {
+        // Đổi trục rồi thì không phải chia chiều ngang cho ô bên cạnh nữa.
+        const r = ruleFor('.hanzi-boxes .hanzi-canvas,\n    .hanzi-boxes:has(> :nth-child(3)) .hanzi-canvas');
+        expect(r).toMatch(/width:\s*min\(\d+vw,\s*\d+px\)/);
+        const vw = Number(r.match(/min\((\d+)vw/)[1]);
+        expect(vw).toBeGreaterThanOrEqual(80);
     });
 
     test('giữ ô VUÔNG — lưới tập viết méo là căn nét sai chỗ', () => {

@@ -710,13 +710,40 @@
         font-size: 0.85rem;
     }
 
-    /* Ô vẽ co theo BỀ NGANG màn hình thay vì cố định 170px: màn 320px và màn
-       430px cần hai kích thước khác nhau. Chặn trên 200px để trên máy rộng nó
-       không phình quá tầm với của ngón tay.
+    /* ĐỔI TRỤC: trên điện thoại xếp ô theo CỘT và cuộn DỌC.
+       Trên desktop các ô nằm ngang, cuộn ngang — giống viết trên giấy. Bê nguyên
+       xuống mobile thì chiều ngang phải chia cho nhiều ô, mỗi ô còn ~62vw và
+       viết bằng ngón tay trên ô nhỏ thì nét rất khó chuẩn.
+       Đổi trục thì mỗi chữ được TRỌN chiều ngang, còn "còn mấy chữ nữa" vẫn
+       thấy được bằng cách cuộn xuống. */
+    .hanzi-boxes {
+        flex-direction: column;
+        align-items: center;
+        /* Quy tắc gốc đặt `justify-content: safe center` cho TRỤC NGANG. Đổi
+           sang cột là nó thành căn dọc — từ dài sẽ bị dồn giữa và chữ đầu tiên
+           trôi lên trên vùng nhìn. Ghim về đầu. */
+        justify-content: flex-start;
+        overflow-x: hidden;
+        overflow-y: auto;
+        /* Chỗ chừa cho thanh cuộn giờ ở cạnh phải, không phải cạnh dưới. */
+        padding-bottom: 0;
+        /* Cao tối đa ~2 ô để vẫn ló ô kế tiếp — biết còn chữ nữa mà không phải
+           đoán. Thiếu chặn này thì từ 6 chữ đẩy nút "Xem mẫu" khỏi màn hình. */
+        max-height: 74vh;
+        scroll-padding: var(--spacing-sm);
+    }
+
+    /* Thanh cuộn giờ ở cạnh phải, không phải cạnh dưới. */
+    .hanzi-boxes::-webkit-scrollbar {
+        width: 6px;
+        height: auto;
+    }
+
+    /* Ô vẽ chiếm TRỌN chiều ngang (trừ lề), không còn phải chia cho ô bên cạnh.
        `aspect-ratio` giữ ô vuông — lưới tập viết mà méo thì nét căn sai chỗ. */
     .hanzi-boxes .hanzi-canvas,
     .hanzi-boxes:has(> :nth-child(3)) .hanzi-canvas {
-        width: min(62vw, 200px);
+        width: min(88vw, 340px);
         height: auto;
         aspect-ratio: 1 / 1;
     }

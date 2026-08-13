@@ -167,9 +167,18 @@ export const HanziWriting = {
         this.strokeNum = 0;
         this.openQuiz(q);
 
-        // Từ dài thì hàng ô cuộn ngang, và chữ thứ 5-6 nằm NGOÀI vùng nhìn. Không
-        // cuộn tới thì người học viết xong chữ 4 là màn hình đứng im — ô kế đã
-        // sẵn sàng nhưng không ai thấy nó ở đâu.
+        // Từ dài thì ô kế tiếp nằm NGOÀI vùng nhìn. Không cuộn tới thì người học
+        // viết xong một chữ là màn hình đứng im — ô kế đã sẵn sàng nhưng không ai
+        // thấy nó ở đâu.
+        //
+        // Trục cuộn khác nhau theo khổ màn: máy tính xếp ô ngang (cuộn ngang),
+        // điện thoại xếp dọc (cuộn dọc — xem responsive.css). Truyền cả hai trục
+        // để màn nào cũng cuộn đúng.
+        //
+        // Trục dọc để `nearest` chứ không `center`: scrollIntoView cuộn MỌI tổ
+        // tiên cuộn được, nên `center` còn kéo cả trang để đưa ô vào giữa
+        // viewport — màn hình giật lên xuống sau mỗi chữ. `nearest` cuộn tối
+        // thiểu, đủ để ô lọt vào vùng nhìn mà không đụng tới trang.
         target.scrollIntoView?.({ behavior: 'smooth', block: 'nearest', inline: 'center' });
     },
 
