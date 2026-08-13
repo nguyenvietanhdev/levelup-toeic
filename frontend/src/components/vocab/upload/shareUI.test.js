@@ -102,11 +102,10 @@ describe('khung chia sẻ', () => {
         expect(b).toMatch(/listSharees\(_shareSource\)/);
     });
 
-    test('nút Chia sẻ trong hàng nguồn MỞ TAB với đúng bộ đó', () => {
-        // Giữ lối vào quen thuộc mà không nhân đôi giao diện.
-        expect(src).toMatch(/class="topic-share-btn/);
-        expect(src).toMatch(/_shareSource = row\.dataset\.source/);
-        expect(src).toMatch(/detail: 'share'/);
+    test('KHÔNG còn nút Chia sẻ trong hàng nguồn — chỉ vào bằng tab', () => {
+        // Hàng đã 5 nút; giữ thêm một lối vào nữa cho cùng một việc chỉ làm hàng
+        // chật và nhân đôi chỗ phải bảo trì.
+        expect(src).not.toMatch(/topic-share-btn/);
     });
 
     test('tự kiểm: đọc được thân hàm thật', () => {

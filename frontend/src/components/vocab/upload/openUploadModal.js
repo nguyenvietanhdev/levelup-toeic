@@ -473,7 +473,6 @@ Danh sách từ vựng cần chuyển:
                             <button class="topic-export-json btn btn-secondary" title="Xuất JSON" style="padding:4px 10px;font-size:12px;white-space:nowrap"><i class="fas fa-file-code"></i> JSON</button>
                             <button class="topic-export-excel btn btn-secondary" title="Xuất Excel (CSV)" style="padding:4px 10px;font-size:12px;white-space:nowrap"><i class="fas fa-file-excel"></i> Excel</button>
                             <button class="topic-delete-all-btn btn" style="padding:4px 10px;font-size:12px;background:#fee2e2;color:#dc2626;border:1px solid #fca5a5;border-radius:6px;white-space:nowrap"><i class="fas fa-trash"></i> Xóa tất</button>
-                            <button class="topic-share-btn btn btn-secondary" title="Chia sẻ bộ này cho tài khoản khác" style="padding:4px 10px;font-size:12px;white-space:nowrap"><i class="fas fa-user-plus"></i> Chia sẻ</button>
                             <button class="topic-expand-btn btn btn-secondary" style="padding:4px 10px;font-size:12px;white-space:nowrap"><i class="fas fa-chevron-down"></i> Xem</button>
                           </div>
                           <div class="topic-words" data-source="${t.source}" style="display:none;margin-top:4px"></div>
@@ -485,12 +484,6 @@ Danh sách từ vựng cần chuyển:
                     row.querySelector('.topic-export-json')?.addEventListener('click', () => exportSource(row.dataset.source, 'json'));
                     row.querySelector('.topic-export-excel')?.addEventListener('click', () => exportSource(row.dataset.source, 'csv'));
                     row.querySelector('.topic-delete-all-btn')?.addEventListener('click', () => deleteSource(row.dataset.source, row.dataset.count));
-                    // Nút trong hàng giờ MỞ TAB chia sẻ với đúng bộ đó, thay vì xổ
-                    // panel tại chỗ — giữ lối vào quen thuộc mà không nhân đôi giao diện.
-                    row.querySelector('.topic-share-btn')?.addEventListener('click', () => {
-                        _shareSource = row.dataset.source;
-                        document.dispatchEvent(new CustomEvent('upload-set-tab', { detail: 'share' }));
-                    });
                 });
             } catch (err) { container.innerHTML = `<p style="color:#dc2626;font-size:13px">Lỗi: ${err.message}</p>`; }
         };
