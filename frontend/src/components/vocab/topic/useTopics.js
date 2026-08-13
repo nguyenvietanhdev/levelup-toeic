@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { TopicSelector } from '@components/vocab/topic/topicSelector.js';
 import { getToken } from '@/auth/token.js';
 import { UploadVocabAPI } from '@api/uploadVocab.js';
@@ -12,6 +12,14 @@ export function useTopics({ enabled = true } = {}) {
     const [loadingPersonal, setLoadingPersonal] = useState(false);
     const [loadingWrong, setLoadingWrong] = useState(false);
     const [current, setCurrent] = useState(() => TopicSelector.getCurrentTopic());
+    // Những bộ được chia sẻ mà mình ĐÃ sao chép về, dạng `ownerEmail|source`.
+    // Chỉ sống trong phiên: chép xong thì thẻ gốc biến khỏi danh sách, tránh bấm
+    // nhầm lần nữa và đẻ ra `-copy`, `-copy-copy`…
+    const [copied, setCopied] = useState(() => new Set());
+    // Bản mới nhất cho `loadPersonal` đọc — hàm đó có deps rỗng nên closure
+    // của nó không bao giờ thấy state mới.
+    const copiedRef = useRef(copied);
+    useEffect(() => { copiedRef.current = copied; }, [copied]);
 
     const loadShared = useCallback(async () => {
         if (TopicSelector.getAvailableTopics()?.length > 0) {
@@ -39,7 +47,12 @@ export function useTopics({ enabled = true } = {}) {
                 UploadVocabAPI.sharedTopics(),
             ]);
             const own = (mine?.success ? mine.data || [] : []).map(t => ({ ...t, isShared: false }));
-            const got = (shared?.success ? shared.data || [] : []).map(t => ({ ...t, isShared: true }));
+            const got = (shared?.success ? shared.data || [] : [])
+                .map(t => ({ ...t, isShared: true }))
+                // Đã sao chép về rồi thì ẩn thẻ gốc. Đọc qua REF chứ không qua
+                // state: `loadPersonal` là useCallback deps rỗng, closure của nó
+                // giữ `copied` của lần render đầu và lọc theo tập RỖNG mãi mãi.
+                .filter(t => !copiedRef.current.has(`${t.ownerEmail}|${t.source}`));
             // Kho của mình lên trước — đó là thứ người dùng tìm thường xuyên hơn.
             setPersonal([...own, ...got]);
         } catch {
@@ -100,7 +113,17 @@ export function useTopics({ enabled = true } = {}) {
     /** Sao chép bộ được chia sẻ về kho riêng, rồi tải lại danh sách. */
     const copyShared = useCallback(async (ownerEmail, source) => {
         const res = await UploadVocabAPI.copySharedSource(ownerEmail, source);
-        if (res?.success) await loadPersonal();
+        if (res?.success) {
+            // Ghi nhớ đã chép rồi. Grant vẫn còn nên `sharedTopics` vẫn trả bộ
+            // đó về — không đánh dấu thì tải lại xong thẻ vẫn nằm nguyên đấy,
+            // người dùng bấm tiếp và mỗi lần lại tạo thêm một bản `-copy`.
+            // Cập nhật REF TRƯỚC, không đợi effect đồng bộ: `setCopied` chỉ xếp
+            // hàng một lần render, mà `loadPersonal()` chạy NGAY sau đây — lúc đó
+            // effect chưa kịp chạy nên ref vẫn là tập cũ và thẻ vẫn hiện lại.
+            copiedRef.current = new Set(copiedRef.current).add(`${ownerEmail}|${source}`);
+            setCopied(copiedRef.current);
+            await loadPersonal();
+        }
         return res;
     }, [loadPersonal]);
 

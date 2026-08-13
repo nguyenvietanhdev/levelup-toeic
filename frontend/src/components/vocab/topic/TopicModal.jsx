@@ -339,7 +339,14 @@ export default function TopicModal({ open, onClose, onSelected }) {
                         >
                           <div className="topic-icon">{t.isShared ? "🤝" : "📤"}</div>
                           <div className="topic-details">
-                            <h4 title={t.source}>{t.source}</h4>
+                            {/* Ghi rõ "(shared)" ngay trên tên: bộ được chia sẻ có
+                                thể TRÙNG TÊN với bộ của mình, hai thẻ cạnh nhau
+                                cùng chữ `dich-nhanh-zh` thì không biết cái nào là
+                                của ai. Badge 🤝 ở icon dễ bỏ qua khi lướt nhanh. */}
+                            <h4 title={t.isShared ? `${t.source} — chia sẻ bởi ${t.ownerName || "người chơi khác"}` : t.source}>
+                              {t.source}
+                              {t.isShared && <span className="shared-tag"> (shared)</span>}
+                            </h4>
                             <div className="topic-meta">
                               <span className="word-count">
                                 <i className="fas fa-book"></i>{" "}

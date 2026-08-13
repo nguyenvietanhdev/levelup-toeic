@@ -101,6 +101,21 @@ describe('bia mộ — bộ được chia sẻ đã hết hạn', () => {
     });
 });
 
+describe('nhãn (shared)', () => {
+    test('bộ được chia sẻ ghi rõ "(shared)" trên tên', () => {
+        // Bộ đó có thể TRÙNG TÊN với bộ của mình — hai thẻ cạnh nhau cùng chữ
+        // `dich-nhanh-zh` thì không biết cái nào của ai. Badge 🤝 ở icon dễ bỏ
+        // qua khi lướt nhanh.
+        openPersonalTab([THEIRS]);
+        expect(screen.getByText(/\(shared\)/)).toBeTruthy();
+    });
+
+    test('bộ của MÌNH không có nhãn đó', () => {
+        openPersonalTab([MINE]);
+        expect(screen.queryByText(/\(shared\)/)).toBeNull();
+    });
+});
+
 describe('sao chép về kho riêng', () => {
     test('nút chỉ hiện trên bộ ĐƯỢC CHIA SẺ', () => {
         openPersonalTab([MINE]);

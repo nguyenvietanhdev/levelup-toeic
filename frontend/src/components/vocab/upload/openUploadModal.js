@@ -119,6 +119,16 @@ export function openUploadModal({ tab } = {}) {
                 <p style="font-size:13px;color:var(--text-secondary);margin:0 0 12px"><i class="fas fa-spinner fa-spin"></i> Đang tải danh sách...</p>
             </div>`;
 
+        // Tab CHIA SẺ riêng. Trước đây phần này nằm trong panel xổ ra của từng
+        // hàng nguồn ở tab Quản lý — chật, và muốn xem đã chia sẻ những gì thì
+        // phải mở lần lượt từng bộ.
+        const shareTabHtml = () => `
+            <div id="share-container">
+                <p style="font-size:13px;color:var(--text-secondary);margin:0 0 12px">
+                    <i class="fas fa-spinner fa-spin"></i> Đang tải danh sách bộ từ...
+                </p>
+            </div>`;
+
         const jsonTabHtml = () => `
             <p style="margin:0 0 12px;font-size:13px;color:var(--text-secondary)">
                 <i class="fas fa-robot"></i> Tạo prompt cho AI (ChatGPT / Claude...) để chuyển danh sách từ sang JSON đúng định dạng.
@@ -466,7 +476,6 @@ Danh sách từ vựng cần chuyển:
                             <button class="topic-share-btn btn btn-secondary" title="Chia sẻ bộ này cho tài khoản khác" style="padding:4px 10px;font-size:12px;white-space:nowrap"><i class="fas fa-user-plus"></i> Chia sẻ</button>
                             <button class="topic-expand-btn btn btn-secondary" style="padding:4px 10px;font-size:12px;white-space:nowrap"><i class="fas fa-chevron-down"></i> Xem</button>
                           </div>
-                          <div class="topic-share-panel" data-source="${t.source}" style="display:none;margin-top:4px"></div>
                           <div class="topic-words" data-source="${t.source}" style="display:none;margin-top:4px"></div>
                         </div>`;
                     }).join('')}</div>`;
@@ -476,99 +485,124 @@ Danh sách từ vựng cần chuyển:
                     row.querySelector('.topic-export-json')?.addEventListener('click', () => exportSource(row.dataset.source, 'json'));
                     row.querySelector('.topic-export-excel')?.addEventListener('click', () => exportSource(row.dataset.source, 'csv'));
                     row.querySelector('.topic-delete-all-btn')?.addEventListener('click', () => deleteSource(row.dataset.source, row.dataset.count));
-                    row.querySelector('.topic-share-btn')?.addEventListener('click', () => toggleShare(row));
+                    // Nút trong hàng giờ MỞ TAB chia sẻ với đúng bộ đó, thay vì xổ
+                    // panel tại chỗ — giữ lối vào quen thuộc mà không nhân đôi giao diện.
+                    row.querySelector('.topic-share-btn')?.addEventListener('click', () => {
+                        _shareSource = row.dataset.source;
+                        document.dispatchEvent(new CustomEvent('upload-set-tab', { detail: 'share' }));
+                    });
                 });
             } catch (err) { container.innerHTML = `<p style="color:#dc2626;font-size:13px">Lỗi: ${err.message}</p>`; }
         };
 
-        // Mở/đóng khung chia sẻ. Để trong panel riêng chứ không nhét thêm nút vào
-        // hàng ngang — hàng đã 5 nút, thêm ô nhập email nữa là tràn trên mọi màn.
-        const toggleShare = (row) => {
-            const item = row.closest('.topic-item');
-            const panel = item?.querySelector('.topic-share-panel');
-            if (!panel) return;
-            if (panel.dataset.open === '1') {
-                panel.style.display = 'none';
-                panel.innerHTML = '';
-                delete panel.dataset.open;
-            } else {
-                panel.style.display = '';
-                panel.dataset.open = '1';
-                loadShare(row.dataset.source, panel);
-            }
-        };
+        // ── Tab CHIA SẺ ──────────────────────────────────────────────────────
+        //
+        // Chọn một bộ từ → hiện ai đang được xem + ô nhập ID để cấp thêm.
+        // Không gọi `listSharees` cho MỌI bộ cùng lúc: 5 bộ là 5 request ngay khi
+        // mở tab, mà người dùng thường chỉ quan tâm một bộ.
+        let _shareSource = null;
 
-        const loadShare = async (source, panel) => {
-            panel.innerHTML = '<p style="font-size:12px;color:var(--text-secondary);padding:6px">Đang tải…</p>';
+        const loadShareTab = async () => {
+            const box = document.getElementById('share-container');
+            if (!box) return;
             try {
-                const res = await UploadVocabAPI.listSharees(source);
-                const rows = res?.success ? (res.data || []) : [];
+                const res = await UploadVocabAPI.myTopics();
+                const topics = res?.success ? (res.data || []) : [];
+                if (topics.length === 0) {
+                    box.innerHTML = '<p style="font-size:13px;color:var(--text-secondary)">Chưa có bộ từ nào để chia sẻ.</p>';
+                    return;
+                }
 
-                // Hiện TÊN + 8 ký tự cuối của ID, không hiện email. Đủ để nhận ra
-                // mình đã chia sẻ cho ai (hai người trùng tên thì phần ID phân
-                // biệt) mà không lộ địa chỉ email của người khác.
-                const list = rows.length === 0
-                    ? '<p style="font-size:12px;color:var(--text-tertiary,#94a3b8);margin:6px 0">Chưa chia sẻ cho ai.</p>'
-                    : rows.map(r => `
-                        <div class="share-row" style="display:flex;align-items:center;gap:8px;padding:4px 0">
-                            <i class="fas fa-user" style="font-size:11px;color:var(--text-tertiary,#94a3b8)"></i>
-                            <span style="flex:1;min-width:0;font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">
-                                ${esc(r.name)}
-                                ${r.granteeId ? `<span style="color:var(--text-tertiary,#94a3b8)">· …${esc(String(r.granteeId).slice(-8))}</span>` : ''}
-                            </span>
-                            <button class="share-revoke-btn" data-id="${esc(r.granteeId || '')}" data-name="${esc(r.name)}"
-                                title="Thu hồi quyền"
-                                style="padding:2px 8px;font-size:11px;background:#fee2e2;color:#dc2626;border:1px solid #fca5a5;border-radius:5px;cursor:pointer;white-space:nowrap">Thu hồi</button>
-                        </div>`).join('');
+                // Giữ lựa chọn cũ nếu bộ đó còn; không thì lấy bộ đầu.
+                if (!topics.some(t => t.source === _shareSource)) _shareSource = topics[0].source;
 
-                panel.innerHTML = `
-                    <div style="padding:8px 10px;background:var(--bg-secondary);border:1px solid var(--border-color);border-radius:8px">
-                        <div style="display:flex;gap:6px;margin-bottom:6px">
-                            <input class="share-id-input" type="text" placeholder="Dán ID người chơi…"
-                                style="flex:1;min-width:0;padding:5px 9px;font-size:12px;border:1px solid var(--border-color);border-radius:6px;background:var(--bg-primary);color:var(--text-primary)">
-                            <button class="share-add-btn btn btn-primary" style="padding:4px 12px;font-size:12px;white-space:nowrap">Chia sẻ</button>
-                        </div>
-                        <div style="font-size:11px;color:var(--text-tertiary,#94a3b8);margin-bottom:4px">
-                            Lấy ID ở <b>Bảng xếp hạng</b> → bấm vào người chơi → nút <i class="fas fa-copy"></i>.
-                            Người nhận LUYỆN TẬP và sao chép được, không sửa/xoá được bộ của bạn.
-                        </div>
-                        ${list}
-                    </div>`;
+                box.innerHTML = `
+                    <div style="margin-bottom:10px">
+                        <label style="display:block;font-size:12px;font-weight:600;margin-bottom:4px;color:var(--text-primary)">Bộ từ muốn chia sẻ</label>
+                        <select id="share-source-select"
+                            style="width:100%;padding:8px 10px;border:1px solid var(--border-color);border-radius:8px;font-size:13px;background:var(--bg-tertiary,var(--bg-secondary));color:var(--text-primary)">
+                            ${topics.map(t => `<option value="${esc(t.source)}"${t.source === _shareSource ? ' selected' : ''}>${esc(sourceLabel(t.source))} — ${t.wordCount} từ</option>`).join('')}
+                        </select>
+                    </div>
+                    <div style="display:flex;gap:6px;margin-bottom:8px">
+                        <input class="share-id-input" type="text" placeholder="Dán ID người chơi…"
+                            style="flex:1;min-width:0;padding:8px 10px;font-size:13px;border:1px solid var(--border-color);border-radius:8px;background:var(--bg-primary);color:var(--text-primary)">
+                        <button class="share-add-btn btn btn-primary" style="padding:6px 14px;font-size:13px;white-space:nowrap">Chia sẻ</button>
+                    </div>
+                    <div style="font-size:11px;color:var(--text-tertiary,#94a3b8);margin-bottom:12px">
+                        Lấy ID ở <b>Bảng xếp hạng</b> → bấm vào người chơi → nút <i class="fas fa-copy"></i>.
+                        Người nhận LUYỆN TẬP và sao chép được, không sửa/xoá được bộ của bạn.
+                    </div>
+                    <div id="share-people"></div>`;
 
-                const input = panel.querySelector('.share-id-input');
+                const sel = box.querySelector('#share-source-select');
+                sel?.addEventListener('change', () => { _shareSource = sel.value; loadSharePeople(); });
+
+                const input = box.querySelector('.share-id-input');
                 const submit = async () => {
                     const id = input.value.trim();
                     if (!id) return;
-                    const r = await UploadVocabAPI.shareSource(source, id);
+                    const r = await UploadVocabAPI.shareSource(_shareSource, id);
                     if (r?.success) {
                         Notification.show({ type: 'success', message: r.message, duration: 2200 });
                         input.value = '';
-                        loadShare(source, panel);       // dựng lại để thấy tên vừa thêm
+                        loadSharePeople();
                     } else {
                         Notification.error(r?.message || 'Chia sẻ thất bại');
                     }
                 };
-                panel.querySelector('.share-add-btn')?.addEventListener('click', submit);
-                // Enter trong ô email = bấm Chia sẻ. Không có thì người dùng gõ xong
-                // bấm Enter theo phản xạ và tưởng nút hỏng.
+                box.querySelector('.share-add-btn')?.addEventListener('click', submit);
                 input?.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); submit(); } });
 
-                panel.querySelectorAll('.share-revoke-btn').forEach(btn => {
+                loadSharePeople();
+            } catch (err) {
+                box.innerHTML = `<p style="color:#dc2626;font-size:13px">Lỗi: ${esc(err.message)}</p>`;
+            }
+        };
+
+        /** Danh sách người đang được xem bộ `_shareSource` — hiện TÊN + ID. */
+        const loadSharePeople = async () => {
+            const box = document.getElementById('share-people');
+            if (!box || !_shareSource) return;
+            box.innerHTML = '<p style="font-size:12px;color:var(--text-secondary)">Đang tải…</p>';
+            try {
+                const res = await UploadVocabAPI.listSharees(_shareSource);
+                const rows = res?.success ? (res.data || []) : [];
+                if (rows.length === 0) {
+                    box.innerHTML = '<p style="font-size:12px;color:var(--text-tertiary,#94a3b8)">Chưa chia sẻ bộ này cho ai.</p>';
+                    return;
+                }
+                box.innerHTML = `
+                    <div style="font-size:12px;font-weight:600;color:var(--text-primary);margin-bottom:6px">
+                        Đang được xem bởi ${rows.length} người
+                    </div>
+                    ${rows.map(r => `
+                        <div class="share-row" style="display:flex;align-items:center;gap:10px;padding:8px 10px;margin-bottom:6px;border:1px solid var(--border-color);border-radius:8px;background:var(--bg-secondary)">
+                            <i class="fas fa-user" style="font-size:12px;color:var(--text-tertiary,#94a3b8)"></i>
+                            <div style="flex:1;min-width:0">
+                                <div style="font-size:13px;font-weight:600;color:var(--text-primary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(r.name)}</div>
+                                <div style="font-size:11px;color:var(--text-tertiary,#94a3b8);font-family:monospace;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(r.granteeId || '—')}</div>
+                            </div>
+                            <button class="share-revoke-btn" data-id="${esc(r.granteeId || '')}" data-name="${esc(r.name)}"
+                                style="padding:4px 10px;font-size:12px;background:#fee2e2;color:#dc2626;border:1px solid #fca5a5;border-radius:6px;cursor:pointer;white-space:nowrap">Thu hồi</button>
+                        </div>`).join('')}`;
+
+                box.querySelectorAll('.share-revoke-btn').forEach(btn => {
                     btn.addEventListener('click', async () => {
                         const id = btn.dataset.id;
                         if (!id) return;
-                        if (!window.confirm(`Thu hồi quyền xem "${source}" của ${btn.dataset.name}?`)) return;
-                        const r = await UploadVocabAPI.unshareSource(source, id);
+                        if (!window.confirm(`Thu hồi quyền xem "${_shareSource}" của ${btn.dataset.name}?`)) return;
+                        const r = await UploadVocabAPI.unshareSource(_shareSource, id);
                         if (r?.success) {
                             Notification.show({ type: 'success', message: r.message, duration: 2000 });
-                            loadShare(source, panel);
+                            loadSharePeople();
                         } else {
                             Notification.error(r?.message || 'Thu hồi thất bại');
                         }
                     });
                 });
             } catch (err) {
-                panel.innerHTML = `<p style="color:#dc2626;font-size:12px;padding:6px">Lỗi: ${esc(err.message)}</p>`;
+                box.innerHTML = `<p style="color:#dc2626;font-size:12px">Lỗi: ${esc(err.message)}</p>`;
             }
         };
 
@@ -746,12 +780,19 @@ Danh sách từ vựng cần chuyển:
             tabs: [
                 { key: 'add', label: 'Thêm từ mới', icon: 'fa-plus' },
                 { key: 'json', label: 'Thêm JSON', icon: 'fa-code' },
+                { key: 'share', label: 'Chia sẻ', icon: 'fa-user-plus' },
             ],
-            initialTab: tab === 'manage' ? 'manage' : 'add',
-            renderBody: (t) => (t === 'add' ? addTabHtml() : t === 'json' ? jsonTabHtml() : manageTabHtml()),
+            initialTab: tab === 'manage' ? 'manage' : (tab === 'share' ? 'share' : 'add'),
+            renderBody: (t) => (
+                t === 'add' ? addTabHtml()
+                : t === 'json' ? jsonTabHtml()
+                : t === 'share' ? shareTabHtml()
+                : manageTabHtml()
+            ),
             onEnterTab: (t) => {
                 if (t === 'add') attachAddHandlers();
                 else if (t === 'json') attachJsonHandlers();
+                else if (t === 'share') loadShareTab();
                 else if (t === 'manage') loadMyTopics();
             },
             onLeaveTab: (t) => {

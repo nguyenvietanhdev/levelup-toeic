@@ -18,9 +18,9 @@ const src = readFileSync(join(__dirname, 'openUploadModal.js'), 'utf8')
     .replace(/\/\*[\s\S]*?\*\//g, '')
     .split('\n').filter(l => !/^\s*\/\//.test(l)).join('\n');
 
-/** Thân hàm loadShare, cắt tới hàm kế tiếp. */
+/** Cả cụm tab Chia sẻ: loadShareTab + loadSharePeople. */
 function loadShareBody() {
-    const i = src.indexOf('const loadShare');
+    const i = src.indexOf('const loadShareTab');
     expect(i).toBeGreaterThan(-1);
     const j = src.indexOf('const toggleWords', i);
     return src.slice(i, j === -1 ? undefined : j);
@@ -78,12 +78,35 @@ describe('khung chia sẻ', () => {
     test('dựng lại danh sách sau khi thêm/thu hồi', () => {
         // Không dựng lại thì bấm xong màn hình không đổi, người dùng bấm tiếp.
         const b = loadShareBody();
-        expect((b.match(/loadShare\(source, panel\)/g) || []).length).toBeGreaterThanOrEqual(2);
+        expect((b.match(/loadSharePeople\(\)/g) || []).length).toBeGreaterThanOrEqual(3);
     });
 
-    test('nút Chia sẻ có trong hàng nguồn và gắn listener theo class', () => {
+    test('là TAB riêng, không còn panel xổ trong hàng nguồn', () => {
+        // Panel trong hàng chật, và muốn xem đã chia sẻ những gì thì phải mở lần
+        // lượt từng bộ.
+        expect(src).toMatch(/key: 'share'/);
+        expect(src).not.toMatch(/const toggleShare/);
+        expect(src).not.toMatch(/topic-share-panel/);
+    });
+
+    test('hiện TÊN kèm ID người nhận', () => {
+        // Hai người trùng tên thì ID phân biệt; chỉ ID thì không biết là ai.
+        const b = loadShareBody();
+        expect(b).toMatch(/esc\(r\.name\)/);
+        expect(b).toMatch(/esc\(r\.granteeId/);
+    });
+
+    test('chỉ tải người nhận của MỘT bộ đang chọn', () => {
+        // Gọi listSharees cho mọi bộ là 5 request ngay khi mở tab.
+        const b = loadShareBody();
+        expect(b).toMatch(/listSharees\(_shareSource\)/);
+    });
+
+    test('nút Chia sẻ trong hàng nguồn MỞ TAB với đúng bộ đó', () => {
+        // Giữ lối vào quen thuộc mà không nhân đôi giao diện.
         expect(src).toMatch(/class="topic-share-btn/);
-        expect(src).toMatch(/\.topic-share-btn['"]\)\?\.addEventListener\('click'/);
+        expect(src).toMatch(/_shareSource = row\.dataset\.source/);
+        expect(src).toMatch(/detail: 'share'/);
     });
 
     test('tự kiểm: đọc được thân hàm thật', () => {

@@ -8378,3 +8378,11 @@ mark {
 .translate-part-input:focus { border-color: var(--primary-color); }
 .translate-source-input::placeholder,
 .translate-part-input::placeholder { font-weight: 400; letter-spacing: 0; }
+
+/* Nhãn "(shared)" trên tên bộ từ được người khác chia sẻ. Bộ đó có thể TRÙNG TÊN
+   với bộ của mình — hai thẻ cạnh nhau cùng một chữ thì không biết cái nào của ai. */
+.topic-card .shared-tag {
+    font-weight: 500;
+    font-size: 0.85em;
+    color: var(--text-tertiary, #94a3b8);
+}
