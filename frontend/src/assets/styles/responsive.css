@@ -652,6 +652,48 @@
         display: none;
     }
 
+    /* ── Hàng nút Gợi ý / Dừng thời gian / Bỏ qua ─────────────────────────
+       Ba nút giữ nguyên padding của desktop nên trên màn hẹp chữ xuống dòng
+       giữa từ ("Dừng thời / gian") và nút cao gấp đôi hai nút kia.
+
+       KHÔNG ẩn chữ để chỉ còn icon: bóng đèn / tạm dừng / tua nhanh không tự
+       nói được nút nào làm gì, mà đây là nút TỐN XU và TỐN VẬT PHẨM — bấm nhầm
+       là mất thật. Thu nhỏ và chia đều ba nút thay vì bỏ nhãn. */
+    .practice-actions {
+        gap: 6px;
+        padding: 0 8px;
+    }
+
+    /* Chia đều ba phần. `min-width: 0` để nút co được dưới cỡ nội dung — thiếu
+       nó thì nút có nhãn dài nhất vẫn đẩy hàng vỡ, đúng triệu chứng đang thấy. */
+    .action-btn {
+        flex: 1 1 0;
+        min-width: 0;
+        justify-content: center;
+        gap: 4px;
+        padding: 8px 6px;
+        font-size: 11px;
+        line-height: 1.25;
+    }
+
+    /* Nhãn được xuống dòng nhưng chỉ giữa CÁC TỪ, và căn giữa cho cân. */
+    .action-btn > span {
+        text-align: center;
+    }
+
+    /* Chi phí và số lượng vẫn phải thấy: đó là thứ quyết định có bấm hay không.
+       Thu nhỏ chứ không ẩn. */
+    .action-btn .cost,
+    .action-btn .freeze-count {
+        font-size: 10px;
+        flex-shrink: 0;
+    }
+
+    .action-btn i {
+        font-size: 12px;
+        flex-shrink: 0;
+    }
+
     /* ── Chế độ viết chữ Hán ──────────────────────────────────────────────
        Ô vẽ phải TO nhất có thể (viết bằng ngón tay, không phải chuột), nhưng
        phần bao quanh phải gọn lại để ô không bị đẩy khỏi màn hình. */

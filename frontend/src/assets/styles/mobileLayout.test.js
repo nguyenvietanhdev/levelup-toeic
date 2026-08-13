@@ -20,7 +20,15 @@ import { describe, test, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
-const css = readFileSync(join(__dirname, 'responsive.css'), 'utf8');
+/**
+ * Bỏ HẾT comment trước khi dò.
+ *
+ * Không bỏ thì một comment mô tả (`min-width: 0` để nút co được…) nằm trong
+ * thân quy tắc cũng khớp regex — test đọc trúng lời văn của chính nó và xanh
+ * kể cả khi khai báo thật đã bị xoá. Đã dính đúng bẫy này một lần.
+ */
+const css = readFileSync(join(__dirname, 'responsive.css'), 'utf8')
+    .replace(/\/\*[\s\S]*?\*\//g, '');
 
 /**
  * Cắt đúng block `max-width: 480px`, đếm ngoặc để lấy trọn khối.
@@ -187,6 +195,39 @@ describe('ô tìm kiếm thu gọn thành nút kính lúp', () => {
         const b = mobileBlock();
         expect(b).toMatch(/\.mic-btn/);
         expect(b).not.toMatch(/\.speech-btn/);
+    });
+});
+
+describe('hàng nút Gợi ý / Dừng thời gian / Bỏ qua', () => {
+    test('ba nút chia đều và CO ĐƯỢC dưới cỡ nội dung', () => {
+        // Thiếu `min-width: 0` thì flex item không co dưới kích thước nội dung,
+        // nút có nhãn dài nhất vẫn đẩy hàng vỡ — đúng triệu chứng đang thấy.
+        const r = ruleFor('.action-btn');
+        expect(r).toMatch(/flex:\s*1 1 0/);
+        expect(r).toMatch(/min-width:\s*0/);
+    });
+
+    test('nút nhỏ lại: padding và cỡ chữ đều giảm', () => {
+        const r = ruleFor('.action-btn');
+        expect(r).toMatch(/padding:\s*8px 6px/);
+        expect(r).toMatch(/font-size:\s*11px/);
+    });
+
+    test('GIỮ nhãn chữ, không rút về mỗi icon', () => {
+        // Bóng đèn / tạm dừng / tua nhanh không tự nói được nút nào làm gì, mà
+        // đây là nút tốn xu và tốn vật phẩm — bấm nhầm là mất thật.
+        const b = mobileBlock();
+        expect(b).not.toMatch(/\.action-btn\s*>\s*span\s*\{[^}]*display:\s*none/);
+        expect(b).not.toMatch(/\.action-btn\s+span\s*\{[^}]*display:\s*none/);
+    });
+
+    test('chi phí và số lượng vẫn hiện — thu nhỏ chứ không ẩn', () => {
+        // Đó là thứ quyết định có bấm hay không.
+        const r = ruleFor('.action-btn .cost,\n    .action-btn .freeze-count');
+        expect(r).toMatch(/font-size:\s*10px/);
+        expect(r).not.toMatch(/display:\s*none/);
+        // Và không bị bóp mất: chúng là huy hiệu cỡ cố định.
+        expect(r).toMatch(/flex-shrink:\s*0/);
     });
 });
 
