@@ -92,6 +92,20 @@ describe('nút Từ vựng riêng chuyển sang menu bên', () => {
     });
 });
 
+describe('màn Từ vựng riêng: hàng tiêu đề', () => {
+    test('nhóm nút dồn về mép PHẢI', () => {
+        // Không có `margin-left: auto` thì chúng dính ngay sau chữ "Từ vựng
+        // riêng" — tiêu đề chỉ rộng bằng nội dung nên cả cụm nằm lửng giữa hàng.
+        const comp = readFileSync(
+            join(__dirname, '..', 'assets', 'styles', 'components.css'), 'utf8',
+        ).replace(/\/\*[\s\S]*?\*\//g, '');
+        const m = comp.match(/\.vocab-screen-actions\s*\{([^}]*)\}/);
+        expect(m).toBeTruthy();
+        expect(m[1]).toMatch(/margin-left:\s*auto/);
+        expect(m[1]).toMatch(/flex-shrink:\s*0/);
+    });
+});
+
 describe('ô tìm nằm chính giữa nav', () => {
     /**
      * Gộp thân của MỌI quy tắc có chứa selector này.

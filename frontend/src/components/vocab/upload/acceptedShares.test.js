@@ -63,21 +63,32 @@ describe('nút Đồng bộ — ở HEADER, cạnh nút đóng', () => {
         expect(body()).not.toMatch(/accepted-sync-btn/);
     });
 
-    test('làm mới theo TAB đang mở, không gọi mù một hàm', () => {
+    test('làm mới TẤT CẢ, không chỉ tab đang mở', () => {
+        // Bốn tab đọc CÙNG một kho: thêm từ ở "Thêm từ mới" thì danh sách bên
+        // "Quản lý" và ô chọn bộ bên "Chia sẻ" đều cũ. Người dùng bấm Đồng bộ là
+        // muốn mọi thứ khớp lại, không phải khớp riêng chỗ đang nhìn.
         const i = src.indexOf('const onSyncClick');
         expect(i).toBeGreaterThan(-1);
-        const h = src.slice(i, i + 700);
-        expect(h).toMatch(/_currentTab === 'share'\) loadShareTab\(\)/);
-        expect(h).toMatch(/_currentTab === 'manage'\) loadMyTopics\(\)/);
+        const h = src.slice(i, i + 900);
+        expect(h).toMatch(/loadMyTopics\(\);/);
+        expect(h).toMatch(/loadShareTab\(\);/);
+        expect(h).toMatch(/loadShareInbox\(\);/);
+        expect(h).toMatch(/loadAcceptedShares\(\);/);
     });
 
-    test('tab nhập liệu thì KHÔNG báo "đã đồng bộ"', () => {
-        // Tab "Thêm từ mới"/"Thêm JSON" không có gì để tải lại; báo thành công ở
-        // đó là nói dối người dùng rằng vừa có việc gì đó xảy ra.
+    test('KHÔNG còn rẽ nhánh theo tab đang mở', () => {
+        // Rẽ nhánh là quay lại đúng lỗi cũ: tab khác vẫn giữ số liệu cũ.
         const i = src.indexOf('const onSyncClick');
-        const h = src.slice(i, i + 700);
-        expect(h).toMatch(/else return;/);
-        expect(h.indexOf('else return;')).toBeLessThan(h.indexOf('Đã đồng bộ'));
+        const h = src.slice(i, i + 900);
+        expect(h).not.toMatch(/_currentTab === 'share'\) loadShareTab/);
+    });
+
+    test('nút Đồng bộ chỉ còn ICON, không chữ', () => {
+        // Hàng tiêu đề còn phải chứa ô chọn thời hạn và nút "Quản lý từ vựng".
+        const i = src.indexOf('id="upload-sync"');
+        const h = src.slice(i, i + 500);
+        expect(h).toMatch(/aria-label="Đồng bộ"/);   // nghĩa vẫn còn cho trình đọc
+        expect(h).toMatch(/<i class="fas fa-rotate"><\/i><\/button>/);
     });
 
     test('_currentTab được cập nhật khi đổi tab', () => {
@@ -153,10 +164,12 @@ describe('tab riêng "Được chia sẻ"', () => {
         expect(shareTab).not.toMatch(/loadAcceptedShares\(\)/);
     });
 
-    test('nút Đồng bộ ở header phục vụ cả tab mới', () => {
+    test('nút Đồng bộ ở header phủ cả tab này', () => {
+        // Nó gọi hết bốn hàm nạp, nên tab "Được chia sẻ" cũng được làm mới.
         const i = src.indexOf('const onSyncClick');
-        expect(src.slice(i, i + 800))
-            .toMatch(/_currentTab === 'received'\) \{ loadShareInbox\(\); loadAcceptedShares\(\); \}/);
+        const h = src.slice(i, i + 900);
+        expect(h).toMatch(/loadShareInbox\(\);/);
+        expect(h).toMatch(/loadAcceptedShares\(\);/);
     });
 
     test('người CHƯA có bộ nào vẫn được chỉ sang tab này', () => {

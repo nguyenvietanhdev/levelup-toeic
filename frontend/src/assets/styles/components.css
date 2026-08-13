@@ -4004,6 +4004,22 @@ mark {
 
 /* Settings Screen Styles */
 /* ── Settings Layout (2 columns: nav + panel) ── */
+/* ── Màn "Từ vựng riêng" ─────────────────────────────────────────────────────
+   Nhóm nút (Đồng bộ · thời hạn lưu · Quản lý từ vựng) dồn về mép PHẢI của hàng
+   tiêu đề. Không có `margin-left: auto` thì chúng dính ngay sau chữ "Từ vựng
+   riêng" — tiêu đề chỉ rộng bằng nội dung, nên cả cụm nằm lửng giữa hàng. */
+.vocab-screen-actions {
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+/* Thân màn không cần padding của `.settings-section` — bên trong đã có thanh
+   tab và các panel tự lo lề riêng. */
+.vocab-screen-body {
+  padding: 0;
+  overflow: hidden;
+}
+
 /* ── Thanh tìm nhanh cài đặt ────────────────────────────────────────────────── */
 .settings-search {
   display: flex;

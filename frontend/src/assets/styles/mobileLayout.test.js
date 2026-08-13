@@ -181,33 +181,43 @@ describe('ô tìm kiếm thu gọn thành nút kính lúp', () => {
         expect(icon).toMatch(/margin:\s*auto/);
     });
 
-    test('lúc THU: có VIỀN màu giao diện để đọc ra là nút bấm được', () => {
-        // Quy tắc gốc để `border: 2px solid transparent` — không đặt màu thì nút
-        // kính lúp chìm vào nền nav, trông như icon trang trí chứ không phải nút.
-        const r = ruleFor('.search-bar input');
-        expect(r).toMatch(/border-color:\s*var\(--primary-color\)/);
-        expect(r).toMatch(/border-radius:\s*50%/);
+    test('VIỀN nằm trên ICON, không phải trên ô nhập', () => {
+        // Đặt viền + bo 50% lên input thì ra BẦU DỤC: input cao ~34px trong ô
+        // rộng 40px. Icon mới là hình vuông thật (32×32) nên `50%` ra hình tròn.
+        const icon = ruleFor('.search-bar > .fa-search,\n    .search-bar > .fa-lock');
+        expect(icon).toMatch(/border:\s*2px solid var\(--primary-color\)/);
+        expect(icon).toMatch(/border-radius:\s*50%/);
+        expect(icon).toMatch(/width:\s*32px/);
+        expect(icon).toMatch(/height:\s*32px/);
+        expect(icon).toMatch(/box-sizing:\s*border-box/);
     });
 
-    test('ô phải VUÔNG thì bo 50% mới ra hình tròn', () => {
-        // Ô rộng 40px nhưng input chỉ cao ~34px (padding 8px + font 14px), nên
-        // `border-radius: 50%` trên hình 40×34 cho ra BẦU DỤC — đúng cái méo đã
-        // gặp. Phải ép chiều cao bằng chiều rộng trước.
-        const r = ruleFor('.search-bar input');
-        expect(r).toMatch(/height:\s*40px/);
-        // `border-box` để viền 2px không cộng thêm vào 40px làm lệch lại.
-        expect(r).toMatch(/box-sizing:\s*border-box/);
+    test('ô nhập KHÔNG mang viền lúc thu', () => {
+        // Hai viền lồng nhau (ô + icon) là hai vòng đồng tâm, rối mắt.
+        expect(ruleFor('.search-bar input')).toMatch(/border-color:\s*transparent/);
     });
 
-    test('bung ra thì BỎ chiều cao ép, không kẹt ô vuông', () => {
+    test('bung ra thì icon BỎ viền, trở lại ký hiệu thường', () => {
+        const icon = ruleFor(
+            '.top-nav.search-active .search-bar > .fa-search,\n    .top-nav.search-active .search-bar > .fa-lock');
+        expect(icon).toMatch(/border:\s*none/);
+        expect(icon).toMatch(/width:\s*1em/);
+    });
+
+    test('bung ra thì ô nhập lấy lại viền của nó', () => {
         expect(ruleFor('.top-nav.search-active .search-bar input'))
-            .toMatch(/height:\s*auto/);
+            .toMatch(/border-color:\s*var\(--border-color\)/);
     });
 
-    test('lúc BUNG: trả lại ô chữ nhật, không còn tròn', () => {
-        // `border-radius: 50%` ở ô rộng 400px thành hình viên thuốc méo.
-        expect(ruleFor('.top-nav.search-active .search-bar input'))
-            .toMatch(/border-radius:\s*20px/);
+    test('lúc THU: lề đối xứng và icon căn GIỮA — không lệch tâm', () => {
+        // `padding: 8px 0 8px 34px` trong ô rộng 40px đẩy vùng nền lệch hẳn sang
+        // phải so với icon; còn `left: 12px` cố định là đúng khi ô rộng 400px
+        // nhưng ở ô 40px thì 12px không còn là "mép" mà thành gần tâm.
+        expect(ruleFor('.search-bar input')).toMatch(/padding:\s*8px 0;/);
+        const icon = ruleFor('.search-bar > .fa-search,\n    .search-bar > .fa-lock');
+        expect(icon).toMatch(/left:\s*0/);
+        expect(icon).toMatch(/right:\s*0/);
+        expect(icon).toMatch(/margin:\s*auto/);
     });
 
     test('lúc BUNG: trả lại lề lệch trái, icon về mép', () => {

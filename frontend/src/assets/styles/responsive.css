@@ -713,33 +713,36 @@
            lúp — nhìn như vòng tròn bị đặt lệch tâm. */
         padding: 8px 0;
         text-align: center;
-        /* VIỀN theo màu giao diện. Quy tắc gốc để `border: 2px solid transparent`
-           nên ở trạng thái thu, nút kính lúp chìm vào nền nav và không đọc ra là
-           một nút bấm được — nó trông như cái icon trang trí. */
-        border-color: var(--primary-color);
-        /* Ô rộng 40px nhưng input chỉ cao ~34px (padding 8px + font 14px), nên
-           `border-radius: 50%` trên hình chữ nhật 40×34 cho ra BẦU DỤC chứ không
-           phải tròn. Ép vuông rồi mới bo. */
-        height: 40px;
-        border-radius: 50%;
-        box-sizing: border-box;
+        /* Input KHÔNG mang viền. Bản trước tôi đặt viền + bo tròn lên chính nó,
+           mà nó cao ~34px trong ô rộng 40px nên `50%` cho ra bầu dục. Viền
+           thuộc về ICON (quy tắc ngay dưới) — nó mới là thứ người dùng nhìn. */
+        border-color: transparent;
     }
 
-    /* Icon cùng màu viền cho ra một khối, thay vì chấm xám trong vòng đỏ. */
-    .search-bar > .fa-search {
-        color: var(--primary-color);
-    }
 
-    /* Icon căn GIỮA ô khi thu, không còn bám mép trái.
+    /* Icon căn GIỮA ô khi thu, và ĐEO VIỀN TRÒN của chính nó.
        `left: 12px` cố định là đúng khi ô rộng 400px, nhưng ô thu về 40px thì
-       12px không còn là "mép" mà thành gần tâm — lệch chính là ở đây. */
+       12px không còn là "mép" mà thành gần tâm — lệch chính là ở đây.
+
+       Viền đặt trên icon chứ không trên input: icon là hình vuông thật
+       (32×32 do width = height), nên `50%` ra hình TRÒN. Input cao 34px rộng
+       40px, bo 50% ở đó chỉ cho bầu dục. */
     .search-bar > .fa-search,
     .search-bar > .fa-lock {
         left: 0;
         right: 0;
+        top: 0;
+        bottom: 0;
         margin: auto;
-        width: 1em;
-        text-align: center;
+        width: 32px;
+        height: 32px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border: 2px solid var(--primary-color);
+        border-radius: 50%;
+        box-sizing: border-box;
+        color: var(--primary-color);
     }
 
     .search-bar input::placeholder {
@@ -850,17 +853,20 @@
         caret-color: var(--text-primary);
         padding: 8px 40px 8px 35px;
         text-align: left;
-        /* Bung ra thì trả về ô chữ nhật bình thường — bo tròn 50% ở ô rộng
-           400px sẽ thành hình viên thuốc méo. `height: auto` bỏ chiều cao 40px
-           đã ép lúc thu (ép để ô vuông, xem quy tắc `.search-bar input`). */
-        height: auto;
-        border-radius: 20px;
+        /* Trả lại viền của ô nhập (lúc thu nó trong suốt — viền khi đó thuộc
+           về icon). */
+        border-color: var(--border-color);
     }
 
+    /* Bung ra: icon trở lại dạng ký hiệu thường trong ô, BỎ viền tròn. */
     .top-nav.search-active .search-bar > .fa-search,
     .top-nav.search-active .search-bar > .fa-lock {
         left: 18px;
         right: auto;
+        width: 1em;
+        height: 1em;
+        border: none;
+        color: var(--text-secondary);
     }
 
     .top-nav.search-active .search-bar input::placeholder {

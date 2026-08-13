@@ -966,8 +966,9 @@ Danh sách từ vựng cần chuyển:
         // cả ba mục (bộ của mình, lời mời, bộ đã nhận) chứ không riêng mục nào.
         const manageBtnHtml = `
             <div style="display:flex;align-items:center;gap:8px">
-                <button type="button" id="upload-sync" title="Đồng bộ — tải lại từ máy chủ"
-                    style="display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border:1px solid var(--border-color);border-radius:8px;background:var(--bg-secondary);color:var(--text-primary);cursor:pointer;font-size:12px;font-weight:600;white-space:nowrap"><i class="fas fa-rotate"></i> Đồng bộ</button>
+                <button type="button" id="upload-sync" title="Đồng bộ — tải lại toàn bộ từ máy chủ"
+                    aria-label="Đồng bộ"
+                    style="display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;padding:0;border:1px solid var(--border-color);border-radius:8px;background:var(--bg-secondary);color:var(--text-primary);cursor:pointer;font-size:14px"><i class="fas fa-rotate"></i></button>
                 <select id="upload-retention" title="Thời hạn lưu — hết hạn sẽ tự xoá"
                     style="padding:6px 10px;border:1px solid var(--border-color);border-radius:8px;background:var(--bg-secondary);color:var(--text-primary);font-size:12px;font-weight:600;cursor:pointer">
                     ${RETENTION_OPTIONS.map(d => `<option value="${d}"${d === DEFAULT_RETENTION ? ' selected' : ''}>${d} ngày</option>`).join('')}
@@ -1020,10 +1021,19 @@ Danh sách từ vựng cần chuyển:
         // listener cùng chạy, cái cũ trỏ vào DOM đã bị vứt.
         const onSyncClick = (e) => {
             if (!e.target?.closest?.('#upload-sync')) return;
-            if (_currentTab === 'share') loadShareTab();
-            else if (_currentTab === 'received') { loadShareInbox(); loadAcceptedShares(); }
-            else if (_currentTab === 'manage') loadMyTopics();
-            else return;   // tab nhập liệu không có gì để tải lại
+            // Làm mới TẤT CẢ, không chỉ tab đang mở.
+            //
+            // Bản trước chỉ tải lại đúng tab hiện tại — nhưng bốn tab này đọc
+            // cùng một kho: thêm từ ở tab "Thêm từ mới" thì danh sách bên "Quản
+            // lý" và ô chọn bộ bên "Chia sẻ" đều cũ. Người dùng bấm Đồng bộ là
+            // muốn mọi thứ khớp lại, không phải khớp riêng chỗ đang nhìn.
+            //
+            // Các hàm này tự kiểm phần tử đích có trong DOM chưa (`if (!box)
+            // return`), nên gọi hết là an toàn kể cả khi tab kia chưa dựng.
+            loadMyTopics();
+            loadShareTab();
+            loadShareInbox();
+            loadAcceptedShares();
             Notification.show({ type: 'success', message: 'Đã đồng bộ', duration: 1400 });
         };
         document.addEventListener('click', onSyncClick);
