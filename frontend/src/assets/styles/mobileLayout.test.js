@@ -189,6 +189,21 @@ describe('ô tìm kiếm thu gọn thành nút kính lúp', () => {
         expect(r).toMatch(/border-radius:\s*50%/);
     });
 
+    test('ô phải VUÔNG thì bo 50% mới ra hình tròn', () => {
+        // Ô rộng 40px nhưng input chỉ cao ~34px (padding 8px + font 14px), nên
+        // `border-radius: 50%` trên hình 40×34 cho ra BẦU DỤC — đúng cái méo đã
+        // gặp. Phải ép chiều cao bằng chiều rộng trước.
+        const r = ruleFor('.search-bar input');
+        expect(r).toMatch(/height:\s*40px/);
+        // `border-box` để viền 2px không cộng thêm vào 40px làm lệch lại.
+        expect(r).toMatch(/box-sizing:\s*border-box/);
+    });
+
+    test('bung ra thì BỎ chiều cao ép, không kẹt ô vuông', () => {
+        expect(ruleFor('.top-nav.search-active .search-bar input'))
+            .toMatch(/height:\s*auto/);
+    });
+
     test('lúc BUNG: trả lại ô chữ nhật, không còn tròn', () => {
         // `border-radius: 50%` ở ô rộng 400px thành hình viên thuốc méo.
         expect(ruleFor('.top-nav.search-active .search-bar input'))

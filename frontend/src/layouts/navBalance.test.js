@@ -9,8 +9,8 @@
  *      tính vào, ô tìm vẫn lệch, chỉ ít hơn.
  *   2. Ở khổ điện thoại chỉ huỷ `flex-shrink` mà quên `flex-grow`: hai nhóm giãn
  *      ra và bóp mất ô tìm — nav chỉ có một hàng nên chỗ rất chật.
- *   3. Mục menu mở MODAL (không có `screen`) mà vẫn so `currentScreen ===
- *      item.screen`: hai bên cùng `undefined` là mục sáng nhầm.
+ *   3. Chuyển "Từ vựng riêng" thành màn hình mà CHÉP lại ruột thay vì dùng
+ *      chung — hai bản logic ~1000 dòng sẽ lệch nhau ngay lần sửa đầu.
  */
 import { describe, test, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
@@ -38,31 +38,57 @@ describe('nút Từ vựng riêng chuyển sang menu bên', () => {
         expect(nav).not.toMatch(/openUploadModal/);
     });
 
-    test('có mặt trong menu bên, mở MODAL chứ không điều hướng', () => {
-        expect(menu).toMatch(/action: 'upload'/);
-        expect(menu).toMatch(/if \(item\.action === 'upload'\)/);
-        expect(menu).toMatch(/openUploadModal\(\)/);
+    test('có mặt trong menu bên, dạng MÀN HÌNH riêng', () => {
+        // Nó có 5 tab và người dùng ở lại lâu (thêm từ · JSON · quản lý · chia
+        // sẻ · duyệt bộ được chia sẻ) — đó là một nơi để ĐẾN, không phải hộp
+        // thoại làm nhanh rồi đóng.
+        expect(menu).toMatch(/screen: 'vocab-screen'/);
+        expect(menu).not.toMatch(/action: 'upload'/);
     });
 
-    test('vẫn giữ khoá theo Level như lúc ở nav', () => {
+    test('màn hình được đăng ký trong App', () => {
+        const app = strip(readFileSync(join(__dirname, '..', 'App.jsx'), 'utf8'));
+        expect(app).toMatch(/'vocab-screen': VocabScreen/);
+        // `lazy` như các màn khác — nạp sẵn ~1000 dòng ruột cho mọi người dùng
+        // là trả giá cho tính năng phần lớn không mở tới.
+        expect(app).toMatch(/const VocabScreen\s*=\s*lazy\(/);
+    });
+
+    test('vẫn giữ khoá theo Level', () => {
         // Bỏ `feature` là ai cũng mở được, kể cả chưa đạt mốc.
-        expect(menu).toMatch(/action: 'upload',\s*feature: 'feature:upload-vocab'/);
+        expect(menu).toMatch(/screen: 'vocab-screen',\s*feature: 'feature:upload-vocab'/);
     });
 
-    test('đóng menu trước khi mở modal', () => {
-        // Không đóng thì menu nằm đè lên modal vừa mở.
-        const i = menu.indexOf("item.action === 'upload'");
-        expect(menu.slice(i, i + 200)).toMatch(/setMenuOpen\(false\)/);
+    test('KHÔNG còn nhánh mở modal trong menu', () => {
+        // Sót lại là hai đường vào cho cùng một thứ.
+        expect(menu).not.toMatch(/openUploadModal/);
+        expect(menu).not.toMatch(/item\.action === 'upload'/);
     });
 
-    test('mục mở modal KHÔNG bị sáng nhầm', () => {
-        // `screen` của nó là undefined; so thẳng với `currentScreen` (cũng có
-        // thể undefined) là hai bên bằng nhau và mục sáng lên vô cớ.
-        expect(menu).toMatch(/item\.screen && currentScreen === item\.screen/);
+    test('ruột dùng CHUNG, không có hai bản logic', () => {
+        // `buildUploadContent` trả phần thân cho cả màn hình lẫn modal.
+        const screen = strip(readFileSync(
+            join(__dirname, '..', 'components', 'vocab', 'upload', 'VocabScreen.jsx'), 'utf8'));
+        expect(screen).toMatch(/buildUploadContent/);
+        const mod = strip(readFileSync(
+            join(__dirname, '..', 'components', 'vocab', 'upload', 'openUploadModal.js'), 'utf8'));
+        expect(mod).toMatch(/export function buildUploadContent/);
+        expect(mod).toMatch(/export function openUploadModal/);
     });
 
-    test('key React không rỗng với mục không có `screen`', () => {
-        expect(menu).toMatch(/key=\{item\.screen \|\| item\.action\}/);
+    test('màn hình GỠ listener khi tháo', () => {
+        // `dispose` gỡ listener uỷ quyền ở document. Bỏ qua là mỗi lần vào màn
+        // lại chồng thêm một cái, cái cũ trỏ vào DOM đã bị React vứt.
+        const screen = strip(readFileSync(
+            join(__dirname, '..', 'components', 'vocab', 'upload', 'VocabScreen.jsx'), 'utf8'));
+        expect(screen).toMatch(/built\?\.dispose\?\.\(\)/);
+    });
+
+    test('popup vẫn còn cho popup Dịch nhanh gọi sang tab Quản lý', () => {
+        // Bắt người dùng chuyển màn giữa lúc đang dịch dở là cướp thao tác.
+        const tm = strip(readFileSync(
+            join(__dirname, '..', 'components', 'translate', 'TranslateModal.jsx'), 'utf8'));
+        expect(tm).toMatch(/openUploadModal\(\{ tab: 'manage' \}\)/);
     });
 });
 

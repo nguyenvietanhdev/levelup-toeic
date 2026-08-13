@@ -85,10 +85,14 @@ describe('nút Đồng bộ — ở HEADER, cạnh nút đóng', () => {
         expect(src).toMatch(/onEnterTab: \(t\) => \{\s*\n\s*_currentTab = t;/);
     });
 
-    test('listener document được GỠ khi đóng modal', () => {
-        // Nó gọi các hàm `load*` là closure của lần mở này. Không gỡ thì mở lần
-        // hai là hai listener cùng chạy, cái cũ trỏ vào DOM đã bị vứt.
-        expect(src).toMatch(/onClose: \(\) => document\.removeEventListener\('click', onSyncClick\)/);
+    test('listener document được GỠ khi tháo', () => {
+        // Nó gọi các hàm `load*` là closure của lần dựng này. Không gỡ thì lần
+        // dựng sau có hai listener cùng chạy, cái cũ trỏ vào DOM đã bị vứt.
+        //
+        // `buildUploadContent` trả `dispose` để CẢ HAI lối bọc cùng gỡ được:
+        // modal gọi qua `onClose`, màn hình gọi trong cleanup của effect.
+        expect(src).toMatch(/dispose: \(\) => document\.removeEventListener\('click', onSyncClick\)/);
+        expect(src).toMatch(/onClose: dispose/);
     });
 
     test('nhánh rỗng vẫn dựng phần đầu, không phải chỉ một câu chữ', () => {

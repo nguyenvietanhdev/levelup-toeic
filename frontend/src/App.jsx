@@ -40,11 +40,13 @@ const SettingsScreen     = lazy(() => import('@components/settings/SettingsScree
 const ToeicScreen        = lazy(() => import('@components/toeic/ToeicScreen.jsx'));
 const ToeicResultScreen  = lazy(() => import('@components/toeic/results/ToeicResultScreen.jsx'));
 const InventoryScreen    = lazy(() => import('@components/inventory/InventoryScreen.jsx'));
+const VocabScreen        = lazy(() => import('@components/vocab/upload/VocabScreen.jsx'));
 
 // Bản đồ màn lazy → render có điều kiện (chỉ mount màn đang mở).
 const LAZY_SCREENS = {
     'shop-screen': ShopScreen,
     'inventory-screen': InventoryScreen,
+    'vocab-screen': VocabScreen,
     'quest-screen': QuestScreen,
     'leaderboard-screen': LeaderboardScreen,
     'profile-screen': ProfileScreen,

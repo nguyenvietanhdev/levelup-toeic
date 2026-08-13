@@ -41,7 +41,19 @@ function esc(s) {
 const RETENTION_OPTIONS = [3, 7, 14, 30];
 const DEFAULT_RETENTION = 30;
 
-export function openUploadModal({ tab } = {}) {
+/**
+ * Dựng nội dung màn "Từ vựng riêng" (tabs + toàn bộ handler).
+ *
+ * Tách khỏi phần MỞ MODAL để dùng được ở hai nơi: modal (lối cũ, còn giữ cho
+ * popup Dịch nhanh gọi sang tab Quản lý) và MÀN HÌNH riêng trong sidebar.
+ * Toàn bộ ~1000 dòng ruột giữ nguyên — chỉ lớp bọc ngoài đổi.
+ *
+ * @returns {{ contentJsx, headerActionHtml, dispose }} `dispose` PHẢI được gọi
+ *   khi tháo: nó gỡ listener uỷ quyền ở document, mà listener đó giữ closure của
+ *   lần dựng này. Không gỡ thì lần dựng sau có hai listener cùng chạy, cái cũ
+ *   trỏ vào DOM đã bị vứt.
+ */
+export function buildUploadContent({ tab } = {}) {
         const TYPE1 = ['noun','verb','adjective','adverb','pronoun','preposition','conjunction','interjection','article','determiner','auxiliary'];
         const TYPE2 = ['noun phrase','verb phrase','adjective phrase','adverb phrase','prepositional phrase','participle phrase','gerund phrase','infinitive phrase'];
         const opts1 = ['<option value="">— Loại từ —</option>', ...TYPE1.map(t => `<option value="${t}">${t}</option>`)].join('');
@@ -1016,11 +1028,26 @@ Danh sách từ vựng cần chuyển:
         };
         document.addEventListener('click', onSyncClick);
 
-        Modal.show({
-            title: '☁️ Từ vựng riêng',
+        return {
             contentJsx,
             headerActionHtml: manageBtnHtml,
-            wide: true,
-            onClose: () => document.removeEventListener('click', onSyncClick),
-        });
+            dispose: () => document.removeEventListener('click', onSyncClick),
+        };
+}
+
+/**
+ * Mở "Từ vựng riêng" dạng POPUP.
+ *
+ * Vẫn giữ vì popup Dịch nhanh cần mở thẳng sang tab Quản lý mà không rời màn
+ * đang xem — bắt người dùng chuyển màn giữa lúc đang dịch dở là cướp thao tác.
+ */
+export function openUploadModal({ tab } = {}) {
+    const { contentJsx, headerActionHtml, dispose } = buildUploadContent({ tab });
+    Modal.show({
+        title: '☁️ Từ vựng riêng',
+        contentJsx,
+        headerActionHtml,
+        wide: true,
+        onClose: dispose,
+    });
 }

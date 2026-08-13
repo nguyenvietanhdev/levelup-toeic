@@ -717,7 +717,12 @@
            nên ở trạng thái thu, nút kính lúp chìm vào nền nav và không đọc ra là
            một nút bấm được — nó trông như cái icon trang trí. */
         border-color: var(--primary-color);
+        /* Ô rộng 40px nhưng input chỉ cao ~34px (padding 8px + font 14px), nên
+           `border-radius: 50%` trên hình chữ nhật 40×34 cho ra BẦU DỤC chứ không
+           phải tròn. Ép vuông rồi mới bo. */
+        height: 40px;
         border-radius: 50%;
+        box-sizing: border-box;
     }
 
     /* Icon cùng màu viền cho ra một khối, thay vì chấm xám trong vòng đỏ. */
@@ -846,7 +851,9 @@
         padding: 8px 40px 8px 35px;
         text-align: left;
         /* Bung ra thì trả về ô chữ nhật bình thường — bo tròn 50% ở ô rộng
-           400px sẽ thành hình viên thuốc méo. */
+           400px sẽ thành hình viên thuốc méo. `height: auto` bỏ chiều cao 40px
+           đã ép lúc thu (ép để ô vuông, xem quy tắc `.search-bar input`). */
+        height: auto;
         border-radius: 20px;
     }
 
