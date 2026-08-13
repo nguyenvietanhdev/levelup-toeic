@@ -181,6 +181,20 @@ describe('ô tìm kiếm thu gọn thành nút kính lúp', () => {
         expect(icon).toMatch(/margin:\s*auto/);
     });
 
+    test('lúc THU: có VIỀN màu giao diện để đọc ra là nút bấm được', () => {
+        // Quy tắc gốc để `border: 2px solid transparent` — không đặt màu thì nút
+        // kính lúp chìm vào nền nav, trông như icon trang trí chứ không phải nút.
+        const r = ruleFor('.search-bar input');
+        expect(r).toMatch(/border-color:\s*var\(--primary-color\)/);
+        expect(r).toMatch(/border-radius:\s*50%/);
+    });
+
+    test('lúc BUNG: trả lại ô chữ nhật, không còn tròn', () => {
+        // `border-radius: 50%` ở ô rộng 400px thành hình viên thuốc méo.
+        expect(ruleFor('.top-nav.search-active .search-bar input'))
+            .toMatch(/border-radius:\s*20px/);
+    });
+
     test('lúc BUNG: trả lại lề lệch trái, icon về mép', () => {
         // Ô đủ rộng rồi thì chữ phải bắt đầu sau icon, không căn giữa.
         expect(ruleFor('.top-nav.search-active .search-bar input'))

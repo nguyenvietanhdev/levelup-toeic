@@ -13,7 +13,10 @@
           <div class="topbar-right">
             <span id="season-countdown" class="season-countdown" title="Thời gian còn lại của mùa">SS1: --</span>
 
-            <div class="topbar-divider"></div>
+            <!-- Chỉ báo trạng thái máy chủ + vạch ngăn của nó nằm CHUNG một
+                 bọc: ẩn chỉ báo mà để vạch lại thì thanh có hai vạch dính nhau.
+                 Bọc này ẩn/hiện cả cụm (xem `.status-dot.is-hidden`). -->
+            <div class="topbar-divider" data-for="server-status"></div>
 
             <span
               class="status-dot online"
@@ -21,8 +24,6 @@
               title="Trạng thái máy chủ"
               >Online</span
             >
-
-            <div class="topbar-divider"></div>
 
 
             <button

@@ -474,6 +474,21 @@ body {
   flex-shrink: 0;
 }
 
+/* Máy chủ chạy bình thường thì chỉ báo này ẨN — "Online" chỉ nói điều hiển
+   nhiên. Nó bật lại khi Offline / Đang khởi động, là lúc thật sự cần biết.
+   `display: none` chứ không `visibility`: ẩn mà vẫn chiếm chỗ thì thanh vẫn
+   thủng một khoảng đúng bằng nó. */
+.status-dot.is-hidden {
+  display: none;
+}
+
+/* Vạch ngăn của chỉ báo cũng phải ẩn theo — để lại là thanh có hai vạch dính
+   nhau. `:has()` để CSS tự lo, không phải nhớ bật/tắt ở JS mỗi lần đổi trạng
+   thái (nhớ một chỗ thì sẽ quên chỗ khác). */
+.topbar-right:has(.status-dot.is-hidden) .topbar-divider[data-for="server-status"] {
+  display: none;
+}
+
 .status-dot::before {
   content: '';
   width: 7px;

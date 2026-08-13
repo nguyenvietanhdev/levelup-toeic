@@ -749,10 +749,17 @@ async function loadDashboard() {
     // toeic-tests-count is populated by loadToeicStats() called separately
 
     // Update topbar status dot & compact server info
+    // Máy chủ chạy bình thường → ẨN hẳn chỉ báo. "Online" là trạng thái mặc
+    // định, hiện nó ra chỉ để nói điều hiển nhiên và chiếm chỗ trên thanh.
+    //
+    // Nhưng KHÔNG xoá phần tử: hai trạng thái còn lại có ích thật —
+    // "Offline" (Render ngủ sau 15 phút không truy cập) và "Đang khởi động…"
+    // (chính là thứ giải thích vì sao màn hình đứng im ~30 giây). Chúng bật
+    // lại chỉ báo này.
     const dotEl = document.getElementById("topbar-server-status");
     if (dotEl) {
       dotEl.textContent = "Online";
-      dotEl.className = "status-dot online";
+      dotEl.className = "status-dot online is-hidden";
     }
 
     const mongoEl = document.getElementById("server-mongo-status");

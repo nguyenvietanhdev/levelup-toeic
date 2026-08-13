@@ -713,6 +713,16 @@
            lúp — nhìn như vòng tròn bị đặt lệch tâm. */
         padding: 8px 0;
         text-align: center;
+        /* VIỀN theo màu giao diện. Quy tắc gốc để `border: 2px solid transparent`
+           nên ở trạng thái thu, nút kính lúp chìm vào nền nav và không đọc ra là
+           một nút bấm được — nó trông như cái icon trang trí. */
+        border-color: var(--primary-color);
+        border-radius: 50%;
+    }
+
+    /* Icon cùng màu viền cho ra một khối, thay vì chấm xám trong vòng đỏ. */
+    .search-bar > .fa-search {
+        color: var(--primary-color);
     }
 
     /* Icon căn GIỮA ô khi thu, không còn bám mép trái.
@@ -835,6 +845,9 @@
         caret-color: var(--text-primary);
         padding: 8px 40px 8px 35px;
         text-align: left;
+        /* Bung ra thì trả về ô chữ nhật bình thường — bo tròn 50% ở ô rộng
+           400px sẽ thành hình viên thuốc méo. */
+        border-radius: 20px;
     }
 
     .top-nav.search-active .search-bar > .fa-search,
