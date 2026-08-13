@@ -179,22 +179,41 @@ describe('ô tìm kiếm thu gọn thành nút kính lúp', () => {
         expect(ruleFor('.top-nav.search-active .search-bar input')).toMatch(/color:\s*var\(--text-primary\)/);
     });
 
-    test('nút xoá và nút mic ẩn lúc thu, hiện lại lúc bung', () => {
-        expect(ruleFor('.search-bar .clear-search-btn,\n    .search-bar .mic-btn'))
-            .toMatch(/display:\s*none/);
+    test('nút xoá ẩn lúc thu, hiện lại lúc bung', () => {
+        expect(ruleFor('.search-bar .clear-search-btn')).toMatch(/display:\s*none/);
         // Và phải trả về ĐÚNG `flex` như bản gốc — `inline-flex` là icon lệch tâm.
-        const back = ruleFor('.top-nav.search-active .search-bar .clear-search-btn,\n    .top-nav.search-active .search-bar .mic-btn');
+        const back = ruleFor('.top-nav.search-active .search-bar .clear-search-btn');
         expect(back).toMatch(/display:\s*flex/);
         expect(back).not.toMatch(/inline-flex/);
     });
 
+    test('nút MIC KHÔNG bị ẩn — nó là nút riêng, không phải icon trong ô', () => {
+        // Bản trước mic là CON của ô: ô thu lại thì mic `display: none`, bấm vào
+        // chỗ đó là trúng input → nút ghi âm coi như không tồn tại trên điện
+        // thoại. Giờ nó là anh em của ô (TopNav.jsx) nên phải luôn bấm được.
+        const b = mobileBlock();
+        expect(b).not.toMatch(/\.search-bar \.mic-btn\s*\{[^}]*display:\s*none/);
+    });
+
+    test('mic KHÔNG kéo chồng lên ô nữa ở khổ điện thoại', () => {
+        // Trên máy tính margin âm kéo nó vào trong ô cho đẹp; ở đây nó đứng
+        // riêng nên margin âm sẽ làm hai thứ đè nhau.
+        expect(ruleFor('.mic-btn')).toMatch(/margin-left:\s*0/);
+    });
+
     test('dùng đúng tên class của nút mic', () => {
         // Nút là `.mic-btn` (TopNav.jsx). Viết nhầm `.speech-btn` thì quy tắc
-        // không khớp gì cả và nút vẫn chen chỗ lúc ô đang thu — CSS vẫn hợp lệ,
-        // không có gì báo.
+        // không khớp gì cả — CSS vẫn hợp lệ, không có gì báo.
         const b = mobileBlock();
         expect(b).toMatch(/\.mic-btn/);
         expect(b).not.toMatch(/\.speech-btn/);
+    });
+
+    test('ô bung ra CHỪA nhóm trái, ẩn nhóm phải', () => {
+        // Trước đây `left: 8px; right: 8px` phủ trọn hàng: nhóm nút phải bị che
+        // một nửa (nhìn như vỡ giao diện), còn menu bên trái cũng bị đè mất.
+        expect(ruleFor('.top-nav.search-active .search-bar')).toMatch(/left:\s*\d{2,}px/);
+        expect(ruleFor('.top-nav.search-active .nav-right')).toMatch(/visibility:\s*hidden/);
     });
 });
 

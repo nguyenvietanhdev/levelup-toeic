@@ -1591,15 +1591,20 @@
     background: var(--border-color);
 }
 
-/* ── Nút micro trong ô tìm kiếm ───────────────────────────────────────────────
-   Nằm sát mép phải; khi có nút xoá thì lùi vào để không đè lên nhau. */
+/* ── Nút micro ────────────────────────────────────────────────────────────────
+   Là ANH EM của ô tìm trong DOM, không phải con của nó — để trên điện thoại nó
+   vẫn bấm được khi ô tìm đã thu thành nút kính lúp (xem responsive.css).
+
+   Trên máy tính vẫn TRÔNG như nằm trong ô: margin âm kéo nó chồng lên mép phải.
+   Dùng margin âm chứ không `position: absolute` vì ra khỏi `.search-bar` thì
+   `absolute` sẽ bám lên tổ tiên định vị gần nhất (`.top-nav`) và nút bay sang
+   tận mép màn hình. */
 .mic-btn {
-    position: absolute;
-    right: 8px;
-    top: 0;
-    bottom: 0;
-    height: fit-content;
-    margin: auto;
+    flex: 0 0 auto;
+    /* `.nav-center` có `gap`, nên margin âm phải trừ luôn khoảng gap đó thì nút
+       mới nằm đúng trong ô như trước. */
+    margin-left: calc(-34px - var(--spacing-sm));
+    z-index: 2;
     background: none;
     border: none;
     color: var(--text-secondary);
@@ -1613,7 +1618,10 @@
     justify-content: center;
     transition: color 0.2s, background-color 0.2s;
 }
-.search-bar:has(.clear-search-btn) .mic-btn { right: 34px; }
+/* Có nút xoá thì lùi thêm để hai nút không đè nhau. */
+.nav-center:has(.clear-search-btn) .mic-btn {
+    margin-left: calc(-60px - var(--spacing-sm));
+}
 .mic-btn:hover { color: var(--text-primary); background: var(--border-color); }
 .mic-btn:focus-visible { outline: 2px solid var(--primary-color); outline-offset: 1px; }
 

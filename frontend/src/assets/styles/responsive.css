@@ -575,7 +575,11 @@
        không cần nút riêng và cũng không cần JS.
        Ô thu lại vẫn là CHÍNH cái input (rộng bằng nút, chữ trong suốt) chứ
        không phải một nút giả: nếu là nút giả thì bấm xong phải tự gọi focus,
-       mà trên iOS gọi focus ngoài cử chỉ chạm trực tiếp thì bàn phím không mở. */
+       mà trên iOS gọi focus ngoài cử chỉ chạm trực tiếp thì bàn phím không mở.
+
+       Nút ghi âm KHÔNG nằm trong ô (xem TopNav.jsx) — nó là nút riêng đứng
+       cạnh. Bản trước để nó là con của ô: ô thu lại thì mic bị ẩn, bấm vào chỗ
+       đó là trúng input, nên nút ghi âm coi như không tồn tại trên điện thoại. */
     .nav-center {
         flex: 0 0 auto !important;
     }
@@ -598,10 +602,22 @@
         color: transparent;
     }
 
-    /* Nút xoá và nút mic không có chỗ ở trạng thái thu. */
-    .search-bar .clear-search-btn,
-    .search-bar .mic-btn {
+    /* Nút xoá nằm TRONG ô nên không có chỗ khi ô đã thu. Nút mic thì KHÁC —
+       nó là anh em của ô, giữ nguyên là một nút riêng bấm được. */
+    .search-bar .clear-search-btn {
         display: none;
+    }
+
+    /* Mic đứng cạnh kính lúp, KHÔNG kéo chồng lên ô nữa: ở đây nó là nút độc
+       lập chứ không phải icon nằm trong ô tìm. */
+    .mic-btn {
+        margin-left: 0;
+        width: 34px;
+        height: 34px;
+    }
+
+    .nav-center:has(.clear-search-btn) .mic-btn {
+        margin-left: 0;
     }
 
     /* Có focus → bung ra chiếm cả hàng, đè lên các nhóm bên cạnh.
@@ -612,13 +628,28 @@
         position: static;
     }
 
+    /* Bung ra chiếm cả hàng, và nhóm nút phải ẨN HẲN trong lúc đó.
+       Trước đây ô phủ lên trên còn nhóm nút vẫn ở đó, bị che một nửa: nhìn
+       như giao diện vỡ, mà bấm vào phần thò ra thì trúng ô tìm. Chừa chỗ cho
+       cả 5 nút (5×32 + gap ≈ 180px) thì ô tìm chỉ còn ~140px trên màn 360 —
+       chật hơn cả lúc chưa thu. Ẩn hẳn là dứt khoát: gõ xong bấm ra ngoài,
+       nhóm nút trở lại. */
     .top-nav.search-active .search-bar {
         position: absolute;
-        left: 8px;
+        /* Chừa nhóm TRÁI (menu · trang chủ · chuông = 3 nút 32px + gap) để menu
+           vẫn bấm được — đó là lối thoát khi ô đang chiếm màn. Nhóm phải thì ẩn
+           hẳn (dưới đây) vì chừa cho cả 5 nút nữa thì ô chẳng còn bao nhiêu. */
+        left: 124px;
         right: 8px;
         width: auto;
         min-width: 0;
         z-index: 100;
+    }
+
+    /* Chỉ ẩn nhóm PHẢI. `.nav-left` (menu, trang chủ, chuông) vẫn để nguyên —
+       ô tìm bung ra không chạm tới đó, và menu là lối thoát cần luôn bấm được. */
+    .top-nav.search-active .nav-right {
+        visibility: hidden;
     }
 
     .top-nav.search-active .search-bar input {
@@ -633,8 +664,7 @@
 
     /* Trả về ĐÚNG giá trị gốc (`flex`, layout.css:1537/1563) — hai nút này căn
        giữa icon bằng flex; trả về `inline-flex` là icon lệch tâm. */
-    .top-nav.search-active .search-bar .clear-search-btn,
-    .top-nav.search-active .search-bar .mic-btn {
+    .top-nav.search-active .search-bar .clear-search-btn {
         display: flex;
     }
 

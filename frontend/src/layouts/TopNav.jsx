@@ -460,29 +460,40 @@ export default function TopNav() {
                             <i className="fas fa-times"></i>
                         </button>
                     )}
-                    {/* Trình duyệt không hỗ trợ (Firefox) thì VẪN HIỆN nút, ở dạng mờ
-                        + gạch chéo, bấm vào nói rõ lý do. Bản đầu tôi ẩn hẳn — và nó
-                        lặp đúng lỗi của nút đăng nhập Google: tính năng biến mất mà
-                        người dùng phải mở Console mới biết vì sao. Ẩn im lặng khiến
-                        người ta nghĩ app hỏng; nút mờ khiến người ta biết phải đổi
-                        trình duyệt. */}
-                    {!isInPractice && (
-                        <button
-                            type="button"
-                            className={`mic-btn${speechOn ? ' is-listening' : ''}${speechSupported ? '' : ' is-unsupported'}`}
-                            onClick={speechSupported ? toggleSpeech : warnNoSpeech}
-                            aria-pressed={speechSupported ? speechOn : undefined}
-                            aria-label={!speechSupported
-                                ? 'Nhập bằng giọng nói — trình duyệt này không hỗ trợ'
-                                : speechOn ? 'Dừng nhập bằng giọng nói' : 'Nhập bằng giọng nói'}
-                            title={!speechSupported
-                                ? 'Trình duyệt này không hỗ trợ nhập giọng nói — dùng Chrome hoặc Edge'
-                                : speechOn ? 'Đang nghe — bấm để dừng' : 'Nói để tìm (hoặc giữ Shift)'}
-                        >
-                            <i className={`fas ${!speechSupported ? 'fa-microphone-slash' : speechOn ? 'fa-stop' : 'fa-microphone'}`}></i>
-                        </button>
-                    )}
                 </div>
+
+                {/* Nút ghi âm nằm NGOÀI `.search-bar`, là anh em của nó.
+                    Trước đây nó là CON của ô tìm. Trên điện thoại ô tìm thu lại
+                    thành nút kính lúp và mic bị `display: none` — bấm vào chỗ đó
+                    là bấm trúng input, nên nút ghi âm coi như không tồn tại.
+                    Ra ngoài thì nó là đích chạm riêng, độc lập với việc ô tìm
+                    đang thu hay đang bung.
+
+                    Trên máy tính vẫn TRÔNG như nằm trong ô: layout.css kéo nó
+                    chồng lên mép phải ô tìm bằng margin âm, không phải absolute.
+
+                    Trình duyệt không hỗ trợ (Firefox) thì VẪN HIỆN nút, ở dạng mờ
+                    + gạch chéo, bấm vào nói rõ lý do. Bản đầu tôi ẩn hẳn — và nó
+                    lặp đúng lỗi của nút đăng nhập Google: tính năng biến mất mà
+                    người dùng phải mở Console mới biết vì sao. Ẩn im lặng khiến
+                    người ta nghĩ app hỏng; nút mờ khiến người ta biết phải đổi
+                    trình duyệt. */}
+                {!isInPractice && (
+                    <button
+                        type="button"
+                        className={`mic-btn${speechOn ? ' is-listening' : ''}${speechSupported ? '' : ' is-unsupported'}`}
+                        onClick={speechSupported ? toggleSpeech : warnNoSpeech}
+                        aria-pressed={speechSupported ? speechOn : undefined}
+                        aria-label={!speechSupported
+                            ? 'Nhập bằng giọng nói — trình duyệt này không hỗ trợ'
+                            : speechOn ? 'Dừng nhập bằng giọng nói' : 'Nhập bằng giọng nói'}
+                        title={!speechSupported
+                            ? 'Trình duyệt này không hỗ trợ nhập giọng nói — dùng Chrome hoặc Edge'
+                            : speechOn ? 'Đang nghe — bấm để dừng' : 'Nói để tìm (hoặc giữ Shift)'}
+                    >
+                        <i className={`fas ${!speechSupported ? 'fa-microphone-slash' : speechOn ? 'fa-stop' : 'fa-microphone'}`}></i>
+                    </button>
+                )}
             </div>
 
             <div className="nav-right">
