@@ -127,9 +127,14 @@
         font-size: 10px;
     }
 
-    /* Hide gems on very small screens to save space */
+    /* Đá quý VẪN hiện — nó là một trong ba loại tiền, ẩn đi thì người dùng
+       không biết mình có bao nhiêu mà cửa hàng vẫn đòi tiêu.
+       Trước đây ẩn để nhường chỗ, nhưng thanh XP giờ đã xuống dòng riêng nên
+       hàng trên còn chỗ cho cả ba. */
     .gems-display {
-        display: none !important;
+        /* `flex` đúng như `.resource` gốc (layout.css:201) — trả về
+           `inline-flex` là icon và số bị lệch trục so với hai ô tiền kia. */
+        display: flex !important;
     }
 
     .user-info {

@@ -155,6 +155,20 @@ describe('ẩn thứ chiếm chỗ', () => {
     });
 });
 
+describe('ba loại tiền đều hiện', () => {
+    test('đá quý KHÔNG bị ẩn', () => {
+        // Nó là một trong ba loại tiền; ẩn đi thì người dùng không biết mình có
+        // bao nhiêu mà cửa hàng vẫn đòi tiêu. Trước ẩn để nhường chỗ, nhưng
+        // thanh XP đã xuống dòng riêng nên hàng trên còn chỗ cho cả ba.
+        expect(ruleFor('.gems-display')).toMatch(/display:\s*flex\s*!important/);
+    });
+
+    test('dùng đúng `flex` như .resource gốc', () => {
+        // `inline-flex` là icon và số lệch trục so với hai ô tiền kia.
+        expect(ruleFor('.gems-display')).not.toMatch(/inline-flex/);
+    });
+});
+
 describe('thanh kinh nghiệm xuống dòng riêng', () => {
     test('thanh trạng thái cho xuống dòng', () => {
         // Hàng này phải chứa bảng Part · năng lượng · xu · ngọc · thanh XP ·
