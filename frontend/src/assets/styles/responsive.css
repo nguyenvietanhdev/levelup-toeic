@@ -31,26 +31,42 @@
         border-radius: 0;
     }
 
-    /* Top Nav - Mobile Layout (2 rows) */
+    /* Top Nav — MỘT hàng trên mobile.
+       Trước đây `flex-wrap: wrap` + `.nav-center` chiếm trọn chiều ngang đẩy ô
+       tìm kiếm xuống hàng hai, ăn mất gần một nửa màn hình dọc trước khi thấy
+       nội dung. Giữ một hàng, cho ô tìm co lại thay vì xuống dòng. */
     .top-nav {
         display: flex;
-        flex-wrap: wrap;
+        flex-wrap: nowrap;
+        align-items: center;
         padding: 8px 10px;
         height: auto;
         gap: 8px;
     }
 
+    /* Ba nút (menu / trang chủ / chuông) phải giữ nguyên kích thước — `flex-shrink`
+       mặc định là 1, nên khi nav chỉ còn một hàng thì nút cuối (chuông) bị bóp
+       về 0 và biến mất. Đặt shrink:0 cho cả nhóm LẪN từng nút bên trong. */
     .nav-left {
         order: 1;
         gap: 6px;
         flex-shrink: 0;
+        display: flex;
+        align-items: center;
     }
 
+    .nav-left > *,
+    .nav-left .notif-wrapper {
+        flex-shrink: 0;
+    }
+
+    /* Cuối hàng. `order: 3` vì nav-center giờ đứng giữa (order: 2).
+       Bỏ `margin-left: auto` — nav-center co giãn đã đẩy nhóm này sang phải,
+       giữ lại là cộng dồn hai cơ chế cho cùng một việc. */
     .nav-right {
-        order: 2;
+        order: 3;
         gap: 4px;
         flex-shrink: 0;
-        margin-left: auto;
     }
 
     /* Quick difficulty selector compact on mobile */
@@ -60,13 +76,16 @@
         min-width: 70px;
     }
 
+    /* Ở GIỮA hàng, co giãn theo chỗ còn lại — không chiếm trọn hàng rồi đẩy
+       xuống dòng. `min-width: 0` là bắt buộc: thiếu nó flex item không co dưới
+       kích thước nội dung và ô tìm vẫn đẩy nav vỡ hàng. */
     .nav-center {
-        order: 3;
-        width: 100%;
-        flex: none !important;
+        order: 2;
+        flex: 1 1 auto !important;
+        min-width: 0;
         display: flex;
-        flex-direction: column;
-        gap: 8px;
+        align-items: center;
+        gap: 6px;
     }
 
     /* Search bar full width on mobile */
@@ -113,9 +132,19 @@
         display: none !important;
     }
 
-    /* Hide part badge on mobile nav (still accessible via menu) */
+    /* Bảng cấm (part đang chọn) VẪN hiện trên mobile — nó cho biết đang luyện
+       bộ nào, ẩn đi thì người học không biết mình đang ở đâu. Thu nhỏ và cắt
+       bớt chữ dài thay vì giấu.
+       Trước đây ẩn với lý do 'vẫn xem được trong menu' — nhưng phải mở menu
+       mới biết mình đang luyện bộ nào thì không ai mở. */
     .part-badge {
-        display: none !important;
+        display: inline-flex !important;
+        max-width: 90px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        font-size: 10px;
+        padding: 2px 6px;
     }
 
     .level-badge {

@@ -125,24 +125,35 @@
     gap: 6px;
   }
 
-  /* topics-grid 2 cột */
+  /* MỘT Part mỗi dòng. Nhồi 2 cột trên màn 380px thì tên part (FREFIX-A, số từ,
+     thanh tiến độ) bị ép vào ~170px — chữ cắt cụt và thanh tiến độ ngắn tới mức
+     không đọc được tỉ lệ. Một dòng một part thì đủ chỗ cho cả ba thông tin. */
   .part-selector-modal .topics-grid {
-    grid-template-columns: repeat(2, 1fr) !important;
+    grid-template-columns: 1fr !important;
     gap: 8px;
   }
 
-  /* part cards nhỏ gọn hơn trên mobile */
+  /* Một dòng một part thì thẻ nằm NGANG được: icon | tên + số từ | tiến độ.
+     Xếp dọc (như khi còn 2 cột) giờ chỉ làm mỗi thẻ cao gấp đôi vô ích. */
   .part-selector-modal .topic-card {
-    padding: 8px 8px;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 3px;
+    padding: 10px 12px;
+    flex-direction: row;
+    align-items: center;
+    gap: 10px;
   }
 
   .part-selector-modal .topic-icon {
     font-size: 17px;
     margin-right: 0;
     margin-bottom: 0;
+    flex-shrink: 0;
+  }
+
+  /* `min-width: 0` để khối chữ co được — thiếu nó thì tên part dài đẩy thẻ
+     tràn ngang thay vì xuống dòng. */
+  .part-selector-modal .topic-info {
+    flex: 1 1 auto;
+    min-width: 0;
   }
 
   .part-selector-modal .topic-info h3 {
@@ -295,13 +306,30 @@
 
 /* Responsive */
 @media (max-width: 600px) {
+  /* Tab xếp DỌC trên mobile. Ba nhãn dài ("Từ vựng chung" / "Từ vựng riêng" /
+     "Từ vựng sai") nhồi ngang trên màn 380px thì chữ bị cắt hoặc co nhỏ tới mức
+     không đọc nổi — ảnh chụp cho thấy đúng thế. Xếp dọc thì mỗi tab đọc được
+     trọn vẹn, giống cách modal Chọn Part đã làm. */
   .topic-tabs {
     margin-bottom: 15px;
+    flex-direction: column;
+    gap: 6px;
+    border-bottom: none;
   }
 
   .tab-btn {
     padding: 10px 12px;
     font-size: 13px;
+    width: 100%;
+    justify-content: flex-start;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+  }
+
+  /* Gạch chân của tab đang chọn không còn nghĩa khi xếp dọc — đổi sang tô nền. */
+  .tab-btn.active {
+    border-color: var(--primary-color);
+    background: var(--bg-secondary);
   }
 
   .topic-selection,
