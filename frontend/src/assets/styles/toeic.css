@@ -1158,6 +1158,56 @@
   gap: var(--spacing-md);
 }
 
+/* ── Thẻ lịch sử trên màn hẹp ────────────────────────────────────────────────
+   Một thẻ chứa 8 mẩu tin: tên đề · nhãn loại · ngày · thời lượng · số câu ·
+   phần trăm · điểm · nút Xem. Ép hai cột (trái/phải) vào 360px thì cột trái bị
+   bóp, chữ vỡ dòng và mọi thứ dính vào nhau — trông "nhồi nhét" đúng nghĩa.
+
+   Xếp DỌC: tên và thông tin đọc theo chiều tự nhiên; phần trăm, điểm, nút Xem
+   thành một hàng riêng ở dưới, cách nhau rõ. */
+@media (max-width: 640px) {
+  .toeic-history-item {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+    padding: var(--spacing-md);
+  }
+
+  /* Bỏ hiệu ứng trượt ngang khi chạm: trên cảm ứng nó kích hoạt cả lúc đang
+     cuộn, thẻ nhảy sang phải giữa lúc đọc. */
+  .toeic-history-item:hover {
+    transform: none;
+  }
+
+  .history-title-row {
+    flex-wrap: wrap;
+  }
+
+  .history-left h4 {
+    font-size: 1rem;
+    line-height: 1.35;
+  }
+
+  /* Ba mẩu ngày/thời lượng/số câu: khoảng cách nhỏ lại nhưng vẫn tách bạch. */
+  .history-meta {
+    gap: 6px 12px;
+    font-size: 0.8rem;
+  }
+
+  /* Hàng dưới: % · điểm · nút Xem, nút đẩy hẳn sang phải. */
+  .history-right {
+    justify-content: flex-start;
+    gap: 8px;
+    padding-top: 10px;
+    border-top: 1px solid var(--border-color);
+  }
+
+  .history-right .view-result-btn {
+    margin-left: auto;
+    flex-shrink: 0;
+  }
+}
+
 .toeic-history-item {
   background-color: var(--bg-primary);
   border-radius: var(--border-radius-large);

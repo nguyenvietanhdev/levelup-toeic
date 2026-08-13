@@ -514,6 +514,16 @@
         padding-bottom: 16px;
     }
 
+    /* Link Google Dịch trên header popup: chỉ giữ ICON. Header còn phải chứa
+       tiêu đề "Dịch nhanh" và nút đóng — ba thứ có chữ là chật. */
+    .translate-gg-link span {
+        display: none;
+    }
+
+    .translate-gg-link {
+        padding: 6px 9px;
+    }
+
     /* Nút "Nhận tất cả" (Nhiệm vụ + Thành tích) — ẩn ở khổ này.
        Hàng tiêu đề đã có quay lại + tiêu đề + 2 nút nữa. */
     .quest-claim-all-btn {
@@ -895,7 +905,10 @@
        nút hành động bị đẩy xuống dòng dưới. Không dùng `order`: thứ tự DOM
        (back → tiêu đề → nút) vốn đã đúng, đảo thêm chỉ làm khó đọc. */
     .screen-header h2 {
-        flex: 1 1 auto;
+        /* Chiếm phần còn lại của dòng đầu (sau nút quay lại) NHƯNG không kéo
+           nút nào lên cùng: `flex-basis` đủ lớn để dòng đầu hết chỗ, nên cả
+           nhóm nút hành động rơi xuống dòng dưới thay vì chen hai cái lên. */
+        flex: 1 1 60%;
         min-width: 0;
         font-size: 1.05rem;
         white-space: nowrap;
@@ -911,13 +924,22 @@
         margin-left: 0 !important;
     }
 
-    /* Nhóm nút hành động: cho cuộn ngang thay vì bóp — Cửa hàng có tới 4 nút
-       (Lịch sử · Túi đồ · Vòng quay · Làm mới), bóp là chữ bị cắt hết. */
+    /* Nhóm nút CHIA ĐỀU dòng dưới. Trước để `flex: 0 0 auto` — chúng giữ nguyên
+       bề rộng nội dung nên hai cái đầu bị kéo lên chen với tiêu đề, còn hai cái
+       sau rơi xuống: nhìn như nút bị thiếu chứ không như một hàng nút. */
     .screen-header .inventory-btn,
     .screen-header .checkin-trigger-btn {
-        flex: 0 0 auto;
+        flex: 1 1 0;
+        min-width: 0;
+        justify-content: center;
         font-size: 12px;
-        padding: 5px 10px;
+        padding: 6px 8px;
+        white-space: nowrap;
+    }
+
+    /* Nút Làm mới (chỉ icon) giữ nguyên cỡ, không giãn theo. */
+    .screen-header .icon-btn:not(.back-btn-screen) {
+        flex: 0 0 auto;
     }
 
     /* Cài đặt dạng accordion: quy tắc nằm ở components.css (@media 640px) để

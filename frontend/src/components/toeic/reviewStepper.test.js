@@ -71,6 +71,53 @@ describe('màn hẹp: hai nút dồn một hàng', () => {
     });
 });
 
+describe('thẻ lịch sử không nhồi nhét', () => {
+    function histBlock() {
+        const re = /@media \(max-width: 640px\)\s*\{([\s\S]*?)\n\}/g;
+        let m;
+        while ((m = re.exec(css)) !== null) {
+            if (m[1].includes('.toeic-history-item')) return m[1];
+        }
+        expect.fail('không tìm thấy khối 640px của .toeic-history-item');
+    }
+
+    test('xếp DỌC thay vì hai cột', () => {
+        // Ép hai cột vào 360px thì cột trái bị bóp và chữ vỡ dòng.
+        expect(histBlock()).toMatch(/\.toeic-history-item\s*\{[^}]*flex-direction:\s*column/);
+    });
+
+    test('hàng %/điểm/Xem tách khỏi phần trên bằng đường kẻ', () => {
+        // Không tách thì 8 mẩu tin dính thành một khối.
+        expect(histBlock()).toMatch(/\.history-right\s*\{[^}]*border-top/);
+    });
+
+    test('nút Xem đẩy sang phải, không co', () => {
+        expect(histBlock()).toMatch(/\.view-result-btn\s*\{[^}]*margin-left:\s*auto/);
+    });
+
+    test('BỎ hiệu ứng trượt ngang khi chạm', () => {
+        // Trên cảm ứng `:hover` kích hoạt cả lúc đang cuộn — thẻ nhảy sang phải
+        // giữa lúc đọc.
+        expect(histBlock()).toMatch(/\.toeic-history-item:hover\s*\{[^}]*transform:\s*none/);
+    });
+});
+
+describe('popup Dịch: bố cục', () => {
+    test('link Google Dịch nằm trên HEADER, cạnh nút đóng', () => {
+        // Hàng "Dịch sang:" đã có nhãn + 2 nút ngôn ngữ; thêm nút thứ ba là vỡ
+        // dòng trên màn hẹp.
+        const head = modal.slice(modal.indexOf('<div className="modal-header">'),
+                                 modal.indexOf('<div className="modal-body"'));
+        expect(head).toMatch(/translate-gg-link/);
+        expect(head).toMatch(/modal-close-btn/);
+    });
+
+    test('không còn bản cũ trong hàng "Dịch sang"', () => {
+        // Sót lại là hai link cùng chức năng.
+        expect((modal.match(/translate-gg-link/g) || [])).toHaveLength(1);
+    });
+});
+
 describe('popup Dịch: thu âm theo ngôn ngữ NGUỒN', () => {
     test('dùng ngôn ngữ nguồn đã chọn, không phải ngôn ngữ đang học', () => {
         expect(modal).toMatch(/speechLangForSource\(srcLang,/);

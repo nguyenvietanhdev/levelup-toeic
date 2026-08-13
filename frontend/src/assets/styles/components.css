@@ -7727,7 +7727,9 @@ mark {
 
 /* ── Popup Dịch nhanh (Shift+Enter ở ô tìm kiếm) ── */
 /* Nâng chiều cao để nội dung (2 select + nút lưu) không bị cuộn dọc */
-.translate-modal { max-height: 94vh; }
+/* `dvh` = chiều cao vùng nhìn THẬT. `vh` trên Chrome Android là chiều cao lúc
+   thanh địa chỉ đã ẩn, nên 94vh vẫn cao hơn màn và đáy popup bị cắt. */
+.translate-modal { max-height: 94vh; max-height: 94dvh; }
 /* Hạ 1 bậc để popup DS Yêu thích / DS Từ riêng nổi lên trên; đóng chúng thì
    popup Dịch nhanh vẫn còn phía sau. */
 #modal-container.translate-layer { z-index: calc(var(--z-modal) - 1); }
@@ -7776,7 +7778,30 @@ mark {
 .translate-lang-btn.active { background: var(--primary-color, #E11D48); border-color: var(--primary-color, #E11D48); color: #fff; }
 
 /* Nút Google Dịch — đẩy về cuối hàng "Dịch sang" */
-.translate-gg-link { margin-left: auto; }
+/* Link Google Dịch trên header, ngay trước nút đóng.
+   `margin-left: auto` đẩy nó về phía phải: header dùng `space-between`, mà
+   với BA con thì cái ở giữa bị đặt giữa hàng chứ không dồn sang phải. */
+.translate-gg-link {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.translate-gg-link:hover {
+  color: var(--text-primary);
+  border-color: var(--primary-color);
+}
 
 /* 2 select ngôn ngữ kiểu Google Dịch — trên ô FROM */
 .translate-lang-selects { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }

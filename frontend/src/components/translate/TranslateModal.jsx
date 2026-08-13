@@ -429,6 +429,21 @@ export default function TranslateModal({ text, onClose, editWord = null, onSaved
                         <i className={`fas ${isEditing ? 'fa-pen' : 'fa-language'}`}></i>
                         {isEditing ? ' Sửa từ' : ' Dịch nhanh'}
                     </h3>
+                    {/* Link Google Dịch lên HEADER, cạnh nút đóng.
+                        Trước nó nằm cuối hàng "Dịch sang: [Tiếng Việt][English]"
+                        — hàng đó đã có nhãn + 2 nút ngôn ngữ, thêm nút thứ ba là
+                        vỡ dòng trên màn hẹp. Header thì chỉ có tiêu đề và nút
+                        đóng, còn chỗ. */}
+                    <a
+                        className="translate-gg-link"
+                        href={fullUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        title="Mở Google Dịch đầy đủ trong tab mới"
+                    >
+                        <i className="fas fa-external-link-alt"></i>
+                        <span>Google Dịch</span>
+                    </a>
                     <button className="icon-btn modal-close-btn" onClick={onClose}>
                         <i className="fas fa-times"></i>
                     </button>
@@ -449,9 +464,6 @@ export default function TranslateModal({ text, onClose, editWord = null, onSaved
                                     {t.label}
                                 </button>
                             ))}
-                        <a className="btn btn-secondary btn-sm translate-gg-link" href={fullUrl} target="_blank" rel="noopener noreferrer">
-                            <i className="fas fa-external-link-alt"></i> Google Dịch
-                        </a>
                     </div>
 
                     {/* 2 select chọn ngôn ngữ kiểu Google Dịch */}

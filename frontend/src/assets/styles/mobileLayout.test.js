@@ -334,10 +334,19 @@ describe('tiêu đề màn hình không vỡ dòng giữa từ', () => {
         expect(ruleFor('.screen-header')).toMatch(/flex-wrap:\s*wrap/);
     });
 
-    test('tiêu đề giữ NGUYÊN một dòng, chiếm chỗ còn lại', () => {
+    test('tiêu đề giữ NGUYÊN một dòng và ĐẨY HẾT nhóm nút xuống dòng dưới', () => {
+        // `flex-basis: auto` chỉ chiếm bằng nội dung, nên hai nút đầu vẫn lọt
+        // lên cùng dòng với tiêu đề còn hai nút sau rơi xuống — nhìn như nút bị
+        // thiếu. Basis đủ lớn thì dòng đầu hết chỗ và cả nhóm cùng xuống.
         const r = ruleFor('.screen-header h2');
         expect(r).toMatch(/white-space:\s*nowrap/);
-        expect(r).toMatch(/flex:\s*1 1 auto/);
+        expect(r).toMatch(/flex:\s*1 1 \d+%/);
+        expect(r).toMatch(/min-width:\s*0/);
+    });
+
+    test('nhóm nút CHIA ĐỀU dòng dưới', () => {
+        const r = ruleFor('.screen-header .inventory-btn,\n    .screen-header .checkin-trigger-btn');
+        expect(r).toMatch(/flex:\s*1 1 0/);
         expect(r).toMatch(/min-width:\s*0/);
     });
 
