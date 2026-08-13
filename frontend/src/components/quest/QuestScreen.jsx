@@ -286,7 +286,11 @@ export default function QuestScreen({ active }) {
                 <h2><i className="fas fa-tasks"></i> Nhiệm vụ</h2>
                 {claimableCount > 0 && (
                     <button
-                        className="btn btn-primary btn-sm"
+                        // Có class riêng để responsive.css ẩn được ở khổ điện
+                        // thoại: hàng tiêu đề đã có 4 phần tử, thêm nút này là
+                        // xuống dòng và trông vỡ. Nhận từng nhiệm vụ vẫn được,
+                        // chỉ mất lối tắt.
+                        className="btn btn-primary btn-sm quest-claim-all-btn"
                         style={{ marginLeft: 'auto', whiteSpace: 'nowrap' }}
                         disabled={claimingAll}
                         onClick={handleClaimAll}

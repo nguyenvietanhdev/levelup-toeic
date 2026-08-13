@@ -297,6 +297,14 @@ describe('tiêu đề màn hình không vỡ dòng giữa từ', () => {
     });
 });
 
+describe('nút "Nhận tất cả" ở tab Nhiệm vụ', () => {
+    test('ẩn trên điện thoại, có class riêng để nhắm được', () => {
+        // Hàng tiêu đề đã có quay lại + tiêu đề + Điểm danh + Làm mới; thêm nút
+        // này là xuống dòng. Nhận từng nhiệm vụ vẫn được, chỉ mất lối tắt.
+        expect(ruleFor('.quest-claim-all-btn')).toMatch(/display:\s*none/);
+    });
+});
+
 describe('nhãn ngắn cho nút hành động', () => {
     test('mobile dùng nhãn NGẮN, ẩn nhãn đầy đủ', () => {
         const b = mobileBlock();

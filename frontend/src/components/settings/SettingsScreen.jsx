@@ -25,22 +25,75 @@ import ToeicExamPanel from './panels/ToeicExamPanel.jsx';
 //   → Tài khoản → hai mục thông tin (Về ứng dụng, Báo cáo) ở cuối.
 // "Thi TOEIC" tách khỏi "Luyện tập": trước đây một tab gánh cả hai lĩnh vực,
 // phình lên 12 mục và có hai mục TRÙNG TÊN "Tự động chuyển câu".
+// `keywords` để tìm nhanh: người dùng gõ thứ họ MUỐN ĐỔI ("mật khẩu", "giọng
+// đọc", "màu"), không gõ tên nhóm. Chỉ khớp theo nhãn thì gõ "mật khẩu" ra rỗng
+// dù nó nằm ngay trong Tài khoản — và rỗng thì trông như hỏng.
 const NAV_ITEMS = [
-    { key: 'general',   label: 'Chung',       icon: 'fa-sliders' },
-    { key: 'sound',     label: 'Âm thanh',    icon: 'fa-volume-high' },
-    { key: 'practice',  label: 'Luyện tập',   icon: 'fa-gamepad' },
-    { key: 'toeic',     label: 'Thi TOEIC',   icon: 'fa-graduation-cap' },
-    { key: 'account',   label: 'Tài khoản',   icon: 'fa-user' },
-    { key: 'about',     label: 'Về ứng dụng', icon: 'fa-info-circle', group: 'info' },
-    { key: 'report',    label: 'Báo cáo',     icon: 'fa-flag',        group: 'info' },
+    { key: 'general',   label: 'Chung',       icon: 'fa-sliders',
+      keywords: 'giao diện màu sắc chủ đề theme sáng tối mục tiêu ngôn ngữ đảo chiều' },
+    { key: 'sound',     label: 'Âm thanh',    icon: 'fa-volume-high',
+      keywords: 'giọng đọc tốc độ phát âm loa tiếng nói voice tts' },
+    { key: 'practice',  label: 'Luyện tập',   icon: 'fa-gamepad',
+      keywords: 'số câu độ khó thời gian tự động chuyển câu gợi ý' },
+    { key: 'toeic',     label: 'Thi TOEIC',   icon: 'fa-graduation-cap',
+      keywords: 'đề thi part bấm giờ chấm điểm' },
+    { key: 'account',   label: 'Tài khoản',   icon: 'fa-user',
+      keywords: 'mật khẩu đổi mật khẩu sao lưu khôi phục xoá tiến trình đăng xuất backup' },
+    { key: 'about',     label: 'Về ứng dụng', icon: 'fa-info-circle', group: 'info',
+      keywords: 'phiên bản thông tin tác giả' },
+    { key: 'report',    label: 'Báo cáo',     icon: 'fa-flag',        group: 'info',
+      keywords: 'lỗi góp ý phản hồi liên hệ' },
 ];
+
+/** Bỏ dấu tiếng Việt để gõ "mat khau" cũng ra "mật khẩu". */
+function fold(str) {
+    return String(str || '')
+        .toLowerCase()
+        .normalize('NFD')
+        // Viết bằng escape thay vì dán ký tự dấu thật: dấu tổ hợp là ký tự
+        // vô hình trong mã nguồn, sửa nhầm một cái là regex im lặng hết khớp.
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/đ/g, 'd');
+}
+
+/**
+ * Mục có khớp từ khoá không. Khớp cả nhãn LẪN `keywords`, và phải khớp HẾT các
+ * từ đã gõ — gõ thêm chữ mà kết quả rộng ra thì việc lọc thành vô nghĩa.
+ */
+function matches(item, query) {
+    const q = fold(query).trim();
+    if (!q) return true;
+    return q.split(/\s+/).every(w =>
+        fold(item.label).includes(w) || fold(item.keywords).includes(w)
+    );
+}
 
 
 export default function SettingsScreen({ active }) {
     const { showScreen } = useGame();
     const { isLoggedIn, logout } = useAuth();
     const [activeSection, setActiveSection] = useState('general');
+    const [navQuery, setNavQuery] = useState('');
     const [s, setS] = useState({});
+
+    // Khớp theo nhãn HOẶC từ khoá, đều bỏ dấu — người dùng gõ thứ họ muốn đổi
+    // ("mật khẩu"), không gõ tên nhóm ("Tài khoản").
+    const matchesQuery = (item) => matches(item, navQuery);
+    const visibleCount = NAV_ITEMS.filter(matchesQuery).length;
+
+    // Gõ tìm mà mục đang mở bị lọc mất thì màn hình chỉ còn các dòng đóng —
+    // tìm được rồi vẫn phải bấm thêm một lần nữa. Tự mở mục khớp ĐẦU TIÊN.
+    //
+    // Làm ngay trong onChange chứ không qua useEffect: đây là hệ quả TRỰC TIẾP
+    // của thao tác gõ, không phải đồng bộ với hệ thống bên ngoài. Đặt vào effect
+    // là thêm một lượt render thừa và eslint cảnh báo cascading render.
+    const handleNavQuery = (value) => {
+        setNavQuery(value);
+        const q = value.trim();
+        if (!q) return;
+        const first = NAV_ITEMS.find(it => matches(it, value));
+        if (first) setActiveSection(first.key);
+    };
 
     const [voices, setVoices] = useState([]);
     // Giọng EN và ZH lưu riêng — backward compat: nếu chưa có key mới thì đọc key cũ
@@ -288,114 +341,150 @@ export default function SettingsScreen({ active }) {
                 <h2><i className="fas fa-cog"></i> Cài đặt</h2>
             </div>
 
+            {/* Tìm nhanh — 7 nhóm, mỗi nhóm nhiều tuỳ chọn; nhớ cái nào nằm đâu
+                là việc không ai muốn làm. Gõ vài chữ là lọc thẳng tới nhóm. */}
+            <div className="settings-search">
+                <i className="fas fa-search"></i>
+                <input
+                    type="search"
+                    id="settings-search-input"
+                    placeholder="Tìm cài đặt… (giao diện, âm thanh, mật khẩu…)"
+                    value={navQuery}
+                    onChange={(e) => handleNavQuery(e.target.value)}
+                    autoComplete="off"
+                />
+                {navQuery && (
+                    <button className="settings-search-clear" title="Xoá"
+                        onClick={() => setNavQuery('')}>
+                        <i className="fas fa-times"></i>
+                    </button>
+                )}
+            </div>
+
             <div className="settings-layout">
-                <nav className="settings-nav">
-                    {NAV_ITEMS.map((item, i) => (
-                        <button key={item.key}
-                            /* Vạch ngăn trước mục 'info' đầu tiên: tách nhóm CHỈNH
-                               SỬA khỏi nhóm chỉ để XEM/GỬI (Về ứng dụng, Báo cáo). */
+                {/* Mỗi mục = NÚT + PANEL liền ngay dưới nó.
+                    Trên máy tính CSS tách lại thành hai cột (nav trái, panel phải);
+                    trên điện thoại giữ nguyên thứ tự này nên nó thành accordion —
+                    bấm dòng nào thì nội dung xổ ngay dưới dòng đó, không phải cuộn
+                    xuống cuối trang tìm.
+
+                    Gộp MỘT vòng lặp thay vì hai khối rời (nav / panels): hai khối
+                    rời thì nút và panel không bao giờ cạnh nhau trong DOM, mà
+                    accordion thì bắt buộc phải vậy. */}
+                {NAV_ITEMS.map((item, i) => {
+                    if (!matchesQuery(item)) return null;
+                    const open = activeSection === item.key;
+                    return (
+                        <div key={item.key}
                             className={[
-                                'settings-nav-item',
-                                activeSection === item.key ? 'active' : '',
+                                'settings-item',
+                                open ? 'open' : '',
+                                // Vạch ngăn trước mục 'info' đầu tiên: tách nhóm CHỈNH
+                                // SỬA khỏi nhóm chỉ để XEM/GỬI (Về ứng dụng, Báo cáo).
                                 item.group === 'info' && NAV_ITEMS[i - 1]?.group !== 'info' ? 'group-start' : '',
                             ].filter(Boolean).join(' ')}
-                            onClick={() => setActiveSection(item.key)}>
-                            <i className={`fas ${item.icon}`}></i> {item.label}
-                        </button>
-                    ))}
-                    {isLoggedIn && (
-                        <button className="settings-nav-item settings-nav-logout" onClick={logout}>
-                            <i className="fas fa-sign-out-alt"></i> Đăng xuất
-                        </button>
-                    )}
-                </nav>
+                        >
+                            <button
+                                className={`settings-nav-item${open ? ' active' : ''}`}
+                                aria-expanded={open}
+                                onClick={() => setActiveSection(open ? '' : item.key)}
+                            >
+                                <i className={`fas ${item.icon}`}></i>
+                                <span className="settings-nav-label">{item.label}</span>
+                                <i className="fas fa-chevron-down settings-nav-caret"></i>
+                            </button>
 
-                <div className="settings-panels">
+                            <div className={`settings-panel ${open ? 'active' : ''}`}>
+                                {item.key === 'general' && (
+                                    <GeneralPanel
+                                        s={s}
+                                        updateSetting={updateSetting}
+                                        reverseMode={reverseMode}
+                                        handleReverseMode={handleReverseMode}
+                                        canCustomizeColor={isLoggedIn}
+                                        handleTheme={handleTheme}
+                                        colorPrimary={colorPrimary}
+                                        setColorPrimary={setColorPrimary}
+                                        colorSecondary={colorSecondary}
+                                        setColorSecondary={setColorSecondary}
+                                        handleColorPreset={handleColorPreset}
+                                        handleCustomColor={handleCustomColor}
+                                        savedColor={savedColor}
+                                    />
+                                )}
+                                {item.key === 'sound' && (
+                                    <SoundPanel
+                                        s={s}
+                                        updateSetting={updateSetting}
+                                        selectedVoiceEn={selectedVoiceEn}
+                                        selectedVoiceZh={selectedVoiceZh}
+                                        handleVoiceChangeEn={handleVoiceChangeEn}
+                                        handleVoiceChangeZh={handleVoiceChangeZh}
+                                        voices={voices}
+                                        handleTestVoiceEn={handleTestVoiceEn}
+                                        handleTestVoiceZh={handleTestVoiceZh}
+                                        speechRate={speechRate}
+                                        handleSpeechRate={handleSpeechRate}
+                                        vocabLang={s.vocabLang || 'en'}
+                                    />
+                                )}
+                                {item.key === 'practice' && (
+                                    <PracticePanel
+                                        s={s}
+                                        handleQPS={handleQPS}
+                                        updateSetting={updateSetting}
+                                        handleDifficulty={handleDifficulty}
+                                    />
+                                )}
+                                {item.key === 'toeic' && <ToeicExamPanel s={s} updateSetting={updateSetting} />}
+                                {item.key === 'account' && (
+                                    <AccountPanel
+                                        cpError={cpError}
+                                        cpForm={cpForm}
+                                        setCpForm={setCpForm}
+                                        showPwd={showPwd}
+                                        setShowPwd={setShowPwd}
+                                        handleChangePassword={handleChangePassword}
+                                        s={s}
+                                        updateSetting={updateSetting}
+                                        handleBackup={handleBackup}
+                                        handleRestore={handleRestore}
+                                        handleReset={handleReset}
+                                        handleResetSettings={handleResetSettings}
+                                    />
+                                )}
+                                {item.key === 'about' && <AboutPanel />}
+                                {item.key === 'report' && (
+                                    <ReportPanel
+                                        reportContent={reportContent}
+                                        setReportContent={setReportContent}
+                                        reportImage={reportImage}
+                                        setReportImage={setReportImage}
+                                        reportImageName={reportImageName}
+                                        setReportImageName={setReportImageName}
+                                        handleReportImageChange={handleReportImageChange}
+                                        reportSubmitting={reportSubmitting}
+                                        handleSubmitReport={handleSubmitReport}
+                                    />
+                                )}
+                            </div>
+                        </div>
+                    );
+                })}
 
-                    <div className={`settings-panel ${activeSection === 'general' ? 'active' : ''}`}>
-                        <GeneralPanel
-                            s={s}
-                            updateSetting={updateSetting}
-                            reverseMode={reverseMode}
-                            handleReverseMode={handleReverseMode}
-                            canCustomizeColor={isLoggedIn}
-                            handleTheme={handleTheme}
-                            colorPrimary={colorPrimary}
-                            setColorPrimary={setColorPrimary}
-                            colorSecondary={colorSecondary}
-                            setColorSecondary={setColorSecondary}
-                            handleColorPreset={handleColorPreset}
-                            handleCustomColor={handleCustomColor}
-                            savedColor={savedColor}
-                        />
-                    </div>
+                {/* Không khớp gì thì phải NÓI — danh sách rỗng trơn khiến người
+                    dùng tưởng trang hỏng chứ không nghĩ là do từ khoá. */}
+                {visibleCount === 0 && (
+                    <p className="settings-empty">
+                        Không có mục nào khớp từ khoá đang gõ.
+                    </p>
+                )}
 
-                    <div className={`settings-panel ${activeSection === 'sound' ? 'active' : ''}`}>
-                        <SoundPanel
-                            s={s}
-                            updateSetting={updateSetting}
-                            selectedVoiceEn={selectedVoiceEn}
-                            selectedVoiceZh={selectedVoiceZh}
-                            handleVoiceChangeEn={handleVoiceChangeEn}
-                            handleVoiceChangeZh={handleVoiceChangeZh}
-                            voices={voices}
-                            handleTestVoiceEn={handleTestVoiceEn}
-                            handleTestVoiceZh={handleTestVoiceZh}
-                            speechRate={speechRate}
-                            handleSpeechRate={handleSpeechRate}
-                            vocabLang={s.vocabLang || 'en'}
-                        />
-                    </div>
-
-                    <div className={`settings-panel ${activeSection === 'practice' ? 'active' : ''}`}>
-                        <PracticePanel
-                            s={s}
-                            handleQPS={handleQPS}
-                            updateSetting={updateSetting}
-                            handleDifficulty={handleDifficulty}
-                        />
-                    </div>
-
-                    <div className={`settings-panel ${activeSection === 'toeic' ? 'active' : ''}`}>
-                        <ToeicExamPanel s={s} updateSetting={updateSetting} />
-                    </div>
-
-                    <div className={`settings-panel ${activeSection === 'account' ? 'active' : ''}`}>
-                        <AccountPanel
-                            cpError={cpError}
-                            cpForm={cpForm}
-                            setCpForm={setCpForm}
-                            showPwd={showPwd}
-                            setShowPwd={setShowPwd}
-                            handleChangePassword={handleChangePassword}
-                            s={s}
-                            updateSetting={updateSetting}
-                            handleBackup={handleBackup}
-                            handleRestore={handleRestore}
-                            handleReset={handleReset}
-                            handleResetSettings={handleResetSettings}
-                        />
-                    </div>
-
-                    <div className={`settings-panel ${activeSection === 'about' ? 'active' : ''}`}>
-                        <AboutPanel />
-                    </div>
-
-                    <div className={`settings-panel ${activeSection === 'report' ? 'active' : ''}`}>
-                        <ReportPanel
-                            reportContent={reportContent}
-                            setReportContent={setReportContent}
-                            reportImage={reportImage}
-                            setReportImage={setReportImage}
-                            reportImageName={reportImageName}
-                            setReportImageName={setReportImageName}
-                            handleReportImageChange={handleReportImageChange}
-                            reportSubmitting={reportSubmitting}
-                            handleSubmitReport={handleSubmitReport}
-                        />
-                    </div>
-
-                </div>
+                {isLoggedIn && !navQuery && (
+                    <button className="settings-nav-item settings-nav-logout" onClick={logout}>
+                        <i className="fas fa-sign-out-alt"></i> Đăng xuất
+                    </button>
+                )}
             </div>
         </div>
     );

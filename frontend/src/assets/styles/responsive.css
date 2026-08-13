@@ -774,6 +774,18 @@
         padding: 5px 10px;
     }
 
+    /* Nút "Nhận tất cả" ở tab Nhiệm vụ — ẩn trên điện thoại.
+       Hàng tiêu đề đã có nút quay lại + tiêu đề + Điểm danh + Làm mới; thêm nút
+       này là xuống dòng và trông vỡ. Nhận từng nhiệm vụ vẫn được, chỉ mất lối
+       tắt — mất một lối tắt còn hơn hỏng cả hàng tiêu đề. */
+    .quest-claim-all-btn {
+        display: none;
+    }
+
+    /* Cài đặt dạng accordion: quy tắc nằm ở components.css (@media 640px) để
+       máy tính bảng cũng dùng chung — chép lại ở đây là hai bản cho một việc,
+       sửa một chỗ thì chỗ kia lệch. */
+
     /* Số câu / độ khó / ngôn ngữ: CHUYỂN từ thanh trạng thái vào menu bên.
        Thanh trạng thái trên màn hẹp đã phải chứa năng lượng, xu, XP — ba ô chọn
        nữa là tràn. Menu bên thì đang thừa chỗ.

@@ -4004,26 +4004,65 @@ mark {
 
 /* Settings Screen Styles */
 /* ── Settings Layout (2 columns: nav + panel) ── */
+/* ── Thanh tìm nhanh cài đặt ────────────────────────────────────────────────── */
+.settings-search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 var(--spacing-md);
+}
+
+.settings-search > i {
+  color: var(--text-secondary);
+  flex-shrink: 0;
+}
+
+.settings-search input {
+  flex: 1;
+  min-width: 0;
+  padding: 9px 12px;
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  font-size: 14px;
+  outline: none;
+}
+
+.settings-search input:focus {
+  border-color: var(--primary-color);
+}
+
+.settings-search-clear {
+  flex-shrink: 0;
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding: 6px;
+  border-radius: 50%;
+}
+
+.settings-empty {
+  padding: 16px var(--spacing-md);
+  color: var(--text-secondary);
+  font-size: 14px;
+}
+
 .settings-layout {
   display: flex;
+  /* CỘT, không phải hàng: mỗi `.settings-item` là một dòng của thanh điều
+     hướng bên trái. Panel của mục đang mở được định vị tuyệt đối sang cột
+     phải (xem dưới), nên nó không chiếm chỗ trong dòng chảy này. */
+  flex-direction: column;
   align-items: flex-start;
-  gap: 0;
+  gap: 4px;
   min-height: 60vh;
   max-width: 1200px;
   margin: 0 auto;
   padding: var(--spacing-md);
-}
-
-/* ── Vertical Nav ── */
-.settings-nav {
-  width: 180px;
-  flex-shrink: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  padding: 8px;
-  position: sticky;
-  top: 80px;
 }
 
 .settings-nav-item {
@@ -4062,12 +4101,23 @@ mark {
 
 /* Vạch ngăn giữa nhóm CHỈNH SỬA và nhóm chỉ để xem/gửi (Về ứng dụng, Báo cáo) —
    danh sách 7 mục phẳng lì thì mắt không nhận ra hai nhóm khác bản chất. */
-.settings-nav-item.group-start {
+/* Vạch ngăn giờ nằm trên .settings-item (bọc cả nút lẫn panel), không trên nút. */
+.settings-item.group-start {
   margin-top: 10px;
   padding-top: 14px;
   border-top: 1px solid var(--border-color);
-  border-radius: 0 0 var(--border-radius, 10px) var(--border-radius, 10px);
 }
+
+.settings-item .settings-nav-item {
+  width: 100%;
+}
+
+/* Nhãn đẩy mũi tên sang mép phải. */
+.settings-nav-label { flex: 1; }
+
+/* Mũi tên xổ xuống chỉ có nghĩa ở dạng accordion (điện thoại) — trên máy tính
+   panel nằm ở cột bên phải chứ không xổ xuống, mũi tên ở đó là nói dối. */
+.settings-nav-caret { display: none; }
 
 /* Dòng dẫn nhập đầu mỗi tab — nói phạm vi áp dụng trước khi người dùng chỉnh. */
 .settings-panel-hint {
@@ -4107,14 +4157,31 @@ mark {
 }
 
 /* ── Panels ── */
-.settings-panels {
-  flex: 1;
-  min-width: 0;
-  padding: 0 0 0 12px;
+/* ── Bố cục hai cột trên máy tính ─────────────────────────────────────────────
+   DOM giờ là chuỗi ``.settings-item`` = NÚT + PANEL cạnh nhau (cần vậy để trên
+   điện thoại nó thành accordion). Ở đây tách lại thành hai cột bằng cách cho
+   mỗi ``.settings-item`` trải ngang toàn khung, panel định vị tuyệt đối vào
+   cột phải — không phải hai khối DOM riêng như trước. */
+.settings-layout {
+  position: relative;
+}
+
+.settings-item {
+  width: 180px;
+  flex-shrink: 0;
 }
 
 .settings-panel {
   display: none;
+}
+
+.settings-item.open .settings-panel {
+  display: block;
+  position: absolute;
+  left: 192px;
+  right: 0;
+  top: 0;
+  padding: 0 0 0 12px;
 }
 
 .settings-panel.active {
@@ -4143,25 +4210,36 @@ mark {
   border-bottom: 2px solid var(--border-color);
 }
 
-/* ── Mobile: no tabs, show all panels ── */
+/* ── Máy tính bảng / điện thoại: ACCORDION ──────────────────────────────────
+   Trước đây khối này ẩn hẳn thanh điều hướng rồi `display: block !important`
+   cho MỌI panel — cả 7 nhóm đổ ra một trang dài, phải cuộn rất lâu mới tới
+   nhóm cần và không có cách nào thu lại. `!important` còn đè lên mọi thứ
+   viết sau nó, nên không sửa được từ chỗ khác.
+   Giờ giữ danh sách, panel xổ ngay dưới dòng của nó. */
 @media (max-width: 640px) {
   .settings-layout {
-    padding: 0;
+    padding: var(--spacing-sm);
   }
 
-  /* Hide the nav entirely on mobile */
-  .settings-nav {
-    display: none !important;
-  }
-
-  /* Show ALL panels stacked */
-  .settings-panels {
+  .settings-item {
     width: 100%;
-    padding: 12px 0;
   }
 
-  .settings-panel {
-    display: block !important;
+  /* Thôi định vị tuyệt đối → panel rơi xuống ngay dưới nút của nó. */
+  .settings-item.open .settings-panel {
+    position: static;
+    padding: 10px 2px 4px;
+  }
+
+  .settings-nav-caret {
+    display: inline-block;
+    font-size: 12px;
+    opacity: 0.6;
+    transition: transform 0.2s;
+  }
+
+  .settings-item.open .settings-nav-caret {
+    transform: rotate(180deg);
   }
 }
 
