@@ -107,6 +107,18 @@ export default function TranslateModal({ text, onClose, onOpenFavorites, editWor
 
     useEscapeToClose(onClose);
 
+    // Con trỏ về CUỐI chữ, không bôi đen cả ô.
+    //
+    // `autoFocus` trên input có sẵn nội dung sẽ chọn hết chữ ở một số trình
+    // duyệt — gõ thêm một ký tự là mất sạch từ vừa đọc được. Đặt lại vùng chọn
+    // về cuối để sửa tiếp được ngay.
+    useEffect(() => {
+        const el = document.getElementById('translate-src-input');
+        if (!el) return;
+        const n = el.value.length;
+        try { el.setSelectionRange(n, n); } catch { /* input type không hỗ trợ */ }
+    }, []);
+
     // ── Giữ Shift để nói NGAY TRONG popup ────────────────────────────────────
     //
     // Xung đột phải giải: thanh nav cũng bắt phím Shift để nói vào ô tìm kiếm.
@@ -148,9 +160,17 @@ export default function TranslateModal({ text, onClose, onOpenFavorites, editWor
         });
 
         // Đang gõ trong một ô của chính popup thì đừng cướp phím.
+        // Ô GỐC là ngoại lệ — đó chính là nơi chữ sẽ hiện ra, nên giữ Shift ở đó
+        // phải nói được. Không trừ nó ra thì việc tự focus (ngay bên dưới) tự
+        // phá chính mình: con trỏ vào ô, `typing()` thành true, phím tắt chết.
+        //
+        // Các ô còn lại (bản dịch sửa được, ô tìm trong danh sách…) vẫn chặn:
+        // đang gõ mà Shift giật micro là rất khó chịu.
         const typing = () => {
             const el = document.activeElement;
-            return el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.isContentEditable);
+            if (!el) return false;
+            if (el.id === 'translate-src-input') return false;
+            return el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || !!el.isContentEditable;
         };
 
         const onKeyDown = (e) => {
@@ -447,7 +467,14 @@ export default function TranslateModal({ text, onClose, onOpenFavorites, editWor
                         </div>
                         <div className="translate-row">
                             <input
+                                id="translate-src-input"
                                 className="translate-input"
+                                /* Focus ngay khi popup mở: nói xong ở thanh nav là
+                                   popup hiện lên, con trỏ phải sẵn ở đây để giữ
+                                   Shift nói tiếp được luôn — không phải bấm chuột
+                                   vào form trước. Ô này là ngoại lệ của `typing()`
+                                   nên phím tắt vẫn ăn khi con trỏ nằm trong nó. */
+                                autoFocus
                                 value={srcDraft}
                                 onChange={e => setSrcDraft(e.target.value)}
                                 onKeyDown={e => { if (e.key === 'Enter' && srcDraft.trim()) setInputText(srcDraft.trim()); }}
