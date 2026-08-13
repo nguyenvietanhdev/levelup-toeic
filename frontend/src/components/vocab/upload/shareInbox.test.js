@@ -24,8 +24,12 @@ const src = readFileSync(join(__dirname, 'openUploadModal.js'), 'utf8')
 function inboxBody() {
     const i = src.indexOf('const loadShareInbox');
     expect(i).toBeGreaterThan(-1);
-    const j = src.indexOf('const loadSharePeople', i);
-    return src.slice(i, j === -1 ? undefined : j);
+    // Cắt tới hàm KẾ TIẾP, không phải tới `loadSharePeople`: giữa hai hàm giờ có
+    // `loadAcceptedShares`, nếu cắt rộng thì test hộp thư có thể xanh nhờ code
+    // của mục "Bộ từ đã nhận" — xanh mà không chứng minh gì.
+    const j = src.indexOf('const loadAcceptedShares', i);
+    expect(j).toBeGreaterThan(-1);
+    return src.slice(i, j);
 }
 
 describe('hộp thư đến', () => {

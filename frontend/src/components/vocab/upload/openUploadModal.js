@@ -507,8 +507,10 @@ Danh sách từ vựng cần chuyển:
                     // `return` sớm ở đây là họ không bao giờ thấy lời mời.
                     box.innerHTML = `
                         <p style="font-size:13px;color:var(--text-secondary)">Bạn chưa có bộ từ nào để chia sẻ.</p>
-                        <div id="share-inbox" style="margin-top:16px;padding-top:14px;border-top:1px solid var(--border-color)"></div>`;
+                        <div id="share-inbox" style="margin-top:16px;padding-top:14px;border-top:1px solid var(--border-color)"></div>
+                        <div id="share-accepted" style="margin-top:16px;padding-top:14px;border-top:1px solid var(--border-color)"></div>`;
                     loadShareInbox();
+                    loadAcceptedShares();
                     return;
                 }
 
@@ -533,7 +535,8 @@ Danh sách từ vựng cần chuyển:
                         Người nhận LUYỆN TẬP và sao chép được, không sửa/xoá được bộ của bạn.
                     </div>
                     <div id="share-people"></div>
-                    <div id="share-inbox" style="margin-top:16px;padding-top:14px;border-top:1px solid var(--border-color)"></div>`;
+                    <div id="share-inbox" style="margin-top:16px;padding-top:14px;border-top:1px solid var(--border-color)"></div>
+                    <div id="share-accepted" style="margin-top:16px;padding-top:14px;border-top:1px solid var(--border-color)"></div>`;
 
                 const sel = box.querySelector('#share-source-select');
                 sel?.addEventListener('change', () => { _shareSource = sel.value; loadSharePeople(); });
@@ -556,6 +559,7 @@ Danh sách từ vựng cần chuyển:
 
                 loadSharePeople();
                 loadShareInbox();
+                loadAcceptedShares();
             } catch (err) {
                 box.innerHTML = `<p style="color:#dc2626;font-size:13px">Lỗi: ${esc(err.message)}</p>`;
             }
@@ -648,6 +652,95 @@ Danh sách từ vựng cần chuyển:
                             loadShareInbox();
                         } else {
                             Notification.error(r?.message || 'Bỏ qua thất bại');
+                        }
+                    });
+                });
+            } catch (err) {
+                box.innerHTML = `<p style="color:#dc2626;font-size:12px">Lỗi: ${esc(err.message)}</p>`;
+            }
+        };
+
+        /**
+         * Bộ ĐÃ NHẬN — xem tên bộ, đồng bộ lại, sao chép về kho riêng.
+         *
+         * Dùng lại `sharedTopics` (đã chỉ trả bộ `accepted`) thay vì thêm endpoint:
+         * nó tính sẵn `ownerName`, `wordCount`, `nearestExpiry` và `expired`.
+         */
+        const loadAcceptedShares = async () => {
+            const box = document.getElementById('share-accepted');
+            if (!box) return;
+            try {
+                const res = await UploadVocabAPI.sharedTopics();
+                const rows = res?.success ? (res.data || []) : [];
+
+                const head = `
+                    <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+                        <div style="flex:1;font-size:12px;font-weight:600;color:var(--text-primary)">
+                            Bộ từ đã nhận
+                            <span style="color:var(--text-tertiary,#94a3b8);font-weight:400">— ${rows.length}</span>
+                        </div>
+                        <button class="accepted-sync-btn"
+                            title="Tải lại từ máy chủ — chủ bộ từ có thể đã thêm/xoá từ"
+                            style="padding:4px 10px;font-size:12px;border:1px solid var(--border-color);border-radius:6px;background:var(--bg-secondary);color:var(--text-primary);cursor:pointer;white-space:nowrap">
+                            <i class="fas fa-rotate"></i> Đồng bộ
+                        </button>
+                    </div>`;
+
+                if (rows.length === 0) {
+                    box.innerHTML = head
+                        + `<p style="font-size:12px;color:var(--text-tertiary,#94a3b8);margin:0">Chưa nhận bộ từ nào.</p>`;
+                } else {
+                    box.innerHTML = head + rows.map(r => `
+                        <div style="display:flex;align-items:center;gap:10px;padding:8px 10px;margin-bottom:6px;border:1px solid var(--border-color);border-radius:8px;background:var(--bg-secondary);opacity:${r.expired ? '0.55' : '1'}">
+                            <i class="fas fa-handshake" style="font-size:12px;color:var(--text-tertiary,#94a3b8)"></i>
+                            <div style="flex:1;min-width:0">
+                                <div style="font-size:13px;font-weight:600;color:var(--text-primary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">
+                                    ${esc(sourceLabel(r.source))}
+                                    <span style="font-weight:400;color:var(--text-tertiary,#94a3b8)">
+                                        ${r.expired ? '— đã hết hạn' : `— ${r.wordCount} từ`}
+                                    </span>
+                                </div>
+                                <div style="font-size:11px;color:var(--text-tertiary,#94a3b8);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">
+                                    <i class="fas fa-user"></i> ${esc(r.ownerName || 'Người chơi')}
+                                    ${r.expiringSoon > 0 && !r.expired
+                                        ? ` · <span style="color:#f59e0b">sắp hết hạn — nên sao chép</span>` : ''}
+                                </div>
+                            </div>
+                            ${r.expired ? '' : `
+                            <button class="accepted-copy-btn" data-owner="${esc(r.ownerEmail)}" data-source="${esc(r.source)}"
+                                title="Sao chép về kho của tôi — bộ gốc hết hạn thì bản sao vẫn còn"
+                                style="padding:4px 10px;font-size:12px;border:1px solid var(--border-color);border-radius:6px;background:var(--bg-primary);color:var(--text-primary);cursor:pointer;white-space:nowrap">
+                                <i class="fas fa-copy"></i> Sao chép
+                            </button>`}
+                        </div>`).join('');
+                }
+
+                // Gắn listener SAU KHI đã ghi innerHTML ở cả hai nhánh — nhánh rỗng
+                // vẫn có nút Đồng bộ, thiếu chỗ này là nút chết im lặng.
+                box.querySelector('.accepted-sync-btn')?.addEventListener('click', () => loadAcceptedShares());
+
+                box.querySelectorAll('.accepted-copy-btn').forEach(b => {
+                    b.addEventListener('click', async () => {
+                        // Khoá nút trong lúc chạy: chép cả bộ mất vài giây, bấm dồn là
+                        // gửi nhiều request và sinh thêm bản `-copy`.
+                        b.disabled = true;
+                        const orig = b.innerHTML;
+                        b.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Đang chép…';
+                        try {
+                            const r = await UploadVocabAPI.copySharedSource(b.dataset.owner, b.dataset.source);
+                            if (r?.success) {
+                                Notification.show({ type: 'success', message: r.message, duration: 2600 });
+                                // Bản sao là bộ MỚI của mình → làm mới danh sách bộ riêng.
+                                loadMyTopics();
+                            } else {
+                                // Server nói rõ lý do (vượt hạn mức, bộ hết hạn…).
+                                Notification.error(r?.message || 'Sao chép thất bại');
+                            }
+                        } catch {
+                            Notification.error('Không kết nối được máy chủ');
+                        } finally {
+                            b.disabled = false;
+                            b.innerHTML = orig;
                         }
                     });
                 });
