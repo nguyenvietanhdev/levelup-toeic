@@ -55,6 +55,9 @@ export function openUploadModal({ tab } = {}) {
         let _editing = null;
         // Tải lại bảng đang mở sau khi sửa xong.
         let _onEditSaved = null;
+        // Tab đang mở — nút Đồng bộ ở header nằm NGOÀI thân tab nên phải tự biết
+        // đang cần làm mới cái gì.
+        let _currentTab = tab === 'manage' ? 'manage' : (tab === 'share' ? 'share' : 'add');
 
         const resultHtml = (type, msg) => {
             const c = type === 'success'
@@ -128,6 +131,15 @@ export function openUploadModal({ tab } = {}) {
                     <i class="fas fa-spinner fa-spin"></i> Đang tải danh sách bộ từ...
                 </p>
             </div>`;
+
+        // Tab ĐƯỢC CHIA SẺ — tách khỏi tab Chia sẻ.
+        //
+        // Hai việc ngược chiều nhau: tab Chia sẻ là "tôi cho ai", tab này là "ai
+        // cho tôi". Gộp một chỗ thì phải cuộn qua phần cấp quyền mới tới được
+        // lời mời của mình, mà lời mời mới là thứ cần xử lý ngay.
+        const receivedTabHtml = () => `
+            <div id="share-inbox"></div>
+            <div id="share-accepted" style="margin-top:16px;padding-top:14px;border-top:1px solid var(--border-color)"></div>`;
 
         const jsonTabHtml = () => `
             <p style="margin:0 0 12px;font-size:13px;color:var(--text-secondary)">
@@ -502,15 +514,16 @@ Danh sách từ vựng cần chuyển:
                 const res = await UploadVocabAPI.myTopics();
                 const topics = res?.success ? (res.data || []) : [];
                 if (topics.length === 0) {
-                    // Chưa có bộ nào của mình thì vẫn phải hiện HỘP THƯ ĐẾN — người
-                    // mới chưa tạo bộ nào nhưng vẫn có thể được người khác chia sẻ,
-                    // `return` sớm ở đây là họ không bao giờ thấy lời mời.
+                    // Người mới chưa có bộ nào của mình vẫn có thể ĐƯỢC người khác
+                    // chia sẻ — chỉ nói "chưa có gì" rồi thôi là họ tưởng tính năng
+                    // này không dùng được, nên chỉ luôn sang tab bên cạnh.
                     box.innerHTML = `
-                        <p style="font-size:13px;color:var(--text-secondary)">Bạn chưa có bộ từ nào để chia sẻ.</p>
-                        <div id="share-inbox" style="margin-top:16px;padding-top:14px;border-top:1px solid var(--border-color)"></div>
-                        <div id="share-accepted" style="margin-top:16px;padding-top:14px;border-top:1px solid var(--border-color)"></div>`;
-                    loadShareInbox();
-                    loadAcceptedShares();
+                        <p style="font-size:13px;color:var(--text-secondary);margin:0">
+                            Bạn chưa có bộ từ nào để chia sẻ.<br>
+                            <span style="font-size:12px;color:var(--text-tertiary,#94a3b8)">
+                                Bộ người khác chia sẻ cho bạn nằm ở tab <b>Được chia sẻ</b>.
+                            </span>
+                        </p>`;
                     return;
                 }
 
@@ -534,9 +547,7 @@ Danh sách từ vựng cần chuyển:
                         Lấy ID ở <b>Bảng xếp hạng</b> → bấm vào người chơi → nút <i class="fas fa-copy"></i>.
                         Người nhận LUYỆN TẬP và sao chép được, không sửa/xoá được bộ của bạn.
                     </div>
-                    <div id="share-people"></div>
-                    <div id="share-inbox" style="margin-top:16px;padding-top:14px;border-top:1px solid var(--border-color)"></div>
-                    <div id="share-accepted" style="margin-top:16px;padding-top:14px;border-top:1px solid var(--border-color)"></div>`;
+                    <div id="share-people"></div>`;
 
                 const sel = box.querySelector('#share-source-select');
                 sel?.addEventListener('change', () => { _shareSource = sel.value; loadSharePeople(); });
@@ -558,8 +569,6 @@ Danh sách từ vựng cần chuyển:
                 input?.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); submit(); } });
 
                 loadSharePeople();
-                loadShareInbox();
-                loadAcceptedShares();
             } catch (err) {
                 box.innerHTML = `<p style="color:#dc2626;font-size:13px">Lỗi: ${esc(err.message)}</p>`;
             }
@@ -575,10 +584,10 @@ Danh sách từ vựng cần chuyển:
                 if (rows.length === 0) {
                     box.innerHTML = `
                         <div style="font-size:12px;font-weight:600;color:var(--text-primary);margin-bottom:6px">
-                            Bộ từ được chia sẻ cho tôi
+                            Lời mời chờ duyệt
                         </div>
                         <p style="font-size:12px;color:var(--text-tertiary,#94a3b8);margin:0">
-                            Chưa có ai chia sẻ bộ từ nào cho bạn.
+                            Không có lời mời nào đang chờ.
                         </p>`;
                     return;
                 }
@@ -586,7 +595,7 @@ Danh sách từ vựng cần chuyển:
                 box.innerHTML = `
                     <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
                         <div style="flex:1;font-size:12px;font-weight:600;color:var(--text-primary)">
-                            Bộ từ được chia sẻ cho tôi
+                            Lời mời chờ duyệt
                             <span style="color:var(--text-tertiary,#94a3b8);font-weight:400">— tích chọn rồi bấm Nhận</span>
                         </div>
                         <button class="inbox-accept-btn btn btn-primary" style="padding:4px 12px;font-size:12px;white-space:nowrap" disabled>
@@ -673,17 +682,12 @@ Danh sách từ vựng cần chuyển:
                 const res = await UploadVocabAPI.sharedTopics();
                 const rows = res?.success ? (res.data || []) : [];
 
+                // Không có nút Đồng bộ riêng ở đây — nút chung nằm trên header,
+                // cạnh nút đóng, và làm mới cả tab.
                 const head = `
-                    <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
-                        <div style="flex:1;font-size:12px;font-weight:600;color:var(--text-primary)">
-                            Bộ từ đã nhận
-                            <span style="color:var(--text-tertiary,#94a3b8);font-weight:400">— ${rows.length}</span>
-                        </div>
-                        <button class="accepted-sync-btn"
-                            title="Tải lại từ máy chủ — chủ bộ từ có thể đã thêm/xoá từ"
-                            style="padding:4px 10px;font-size:12px;border:1px solid var(--border-color);border-radius:6px;background:var(--bg-secondary);color:var(--text-primary);cursor:pointer;white-space:nowrap">
-                            <i class="fas fa-rotate"></i> Đồng bộ
-                        </button>
+                    <div style="font-size:12px;font-weight:600;color:var(--text-primary);margin-bottom:8px">
+                        Bộ từ đã nhận
+                        <span style="color:var(--text-tertiary,#94a3b8);font-weight:400">— ${rows.length}</span>
                     </div>`;
 
                 if (rows.length === 0) {
@@ -715,10 +719,8 @@ Danh sách từ vựng cần chuyển:
                         </div>`).join('');
                 }
 
-                // Gắn listener SAU KHI đã ghi innerHTML ở cả hai nhánh — nhánh rỗng
-                // vẫn có nút Đồng bộ, thiếu chỗ này là nút chết im lặng.
-                box.querySelector('.accepted-sync-btn')?.addEventListener('click', () => loadAcceptedShares());
-
+                // Gắn listener SAU KHI đã ghi innerHTML ở cả hai nhánh rỗng/có dữ
+                // liệu — gắn bên trong một nhánh là dễ sót nhánh kia.
                 box.querySelectorAll('.accepted-copy-btn').forEach(b => {
                     b.addEventListener('click', async () => {
                         // Khoá nút trong lúc chạy: chép cả bộ mất vài giây, bấm dồn là
@@ -947,8 +949,13 @@ Danh sách từ vựng cần chuyển:
         // lọt giữa form — vừa chiếm chỗ, vừa là hai giá trị độc lập cho cùng một
         // khái niệm: đặt 7 ngày ở tab "Thêm từ mới" rồi sang tab JSON vẫn thấy
         // 30 ngày, không có gì báo là hai ô khác nhau.
+        //
+        // Nút Đồng bộ ở HEADER, không nằm trong mục "Bộ từ đã nhận": nó làm mới
+        // cả ba mục (bộ của mình, lời mời, bộ đã nhận) chứ không riêng mục nào.
         const manageBtnHtml = `
             <div style="display:flex;align-items:center;gap:8px">
+                <button type="button" id="upload-sync" title="Đồng bộ — tải lại từ máy chủ"
+                    style="display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border:1px solid var(--border-color);border-radius:8px;background:var(--bg-secondary);color:var(--text-primary);cursor:pointer;font-size:12px;font-weight:600;white-space:nowrap"><i class="fas fa-rotate"></i> Đồng bộ</button>
                 <select id="upload-retention" title="Thời hạn lưu — hết hạn sẽ tự xoá"
                     style="padding:6px 10px;border:1px solid var(--border-color);border-radius:8px;background:var(--bg-secondary);color:var(--text-primary);font-size:12px;font-weight:600;cursor:pointer">
                     ${RETENTION_OPTIONS.map(d => `<option value="${d}"${d === DEFAULT_RETENTION ? ' selected' : ''}>${d} ngày</option>`).join('')}
@@ -970,18 +977,22 @@ Danh sách từ vựng cần chuyển:
                 { key: 'add', label: 'Thêm từ mới', icon: 'fa-plus' },
                 { key: 'json', label: 'Thêm JSON', icon: 'fa-code' },
                 { key: 'share', label: 'Chia sẻ', icon: 'fa-user-plus' },
+                { key: 'received', label: 'Được chia sẻ', icon: 'fa-handshake' },
             ],
-            initialTab: tab === 'manage' ? 'manage' : (tab === 'share' ? 'share' : 'add'),
+            initialTab: tab === 'manage' ? 'manage' : (tab === 'share' ? 'share' : (tab === 'received' ? 'received' : 'add')),
             renderBody: (t) => (
                 t === 'add' ? addTabHtml()
                 : t === 'json' ? jsonTabHtml()
                 : t === 'share' ? shareTabHtml()
+                : t === 'received' ? receivedTabHtml()
                 : manageTabHtml()
             ),
             onEnterTab: (t) => {
+                _currentTab = t;
                 if (t === 'add') attachAddHandlers();
                 else if (t === 'json') attachJsonHandlers();
                 else if (t === 'share') loadShareTab();
+                else if (t === 'received') { loadShareInbox(); loadAcceptedShares(); }
                 else if (t === 'manage') loadMyTopics();
             },
             onLeaveTab: (t) => {
@@ -990,5 +1001,26 @@ Danh sách từ vựng cần chuyển:
             },
         });
 
-        Modal.show({ title: '☁️ Từ vựng riêng', contentJsx, headerActionHtml: manageBtnHtml, wide: true });
+        // Nút Đồng bộ: uỷ quyền ở document vì nút do React chèn, chưa có trong DOM
+        // lúc này. Nhưng KHÁC nút "Quản lý" ở trên — cái đó chỉ phát một sự kiện
+        // nên gắn một lần vĩnh viễn là được, còn cái này gọi các hàm `load*` là
+        // closure của LẦN MỞ NÀY. Không gỡ khi đóng thì mở lại lần hai là hai
+        // listener cùng chạy, cái cũ trỏ vào DOM đã bị vứt.
+        const onSyncClick = (e) => {
+            if (!e.target?.closest?.('#upload-sync')) return;
+            if (_currentTab === 'share') loadShareTab();
+            else if (_currentTab === 'received') { loadShareInbox(); loadAcceptedShares(); }
+            else if (_currentTab === 'manage') loadMyTopics();
+            else return;   // tab nhập liệu không có gì để tải lại
+            Notification.show({ type: 'success', message: 'Đã đồng bộ', duration: 1400 });
+        };
+        document.addEventListener('click', onSyncClick);
+
+        Modal.show({
+            title: '☁️ Từ vựng riêng',
+            contentJsx,
+            headerActionHtml: manageBtnHtml,
+            wide: true,
+            onClose: () => document.removeEventListener('click', onSyncClick),
+        });
 }

@@ -56,25 +56,42 @@ describe('nguồn dữ liệu', () => {
     });
 });
 
-describe('nút Đồng bộ', () => {
-    test('có nút, và nó gọi LẠI chính hàm này', () => {
-        const b = body();
-        expect(b).toMatch(/class="accepted-sync-btn"/);
-        expect(b).toMatch(/\.accepted-sync-btn'\)\?\.addEventListener\('click', \(\) => loadAcceptedShares\(\)\)/);
+describe('nút Đồng bộ — ở HEADER, cạnh nút đóng', () => {
+    test('nút nằm trong header, không nằm trong mục "Bộ từ đã nhận"', () => {
+        // Nó làm mới cả tab chứ không riêng một mục, nên chỗ đúng của nó là header.
+        expect(src).toMatch(/id="upload-sync"/);
+        expect(body()).not.toMatch(/accepted-sync-btn/);
     });
 
-    test('listener gắn MỘT lần, sau cả hai nhánh rỗng/có dữ liệu', () => {
-        // Nhánh rỗng ghi innerHTML riêng. Nếu gắn listener bên trong từng nhánh
-        // thì dễ sót một nhánh — nút hiện ra nhưng bấm không làm gì.
-        const b = body();
-        const hooks = b.match(/accepted-sync-btn'\)\?\.addEventListener/g) || [];
-        expect(hooks).toHaveLength(1);
-        // Và nó phải nằm SAU khối if/else dựng innerHTML.
-        expect(b.indexOf('accepted-sync-btn\')?.addEventListener'))
-            .toBeGreaterThan(b.indexOf('Chưa nhận bộ từ nào'));
+    test('làm mới theo TAB đang mở, không gọi mù một hàm', () => {
+        const i = src.indexOf('const onSyncClick');
+        expect(i).toBeGreaterThan(-1);
+        const h = src.slice(i, i + 700);
+        expect(h).toMatch(/_currentTab === 'share'\) loadShareTab\(\)/);
+        expect(h).toMatch(/_currentTab === 'manage'\) loadMyTopics\(\)/);
     });
 
-    test('nhánh rỗng vẫn dựng phần đầu có nút, không phải chỉ một câu chữ', () => {
+    test('tab nhập liệu thì KHÔNG báo "đã đồng bộ"', () => {
+        // Tab "Thêm từ mới"/"Thêm JSON" không có gì để tải lại; báo thành công ở
+        // đó là nói dối người dùng rằng vừa có việc gì đó xảy ra.
+        const i = src.indexOf('const onSyncClick');
+        const h = src.slice(i, i + 700);
+        expect(h).toMatch(/else return;/);
+        expect(h.indexOf('else return;')).toBeLessThan(h.indexOf('Đã đồng bộ'));
+    });
+
+    test('_currentTab được cập nhật khi đổi tab', () => {
+        // Không cập nhật thì nút luôn làm mới tab mở đầu tiên.
+        expect(src).toMatch(/onEnterTab: \(t\) => \{\s*\n\s*_currentTab = t;/);
+    });
+
+    test('listener document được GỠ khi đóng modal', () => {
+        // Nó gọi các hàm `load*` là closure của lần mở này. Không gỡ thì mở lần
+        // hai là hai listener cùng chạy, cái cũ trỏ vào DOM đã bị vứt.
+        expect(src).toMatch(/onClose: \(\) => document\.removeEventListener\('click', onSyncClick\)/);
+    });
+
+    test('nhánh rỗng vẫn dựng phần đầu, không phải chỉ một câu chữ', () => {
         expect(body()).toMatch(/box\.innerHTML = head\s*\n?\s*\+/);
     });
 });
@@ -108,12 +125,41 @@ describe('nút Sao chép', () => {
     });
 });
 
-describe('gắn vào tab Chia sẻ', () => {
-    test('có ô chứa và được gọi ở CẢ HAI nhánh của tab', () => {
-        // Nhánh "chưa có bộ nào của mình" cũng phải hiện — người mới chưa tạo bộ
-        // nào vẫn có thể đã nhận bộ của người khác.
-        expect((src.match(/id="share-accepted"/g) || [])).toHaveLength(2);
-        expect((src.match(/^\s*loadAcceptedShares\(\);$/gm) || [])).toHaveLength(2);
+describe('tab riêng "Được chia sẻ"', () => {
+    test('là TAB riêng, không nhét trong tab Chia sẻ', () => {
+        // "Tôi cho ai" và "ai cho tôi" là hai việc ngược chiều; gộp một chỗ thì
+        // phải cuộn qua phần cấp quyền mới tới được lời mời của mình.
+        expect(src).toMatch(/key: 'received', label: 'Được chia sẻ'/);
+        expect(src).toMatch(/t === 'received' \? receivedTabHtml\(\)/);
+    });
+
+    test('vào tab thì nạp CẢ lời mời lẫn bộ đã nhận', () => {
+        expect(src).toMatch(/t === 'received'\) \{ loadShareInbox\(\); loadAcceptedShares\(\); \}/);
+    });
+
+    test('tab Chia sẻ KHÔNG còn nạp hai mục đó nữa', () => {
+        // Sót lại là hai tab cùng ghi vào một id — mục nào nạp sau thắng, và
+        // triệu chứng là danh sách "nhấp nháy" đổi nội dung không rõ lý do.
+        const i = src.indexOf('const loadShareTab');
+        const j = src.indexOf('const loadAcceptedShares');
+        const shareTab = src.slice(i, src.indexOf('const loadShareInbox'));
+        expect(i).toBeGreaterThan(-1);
+        expect(j).toBeGreaterThan(-1);
+        expect(shareTab).not.toMatch(/loadShareInbox\(\)/);
+        expect(shareTab).not.toMatch(/loadAcceptedShares\(\)/);
+    });
+
+    test('nút Đồng bộ ở header phục vụ cả tab mới', () => {
+        const i = src.indexOf('const onSyncClick');
+        expect(src.slice(i, i + 800))
+            .toMatch(/_currentTab === 'received'\) \{ loadShareInbox\(\); loadAcceptedShares\(\); \}/);
+    });
+
+    test('người CHƯA có bộ nào vẫn được chỉ sang tab này', () => {
+        // Trước đây nhánh đó hiện luôn hộp thư ngay trong tab Chia sẻ. Giờ hộp
+        // thư ở tab khác, nên chỉ nói "chưa có gì" là người mới tưởng tính năng
+        // này không dùng được.
+        expect(src).toMatch(/tab <b>Được chia sẻ<\/b>/);
     });
 
     test('tự kiểm: bộ dò đọc được thân hàm thật', () => {

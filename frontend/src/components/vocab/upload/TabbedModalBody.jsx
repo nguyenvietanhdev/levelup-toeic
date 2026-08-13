@@ -36,8 +36,13 @@ export default function TabbedModalBody({ tabs, initialTab, renderBody, onEnterT
                             id={`upload-tab-${t.key}`}
                             onClick={() => go(t.key)}
                             style={{
-                                flex: 1, padding: 10, border: 'none', cursor: 'pointer',
+                                // `minWidth: 0` là bắt buộc khi có 4 tab: flex item
+                                // không co dưới kích thước nội dung nếu thiếu nó, nên
+                                // nhãn dài ("Được chia sẻ") đẩy thanh tab vỡ hàng.
+                                flex: 1, minWidth: 0, padding: '10px 6px',
+                                border: 'none', cursor: 'pointer',
                                 fontSize: 13, fontWeight: 600, borderRadius: 0,
+                                whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
                                 background: active ? 'var(--primary-color)' : 'var(--bg-secondary)',
                                 color: active ? '#fff' : 'var(--text-primary)',
                             }}

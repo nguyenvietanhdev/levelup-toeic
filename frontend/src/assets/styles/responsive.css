@@ -492,6 +492,189 @@
     .streak-flame {
         display: none;
     }
+
+    /* ── Màn hình nhỏ: dồn chỗ cho NỘI DUNG ──────────────────────────────
+       Trên điện thoại, thứ tự ưu tiên khác hẳn máy tính: phần trên màn hình
+       phải là bài học, không phải trang trí và điều hướng. Nhóm quy tắc dưới
+       đây bỏ đi những thứ ở desktop thì tiện, ở mobile thì chiếm mất màn. */
+
+    /* Dải streak (nền cam) — trên desktop là bảng tổng quan, trên mobile nó
+       ăn gần trọn màn hình đầu tiên trước khi thấy được nhiệm vụ nào. Các số
+       liệu trong đó đều xem lại được ở Hồ sơ. */
+    .streak-card {
+        display: none;
+    }
+
+    /* Thanh nav xuống ĐÁY màn hình, chiếm nguyên một dòng.
+       Ngón tay cầm điện thoại nằm ở nửa dưới; nav ở trên vừa khó với vừa đẩy
+       nội dung xuống. `fixed` chứ không `sticky`: sticky vẫn nằm trong luồng,
+       vẫn chiếm một dòng ở đầu trang. */
+    .top-nav {
+        position: fixed;
+        top: auto;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        width: 100%;
+        /* `fixed` ở trên cũng chính là mốc định vị cho ô tìm kiếm khi nó bung ra
+           (`position: absolute` bên dưới) — không cần thêm `relative`. Ai đổi
+           dòng `position` này thì phải kiểm lại ô tìm kiếm. */
+        /* Đổ bóng hắt LÊN, không hắt xuống — nav giờ ở dưới cùng. */
+        box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.25);
+        /* Vùng vuốt của iPhone nằm ngay dưới; không chừa thì hàng nút bị nó đè. */
+        padding-bottom: calc(8px + env(safe-area-inset-bottom, 0px));
+    }
+
+    /* Chừa chỗ cuối trang đúng bằng chiều cao nav.
+       Thiếu bước này thì nav `fixed` đè lên phần cuối nội dung — và chỗ bị che
+       luôn là nút cuối cùng của trang, thứ người ta đang định bấm. */
+    .main-content {
+        padding-bottom: calc(72px + env(safe-area-inset-bottom, 0px));
+    }
+
+    /* Dòng "của tôi" ghim ở Bảng xếp hạng cũng bám đáy (bottom: 14px, z-index
+       60) — nav mới nằm chồng lên đúng chỗ đó và z-index 200 của nav che mất
+       nó. Đẩy nó lên TRÊN nav thay vì để hai thứ tranh nhau một chỗ. */
+    .leaderboard-me-pinned {
+        bottom: calc(72px + env(safe-area-inset-bottom, 0px));
+    }
+
+    /* Ô tìm kiếm trong header của popup "Chọn đề" và "Chọn Part".
+       Nó nằm giữa tiêu đề và nút đóng; trên màn hẹp cả ba chen nhau, mà danh
+       sách đề/Part của một người dùng thường chỉ vài mục — cuộn nhanh hơn gõ.
+       `!important` là bắt buộc: partSelector.js đặt style inline (`flex`,
+       `max-width`), mà inline luôn thắng CSS ngoài. */
+    .modal-header-search {
+        display: none !important;
+    }
+
+    /* Nút quay về ở màn luyện tập. Android có nút Back của hệ thống, iOS có
+       vuốt mép — nút này là bản sao thứ ba của cùng một hành động, trong khi
+       hàng tiêu đề đang phải chứa cả tên chế độ, nhãn Part và điểm số. */
+    .practice-header #back-btn {
+        display: none;
+    }
+
+    /* ── Ô tìm kiếm THU GỌN thành nút kính lúp ────────────────────────────
+       Nav giờ nằm ở đáy và phải chứa: menu, trang chủ, chuông, avatar, ô tìm,
+       và nhóm nút phải. Ô tìm mở sẵn chiếm phần lớn hàng cho một việc thỉnh
+       thoảng mới dùng.
+       Làm bằng CSS dựa trên `.search-active` (TopNav đã gắn sẵn class này theo
+       focus) — không thêm state React nào. Bấm vào ô = focus vào input, nên
+       không cần nút riêng và cũng không cần JS.
+       Ô thu lại vẫn là CHÍNH cái input (rộng bằng nút, chữ trong suốt) chứ
+       không phải một nút giả: nếu là nút giả thì bấm xong phải tự gọi focus,
+       mà trên iOS gọi focus ngoài cử chỉ chạm trực tiếp thì bàn phím không mở. */
+    .nav-center {
+        flex: 0 0 auto !important;
+    }
+
+    .search-bar {
+        width: 40px;
+        min-width: 40px;
+        transition: width 0.25s ease;
+    }
+
+    /* Chữ trong suốt khi thu — vẫn gõ được nếu ai đó dùng bàn phím ngoài, chỉ
+       là không thấy. `caret-color` cũng ẩn để không có con trỏ nhấp nháy lửng lơ. */
+    .search-bar input {
+        color: transparent;
+        caret-color: transparent;
+        padding: 8px 0 8px 34px;
+    }
+
+    .search-bar input::placeholder {
+        color: transparent;
+    }
+
+    /* Nút xoá và nút mic không có chỗ ở trạng thái thu. */
+    .search-bar .clear-search-btn,
+    .search-bar .mic-btn {
+        display: none;
+    }
+
+    /* Có focus → bung ra chiếm cả hàng, đè lên các nhóm bên cạnh.
+       `position: absolute` + `z-index` thay vì đẩy các nút đi: nav chỉ có một
+       hàng, đẩy là các nút bị bóp về 0 rồi biến mất (đúng lỗi cũ của nút chuông). */
+    .top-nav.search-active .nav-center {
+        flex: 1 1 auto !important;
+        position: static;
+    }
+
+    .top-nav.search-active .search-bar {
+        position: absolute;
+        left: 8px;
+        right: 8px;
+        width: auto;
+        min-width: 0;
+        z-index: 100;
+    }
+
+    .top-nav.search-active .search-bar input {
+        color: var(--text-primary);
+        caret-color: var(--text-primary);
+        padding: 8px 40px 8px 35px;
+    }
+
+    .top-nav.search-active .search-bar input::placeholder {
+        color: var(--text-tertiary, #94a3b8);
+    }
+
+    /* Trả về ĐÚNG giá trị gốc (`flex`, layout.css:1537/1563) — hai nút này căn
+       giữa icon bằng flex; trả về `inline-flex` là icon lệch tâm. */
+    .top-nav.search-active .search-bar .clear-search-btn,
+    .top-nav.search-active .search-bar .mic-btn {
+        display: flex;
+    }
+
+    /* Thanh tab của popup "Từ vựng riêng" có 4 nhãn — trên màn hẹp chữ 13px bị
+       cắt thành "Được ch…". Thu chữ và bỏ icon: icon ở đây chỉ trang trí, còn
+       nhãn mới là thứ phân biệt được tab nào.
+       Giới hạn trong .modal-body: nút "Quản lý từ vựng" ở HEADER cũng mang id
+       `upload-tab-manage`, không loại nó ra thì nó mất icon và co chữ theo. */
+    #modal-container .modal-body [id^="upload-tab-"] {
+        font-size: 11px;
+        padding: 10px 2px;
+    }
+
+    #modal-container .modal-body [id^="upload-tab-"] i {
+        display: none;
+    }
+
+    /* ── Chế độ viết chữ Hán ──────────────────────────────────────────────
+       Ô vẽ phải TO nhất có thể (viết bằng ngón tay, không phải chuột), nhưng
+       phần bao quanh phải gọn lại để ô không bị đẩy khỏi màn hình. */
+    .hanzi-mode {
+        gap: var(--spacing-sm);
+        padding: var(--spacing-sm) 0;
+    }
+
+    .hanzi-pinyin {
+        font-size: 1.25rem;
+    }
+
+    .hanzi-meaning {
+        font-size: 0.85rem;
+    }
+
+    /* Ô vẽ co theo BỀ NGANG màn hình thay vì cố định 170px: màn 320px và màn
+       430px cần hai kích thước khác nhau. Chặn trên 200px để trên máy rộng nó
+       không phình quá tầm với của ngón tay.
+       `aspect-ratio` giữ ô vuông — lưới tập viết mà méo thì nét căn sai chỗ. */
+    .hanzi-boxes .hanzi-canvas,
+    .hanzi-boxes:has(> :nth-child(3)) .hanzi-canvas {
+        width: min(62vw, 200px);
+        height: auto;
+        aspect-ratio: 1 / 1;
+    }
+
+    /* Hàng nút: "Xem mẫu" + số nét. Cho xuống dòng khi hẹp thay vì bóp nút —
+       nút bị bóp thì chữ bên trong bị cắt và không còn bấm trúng. */
+    .hanzi-actions {
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: var(--spacing-sm);
+    }
 }
 
 /* ===================================

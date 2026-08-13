@@ -5,9 +5,12 @@
  * ai biết ID cũng đẩy được bộ từ vào màn hình người khác. Giờ phải tích chọn rồi
  * bấm Nhận.
  *
+ * Hộp thư nằm ở tab "Được chia sẻ" riêng ("ai cho tôi"), tách khỏi tab "Chia sẻ"
+ * ("tôi cho ai") — hai việc ngược chiều nhau.
+ *
  * Ba chỗ dễ hỏng im lặng:
- *   1. `return` sớm khi người dùng CHƯA có bộ từ nào của mình → hộp thư đến
- *      không bao giờ hiện, dù họ vẫn được người khác chia sẻ.
+ *   1. Nhánh "chưa có bộ từ nào của mình" ở tab Chia sẻ không chỉ đường sang tab
+ *      kia → người mới tưởng tính năng này không dùng được.
  *   2. Nút "Bỏ qua" nằm trong <label> — không chặn sự kiện thì bấm nó cũng tích
  *      luôn ô checkbox.
  *   3. Nút Nhận không cho biết đang chọn mấy cái, bấm khi chưa chọn thì không có
@@ -84,12 +87,18 @@ describe('hộp thư đến', () => {
         expect(b).toMatch(/esc\(sourceLabel\(r\.source\)\)/);
     });
 
-    test('CHƯA có bộ từ nào của mình thì VẪN hiện hộp thư đến', () => {
-        // `return` sớm ở nhánh đó là người mới không bao giờ thấy lời mời.
+    test('CHƯA có bộ từ nào của mình thì vẫn tới được hộp thư', () => {
+        // Yêu cầu không đổi — người mới chưa tạo bộ nào vẫn có thể ĐƯỢC người
+        // khác chia sẻ. Cơ chế thì đổi: hộp thư giờ ở tab "Được chia sẻ" riêng,
+        // nên nhánh này phải CHỈ ĐƯỜNG sang đó thay vì tự dựng hộp thư tại chỗ.
         const i = src.indexOf('Bạn chưa có bộ từ nào để chia sẻ');
         const j = src.indexOf('return;', i);
         expect(i).toBeGreaterThan(-1);
-        expect(src.slice(i, j)).toMatch(/loadShareInbox\(\)/);
+        expect(src.slice(i, j)).toMatch(/tab <b>Được chia sẻ<\/b>/);
+    });
+
+    test('hộp thư nằm trong tab riêng, không phụ thuộc tab Chia sẻ', () => {
+        expect(src).toMatch(/const receivedTabHtml = \(\) => `[\s\S]*id="share-inbox"/);
     });
 
     test('tự kiểm: đọc được thân hàm thật', () => {
