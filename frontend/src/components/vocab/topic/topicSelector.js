@@ -162,14 +162,49 @@ export const TopicSelector = {
         return true;
     },
 
+    /**
+     * Khôi phục đề đang học sau khi tải lại trang.
+     *
+     * `availableTopics` chỉ chứa đề CÔNG KHAI. Bộ từ riêng (`personal:`), bộ
+     * được chia sẻ (`shared:`) và nhóm từ sai (`wrong:`) không nằm trong đó, nên
+     * trước đây mọi lần F5 khi đang học chúng đều tụt về đề mặc định — im lặng,
+     * không có thông báo nào, và người học tưởng mình bấm nhầm.
+     *
+     * Định tuyến theo TIỀN TỐ của id, mỗi loại về đúng hàm nạp của nó.
+     */
     async restoreLastTopic() {
         const lastTopicId = await Storage.get('selectedTopic');
-        if (lastTopicId && this.availableTopics.find(t => t.id === lastTopicId)) {
-            try { await this.selectTopic(lastTopicId, { silent: true }); }
-            catch { await this._loadDefaultTopic(); }
-        } else {
-            await this._loadDefaultTopic();
+        if (!lastTopicId) return this._loadDefaultTopic();
+
+        try {
+            if (lastTopicId.startsWith('personal:')) {
+                await this.selectPersonalTopic(lastTopicId.slice('personal:'.length));
+                return;
+            }
+            if (lastTopicId.startsWith('shared:')) {
+                // `shared:<email>:<source>`. Cắt ở dấu ':' ĐẦU TIÊN sau tiền tố:
+                // email không chứa ':' nhưng tên bộ thì có thể, nên `split(':')`
+                // sẽ băm nát tên bộ. `sep <= 0` là id hỏng → rơi xuống mặc định.
+                const rest = lastTopicId.slice('shared:'.length);
+                const sep = rest.indexOf(':');
+                if (sep > 0) {
+                    await this.selectSharedTopic(rest.slice(0, sep), rest.slice(sep + 1));
+                    return;
+                }
+            }
+            if (lastTopicId.startsWith('wrong:')) {
+                await this.selectWrongWordsTopic(lastTopicId.slice('wrong:'.length));
+                return;
+            }
+            if (this.availableTopics.find(t => t.id === lastTopicId)) {
+                await this.selectTopic(lastTopicId, { silent: true });
+                return;
+            }
+        } catch {
+            // Bộ có thể đã bị xoá, hết hạn, hoặc quyền chia sẻ bị thu hồi —
+            // những chuyện xảy ra được giữa hai lần mở app. Về đề mặc định.
         }
+        await this._loadDefaultTopic();
     },
 
     async _loadDefaultTopic() {
@@ -177,3 +212,16 @@ export const TopicSelector = {
         try { await this.selectTopic(this.availableTopics[0].id, { silent: true }); } catch { }
     },
 };
+
+// PartSelector cần nạp lại kho từ khi nó rỗng, nhưng KHÔNG biết nguồn đang chọn
+// đi đường API nào (kho chung / bộ riêng / bộ được chia sẻ / nhóm từ sai) — và
+// cũng không được biết: file này đã import `partSelector`, import ngược lại là
+// vòng phụ thuộc. Nên bên đó chỉ YÊU CẦU, còn định tuyến nằm ở đây.
+//
+// Đăng ký ở CẤP MODULE chứ không trong `init()`: `TopicSelector.init()` hiện
+// không được gọi từ đâu cả (chỉ `restoreLastTopic()` được gọi, ở
+// GameContext.jsx). Đặt vào đó là listener không bao giờ chạy, mà triệu chứng
+// vẫn y hệt lúc chưa sửa gì.
+EventBus.on('vocab:reload-requested', () => {
+    TopicSelector.restoreLastTopic().catch(() => {});
+});

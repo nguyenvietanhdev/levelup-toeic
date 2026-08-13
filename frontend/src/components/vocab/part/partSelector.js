@@ -67,10 +67,18 @@ export const PartSelector = {
         let currentMode = this.practiceMode || 'sequential';
         let searchQuery = '';
 
-        // Tự phục hồi: vocab rỗng nhưng ĐÃ chọn đề trước đó (currentSource) →
-        // nạp lại nguồn thay vì bắt user F5. 'vocab:loaded' sẽ dựng lại lưới Part.
+        // Tự phục hồi: vocab rỗng nhưng ĐÃ chọn đề trước đó → nạp lại thay vì bắt
+        // user F5. 'vocab:loaded' sẽ dựng lại lưới Part.
+        //
+        // Chỉ PHÁT YÊU CẦU, không tự gọi API. Trước đây chỗ này gọi thẳng
+        // `GameLogic.loadVocabularyBySource()`, mà hàm đó đi `/api/vocabulary` —
+        // kho CHUNG. Bộ từ riêng, bộ được chia sẻ và nhóm từ sai không nằm ở đó,
+        // nên nó trả về rỗng, `.catch(() => {})` nuốt luôn, và người dùng thấy
+        // lưới Part trống không kèm lời giải thích nào.
+        //
+        // TopicSelector biết nguồn đang chọn đi đường nào; nó nghe sự kiện này.
         if ((GameLogic.vocabularyData?.length || 0) === 0 && GameLogic.currentSource) {
-            GameLogic.loadVocabularyBySource(GameLogic.currentSource).catch(() => {});
+            EventBus.emit('vocab:reload-requested');
         }
 
         const getLevelBar = (part) => {
