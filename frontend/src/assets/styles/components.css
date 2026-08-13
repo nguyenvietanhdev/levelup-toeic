@@ -8355,3 +8355,21 @@ mark {
     border-color: var(--primary-color);
     color: #fff;
 }
+
+/* Ô nhập Part trong popup Dịch nhanh — nhóm từ vào chủ đề để luyện tập lọc được.
+   Nhớ giá trị qua localStorage nên gõ một lần dùng cho cả đợt lưu. */
+.translate-part-input {
+    flex: 0 1 150px;
+    min-width: 0;
+    padding: 7px 10px;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    outline: none;
+}
+.translate-part-input:focus { border-color: var(--primary-color); }
+.translate-part-input::placeholder { font-weight: 400; letter-spacing: 0; }

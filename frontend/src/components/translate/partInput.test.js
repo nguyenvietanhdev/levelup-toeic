@@ -1,0 +1,82 @@
+/**
+ * Ô Part trong popup Dịch nhanh + bỏ nút "Thêm vào từ yêu thích".
+ *
+ * PART: trước đây mọi từ lưu qua Dịch nhanh đều vào cùng MỘT part
+ * (DICH-NHANH-*). Luyện tập lọc theo part, nên bộ càng lớn càng vô dụng — tất cả
+ * chung một rổ thì không tách được chủ đề nào. Giờ người dùng tự đặt, và giá trị
+ * NHỚ QUA localStorage: lưu 20 từ vào cùng chủ đề mà gõ lại tên 20 lần thì không
+ * ai dùng.
+ *
+ * YÊU THÍCH: bỏ khỏi popup này. Yêu thích vốn để đánh dấu từ CÓ SẴN trên hệ
+ * thống; lưu từ tự dịch vào đó là trộn hai loại dữ liệu và làm loãng danh sách
+ * ôn tập. (Lo ngại "đầy localStorage" thì không đúng — đã kiểm: nó lưu trong
+ * MongoDB `User.favoriteWords`, có sẵn giới hạn maxFavorites, 16 từ = 1.9KB.)
+ */
+import { describe, test, expect } from 'vitest';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+
+const src = readFileSync(join(__dirname, 'TranslateModal.jsx'), 'utf8')
+    .replace(/\/\*[\s\S]*?\*\//g, '')
+    .split('\n').filter(l => !/^\s*\/\//.test(l) && !/^\s*\{?\/\*/.test(l)).join('\n');
+
+describe('ô Part', () => {
+    test('có ô nhập, không gán cứng part nữa', () => {
+        expect(src).toMatch(/translate-part-input/);
+        expect(src).toMatch(/partDraft/);
+    });
+
+    test('đọc giá trị cũ từ localStorage lúc mở', () => {
+        // Không đọc lại thì mỗi lần mở popup là một lần gõ tay.
+        expect(src).toMatch(/localStorage\.getItem\(PART_KEY\)/);
+    });
+
+    test('chỉ ghi nhớ SAU KHI lưu thành công', () => {
+        // Ghi sớm là nhớ luôn cả giá trị vừa bị server từ chối.
+        const i = src.indexOf('res?.success');
+        const j = src.indexOf('localStorage.setItem(PART_KEY', i);
+        expect(i).toBeGreaterThan(-1);
+        expect(j).toBeGreaterThan(i);
+    });
+
+    test('để trống thì dùng part mặc định, không chặn người dùng', () => {
+        // Không bắt ai nghĩ ra tên trước khi lưu được từ đầu tiên.
+        expect(src).toMatch(/typed \|\| \(isZhWord \? 'DICH-NHANH-ZH' : 'DICH-NHANH-EN'\)/);
+    });
+
+    test('viết HOA part — khớp quy ước của phần còn lại', () => {
+        expect(src).toMatch(/partDraft\.trim\(\)\.toUpperCase\(\)/);
+    });
+
+    test('localStorage bị chặn không làm hỏng việc lưu từ', () => {
+        // Chế độ riêng tư / bị chặn cookie: mất tính nhớ thì được, mất từ thì không.
+        expect(src).toMatch(/try \{[\s\S]{0,120}localStorage\.setItem\(PART_KEY[\s\S]{0,60}\} catch/);
+    });
+});
+
+describe('bỏ nút "Thêm vào từ yêu thích"', () => {
+    test('không còn nút trong popup', () => {
+        expect(src).not.toMatch(/Thêm vào từ yêu thích/);
+        expect(src).not.toMatch(/handleSaveFavorite/);
+    });
+
+    test('dọn sạch mã chết đi kèm', () => {
+        // Để lại là gọi hàm không tồn tại → lỗi runtime, hoặc import thừa.
+        expect(src).not.toMatch(/setSaved\(/);
+        expect(src).not.toMatch(/FavoritesAPI/);
+        expect(src).not.toMatch(/function isAlreadyFavorite/);
+    });
+
+    test('nút "Xem từ yêu thích" VẪN còn — chỉ bỏ đường LƯU', () => {
+        // Tính năng yêu thích không bị xoá, chỉ không lưu từ tự dịch vào đó nữa.
+        expect(src).toMatch(/Xem từ yêu thích/);
+    });
+});
+
+describe('sửa lỗi chữ nhân đôi', () => {
+    test('onBlur không đồng bộ khi ĐANG NGHE', () => {
+        // Giữ Shift làm ô mất focus → onBlur đẩy chữ cũ sang inputText → hiệu ứng
+        // ghi ngược lại srcDraft → giọng nói nối tiếp vào đó = `你好你好。`
+        expect(src).toMatch(/if \(listening\) return;/);
+    });
+});

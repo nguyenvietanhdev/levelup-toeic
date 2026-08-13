@@ -4,7 +4,6 @@ import { isSpeechSupported, speechLangFor, createSpeechInput } from '@lib/speech
 import { createHoldGesture } from '@lib/holdGesture.js';
 import { GameState } from '@game/state.js';
 import { getVocabLang } from '@api/vocabulary.js';
-import { FavoritesAPI } from '@api/favorites.js';
 import { UploadVocabAPI } from '@api/uploadVocab.js';
 import { openUploadModal } from '@components/vocab/upload/openUploadModal.js';
 import { Notification } from '@ui/Toaster.jsx';
@@ -76,10 +75,8 @@ const SELECT_LANGS = [
     { code: 'th', label: 'ไทย' },
 ];
 
-function isAlreadyFavorite(en) {
-    const favs = GameState.state?.progress?.favoriteWords || [];
-    return favs.some(w => (w.en || w.word || '').toLowerCase() === (en || '').toLowerCase());
-}
+// Khoá localStorage cho ô Part — nhớ giá trị lần trước để không phải gõ lại.
+const PART_KEY = 'translate:lastPart';
 
 /**
  * Popup dịch trong app — gọi API công khai của Google Translate (không cần key).
@@ -99,11 +96,19 @@ export default function TranslateModal({ text, onClose, onOpenFavorites, editWor
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
     const [result, setResult] = useState(null); // { translated, sourceLang, part, synonyms, phonetic }
-    const [saved, setSaved] = useState(() => isAlreadyFavorite(text));
     const [savedVocab, setSavedVocab] = useState(false);
     const [srcDraft, setSrcDraft] = useState(text);   // ô GỐC sửa được
     const [editedVn, setEditedVn] = useState('');      // ô bản dịch sửa được
     const [srcLang, setSrcLang] = useState('auto');    // ngôn ngữ nguồn (auto = tự phát hiện)
+
+    // Part người dùng tự đặt, NHỚ QUA localStorage.
+    //
+    // Lưu 20 từ vào cùng một chủ đề mà phải gõ lại tên part 20 lần thì không ai
+    // dùng tính năng này. Nhớ qua cả khi đóng trình duyệt: người học thường lưu
+    // theo đợt, hôm nay một ít mai một ít, cùng một chủ đề.
+    const [partDraft, setPartDraft] = useState(() => {
+        try { return localStorage.getItem(PART_KEY) || ''; } catch { return ''; }
+    });
 
     useEscapeToClose(onClose);
 
@@ -225,7 +230,6 @@ export default function TranslateModal({ text, onClose, onOpenFavorites, editWor
     useEffect(() => {
         let cancelled = false;
         setLoading(true); setError(''); setResult(null);
-        setSaved(isAlreadyFavorite(inputText));
         setSavedVocab(false);
         (async () => {
             try {
@@ -282,29 +286,6 @@ export default function TranslateModal({ text, onClose, onOpenFavorites, editWor
         setSrcLang(targetLang);        // nguồn mới = đích cũ
         setTargetLang(detected);       // đích mới = ngôn ngữ nguồn vừa phát hiện
         setInputText(result.translated);
-    };
-
-    const handleSaveFavorite = () => {
-        if (!result?.translated || saved) return;
-        // Lưu theo shape {en, vn}: ưu tiên gán đúng phía Anh/Việt (dùng bản dịch đã sửa).
-        const vnText = editedVn.trim() || result.translated;
-        let en = inputText.trim();
-        let vn = vnText;
-        if (result.sourceLang === 'vi') { en = vnText; vn = inputText.trim(); }
-
-        const entry = { en, vn, phonetic: result.phonetic || '', synonyms: result.synonyms || '', part: result.part || '' };
-        if (!GameState.state.progress) GameState.state.progress = {};
-        const favs = GameState.state.progress.favoriteWords || [];
-        if (!isAlreadyFavorite(en)) {
-            GameState.state.progress.favoriteWords = [...favs, entry];
-            FavoritesAPI.add(entry).catch(() => {});
-            GameState.save?.();
-        }
-        setSaved(true);
-        // Tăng ngay để số trên nút khớp với việc vừa làm. Không cập nhật thì bấm
-        // Thêm xong vẫn thấy số cũ, người dùng tưởng lưu hỏng và bấm lại.
-        setFavCount(n => n + 1);
-        Notification.show({ type: 'success', message: `Đã lưu "${en}" vào từ vựng yêu thích`, duration: 1800 });
     };
 
     // Chế độ SỬA: cập nhật bản ghi có sẵn thay vì tạo mới.
@@ -373,7 +354,15 @@ export default function TranslateModal({ text, onClose, onOpenFavorites, editWor
             // trong 'dich-nhanh' đã chuyển hết bằng scripts/splitDichNhanhByLang.js.
             const isZhWord = savedLang === 'zh';
             const source = isZhWord ? 'dich-nhanh-zh' : 'dich-nhanh-en';
-            const part = isZhWord ? 'DICH-NHANH-ZH' : 'DICH-NHANH-EN';
+
+            // Part do NGƯỜI DÙNG đặt, không gán cứng nữa.
+            //
+            // Trước đây mọi từ đều vào cùng một part (DICH-NHANH-*), nên bộ từ
+            // càng lớn càng vô dụng: luyện tập lọc theo part, mà tất cả chung một
+            // rổ thì không tách được chủ đề nào. Để trống thì vẫn dùng tên cũ,
+            // không bắt ai phải nghĩ ra tên trước khi lưu được từ đầu tiên.
+            const typed = partDraft.trim().toUpperCase();
+            const part = typed || (isZhWord ? 'DICH-NHANH-ZH' : 'DICH-NHANH-EN');
 
             const res = await UploadVocabAPI.create({
                 en, vn, lang: savedLang,
@@ -387,7 +376,12 @@ export default function TranslateModal({ text, onClose, onOpenFavorites, editWor
             if (res?.success) {
                 setSavedVocab(true);
                 setVocabCount(n => (n === null ? null : n + 1));
-                Notification.show({ type: 'success', message: `Đã lưu "${en}" vào từ vựng riêng`, duration: 1800 });
+                // Nhớ part VỪA DÙNG cho lần sau. Chỉ ghi khi lưu thành công —
+                // ghi sớm là nhớ luôn cả giá trị vừa bị server từ chối.
+                try {
+                    if (typed) localStorage.setItem(PART_KEY, typed);
+                } catch { /* trình duyệt chặn localStorage — không sao, chỉ mất tính nhớ */ }
+                Notification.show({ type: 'success', message: `Đã lưu "${en}" vào part ${part}`, duration: 1800 });
             } else {
                 Notification.error(res?.message || 'Lưu thất bại (cần đăng nhập?)');
             }
@@ -478,7 +472,15 @@ export default function TranslateModal({ text, onClose, onOpenFavorites, editWor
                                 value={srcDraft}
                                 onChange={e => setSrcDraft(e.target.value)}
                                 onKeyDown={e => { if (e.key === 'Enter' && srcDraft.trim()) setInputText(srcDraft.trim()); }}
-                                onBlur={() => { const v = srcDraft.trim(); if (v && v !== inputText) setInputText(v); }}
+                                onBlur={() => {
+                                    // ĐANG NGHE thì không đồng bộ: giữ Shift làm ô
+                                    // mất focus, onBlur đẩy chữ cũ sang `inputText`,
+                                    // hiệu ứng đồng bộ ghi ngược lại `srcDraft`, rồi
+                                    // giọng nói nối tiếp vào đó — ra `你好你好。`
+                                    if (listening) return;
+                                    const v = srcDraft.trim();
+                                    if (v && v !== inputText) setInputText(v);
+                                }}
                                 placeholder="Nhập từ cần dịch..."
                             />
                             <button className="translate-speak" title="Phát âm" onClick={() => speak(srcDraft, result?.sourceLang || 'en')}>
@@ -506,18 +508,19 @@ export default function TranslateModal({ text, onClose, onOpenFavorites, editWor
                             </>
                         ) : (
                         <>
-                        <button
-                            className={`translate-save-btn${saved ? ' saved' : ''}`}
-                            title={saved ? 'Từ này đã có trong danh sách từ yêu thích' : 'Đánh dấu từ này để ôn lại sau'}
-                            onClick={handleSaveFavorite}
-                            disabled={loading || !!error || saved}
-                        >
-                            {/* Ghi rõ hành động sẽ xảy ra, và khi đã lưu thì nói rõ
-                                lưu vào ĐÂU — hai nút cùng hiện "Đã lưu" thì không
-                                phân biệt được cái nào đã bấm. */}
-                            <i className="fas fa-star"></i>
-                            {saved ? ' Đã ở từ yêu thích' : ' Thêm vào từ yêu thích'}
-                        </button>
+                        {/* Nút "Thêm vào từ yêu thích" ĐÃ BỎ khỏi đây.
+                            Yêu thích vốn để đánh dấu từ CÓ SẴN trên hệ thống; lưu
+                            từ tự dịch vào đó là trộn hai loại dữ liệu khác nhau và
+                            làm danh sách ôn tập loãng đi. Tính năng yêu thích vẫn
+                            còn nguyên ở các màn khác. */}
+                        <input
+                            className="translate-part-input"
+                            value={partDraft}
+                            onChange={e => setPartDraft(e.target.value)}
+                            placeholder="Part (vd: HSK1-BAI2)"
+                            title="Nhóm từ này vào part nào — luyện tập lọc theo part. Để trống sẽ dùng part mặc định."
+                            style={{ textTransform: 'uppercase' }}
+                        />
                         <button
                             className={`translate-save-btn${savedVocab ? ' saved' : ''}`}
                             title={savedVocab ? 'Từ này đã có trong bộ từ vựng riêng' : 'Thêm vào bộ từ vựng riêng để đưa vào bài luyện tập'}
@@ -525,7 +528,7 @@ export default function TranslateModal({ text, onClose, onOpenFavorites, editWor
                             disabled={loading || !!error || savedVocab}
                         >
                             <i className="fas fa-cloud-arrow-up"></i>
-                            {savedVocab ? ' Đã ở từ vựng riêng' : ' Thêm vào từ vựng riêng'}
+                            {savedVocab ? ' Đã lưu' : ' Thêm vào từ vựng riêng'}
                         </button>
                         </>
                         )}
