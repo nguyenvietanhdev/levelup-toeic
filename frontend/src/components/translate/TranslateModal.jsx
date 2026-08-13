@@ -2,7 +2,6 @@ import { useEffect, useRef, useState } from 'react';
 import { useEscapeToClose } from '@lib/useEscapeToClose.js';
 import { isSpeechSupported, speechLangFor, createSpeechInput } from '@lib/speechInput.js';
 import { createHoldGesture } from '@lib/holdGesture.js';
-import { GameState } from '@game/state.js';
 import { getVocabLang } from '@api/vocabulary.js';
 import { UploadVocabAPI } from '@api/uploadVocab.js';
 import { openUploadModal } from '@components/vocab/upload/openUploadModal.js';
@@ -87,7 +86,7 @@ const PART_KEY = 'translate:lastPart';
  *   chạy ở chế độ sửa: nút lưu thành "Cập nhật" và gọi PUT thay vì tạo bản ghi
  *   mới. Không có thì đây là popup dịch bình thường như trước.
  */
-export default function TranslateModal({ text, onClose, onOpenFavorites, editWord = null, onSaved }) {
+export default function TranslateModal({ text, onClose, editWord = null, onSaved }) {
     const isEditing = !!editWord?._id;
     const [inputText, setInputText] = useState(text);
     // Mặc định dịch sang ngôn ngữ hệ thống đang học (Anh/Trung); nếu nguồn trùng
@@ -136,6 +135,10 @@ export default function TranslateModal({ text, onClose, onOpenFavorites, editWor
     const speechRef = useRef(null);
     const [listening, setListening] = useState(false);
     const heardRef = useRef('');
+    // Bản mới nhất của `inputText` cho callback nhận dạng dùng. Callback đó do
+    // effect tạo MỘT lần nên closure của nó giữ giá trị của lần render đầu.
+    const inputTextRef = useRef(text);
+    useEffect(() => { inputTextRef.current = inputText; }, [inputText]);
 
     useEffect(() => {
         if (!isSpeechSupported()) return;
@@ -149,7 +152,11 @@ export default function TranslateModal({ text, onClose, onOpenFavorites, editWor
                 // Nói xong thì dịch luôn nội dung mới — không bắt bấm thêm.
                 const t = heardRef.current.trim();
                 heardRef.current = '';
-                if (t) setInputText(t);
+                if (t) { setInputText(t); return; }
+                // Không nghe được gì → TRẢ LẠI chữ cũ. `onStart` đã xoá ô để nói
+                // đè; không khôi phục thì ô FROM ở lại trống trong khi TO vẫn giữ
+                // bản dịch cũ — nhìn như app tự nuốt mất chữ vừa gõ.
+                setSrcDraft(inputTextRef.current);
             },
             onError: () => Notification.show({
                 type: 'warning', title: '🎤 Không nghe được',
@@ -205,11 +212,6 @@ export default function TranslateModal({ text, onClose, onOpenFavorites, editWor
         };
     }, []);
 
-    // Số từ yêu thích đọc thẳng từ GameState — có sẵn tại chỗ, không tốn request.
-    // Đặt trong state để còn tăng lên ngay khi bấm Thêm (xem hai handler bên dưới).
-    const [favCount, setFavCount] = useState(
-        () => (GameState.state?.progress?.favoriteWords || []).length
-    );
     // Từ vựng riêng phải hỏi server: tổng = cộng wordCount của mọi nguồn.
     const [vocabCount, setVocabCount] = useState(null);   // null = chưa biết
 
@@ -517,19 +519,19 @@ export default function TranslateModal({ text, onClose, onOpenFavorites, editWor
                             className="translate-part-input"
                             value={partDraft}
                             onChange={e => setPartDraft(e.target.value)}
-                            placeholder="Part (vd: HSK1-BAI2)"
+                            /* Enter = lưu luôn. Gõ xong tên part rồi phải rời tay
+                               sang chuột bấm nút là cắt mạch — lưu theo đợt thì
+                               mỗi từ một lần chuyển tay. */
+                            onKeyDown={e => {
+                                if (e.key !== 'Enter') return;
+                                e.preventDefault();
+                                if (loading || error || savedVocab) return;
+                                handleSaveVocab();
+                            }}
+                            placeholder="Part (vd: HSK1-BAI2) — Enter để lưu"
                             title="Nhóm từ này vào part nào — luyện tập lọc theo part. Để trống sẽ dùng part mặc định."
                             style={{ textTransform: 'uppercase' }}
                         />
-                        <button
-                            className={`translate-save-btn${savedVocab ? ' saved' : ''}`}
-                            title={savedVocab ? 'Từ này đã có trong bộ từ vựng riêng' : 'Thêm vào bộ từ vựng riêng để đưa vào bài luyện tập'}
-                            onClick={handleSaveVocab}
-                            disabled={loading || !!error || savedVocab}
-                        >
-                            <i className="fas fa-cloud-arrow-up"></i>
-                            {savedVocab ? ' Đã lưu' : ' Thêm vào từ vựng riêng'}
-                        </button>
                         </>
                         )}
                     </div>
@@ -562,26 +564,31 @@ export default function TranslateModal({ text, onClose, onOpenFavorites, editWor
                         )}
                     </div>
 
-                    {/* Đang sửa thì ẩn hai nút "Xem ..." — bấm vào là mở modal khác
-                        đè lên, mất luôn nội dung đang sửa dở. */}
+                    {/* Đang sửa thì ẩn nút "Xem ..." — bấm vào là mở modal khác đè
+                        lên, mất luôn nội dung đang sửa dở.
+
+                        Nút "Xem từ yêu thích" ĐÃ BỎ cùng lúc với nút thêm vào yêu
+                        thích: popup này giờ chỉ làm một việc — dịch rồi lưu vào từ
+                        vựng riêng. Yêu thích vẫn mở được từ thanh nav. */}
                     <div className="translate-actions" style={isEditing ? { display: 'none' } : undefined}>
-                        {onOpenFavorites && (
-                            <button className="btn btn-primary btn-sm" onClick={onOpenFavorites}>
-                                {/* "Xem" để phân biệt với nút THÊM ở trên — hai
-                                    hàng nút cùng chữ "Yêu thích" dễ bấm nhầm. */}
-                                {/* Số hiện trong badge riêng, không nhét vào chuỗi:
-                                    chưa biết số (API chưa trả / lỗi) thì KHÔNG hiện
-                                    gì, chứ không hiện "0" — 0 là một khẳng định sai. */}
-                                <i className="fas fa-star"></i> Xem từ yêu thích
-                                <span className="tm-count">{favCount}</span>
-                            </button>
-                        )}
                         <button
                             className="btn btn-secondary btn-sm"
                             onClick={() => openUploadModal({ tab: 'manage' })}
                         >
                             <i className="fas fa-cloud"></i> Xem từ vựng riêng
                             {vocabCount !== null && <span className="tm-count">{vocabCount}</span>}
+                        </button>
+                        {/* Nút LƯU đặt cạnh nút XEM, bên phải: hai việc cùng thuộc
+                            "từ vựng riêng" nên đứng cùng hàng, và lưu là hành động
+                            chính nên nằm ở vị trí tay phải với tới trước. */}
+                        <button
+                            className={`btn btn-primary btn-sm${savedVocab ? ' saved' : ''}`}
+                            title={savedVocab ? 'Từ này đã có trong bộ từ vựng riêng' : 'Thêm vào bộ từ vựng riêng để đưa vào bài luyện tập'}
+                            onClick={handleSaveVocab}
+                            disabled={loading || !!error || savedVocab}
+                        >
+                            <i className="fas fa-cloud-arrow-up"></i>
+                            {savedVocab ? ' Đã lưu' : ' Thêm vào từ vựng'}
                         </button>
                     </div>
                 </div>

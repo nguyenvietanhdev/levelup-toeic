@@ -8359,7 +8359,9 @@ mark {
 /* Ô nhập Part trong popup Dịch nhanh — nhóm từ vào chủ đề để luyện tập lọc được.
    Nhớ giá trị qua localStorage nên gõ một lần dùng cho cả đợt lưu. */
 .translate-part-input {
-    flex: 0 1 150px;
+    /* Chiếm TRỌN chiều ngang: nút lưu đã chuyển xuống hàng dưới cạnh nút "Xem
+       từ vựng riêng", nên hàng này chỉ còn mình ô Part. */
+    flex: 1 1 100%;
     min-width: 0;
     padding: 7px 10px;
     border: 1px solid var(--border-color);

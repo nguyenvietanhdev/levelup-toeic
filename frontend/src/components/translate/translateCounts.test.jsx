@@ -28,15 +28,16 @@ beforeEach(() => {
 });
 
 function open() {
-    return render(<TranslateModal text="hello" onClose={() => {}} onOpenFavorites={() => {}} />);
+    return render(<TranslateModal text="hello" onClose={() => {}} />);
 }
 
 describe('số từ trên nút', () => {
-    test('yêu thích lấy từ GameState, hiện ngay không cần đợi mạng', () => {
+    test('KHÔNG còn nút "Xem từ yêu thích" trong popup', () => {
+        // Popup này giờ chỉ làm một việc: dịch rồi lưu vào từ vựng riêng.
+        // Yêu thích vẫn mở được từ thanh nav.
         topicsMock.mockResolvedValue({ success: true, data: [] });
         open();
-        const btn = screen.getByText(/Xem từ yêu thích/).closest('button');
-        expect(btn.textContent).toMatch(/3/);
+        expect(screen.queryByText(/Xem từ yêu thích/)).toBeNull();
     });
 
     test('từ vựng riêng = TỔNG wordCount của mọi nguồn', async () => {

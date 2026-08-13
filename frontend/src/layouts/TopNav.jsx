@@ -550,7 +550,6 @@ export default function TopNav() {
                 // Xoá luôn translateEdit khi đóng — giữ lại thì lần sau mở popup
                 // dịch bình thường lại rơi vào chế độ sửa của từ cũ.
                 onClose={() => { setTranslateText(null); setTranslateEdit(null); }}
-                onOpenFavorites={() => setFavOpen(true)}
                 editWord={translateEdit?.word || null}
                 onSaved={translateEdit?.onSaved}
             />

@@ -44,6 +44,16 @@ describe('ô Part', () => {
         expect(src).toMatch(/typed \|\| \(isZhWord \? 'DICH-NHANH-ZH' : 'DICH-NHANH-EN'\)/);
     });
 
+    test('Enter trong ô Part = lưu luôn', () => {
+        // Gõ xong tên part rồi phải rời tay sang chuột bấm nút là cắt mạch —
+        // lưu theo đợt thì mỗi từ một lần chuyển tay.
+        expect(src).toMatch(/translate-part-input[\s\S]{0,600}handleSaveVocab\(\)/);
+    });
+
+    test('Enter KHÔNG lưu khi đang tải / lỗi / đã lưu rồi', () => {
+        expect(src).toMatch(/if \(loading \|\| error \|\| savedVocab\) return;/);
+    });
+
     test('viết HOA part — khớp quy ước của phần còn lại', () => {
         expect(src).toMatch(/partDraft\.trim\(\)\.toUpperCase\(\)/);
     });
@@ -67,9 +77,26 @@ describe('bỏ nút "Thêm vào từ yêu thích"', () => {
         expect(src).not.toMatch(/function isAlreadyFavorite/);
     });
 
-    test('nút "Xem từ yêu thích" VẪN còn — chỉ bỏ đường LƯU', () => {
-        // Tính năng yêu thích không bị xoá, chỉ không lưu từ tự dịch vào đó nữa.
-        expect(src).toMatch(/Xem từ yêu thích/);
+    test('bỏ luôn nút "Xem từ yêu thích" — popup chỉ làm một việc', () => {
+        // Ban đầu chỉ bỏ đường LƯU và giữ nút XEM. Sau đó bỏ nốt: popup này giờ
+        // chỉ để dịch rồi lưu vào từ vựng riêng. Yêu thích vẫn mở từ thanh nav.
+        expect(src).not.toMatch(/Xem từ yêu thích/);
+        expect(src).not.toMatch(/favCount/);
+        expect(src).not.toMatch(/onOpenFavorites/);
+    });
+});
+
+describe('không nghe được gì thì trả lại chữ cũ', () => {
+    test('khôi phục srcDraft khi phiên nói không ra chữ nào', () => {
+        // onStart đã xoá ô để nói đè; không khôi phục thì ô FROM ở lại TRỐNG
+        // trong khi TO vẫn giữ bản dịch cũ — nhìn như app tự nuốt mất chữ.
+        expect(src).toMatch(/setSrcDraft\(inputTextRef\.current\)/);
+    });
+
+    test('đọc inputText qua REF, không qua closure', () => {
+        // Callback nhận dạng do effect tạo một lần; đọc thẳng `inputText` là lấy
+        // giá trị của lần render đầu.
+        expect(src).toMatch(/inputTextRef\.current = inputText/);
     });
 });
 
