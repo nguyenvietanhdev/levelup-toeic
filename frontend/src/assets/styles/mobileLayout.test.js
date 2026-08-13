@@ -256,6 +256,40 @@ describe('chế độ phát âm', () => {
     });
 });
 
+describe('tiêu đề màn hình không vỡ dòng giữa từ', () => {
+    test('hàng tiêu đề cho xuống dòng thay vì bóp', () => {
+        // Cửa hàng có tới 4 nút hành động; ép một dòng thì tiêu đề vỡ giữa từ
+        // ("Cửa / hàng") mà nút cuối vẫn bị đẩy khỏi mép phải.
+        expect(ruleFor('.screen-header')).toMatch(/flex-wrap:\s*wrap/);
+    });
+
+    test('tiêu đề giữ NGUYÊN một dòng, chiếm chỗ còn lại', () => {
+        const r = ruleFor('.screen-header h2');
+        expect(r).toMatch(/white-space:\s*nowrap/);
+        expect(r).toMatch(/flex:\s*1 1 auto/);
+        expect(r).toMatch(/min-width:\s*0/);
+    });
+
+    test('huỷ `margin-left: auto` viết inline ở ShopScreen', () => {
+        // Nó đẩy nút đầu sang phải, để lại khoảng trống lớn khi nhóm nút đã
+        // xuống dòng riêng. Inline nên phải !important.
+        expect(ruleFor('.screen-header .inventory-btn:first-of-type'))
+            .toMatch(/margin-left:\s*0\s*!important/);
+    });
+});
+
+describe('nhãn ngắn cho nút hành động', () => {
+    test('mobile dùng nhãn NGẮN, ẩn nhãn đầy đủ', () => {
+        const b = mobileBlock();
+        expect(b).toMatch(/\.action-btn \.label-full \{ display: none; \}/);
+        expect(b).toMatch(/\.action-btn \.label-short \{ display: inline; \}/);
+    });
+
+    test('nhãn không được vỡ dòng nữa', () => {
+        expect(mobileBlock()).toMatch(/white-space:\s*nowrap/);
+    });
+});
+
 describe('ba lựa chọn nhanh chuyển vào menu bên', () => {
     test('ẩn ở thanh trạng thái, hiện trong menu', () => {
         expect(ruleFor('.status-bar-right')).toMatch(/display:\s*none/);
@@ -300,6 +334,23 @@ describe('chế độ viết chữ Hán', () => {
 
     test('hàng nút xuống dòng thay vì bị bóp', () => {
         expect(ruleFor('.hanzi-actions')).toMatch(/flex-wrap:\s*wrap/);
+    });
+});
+
+describe('chiều cao vùng nhìn thật (ngoài block mobile)', () => {
+    const layout = readFileSync(join(__dirname, 'layout.css'), 'utf8')
+        .replace(/\/\*[\s\S]*?\*\//g, '');
+
+    test('.game-container dùng dvh, có dự phòng vh', () => {
+        // `vh` trên Chrome Android là chiều cao lúc thanh địa chỉ ĐÃ ẨN — luôn
+        // lớn hơn chỗ nhìn thấy thật, phần dư nằm khuất dưới thanh địa chỉ và
+        // nav ở đáy bị che một nửa.
+        const m = layout.match(/\.game-container\s*\{([^}]*)\}/);
+        expect(m).toBeTruthy();
+        expect(m[1]).toMatch(/min-height:\s*100dvh/);
+        // Dự phòng phải đứng TRƯỚC — trình duyệt cũ bỏ qua dòng nó không hiểu,
+        // đảo thứ tự là bản cũ thắng và `dvh` vô nghĩa.
+        expect(m[1].indexOf('100vh')).toBeLessThan(m[1].indexOf('100dvh'));
     });
 });
 

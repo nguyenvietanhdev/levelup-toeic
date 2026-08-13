@@ -166,9 +166,14 @@ export default function PracticeScreen({ active }) {
                     <span>Gợi ý</span>
                     <span className="cost">50 <i className="fas fa-coins"></i></span>
                 </button>
-                <button id="freeze-btn" className="action-btn freeze-btn">
+                <button id="freeze-btn" className="action-btn freeze-btn" title="Dừng thời gian">
                     <i className="fas fa-pause"></i>
-                    <span>Dừng thời gian</span>
+                    {/* Hai nhãn, CSS chọn hiện cái nào theo khổ màn (responsive.css).
+                        "Dừng thời gian" không vừa một dòng khi ba nút chia đều màn
+                        360px — nó vỡ GIỮA TỪ ("Dừng thời / gian") và nút cao gấp đôi
+                        hai nút bên cạnh. Nhãn ngắn nói đủ nghĩa, `title` giữ nghĩa đầy. */}
+                    <span className="label-full">Dừng thời gian</span>
+                    <span className="label-short">Dừng giờ</span>
                     <span className="freeze-count">{freezeCount}</span>
                 </button>
                 <button id="skip-btn" className="action-btn skip-btn">

@@ -34,7 +34,14 @@
    =================================== */
 
 .game-container {
+    /* `dvh` = chiều cao vùng nhìn THẬT, co lại khi thanh địa chỉ trình duyệt
+       hiện ra. `vh` trên Chrome Android là chiều cao lúc thanh địa chỉ ĐÃ ẨN,
+       tức là luôn lớn hơn chỗ thật sự nhìn thấy — phần dư nằm dưới thanh địa
+       chỉ và người dùng không bao giờ thấy.
+       `min-height` xếp chồng: trình duyệt cũ không hiểu `dvh` sẽ bỏ qua dòng
+       sau và giữ `vh`, nên không mất gì. */
     min-height: 100vh;
+    min-height: 100dvh;
     display: flex;
     flex-direction: column;
 }

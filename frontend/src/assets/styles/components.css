@@ -822,6 +822,9 @@
   background-color: var(--text-primary);
 }
 
+/* Nhãn ngắn của nút hành động — chỉ dùng ở khổ điện thoại (responsive.css). */
+.action-btn .label-short { display: none; }
+
 .action-btn .cost {
   display: flex;
   align-items: center;
