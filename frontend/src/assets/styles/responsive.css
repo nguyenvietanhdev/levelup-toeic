@@ -167,7 +167,9 @@
     /* Main content */
     main {
         padding: 12px;
-        margin-top: 0; /* Nav is not fixed on mobile */
+        /* Nav nằm ở ĐÁY (fixed) nên không cần chừa chỗ ở trên. Chỗ chừa cho nó
+           ở phía dưới, xem `.main-content { padding-bottom }` bên dưới. */
+        margin-top: 0;
     }
 
     /* Home screen */
@@ -553,6 +555,15 @@
        hàng tiêu đề đang phải chứa cả tên chế độ, nhãn Part và điểm số. */
     .practice-header #back-btn {
         display: none;
+    }
+
+    /* Thanh trạng thái (năng lượng / xu / XP) dán SÁT TRẦN.
+       Nó đặt `top: 56px` để chừa chỗ cho nav — nhưng nav giờ ở đáy, nên 56px đó
+       thành một khoảng hở lơ lửng đúng bằng chiều cao của thứ không còn ở đó.
+       Đây là dạng hỏng hay gặp khi dời một phần tử: cái đứng cạnh nó vẫn giữ
+       khoảng chừa cũ, và trông như lỗi căn lề chứ không như hệ quả của việc dời. */
+    .status-bar {
+        top: 0;
     }
 
     /* ── Ô tìm kiếm THU GỌN thành nút kính lúp ────────────────────────────

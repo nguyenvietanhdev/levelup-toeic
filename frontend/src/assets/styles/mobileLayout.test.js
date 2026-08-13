@@ -116,6 +116,13 @@ describe('chừa chỗ cho nav — chỗ dễ quên nhất', () => {
         expect(r).toMatch(/env\(safe-area-inset-bottom/);
     });
 
+    test('thanh trạng thái dán sát trần, không giữ khoảng chừa cho nav cũ', () => {
+        // layout.css đặt `top: 56px` để né nav ở trên. Nav xuống đáy rồi mà giữ
+        // nguyên là còn một khoảng hở lơ lửng đúng bằng chiều cao của thứ không
+        // còn ở đó — trông như lỗi căn lề, không như hệ quả của việc dời nav.
+        expect(ruleFor('.status-bar')).toMatch(/top:\s*0/);
+    });
+
     test('dòng ghim ở Bảng xếp hạng được đẩy lên trên nav', () => {
         // Nó cũng bám đáy (bottom: 14px) nhưng z-index 60 < 200 của nav.
         const r = ruleFor('.leaderboard-me-pinned');
