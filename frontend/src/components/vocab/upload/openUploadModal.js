@@ -99,11 +99,8 @@ export function openUploadModal({ tab } = {}) {
                 ${fieldHtml('synonyms', 'Synonyms', 'food provider', false, 'lowercase')}
                 ${fieldHtml('image', 'Image path', 'images/pages/ets26t10-rc/caterer.jpg', false, 'lowercase')}
             </div>
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;align-items:end">
-                ${retentionFieldHtml('vocab-retention')}
-                <div style="font-size:11px;color:var(--text-secondary);padding-bottom:9px">
-                    <i class="fas fa-circle-info"></i> Hết hạn sẽ tự xóa — bạn sẽ bị nhắc xuất file trước 3 ngày.
-                </div>
+            <div style="margin-bottom:14px;font-size:11px;color:var(--text-secondary)">
+                <i class="fas fa-circle-info"></i> Thời hạn lưu chọn ở góc trên. Hết hạn sẽ tự xóa — bạn sẽ bị nhắc xuất file trước 3 ngày.
             </div>
             <div style="text-align:right;margin-bottom:10px">
                 <button id="vocab-save-btn" class="btn btn-primary" style="min-width:100px"><i class="fas fa-save"></i> Lưu từ</button>
@@ -140,9 +137,6 @@ export function openUploadModal({ tab } = {}) {
             <button id="json-copy-prompt-btn" class="btn btn-primary" style="width:100%;margin-bottom:14px;font-size:13px">
                 <i class="fas fa-copy"></i> Copy Prompt cho AI
             </button>
-            <div style="margin-bottom:12px;max-width:200px">
-                ${retentionFieldHtml('json-retention')}
-            </div>
             <div style="margin-bottom:6px;font-size:12px;font-weight:600;color:var(--text-primary)"><i class="fas fa-paste"></i> Dán JSON kết quả từ AI vào đây:</div>
             <textarea id="json-result-area" rows="8"
                 placeholder='[{"en":"caterer","vn":"người cung cấp đồ ăn","phonetic":"ˈkeɪtərər","part":"ETS26T10-RC","synonyms":"food provider","type":"noun","image":"images/pages/ets26t10-rc/caterer.jpg","example":"The caterer provided lunch.","level":"B2","source":"ets2026"}]'
@@ -188,7 +182,7 @@ export function openUploadModal({ tab } = {}) {
                     image: document.getElementById('vocab-image')?.value });
                 resultDiv.innerHTML = '<p style="color:var(--text-secondary);font-size:13px"><i class="fas fa-spinner fa-spin"></i> Đang lưu...</p>';
                 try {
-                    const res = await UploadVocabAPI.create({ ...payload, retentionDays: readRetention('vocab-retention') });
+                    const res = await UploadVocabAPI.create({ ...payload, retentionDays: readRetention() });
                     if (!res.success) throw new Error(res.message);
                     resultDiv.innerHTML = resultHtml('success', `Đã lưu "${payload.en}" vào source "${payload.source}"`);
                     ['vocab-en','vocab-vn','vocab-example','vocab-phonetic','vocab-synonyms','vocab-image'].forEach(id => {
@@ -278,7 +272,7 @@ Danh sách từ vựng cần chuyển:
                 if (!raw) { resultDiv.innerHTML = resultHtml('error', 'Textarea JSON rỗng'); return; }
                 let parsed; try { parsed = JSON.parse(raw); } catch (e) { resultDiv.innerHTML = resultHtml('error', `JSON không hợp lệ: ${e.message}`); return; }
                 const items = Array.isArray(parsed) ? parsed : [parsed];
-                const retentionDays = readRetention('json-retention');
+                const retentionDays = readRetention();
                 resultDiv.innerHTML = `<p style="color:var(--text-secondary);font-size:13px"><i class="fas fa-spinner fa-spin"></i> Đang lưu ${items.length} từ...</p>`;
                 let ok = 0, failed = 0, errors = [];
                 for (const raw of items) {
@@ -309,18 +303,10 @@ Danh sách từ vựng cần chuyển:
         };
 
         // HTML for the retention <select> reused across the upload tabs.
-        const retentionFieldHtml = (id) => `
-            <div>
-                <label style="display:block;font-size:12px;font-weight:600;margin-bottom:4px;color:var(--text-primary)">
-                    Thời hạn lưu <span style="color:#ef4444">*</span>
-                </label>
-                <select id="${id}" style="width:100%;padding:8px 10px;border:1px solid var(--border-color);border-radius:6px;font-size:13px;background:var(--bg-tertiary,var(--bg-secondary));color:var(--text-primary)">
-                    ${RETENTION_OPTIONS.map(d => `<option value="${d}"${d === DEFAULT_RETENTION ? ' selected' : ''}>${d} ngày</option>`).join('')}
-                </select>
-            </div>`;
-
-        const readRetention = (id) => {
-            const v = parseInt(document.getElementById(id)?.value, 10);
+        // Một ô DUY NHẤT trên header, không truyền id nữa. Trước đây hai tab có
+        // hai ô riêng — cùng một khái niệm mà hai giá trị độc lập.
+        const readRetention = () => {
+            const v = parseInt(document.getElementById('upload-retention')?.value, 10);
             return RETENTION_OPTIONS.includes(v) ? v : DEFAULT_RETENTION;
         };
 
@@ -610,7 +596,20 @@ Danh sách từ vựng cần chuyển:
         // Nút được chèn bằng dangerouslySetInnerHTML nên không gắn listener
         // trực tiếp lúc tạo chuỗi được. Uỷ quyền ở document là cách không phụ
         // thuộc thời điểm nút xuất hiện trong DOM.
-        const manageBtnHtml = `<button type="button" id="upload-tab-manage" style="display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border:1px solid var(--border-color);border-radius:8px;background:var(--bg-secondary);color:var(--text-primary);cursor:pointer;font-size:12px;font-weight:600;white-space:nowrap"><i class="fas fa-list"></i> Quản lý từ vựng</button>`;
+        // Thời hạn lưu đưa lên HEADER, dùng CHUNG cho cả hai tab.
+        //
+        // Trước đây mỗi tab có ô riêng (`vocab-retention`, `json-retention`) nằm
+        // lọt giữa form — vừa chiếm chỗ, vừa là hai giá trị độc lập cho cùng một
+        // khái niệm: đặt 7 ngày ở tab "Thêm từ mới" rồi sang tab JSON vẫn thấy
+        // 30 ngày, không có gì báo là hai ô khác nhau.
+        const manageBtnHtml = `
+            <div style="display:flex;align-items:center;gap:8px">
+                <select id="upload-retention" title="Thời hạn lưu — hết hạn sẽ tự xoá"
+                    style="padding:6px 10px;border:1px solid var(--border-color);border-radius:8px;background:var(--bg-secondary);color:var(--text-primary);font-size:12px;font-weight:600;cursor:pointer">
+                    ${RETENTION_OPTIONS.map(d => `<option value="${d}"${d === DEFAULT_RETENTION ? ' selected' : ''}>${d} ngày</option>`).join('')}
+                </select>
+                <button type="button" id="upload-tab-manage" style="display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border:1px solid var(--border-color);border-radius:8px;background:var(--bg-secondary);color:var(--text-primary);cursor:pointer;font-size:12px;font-weight:600;white-space:nowrap"><i class="fas fa-list"></i> Quản lý từ vựng</button>
+            </div>`;
 
         if (!document._uploadManageBound) {
             document._uploadManageBound = true;
