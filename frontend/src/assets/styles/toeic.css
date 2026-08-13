@@ -2504,7 +2504,9 @@
 .review-detail-scroll .option-item { padding: 7px 12px; }
 .review-detail-scroll .option-text { line-height: 1.45; }
 .review-detail-scroll .question-text { margin-bottom: 8px; }
-.review-stepper { padding: 7px 10px; width: 680px; margin-left: auto;;}
+/* KHÔNG khoá bề rộng: `width: 680px` cố định tràn 320px trên màn 360 và nút
+   "Câu sau" rơi hẳn ra ngoài màn hình — người dùng chỉ thấy "Câu trước". */
+.review-stepper { padding: 7px 10px; max-width: 680px; width: 100%; margin-left: auto; }
 
 /* Khung chi tiết ăn TRỌN bề ngang. Lưới câu là ngăn kéo NỔI (absolute) nên
    không chiếm cột nào — bật/tắt không làm nội dung co giãn nhảy chỗ. */
@@ -2684,6 +2686,35 @@
   font-weight: 600;
 }
 /* Gợi ý phím tắt — chỉ hiện trên máy có bàn phím. */
+/* Điện thoại: số câu lên hàng trên, HAI NÚT dồn xuống một hàng dưới.
+   Ép ba thứ vào một hàng thì nhãn ở giữa bóp hai nút, mà nút mới là thứ phải
+   bấm. `order` đảo chỗ nhãn — DOM giữ nguyên thứ tự đọc trái→phải cho trình
+   đọc màn hình. */
+@media (max-width: 640px) {
+  .review-stepper {
+    flex-wrap: wrap;
+    justify-content: space-between;
+    row-gap: 8px;
+  }
+
+  .review-stepper-pos {
+    order: -1;
+    flex: 1 0 100%;
+    justify-content: center;
+  }
+
+  .review-stepper .toeic-part-btn {
+    flex: 1 1 0;
+    min-width: 0;
+    justify-content: center;
+  }
+
+  /* Gợi ý phím tắt vô nghĩa trên máy không có bàn phím. */
+  .review-stepper-hint {
+    display: none;
+  }
+}
+
 .review-stepper-hint {
   padding: 1px 6px;
   border: 1px solid var(--border-color);

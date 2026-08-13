@@ -31,6 +31,34 @@ export function speechLangFor(vocabLang) {
     return vocabLang === 'zh' ? 'zh-CN' : 'en-US';
 }
 
+// Mã ngôn ngữ Google Dịch (`zh-CN`, `vi`, `ja`…) → mã BCP-47 mà Web Speech nhận.
+// Chỉ liệt kê những thứ app thật sự dùng; còn lại rơi về tiếng Anh.
+const SPEECH_BY_SOURCE = {
+    en: 'en-US',
+    vi: 'vi-VN',
+    zh: 'zh-CN',
+    ja: 'ja-JP',
+    ko: 'ko-KR',
+    fr: 'fr-FR',
+    de: 'de-DE',
+};
+
+/**
+ * Mã nhận diện cho một ngôn ngữ NGUỒN do người dùng chọn (ô "Dịch từ").
+ *
+ * Khác `speechLangFor`: hàm kia chỉ biết 'en'/'zh' (ngôn ngữ đang HỌC), truyền
+ * 'vi' vào nó sẽ ra 'en-US' — thu âm tiếng Việt mà bộ nhận diện nghe tiếng Anh.
+ *
+ * @param {string} source mã Google Dịch, vd 'zh-CN', 'vi', hoặc 'auto'
+ * @param {string} fallback mã BCP-47 dùng khi source là 'auto' hoặc lạ
+ */
+export function speechLangForSource(source, fallback = 'en-US') {
+    if (!source || source === 'auto') return fallback;
+    // 'zh-CN' / 'zh-TW' đều về 'zh'; 'pt-BR' về 'pt'.
+    const base = String(source).toLowerCase().split('-')[0];
+    return SPEECH_BY_SOURCE[base] || fallback;
+}
+
 /**
  * Tạo một phiên nhập giọng nói.
  *

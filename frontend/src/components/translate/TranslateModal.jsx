@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useEscapeToClose } from '@lib/useEscapeToClose.js';
-import { isSpeechSupported, speechLangFor, createSpeechInput } from '@lib/speechInput.js';
+import { isSpeechSupported, speechLangFor, speechLangForSource, createSpeechInput } from '@lib/speechInput.js';
 import { createHoldGesture } from '@lib/holdGesture.js';
 import { getVocabLang } from '@api/vocabulary.js';
 import { UploadVocabAPI } from '@api/uploadVocab.js';
@@ -149,7 +149,14 @@ export default function TranslateModal({ text, onClose, editWord = null, onSaved
         if (!isSpeechSupported()) return;
 
         const s = createSpeechInput({
-            lang: speechLangFor(getVocabLang()),
+            // Ngôn ngữ NGUỒN người dùng đã chọn ngay trong popup này, không phải
+            // ngôn ngữ đang học. Đang học tiếng Anh mà chọn dịch từ 中文 thì thu
+            // âm phải nghe tiếng Trung — dùng `getVocabLang()` là nghe tiếng Anh
+            // rồi ra chữ Latin, không ai hiểu vì sao.
+            //
+            // `auto` thì rơi về ngôn ngữ đang học: vẫn hơn để trình duyệt tự
+            // đoán, vì Web Speech không có chế độ đa ngôn ngữ thật.
+            lang: speechLangForSource(srcLang, speechLangFor(getVocabLang())),
             onText: (t) => { heardRef.current = t; setSrcDraft(t); },
             onStateChange: (on) => {
                 setListening(on);
@@ -215,7 +222,9 @@ export default function TranslateModal({ text, onClose, editWord = null, onSaved
             // thì cái trong đóng phải trả lại cho cái ngoài, không phải cho nav.
             window._speechOwner = prevOwner;
         };
-    }, []);
+        // Đổi ngôn ngữ NGUỒN phải dựng lại phiên: `lang` được đọc lúc tạo, phiên
+        // cũ giữ mã cũ nên chọn 中文 xong vẫn nghe tiếng Anh.
+    }, [srcLang]);
 
     // Từ vựng riêng phải hỏi server: tổng = cộng wordCount của mọi nguồn.
     const [vocabCount, setVocabCount] = useState(null);   // null = chưa biết
