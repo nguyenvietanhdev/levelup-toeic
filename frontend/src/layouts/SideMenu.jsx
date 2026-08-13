@@ -3,6 +3,7 @@ import { useGame } from '@game/GameContext.jsx';
 import { useAuth } from '@components/auth/AuthContext.jsx';
 import { useMenuBadges } from './useMenuBadges.js';
 import SeasonCountdown from '@components/season/SeasonCountdown.jsx';
+import QuickSettings from './QuickSettings.jsx';
 import { loadUnlocks, lockInfo } from '@game/featureUnlocks.js';
 import { Notification } from '@ui/Toaster.jsx';
 
@@ -136,6 +137,13 @@ export default function SideMenu() {
                         );
                     })}
                 </nav>
+
+                {/* Số câu / độ khó / ngôn ngữ — CHỈ hiện trên điện thoại
+                    (responsive.css). Trên máy tính chúng ở thanh trạng thái;
+                    trên màn hẹp thanh đó không đủ chỗ, mà menu thì thừa. */}
+                <div className="menu-quick-settings-wrap">
+                    <QuickSettings variant="menu" />
+                </div>
 
                 {/* Footer: đếm ngược mùa giải (ghim đáy sidebar) */}
                 <div className="menu-season-row">

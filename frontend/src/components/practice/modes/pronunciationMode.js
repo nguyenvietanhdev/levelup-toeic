@@ -211,8 +211,12 @@ export const PronunciationMode = {
         container.innerHTML = `
             <div class="question-container pronunciation-container" style="display:flex;flex-direction:column;gap:16px;padding:16px 12px;">
 
-                <!-- Word card + mic side by side -->
-                <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
+                <!-- Word card + mic side by side.
+                     Có class để responsive.css xếp dọc lại trên điện thoại.
+                     flex-wrap KHÔNG tự lo được việc đó: thẻ chữ đặt flex:1 với
+                     min-width:0 nên nó co được vô hạn và không bao giờ xuống
+                     dòng, chỉ bị bóp hẹp dần cho tới khi chữ Hán xếp dọc. -->
+                <div class="pronunciation-row" style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
 
                     <!-- Word info -->
                     <div class="pronunciation-word-display" style="flex:1;min-width:0;">
@@ -231,7 +235,7 @@ export const PronunciationMode = {
                     </div>
 
                     <!-- Mic + status + attempts + replay stacked -->
-                    <div style="display:flex;flex-direction:column;align-items:center;gap:8px;flex-shrink:0;">
+                    <div class="pronunciation-mic-col" style="display:flex;flex-direction:column;align-items:center;gap:8px;flex-shrink:0;">
                         <button class="mic-button" id="mic-btn" title="Click để phát âm" style="width:72px;height:72px;font-size:1.6em;">
                             <i class="fas fa-microphone"></i>
                         </button>

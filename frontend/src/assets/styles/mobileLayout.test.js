@@ -231,6 +231,38 @@ describe('hàng nút Gợi ý / Dừng thời gian / Bỏ qua', () => {
     });
 });
 
+describe('chế độ phát âm', () => {
+    test('thẻ chữ và cột mic xếp DỌC, không bóp ngang', () => {
+        // `flex-wrap: wrap` không cứu được: thẻ chữ có `flex:1; min-width:0` nên
+        // co được vô hạn và không bao giờ xuống dòng — chỉ hẹp dần cho tới khi
+        // chữ Hán phải xếp dọc từng nét.
+        const r = ruleFor('.pronunciation-row');
+        expect(r).toMatch(/flex-direction:\s*column\s*!important/);
+    });
+
+    test('dùng !important — bố cục gốc là inline style', () => {
+        // pronunciationMode.js viết bố cục bằng inline style, mà inline luôn
+        // thắng CSS ngoài. Thiếu !important là quy tắc không có tác dụng nào.
+        const r = ruleFor('.pronunciation-word-display');
+        expect(r).toMatch(/!important/);
+    });
+
+    test('cột mic thành hàng ngang để không chiếm hết màn', () => {
+        expect(ruleFor('.pronunciation-mic-col')).toMatch(/flex-direction:\s*row\s*!important/);
+    });
+
+    test('nút mic KHÔNG bị bóp — nó là đích chạm chính', () => {
+        expect(ruleFor('.pronunciation-mic-col .mic-button')).toMatch(/flex-shrink:\s*0/);
+    });
+});
+
+describe('ba lựa chọn nhanh chuyển vào menu bên', () => {
+    test('ẩn ở thanh trạng thái, hiện trong menu', () => {
+        expect(ruleFor('.status-bar-right')).toMatch(/display:\s*none/);
+        expect(ruleFor('.menu-quick-settings-wrap')).toMatch(/display:\s*block/);
+    });
+});
+
 describe('chế độ viết chữ Hán', () => {
     test('ĐỔI TRỤC: xếp ô theo cột, cuộn DỌC', () => {
         // Desktop xếp ngang/cuộn ngang (giống viết trên giấy). Bê nguyên xuống

@@ -694,6 +694,65 @@
         flex-shrink: 0;
     }
 
+    /* Số câu / độ khó / ngôn ngữ: CHUYỂN từ thanh trạng thái vào menu bên.
+       Thanh trạng thái trên màn hẹp đã phải chứa năng lượng, xu, XP — ba ô chọn
+       nữa là tràn. Menu bên thì đang thừa chỗ.
+       Đây là DI CHUYỂN, không phải nhân bản: cùng một component QuickSettings,
+       chỉ đổi `variant`. Hai bản chép rời sẽ lệch nhau ngay lần sửa đầu tiên. */
+    .status-bar-right {
+        display: none;
+    }
+
+    .menu-quick-settings-wrap {
+        display: block;
+    }
+
+    /* ── Chế độ phát âm ───────────────────────────────────────────────────
+       Thẻ chữ và cột mic nằm cạnh nhau, `flex-wrap: wrap`. Nhưng thẻ chữ có
+       `flex: 1; min-width: 0` nên nó co được VÔ HẠN và không bao giờ xuống
+       dòng — chỉ bị bóp hẹp dần cho tới khi chữ Hán phải xếp dọc từng nét.
+       `wrap` chỉ cứu được phần tử có bề rộng tối thiểu; đây thì không.
+
+       `!important` là bắt buộc: bố cục viết bằng inline style trong
+       pronunciationMode.js, mà inline luôn thắng CSS ngoài. */
+    .pronunciation-row {
+        flex-direction: column !important;
+        align-items: stretch !important;
+        gap: 12px !important;
+    }
+
+    .pronunciation-word-display {
+        flex: 0 0 auto !important;
+        width: 100%;
+    }
+
+    .pronunciation-word-display .word-to-pronounce {
+        padding: 12px 14px !important;
+        text-align: center;
+    }
+
+    /* Cột mic thành HÀNG NGANG: mic bên trái, trạng thái + số lần thử bên phải.
+       Xếp dọc thì mic + chữ + chấm + nút "Nghe lại" + chú thích chiếm gần hết
+       màn hình, đẩy phần kết quả nhận dạng xuống dưới cùng. */
+    .pronunciation-mic-col {
+        flex-direction: row !important;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 10px !important;
+    }
+
+    /* Nút mic là đích chạm chính — giữ nguyên cỡ, không cho co. */
+    .pronunciation-mic-col .mic-button {
+        flex-shrink: 0;
+    }
+
+    .pronunciation-mic-col .mic-status {
+        max-width: none !important;
+        flex: 1 1 auto;
+        min-width: 0;
+        text-align: left !important;
+    }
+
     /* ── Chế độ viết chữ Hán ──────────────────────────────────────────────
        Ô vẽ phải TO nhất có thể (viết bằng ngón tay, không phải chuột), nhưng
        phần bao quanh phải gọn lại để ô không bị đẩy khỏi màn hình. */
