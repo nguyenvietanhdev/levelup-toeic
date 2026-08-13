@@ -63,11 +63,23 @@
     gap: var(--spacing-md);
 }
 
+/* Hai nhóm CHIẾM BẰNG NHAU để `.nav-center` nằm giữa hàng THẬT.
+   Không có `flex: 1` thì mỗi nhóm rộng bằng nội dung của nó — trái có 2 nút +
+   avatar, phải có 4 nút, nên ô tìm bị đẩy lệch sang trái đúng bằng phần chênh.
+   `basis: 0` để phần chênh đó không tính vào: hai nhóm chia đôi chỗ còn lại
+   bất kể bên nào nhiều nút hơn. */
 .nav-left,
 .nav-right {
     display: flex;
     align-items: center;
     gap: var(--spacing-sm);
+    flex: 1 1 0;
+    min-width: 0;
+}
+
+/* Nhóm phải dồn về mép phải; nhóm trái đã tự bám mép trái. */
+.nav-right {
+    justify-content: flex-end;
 }
 
 /* Quick Difficulty Selector in Navbar */
@@ -105,7 +117,10 @@
 }
 
 .nav-center {
-    flex: 1;
+    /* Rộng gấp đôi mỗi nhóm nút: ba phần chia đều thì ô tìm hẹp bằng hàng nút,
+       mà nó là thứ hay dùng nhất trên hàng này. Vẫn nằm CHÍNH GIỮA vì hai nhóm
+       hai bên bằng nhau. */
+    flex: 2 1 0;
     display: flex;
     align-items: center;
     justify-content: center;

@@ -50,7 +50,11 @@
     .nav-left {
         order: 1;
         gap: 6px;
-        flex-shrink: 0;
+        /* `flex: 0 0 auto` chứ không chỉ `flex-shrink: 0`: layout.css đặt
+           `flex: 1 1 0` cho hai nhóm (để ô tìm nằm giữa hàng trên desktop).
+           Ở đây nav chỉ có một hàng chật, hai nhóm mà GIÃN ra thì ô tìm bị bóp
+           — phải huỷ cả `flex-grow`, không chỉ `flex-shrink`. */
+        flex: 0 0 auto;
         display: flex;
         align-items: center;
     }
@@ -66,7 +70,7 @@
     .nav-right {
         order: 3;
         gap: 4px;
-        flex-shrink: 0;
+        flex: 0 0 auto;
     }
 
     /* Quick difficulty selector compact on mobile */

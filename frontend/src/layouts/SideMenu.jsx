@@ -4,6 +4,7 @@ import { useAuth } from '@components/auth/AuthContext.jsx';
 import { useMenuBadges } from './useMenuBadges.js';
 import SeasonCountdown from '@components/season/SeasonCountdown.jsx';
 import QuickSettings from './QuickSettings.jsx';
+import { openUploadModal } from '@components/vocab/upload/openUploadModal.js';
 import { loadUnlocks, lockInfo } from '@game/featureUnlocks.js';
 import { Notification } from '@ui/Toaster.jsx';
 
@@ -19,6 +20,11 @@ const MENU_ITEMS = [
     // KHÔNG khoá theo level (không có `feature:`): nhiệm vụ và thành tích phát
     // vật phẩm ngay từ level 1, khoá túi đồ là người mới có đồ mà không có chỗ dùng.
     { label: 'Túi đồ',         icon: 'fa-briefcase',        screen: 'inventory-screen' },
+    // `action` thay cho `screen`: mục này mở MODAL chứ không điều hướng sang màn
+    // khác. Chuyển từ thanh nav xuống đây để nav bớt chật và icon tìm kiếm về
+    // được giữa hàng — nó không mang huy hiệu nào nên nằm trong menu không giấu
+    // mất thông tin gì (khác nút chuông, cái đó có số quà chưa nhận).
+    { label: 'Từ vựng riêng',  icon: 'fa-cloud-upload-alt', action: 'upload',              feature: 'feature:upload-vocab' },
     { label: 'Cài đặt',        icon: 'fa-cog',              screen: 'settings-screen' },
 ];
 
@@ -112,12 +118,17 @@ export default function SideMenu() {
                         const locked = guestLocked || levelLocked;
                         return (
                             <button
-                                key={item.screen}
-                                className={`menu-item${currentScreen === item.screen ? ' active' : ''}${locked ? ' is-locked' : ''}`}
+                                key={item.screen || item.action}
+                                className={`menu-item${item.screen && currentScreen === item.screen ? ' active' : ''}${locked ? ' is-locked' : ''}`}
                                 data-screen={item.screen}
                                 onClick={() => {
                                     if (guestLocked) return handleLockedClick();
                                     if (levelLocked) return handleLevelLockedClick(item, lv.requiredLevel);
+                                    if (item.action === 'upload') {
+                                        setMenuOpen(false);
+                                        openUploadModal();
+                                        return;
+                                    }
                                     handleNav(item.screen);
                                 }}
                                 title={guestLocked ? 'Đăng nhập để mở khóa'

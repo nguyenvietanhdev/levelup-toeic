@@ -12,7 +12,6 @@ import { PartSelector } from '@components/vocab/part/partSelector.js';
 import NotificationPanel from '@components/notifications/NotificationPanel.jsx';
 import FavoritesModal from '@components/favorites/FavoritesModal.jsx';
 import TopicModal from '@components/vocab/topic/TopicModal.jsx';
-import { openUploadModal } from '@components/vocab/upload/openUploadModal.js';
 import SpinWheelModal from '@components/spin/SpinWheelModal.jsx';
 import TranslateModal from '@components/translate/TranslateModal.jsx';
 import { isSpeechSupported, speechLangFor, createSpeechInput } from '@lib/speechInput.js';
@@ -142,7 +141,6 @@ export default function TopNav() {
     }, [isLoggedIn]);
     // Khách chưa login: các tính năng CẦN TÀI KHOẢN (từ vựng riêng, yêu thích)
     // hiện ổ khoá, bấm ra popup đăng nhập — không lưu server được thì mở cũng vô ích.
-    const uploadLock = isLoggedIn ? lockInfo('feature:upload-vocab') : { locked: true, guest: true };
     const favLock = isLoggedIn ? lockInfo('feature:favorites') : { locked: true, guest: true };
     const translateLock = isLoggedIn ? lockInfo('feature:translate') : { locked: false };
 
@@ -557,27 +555,10 @@ export default function TopNav() {
                 <button id="part-selector-btn" className="icon-btn" title="Chọn Part" onClick={handlePartSelector}>
                     <i className="fas fa-layer-group"></i>
                 </button>
-                <button
-                    id="upload-btn"
-                    className={`icon-btn${uploadLock.locked ? ' icon-btn--locked' : ''}`}
-                    title={uploadLock.guest ? 'Đăng nhập để mở khoá'
-                        : uploadLock.locked ? `Mở ở Level ${uploadLock.requiredLevel}` : 'Tải lên từ vựng'}
-                    onClick={() => {
-                        if (uploadLock.guest) return promptLogin();
-                        if (uploadLock.locked) {
-                            Notification.show({
-                                type: 'warning',
-                                title: `🔒 Cần Level ${uploadLock.requiredLevel}`,
-                                message: `Từ vựng riêng mở khi bạn đạt Level ${uploadLock.requiredLevel}.`,
-                                duration: 3500,
-                            });
-                            return;
-                        }
-                        openUploadModal();
-                    }}
-                >
-                    <i className={`fas ${uploadLock.locked ? 'fa-lock' : 'fa-cloud-upload-alt'}`}></i>
-                </button>
+                {/* Nút "Từ vựng riêng" đã chuyển sang MENU BÊN (SideMenu.jsx).
+                    Nav bớt một nút thì icon tìm kiếm về được giữa hàng, và nút
+                    này không mang huy hiệu nào nên nằm trong menu không giấu mất
+                    thông tin gì — khác nút chuông, cái đó có số quà chưa nhận. */}
                 <button
                     id="nav-favorite-btn"
                     className={`icon-btn${favLock.locked ? ' icon-btn--locked' : ''}`}
