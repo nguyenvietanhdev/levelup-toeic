@@ -18,6 +18,7 @@ import TranslateModal from '@components/translate/TranslateModal.jsx';
 import { isSpeechSupported, speechLangFor, createSpeechInput } from '@lib/speechInput.js';
 import { createHoldGesture } from '@lib/holdGesture.js';
 import { getVocabLang } from '@api/vocabulary.js';
+import { useHideOnScrollDown } from './useHideOnScrollDown.js';
 
 export default function TopNav() {
     const { user, resources, setMenuOpen, showScreen, menuOpen, currentScreen } = useGame();
@@ -37,6 +38,7 @@ export default function TopNav() {
     const menuHasDot = menuRewardCount === 0 && (menuBadges.online > 0 || menuBadges.shopDiscount > 0);
     const [searchQuery, setSearchQuery] = useState('');
     const [searchFocused, setSearchFocused] = useState(false);
+    const navHidden = useHideOnScrollDown();
     // Nhập bằng giọng nói. `speechOn` là trạng thái ĐANG NGHE để vẽ nút; bản thân
     // phiên nhận dạng nằm trong ref vì nó không phải dữ liệu render.
     const [speechOn, setSpeechOn] = useState(false);
@@ -356,7 +358,15 @@ export default function TopNav() {
 
     return (
         <>
-        <nav className={`top-nav${searchFocused ? ' search-active' : ''}`}>
+        <nav className={[
+            'top-nav',
+            searchFocused ? 'search-active' : '',
+            // Ẩn khi cuộn XUỐNG, hiện lại khi cuộn LÊN (chỉ có tác dụng ở khổ
+            // điện thoại — xem responsive.css). Nhưng KHÔNG ẩn khi đang gõ tìm:
+            // ô nhập nằm trong chính thanh này, ẩn đi là người dùng mất chỗ gõ
+            // giữa chừng.
+            navHidden && !searchFocused ? 'nav-hidden' : '',
+        ].filter(Boolean).join(' ')}>
             <div className="nav-left">
                 <button id="menu-btn" className="icon-btn" onClick={() => setMenuOpen(!menuOpen)} style={{ position: 'relative' }}>
                     <i className="fas fa-bars"></i>

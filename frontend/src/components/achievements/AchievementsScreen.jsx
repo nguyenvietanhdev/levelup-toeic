@@ -217,7 +217,10 @@ export default function AchievementsScreen({ active }) {
                 )}
                 {claimableCount > 0 && (
                     <button
-                        className="btn btn-primary btn-sm"
+                        // Cùng class với nút bên Nhiệm vụ để CSS ẩn được cả hai ở
+                        // khổ điện thoại — hàng tiêu đề không đủ chỗ. Nhận từng
+                        // cái vẫn được, chỉ mất lối tắt.
+                        className="btn btn-primary btn-sm quest-claim-all-btn"
                         style={{ marginLeft: achievements.length > 0 ? 12 : 'auto', whiteSpace: 'nowrap' }}
                         disabled={claimingAll}
                         onClick={handleClaimAll}

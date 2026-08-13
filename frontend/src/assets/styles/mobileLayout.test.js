@@ -326,11 +326,55 @@ describe('tiêu đề màn hình không vỡ dòng giữa từ', () => {
     });
 });
 
-describe('nút "Nhận tất cả" ở tab Nhiệm vụ', () => {
+describe('nút "Nhận tất cả" — cả Nhiệm vụ lẫn Thành tích', () => {
     test('ẩn trên điện thoại, có class riêng để nhắm được', () => {
-        // Hàng tiêu đề đã có quay lại + tiêu đề + Điểm danh + Làm mới; thêm nút
-        // này là xuống dòng. Nhận từng nhiệm vụ vẫn được, chỉ mất lối tắt.
+        // Hàng tiêu đề đã có quay lại + tiêu đề + 2 nút nữa. Nhận từng cái vẫn
+        // được, chỉ mất lối tắt.
         expect(ruleFor('.quest-claim-all-btn')).toMatch(/display:\s*none/);
+    });
+
+    test('CHỈ MỘT quy tắc — hai bản là sửa một chỗ, chỗ kia vẫn cũ', () => {
+        expect((mobileBlock().match(/\.quest-claim-all-btn\s*\{/g) || [])).toHaveLength(1);
+    });
+});
+
+describe('dòng cài đặt xếp DỌC — gốc của việc vỡ chữ', () => {
+    test('mô tả ở trên, ô điều khiển ở dưới', () => {
+        // Hàng ngang + `.setting-info { flex:1; min-width:0 }` = mô tả co được
+        // vô hạn, ô chọn đẩy nó về gần 0 và chữ rơi thành MỘT CHỮ MỖI DÒNG.
+        const r = ruleFor('.setting-item');
+        expect(r).toMatch(/flex-direction:\s*column/);
+        expect(r).toMatch(/align-items:\s*stretch/);
+    });
+
+    test('ô điều khiển trải hết bề ngang', () => {
+        // Dropdown rộng 2 chữ thì chẳng đọc được lựa chọn nào.
+        expect(ruleFor('.setting-item > *:not(.setting-info)')).toMatch(/width:\s*100%/);
+    });
+});
+
+describe('đếm ngược "Reset sau" ở Thống kê', () => {
+    test('ẩn trên điện thoại', () => {
+        // Thông tin chỉ cần biết mỗi tháng một lần, mà chiếm nguyên một khối
+        // trong hàng tiêu đề; nút "Xuất báo cáo" cạnh đó đã có chấm nhắc.
+        expect(ruleFor('.stats-reset-bar')).toMatch(/display:\s*none/);
+    });
+});
+
+describe('nav trượt ẩn theo hướng cuộn', () => {
+    test('cuộn xuống thì trượt khỏi màn, không phải biến mất đột ngột', () => {
+        const r = ruleFor('.top-nav.nav-hidden');
+        expect(r).toMatch(/transform:\s*translateY\(100%\)/);
+        expect(r).not.toMatch(/display:\s*none/);
+    });
+
+    test('đã trượt ra ngoài thì KHÔNG bắt chạm nữa', () => {
+        // Thiếu dòng này là vùng đáy màn hình vẫn nuốt cú chạm của nội dung.
+        expect(ruleFor('.top-nav.nav-hidden')).toMatch(/pointer-events:\s*none/);
+    });
+
+    test('có chuyển động — biến mất đột ngột thì tưởng hỏng', () => {
+        expect(mobileBlock()).toMatch(/transition:\s*transform/);
     });
 });
 

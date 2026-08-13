@@ -5,50 +5,7 @@ import { EventBus, GameEvents } from '@game/eventBus.js';
 import { Utils } from '@lib/utils.js';
 import { Energy } from '@game/energy.js';
 import QuickSettings from './QuickSettings.jsx';
-
-// Cấp độ → dải level thực tế dùng để LỌC từ vựng (phải khớp SettingsScreen).
-
-// Cuộn xuống bao nhiêu mới bắt đầu giấu thanh. Dưới mốc này luôn hiện — ở đầu
-// trang mà thanh chớp tắt theo từng cú lăn chuột thì rất khó chịu.
-const HIDE_AFTER = 90;
-// Ngưỡng chống rung: chuột lăn nhẹ hoặc màn cảm ứng nảy vài pixel không được
-// tính là "đổi hướng".
-const DELTA = 6;
-
-/**
- * Ẩn khi cuộn XUỐNG, hiện lại khi cuộn LÊN — trả lại ~36px chiều cao lúc đang
- * đọc, mà muốn xem ⚡/xu thì chỉ cần lăn ngược một chút, không phải về đỉnh trang.
- */
-function useHideOnScrollDown() {
-    const [hidden, setHidden] = useState(false);
-
-    useEffect(() => {
-        let last = window.scrollY;
-        let ticking = false;
-
-        const update = () => {
-            ticking = false;
-            const y = window.scrollY;
-            const diff = y - last;
-            if (Math.abs(diff) < DELTA) return;   // rung lặt vặt → bỏ qua
-            last = y;
-            setHidden(y > HIDE_AFTER && diff > 0);
-        };
-
-        // rAF: sự kiện scroll bắn dày đặc, gom về mỗi khung hình một lần.
-        const onScroll = () => {
-            if (ticking) return;
-            ticking = true;
-            requestAnimationFrame(update);
-        };
-
-        window.addEventListener('scroll', onScroll, { passive: true });
-        return () => window.removeEventListener('scroll', onScroll);
-    }, []);
-
-    return hidden;
-}
-
+import { useHideOnScrollDown } from './useHideOnScrollDown.js';
 function computeSessionLabel() {
     const s = GameState.state?.settings || {};
     let mode;

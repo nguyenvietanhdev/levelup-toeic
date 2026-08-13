@@ -437,9 +437,43 @@
         padding: 16px;
     }
 
+    /* Mỗi dòng cài đặt xếp DỌC: mô tả ở trên, ô điều khiển ở dưới.
+       Trước đây là hàng ngang với `.setting-info { flex: 1; min-width: 0 }` —
+       co được vô hạn, nên ô chọn ("Tuỳ chỉnh…" + 750) đẩy phần mô tả về gần 0
+       và chữ rơi xuống thành MỘT CHỮ MỖI DÒNG. Đây mới là gốc của việc vỡ chữ
+       ở màn Cài đặt, không phải `align-items` của khung ngoài. */
     .setting-item {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 8px;
         padding: 12px 0;
         font-size: 14px;
+    }
+
+    /* Ô điều khiển trải hết bề ngang — dropdown 2 chữ thì chẳng đọc được gì. */
+    .setting-item > *:not(.setting-info) {
+        width: 100%;
+    }
+
+    .setting-item select,
+    .setting-item input[type="number"],
+    .setting-item input[type="text"] {
+        width: 100%;
+        min-width: 0;
+    }
+
+    /* Nút "Nhận tất cả" (Nhiệm vụ + Thành tích) — ẩn ở khổ này.
+       Hàng tiêu đề đã có quay lại + tiêu đề + 2 nút nữa. */
+    .quest-claim-all-btn {
+        display: none;
+    }
+
+    /* Đếm ngược "Reset sau" ở tab Thống kê: ẩn.
+       Nó chiếm nguyên một khối trong hàng tiêu đề cho một thông tin chỉ cần
+       biết mỗi tháng một lần — mà nút "Xuất báo cáo" ngay cạnh đã có chấm nhắc
+       khi sắp hết tháng. */
+    .stats-reset-bar {
+        display: none;
     }
 
     /* Buttons */
@@ -525,6 +559,19 @@
         box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.25);
         /* Vùng vuốt của iPhone nằm ngay dưới; không chừa thì hàng nút bị nó đè. */
         padding-bottom: calc(8px + env(safe-area-inset-bottom, 0px));
+        /* Cho việc trượt ẩn/hiện theo hướng cuộn (.nav-hidden bên dưới). */
+        transition: transform 0.25s ease;
+    }
+
+    /* Cuộn XUỐNG thì trượt khỏi màn, cuộn LÊN thì trở lại (class do TopNav gắn).
+       Trượt xuống dưới `translateY` chứ không `display: none`: có chuyển động
+       thì người dùng thấy nó đi đâu và biết cách gọi lại, còn biến mất đột ngột
+       thì tưởng hỏng.
+       KHÔNG dùng `visibility` — nav vẫn phải chiếm chỗ 0 và không bắt chạm khi
+       đã trượt ra ngoài. */
+    .top-nav.nav-hidden {
+        transform: translateY(100%);
+        pointer-events: none;
     }
 
     /* Chừa chỗ cuối trang đúng bằng chiều cao nav.
@@ -806,14 +853,6 @@
         flex: 0 0 auto;
         font-size: 12px;
         padding: 5px 10px;
-    }
-
-    /* Nút "Nhận tất cả" ở tab Nhiệm vụ — ẩn trên điện thoại.
-       Hàng tiêu đề đã có nút quay lại + tiêu đề + Điểm danh + Làm mới; thêm nút
-       này là xuống dòng và trông vỡ. Nhận từng nhiệm vụ vẫn được, chỉ mất lối
-       tắt — mất một lối tắt còn hơn hỏng cả hàng tiêu đề. */
-    .quest-claim-all-btn {
-        display: none;
     }
 
     /* Cài đặt dạng accordion: quy tắc nằm ở components.css (@media 640px) để
