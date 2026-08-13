@@ -198,7 +198,7 @@ describe('ô tìm kiếm thu gọn thành nút kính lúp', () => {
     test('mic KHÔNG kéo chồng lên ô nữa ở khổ điện thoại', () => {
         // Trên máy tính margin âm kéo nó vào trong ô cho đẹp; ở đây nó đứng
         // riêng nên margin âm sẽ làm hai thứ đè nhau.
-        expect(ruleFor('.mic-btn')).toMatch(/margin-left:\s*0/);
+        expect(mobileBlock()).toMatch(/\.mic-btn\s*\{[^}]*margin-left:\s*0/);
     });
 
     test('dùng đúng tên class của nút mic', () => {
@@ -209,40 +209,47 @@ describe('ô tìm kiếm thu gọn thành nút kính lúp', () => {
         expect(b).not.toMatch(/\.speech-btn/);
     });
 
-    test('ô bung ra CHỪA nhóm trái và chừa chỗ nút sáng/tối', () => {
-        // Trước đây `left: 8px; right: 8px` phủ trọn hàng: nhóm nút phải bị che
-        // một nửa (nhìn như vỡ giao diện), còn menu bên trái cũng bị đè mất.
+    test('ô bung ra NỔI LÊN TRÊN nav, không chen trong hàng nút', () => {
+        // Đặt tuyệt đối bên TRONG nav thì nhìn như ô đang đè lên thanh. Bay lên
+        // lớp riêng (`bottom: 100%`) thì đọc ra ngay là "một lớp vừa mở".
+        expect(ruleFor('.top-nav.search-active .search-bar')).toMatch(/bottom:\s*calc\(100%/);
+    });
+
+    test('lớp đó có nền + bóng của chính nó', () => {
+        // Trong suốt thì vẫn trông như dính vào nav — nền mới là thứ tách nó ra.
         const r = ruleFor('.top-nav.search-active .search-bar');
-        expect(r).toMatch(/left:\s*\d{2,}px/);
-        expect(r).toMatch(/right:\s*\d{2}px/);
+        expect(r).toMatch(/background:\s*var\(--bg-primary\)/);
+        expect(r).toMatch(/box-shadow:/);
     });
 });
 
-describe('mic và sáng/tối đi CÙNG ô tìm', () => {
-    test('ô đang thu: cả hai đều ẩn, nav chỉ còn kính lúp', () => {
-        // Chúng chỉ có nghĩa khi đang gõ/nói; để rời rạc là ba nút chen chỗ.
-        expect(ruleFor('.mic-btn,\n    #theme-toggle-btn')).toMatch(/display:\s*none/);
+describe('mic đi cùng ô tìm; sáng/tối ở lại nav', () => {
+    test('ô đang thu: mic ẩn', () => {
+        // Mic chỉ có nghĩa khi đang gõ/nói.
+        expect(ruleFor('.mic-btn')).toMatch(/display:\s*none/);
     });
 
-    test('ô đang bung: cả hai hiện ra cùng nó', () => {
-        expect(ruleFor('.top-nav.search-active .mic-btn')).toMatch(/display:\s*flex/);
-        expect(ruleFor('.top-nav.search-active #theme-toggle-btn')).toMatch(/display:\s*inline-flex/);
+    test('ô đang bung: mic hiện lại, nằm trong lớp vừa mở', () => {
+        const r = ruleFor('.top-nav.search-active .mic-btn');
+        expect(r).toMatch(/display:\s*flex/);
+        expect(r).toMatch(/bottom:\s*calc\(100%/);
     });
 
-    test('cả hai NỔI lên trên ô tìm — ô phủ ngang bằng absolute', () => {
-        // Thiếu z-index là chính ô tìm che mất hai nút vừa cho hiện.
-        expect(ruleFor('.top-nav.search-active .mic-btn')).toMatch(/z-index:\s*10[1-9]/);
-        expect(ruleFor('.top-nav.search-active #theme-toggle-btn')).toMatch(/z-index:\s*10[1-9]/);
+    test('nút sáng/tối KHÔNG bị ẩn — nó ở lại nav', () => {
+        // Nó chiếm chỗ nút yêu thích; đổi nền là thứ hay dùng ngay tại chỗ.
+        expect(mobileBlock()).not.toMatch(/#theme-toggle-btn[^{]*\{[^}]*display:\s*none/);
     });
 
-    test('các nút CÒN LẠI của nhóm phải mới ẩn, không ẩn cả nhóm', () => {
-        // Ẩn cả nhóm bằng `visibility` là giấu luôn nút sáng/tối vừa cho hiện.
-        expect(ruleFor('.top-nav.search-active .nav-right > *:not(#theme-toggle-btn)'))
-            .toMatch(/display:\s*none/);
-    });
-
-    test('nút từ vựng yêu thích ẩn hẳn ở khổ này', () => {
+    test('nút từ vựng yêu thích ẩn — nhường chỗ cho sáng/tối', () => {
+        // Ẩn phần tử thứ 4 thì thứ 5 (sáng/tối) tự lùi lên chỗ đó, tránh mép
+        // phải nơi Android vuốt Back.
         expect(ruleFor('#nav-favorite-btn')).toMatch(/display:\s*none/);
+    });
+
+    test('nav KHÔNG bị ẩn phần nào khi ô tìm mở', () => {
+        // Ô đã bay lên lớp trên nên không che gì; ẩn nav lúc này là cướp mất
+        // menu và nút sáng/tối đúng lúc người dùng có thể cần.
+        expect(mobileBlock()).not.toMatch(/search-active \.nav-right\s*\{[^}]*visibility:\s*hidden/);
     });
 });
 
@@ -350,6 +357,34 @@ describe('dòng cài đặt xếp DỌC — gốc của việc vỡ chữ', () =
     test('ô điều khiển trải hết bề ngang', () => {
         // Dropdown rộng 2 chữ thì chẳng đọc được lựa chọn nào.
         expect(ruleFor('.setting-item > *:not(.setting-info)')).toMatch(/width:\s*100%/);
+    });
+});
+
+describe('popup Vòng quay', () => {
+    test('không còn khoá cứng 660px', () => {
+        // 660px trên màn 360px là tràn ra ngoài, và cột phải bị bóp tới mức chữ
+        // xếp dọc từng chữ.
+        expect(ruleFor('.spin-modal-wide')).toMatch(/width:\s*calc\(100vw/);
+    });
+
+    test('hai cột xếp DỌC: bánh xe trên, bảng thưởng dưới', () => {
+        expect(ruleFor('.spin-layout')).toMatch(/flex-direction:\s*column/);
+    });
+
+    test('bánh xe co theo màn và giữ hình VUÔNG', () => {
+        const r = ruleFor('.spin-canvas');
+        expect(r).toMatch(/width:\s*min\(\d+vw/);
+        expect(r).toMatch(/aspect-ratio:\s*1\s*\/\s*1/);
+    });
+});
+
+describe('khoảng cách bị sát', () => {
+    test('tiêu đề "Thống kê của bạn" không dính lưới ô bên dưới', () => {
+        expect(ruleFor('.stats-section h2')).toMatch(/margin-bottom:/);
+    });
+
+    test('thanh tìm cài đặt không dính phần bên dưới', () => {
+        expect(ruleFor('.settings-search')).toMatch(/margin-bottom:/);
     });
 });
 

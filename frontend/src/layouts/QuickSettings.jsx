@@ -126,8 +126,8 @@ export default function QuickSettings({ variant = 'bar' }) {
         window.location.reload();
     };
 
-    const handleToggleReverse = () => {
-        const next = !reverseMode;
+    const handleReverse = (next) => {
+        if (next === reverseMode) return;
         setReverseMode(next);
         localStorage.setItem('reverseMode', String(next));
         Notification.success(next
@@ -191,34 +191,35 @@ export default function QuickSettings({ variant = 'bar' }) {
                     </select>
                 </div>
 
-                {/* Đảo chiều hỏi–đáp. CHỈ hiện khi đã đăng nhập: khách chưa có
-                    hồ sơ nên mọi lựa chọn của họ đều mất khi đóng trình duyệt —
-                    bày ra rồi để nó bốc hơi thì tệ hơn là không bày.
-                    Nút đổi ngôn ngữ bên dưới thì vẫn hiện, ở dạng khoá, vì nó
-                    NÓI RÕ lý do khi bấm (mời đăng nhập). */}
+                {/* Đảo chiều hỏi–đáp. Dùng <select> chứ không phải nút bật/tắt:
+                    hai chiều là hai LỰA CHỌN ngang hàng, và select cho thấy cả
+                    hai cùng lúc — nút chỉ hiện chiều đang dùng, người dùng phải
+                    bấm thử mới biết chiều kia là gì. Nó cũng đồng bộ với hai ô
+                    chọn ngay phía trên.
+
+                    CHỈ hiện khi đã đăng nhập: khách chưa có hồ sơ nên lựa chọn
+                    của họ mất khi đóng trình duyệt — bày ra rồi để nó bốc hơi
+                    thì tệ hơn là không bày. Nút đổi ngôn ngữ bên dưới vẫn hiện
+                    ở dạng khoá vì nó NÓI RÕ lý do khi bấm. */}
                 {isLoggedIn && (
                     <>
-                        <label className="menu-quick-label">Chiều luyện tập</label>
-                        <button
-                            onClick={handleToggleReverse}
-                            title={reverseMode
-                                ? 'Đang hỏi bằng Tiếng Việt — bấm để đổi lại'
-                                : 'Đang hỏi bằng từ đang học — bấm để đảo chiều'}
-                            style={{
-                                display: 'flex', alignItems: 'center', gap: '6px',
-                                width: '100%', padding: '3px 8px',
-                                border: '1px solid var(--border-color)', borderRadius: '20px',
-                                background: 'var(--bg-secondary)', color: 'var(--text-primary)',
-                                fontSize: '12px', fontWeight: 500, cursor: 'pointer',
-                            }}
-                        >
-                            <i className="fas fa-right-left"></i>
-                            <span>
-                                {reverseMode
-                                    ? `Tiếng Việt → ${vocabLang === 'en' ? 'Tiếng Anh' : 'Tiếng Trung'}`
-                                    : `${vocabLang === 'en' ? 'Tiếng Anh' : 'Tiếng Trung'} → Tiếng Việt`}
-                            </span>
-                        </button>
+                        <label className="menu-quick-label" htmlFor="menu-reverse-select">
+                            Chiều luyện tập
+                        </label>
+                        <div className="quick-difficulty-selector">
+                            <select
+                                id="menu-reverse-select"
+                                value={reverseMode ? 'reverse' : 'normal'}
+                                onChange={(e) => handleReverse(e.target.value === 'reverse')}
+                            >
+                                <option value="normal">
+                                    {vocabLang === 'en' ? 'Tiếng Anh' : 'Tiếng Trung'} → Tiếng Việt
+                                </option>
+                                <option value="reverse">
+                                    Tiếng Việt → {vocabLang === 'en' ? 'Tiếng Anh' : 'Tiếng Trung'}
+                                </option>
+                            </select>
+                        </div>
                     </>
                 )}
 

@@ -107,10 +107,23 @@ describe('nút đảo chiều luyện tập', () => {
         expect(quick).toMatch(/localStorage\.setItem\('reverseMode', String\(next\)\)/);
     });
 
-    test('nhãn nói rõ chiều hiện tại, theo ĐÚNG ngôn ngữ đang học', () => {
+    test('nhãn nói rõ chiều, theo ĐÚNG ngôn ngữ đang học', () => {
         // "Tiếng Anh → Tiếng Việt" hay "Tiếng Việt → Tiếng Trung" tuỳ vocabLang;
         // ghi cứng "EN/VN" là sai khi người dùng đang học tiếng Trung.
         expect(quick).toMatch(/vocabLang === 'en' \? 'Tiếng Anh' : 'Tiếng Trung'/);
+    });
+
+    test('dùng <select>, không phải nút bật/tắt', () => {
+        // Hai chiều là hai LỰA CHỌN ngang hàng; select cho thấy cả hai cùng lúc,
+        // còn nút chỉ hiện chiều đang dùng nên phải bấm thử mới biết chiều kia.
+        expect(quick).toMatch(/id="menu-reverse-select"/);
+        expect(quick).toMatch(/<option value="normal">/);
+        expect(quick).toMatch(/<option value="reverse">/);
+    });
+
+    test('chọn lại đúng giá trị đang dùng thì không làm gì', () => {
+        // Không chặn thì mỗi lần chạm là một thông báo thừa.
+        expect(quick).toMatch(/if \(next === reverseMode\) return/);
     });
 });
 

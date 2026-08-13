@@ -462,6 +462,63 @@
         min-width: 0;
     }
 
+    /* ── Popup Vòng quay ──────────────────────────────────────────────────
+       `width: 660px` cố định + hai cột (bánh xe trái · bảng thưởng phải). Trên
+       màn 360px cột phải bị bóp tới mức chữ xếp dọc từng chữ, và cả hộp tràn
+       ra ngoài. Xếp DỌC: bánh xe trên, bảng thưởng dưới. */
+    .spin-modal-wide {
+        width: calc(100vw - 20px);
+        max-width: 100%;
+        max-height: 88dvh;
+    }
+
+    .spin-layout {
+        flex-direction: column;
+        gap: 12px;
+        /* Cuộn theo chiều DỌC ở đây thay vì để riêng cột phải cuộn — xếp dọc
+           rồi thì cả hai phần là một mạch. */
+        overflow-y: auto;
+        overflow-x: hidden;
+    }
+
+    .spin-col-left,
+    .spin-col-right {
+        width: 100%;
+        flex: 0 0 auto;
+        overflow: visible;
+    }
+
+    /* Bánh xe co theo bề ngang màn, giữ hình vuông. */
+    .spin-canvas {
+        width: min(72vw, 260px);
+        height: auto;
+        aspect-ratio: 1 / 1;
+    }
+
+    /* Bảng thưởng: các ô nằm NGANG và cuộn, thay vì một cột chữ dọc. */
+    .spin-col-right {
+        display: flex;
+        flex-direction: row;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 8px;
+    }
+
+    /* ── Chân trang: 4 ô thống kê ─────────────────────────────────────────
+       Tiêu đề "Thống kê của bạn" sát ngay lưới ô bên dưới. */
+    .stats-section h2 {
+        margin-bottom: 12px;
+    }
+
+    .stats-section {
+        padding-bottom: 16px;
+    }
+
+    /* ── Thanh tìm cài đặt sát phần dưới ──────────────────────────────── */
+    .settings-search {
+        margin-bottom: 12px;
+    }
+
     /* Nút "Nhận tất cả" (Nhiệm vụ + Thành tích) — ẩn ở khổ này.
        Hàng tiêu đề đã có quay lại + tiêu đề + 2 nút nữa. */
     .quest-claim-all-btn {
@@ -667,16 +724,15 @@
         margin-left: 0;
     }
 
-    /* Ô tìm ĐANG THU: chỉ còn đúng nút kính lúp trên nav.
-       Mic và nút sáng/tối là bạn đồng hành của ô tìm — chúng chỉ có nghĩa khi
-       đang gõ/nói, nên giấu cùng nhau thay vì để ba nút rời rạc chen chỗ. */
-    .mic-btn,
-    #theme-toggle-btn {
+    /* Mic chỉ có nghĩa khi đang gõ/nói → giấu cùng ô tìm.
+       Nút sáng/tối thì KHÁC: nó ở lại nav, chiếm chỗ nút yêu thích. Yêu thích
+       vào được qua menu bên; còn đổi nền là thứ hay dùng ngay tại chỗ.
+       Vị trí thứ 4 (không phải cuối hàng): mép phải là nơi Android vuốt Back,
+       để nút ở đó là dễ chạm nhầm. */
+    .mic-btn {
         display: none;
     }
 
-    /* Nút từ vựng yêu thích: ẩn hẳn ở khổ này. Vào được qua menu bên, còn
-       hàng nav thì mỗi chỗ trống đều đáng giá. */
     #nav-favorite-btn {
         display: none;
     }
@@ -695,43 +751,39 @@
        cả 5 nút (5×32 + gap ≈ 180px) thì ô tìm chỉ còn ~140px trên màn 360 —
        chật hơn cả lúc chưa thu. Ẩn hẳn là dứt khoát: gõ xong bấm ra ngoài,
        nhóm nút trở lại. */
+    /* Ô tìm khi bung ra: NỔI HẲN LÊN TRÊN nav thành một lớp riêng.
+       Bản trước đặt nó tuyệt đối bên TRONG nav, chừa hai mép cho các nút — nhìn
+       như ô đang đè lên thanh chứ không phải một lớp mới. Giờ nó bay lên phía
+       trên nav (`bottom: 100%`) với nền + viền + bóng của chính nó, nên đọc ra
+       ngay là "một lớp vừa mở", còn nav nguyên vẹn bên dưới và vẫn bấm được. */
     .top-nav.search-active .search-bar {
         position: absolute;
-        /* Chừa nhóm TRÁI (menu · trang chủ · chuông = 3 nút 32px + gap) để menu
-           vẫn bấm được — đó là lối thoát khi ô đang chiếm màn. Nhóm phải thì ẩn
-           hẳn (dưới đây) vì chừa cho cả 5 nút nữa thì ô chẳng còn bao nhiêu. */
-        left: 124px;
-        /* Chừa mép phải cho nút sáng/tối — nó hiện CÙNG ô tìm nên không được
-           để ô đè lên. 44px = nút 32px + lề. */
-        right: 44px;
+        left: 8px;
+        right: 8px;
+        bottom: calc(100% + 6px);
         width: auto;
         min-width: 0;
         z-index: 100;
+        padding: 6px;
+        border-radius: 12px;
+        background: var(--bg-primary);
+        border: 1px solid var(--border-color);
+        box-shadow: 0 -6px 20px rgba(0, 0, 0, 0.35);
     }
 
     /* Ô tìm ĐANG BUNG: mic và sáng/tối hiện ra CÙNG nó.
        Đây là lúc chúng có ích — nói để tìm, và đọc kết quả nên cần chỉnh nền. */
-    /* Mic nằm TRONG ô tìm đang bung (ô phủ ngang bằng `absolute`), nên phải
-       nổi lên trên nó — không thì bị chính ô che mất. */
+    /* Mic hiện lại CÙNG ô tìm, nằm ở mép phải bên trong lớp vừa mở. */
     .top-nav.search-active .mic-btn {
         display: flex;
         position: absolute;
-        right: 52px;
+        right: 16px;
+        bottom: calc(100% + 13px);
         z-index: 101;
     }
 
-    .top-nav.search-active #theme-toggle-btn {
-        display: inline-flex;
-        /* Nổi lên trên ô tìm đang phủ ngang, nếu không thì bị nó che. */
-        position: relative;
-        z-index: 101;
-    }
-
-    /* Nhóm phải vẫn hiện (để lộ nút sáng/tối) nhưng các nút CÒN LẠI thì ẩn —
-       ẩn cả nhóm bằng `visibility` như bản trước là giấu luôn nút sáng/tối. */
-    .top-nav.search-active .nav-right > *:not(#theme-toggle-btn) {
-        display: none;
-    }
+    /* Nav giữ NGUYÊN khi ô tìm mở — ô đã bay lên lớp trên nên không che gì,
+       và người dùng vẫn bấm được menu / trang chủ / sáng-tối. */
 
     .top-nav.search-active .search-bar input {
         color: var(--text-primary);
