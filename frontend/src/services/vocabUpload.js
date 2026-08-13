@@ -17,6 +17,16 @@ const capFirst = s => (s ? s.charAt(0).toUpperCase() + s.slice(1) : '');
  */
 export function normalizeVocabItem(obj) {
     return {
+        // `lang` quyết định GIỌNG ĐỌC của từ (models/UserUpload.js). Bỏ qua nó thì
+        // mọi từ nhập bằng JSON mặc định 'en' — chữ Hán đọc bằng giọng Anh, ra
+        // một tràng vô nghĩa mà không có lỗi nào. Prompt cho AI đã yêu cầu trả về
+        // trường này; không nhận ở đây là hứa suông.
+        //
+        // Không có `lang` thì ĐOÁN theo mặt chữ, đừng mặc định 'en': file JSON cũ
+        // (viết trước khi có trường này) vẫn phải đọc đúng giọng.
+        lang: obj.lang === 'zh' || obj.lang === 'en'
+            ? obj.lang
+            : (/[一-鿿]/.test(String(obj.en || '')) ? 'zh' : 'en'),
         en: lower(obj.en),
         vn: lower(obj.vn),
         part: upper(obj.part),

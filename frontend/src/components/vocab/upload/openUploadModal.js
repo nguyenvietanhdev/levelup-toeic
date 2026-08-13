@@ -14,6 +14,7 @@ import { normalizeVocabItem } from '@/services/vocabUpload.js';
 import { downloadWords } from '@/services/vocabExport.js';
 import { GameLogic } from '@game/gameLogic.js';
 import { wordLang, ttsLangOf } from '@lib/wordLang.js';
+import { getVocabLang } from '@api/vocabulary.js';
 import { Notification } from '@ui/Toaster.jsx';
 
 // Tên hiển thị cho các nguồn do hệ thống tạo. Nguồn người dùng tự đặt thì giữ
@@ -130,6 +131,12 @@ export function openUploadModal({ tab } = {}) {
                         style="width:100%;padding:8px 10px;border:1px solid var(--border-color);border-radius:6px;font-size:13px;background:var(--bg-tertiary,var(--bg-secondary));color:var(--text-primary);text-transform:uppercase">
                 </div>
             </div>
+            <label style="display:flex;align-items:center;gap:8px;margin-bottom:10px;font-size:12px;color:var(--text-secondary);cursor:pointer">
+                <input type="checkbox" id="json-with-image" style="width:15px;height:15px;cursor:pointer;accent-color:var(--primary-color)">
+                <span>Kèm đường dẫn ảnh minh hoạ
+                    <span style="color:var(--text-tertiary,#94a3b8)">— bỏ chọn thì <code>image</code> để trống, tránh AI bịa đường dẫn không tồn tại</span>
+                </span>
+            </label>
             <button id="json-copy-prompt-btn" class="btn btn-primary" style="width:100%;margin-bottom:14px;font-size:13px">
                 <i class="fas fa-copy"></i> Copy Prompt cho AI
             </button>
@@ -197,28 +204,61 @@ export function openUploadModal({ tab } = {}) {
             document.getElementById('json-copy-prompt-btn')?.addEventListener('click', () => {
                 const source = (document.getElementById('json-source')?.value.trim() || 'ets2026').toLowerCase();
                 const part   = (document.getElementById('json-part')?.value.trim() || 'PART').toUpperCase();
+                const isZh = getVocabLang() === 'zh';
+                const withImage = document.getElementById('json-with-image')?.checked;
+
+                // Prompt phải theo ĐÚNG ngôn ngữ đang học.
+                //
+                // Bản cũ cứng tiếng Anh ("từ tiếng anh", "phiên âm IPA", "câu ví
+                // dụ bằng tiếng anh"). Người học tiếng Trung dán danh sách chữ Hán
+                // vào thì AI trả về JSON có `phonetic` là IPA và ví dụ tiếng Anh —
+                // sai kiểu dữ liệu ngay từ nguồn, mà chỉ phát hiện ra sau khi đã
+                // nhập cả trăm từ.
+                //
+                // `lang` cũng phải nằm trong prompt: nó quyết định giọng đọc
+                // (models/UserUpload.js). Thiếu thì mọi từ Hán mặc định 'en' và
+                // đọc bằng giọng Anh — ra một tràng vô nghĩa, không có lỗi nào.
+                const wordLabel = isZh ? 'từ tiếng Trung (chữ Hán giản thể)' : 'từ tiếng anh (viết thường)';
+                const phoneticLabel = isZh
+                    ? 'pinyin CÓ DẤU THANH, vd: nǐ hǎo (bắt buộc, không để trống)'
+                    : '/phiên âm IPA/ (nếu không có thì để chuỗi rỗng)';
+                const exampleLabel = isZh
+                    ? 'Câu ví dụ bằng tiếng Trung.'
+                    : 'Câu ví dụ bằng tiếng anh (viết hoa chữ cái đầu câu).';
+                const levelLabel = isZh ? 'HSK1 / HSK2 / HSK3 / HSK4 / HSK5 / HSK6' : 'A1 / A2 / B1 / B2 / C1 / C2';
+                const langValue = isZh ? 'zh' : 'en';
+
+                const imageLine = withImage
+                    ? `\n  "image": "images/pages/${part.toLowerCase()}/ten_tu_viet_thuong_gach_duoi.jpg",`
+                    : `\n  "image": "",`;
+                const imageRule = withImage
+                    ? `\n- "image" → dùng định dạng: images/pages/${part.toLowerCase()}/ten_tu.jpg (gạch dưới thay khoảng trắng)`
+                    : `\n- "image" → LUÔN để chuỗi rỗng "" (không tự bịa đường dẫn ảnh)`;
+
                 const prompt = `Chuyển danh sách từ vựng sau sang định dạng JSON. Trả về ĐÚNG một mảng JSON, không có giải thích thêm.
 
 Mỗi từ có cấu trúc:
 {
-  "en": "từ tiếng anh (viết thường)",
+  "en": "${wordLabel}",
   "vn": "nghĩa tiếng việt (viết thường)",
-  "phonetic": "/phiên âm IPA/ (nếu không có thì để chuỗi rỗng)",
+  "phonetic": "${phoneticLabel}",
   "part": "${part}",
   "synonyms": "từ đồng nghĩa, cách nhau bằng dấu phẩy (viết thường, để trống nếu không có)",
-  "type": "noun / verb / adjective / adverb / phrasal verb / noun phrase / ... (viết thường)",
-  "image": "images/pages/${part.toLowerCase()}/ten_tu_viet_thuong_gach_duoi.jpg",
-  "example": "Câu ví dụ bằng tiếng anh (viết hoa chữ cái đầu câu).",
-  "level": "A1 / A2 / B1 / B2 / C1 / C2",
+  "type": "noun / verb / adjective / adverb / phrasal verb / noun phrase / ... (viết thường)",${imageLine}
+  "example": "${exampleLabel}",
+  "level": "${levelLabel}",
+  "lang": "${langValue}",
   "source": "${source}"
 }
 
 Quy tắc:
-- "en", "vn", "phonetic", "synonyms", "type", "image", "source" → viết thường
+- "vn", "synonyms", "type", "source" → viết thường${isZh
+    ? '\n- "en" → giữ nguyên chữ Hán, KHÔNG phiên âm sang chữ Latin\n- "phonetic" → pinyin có dấu thanh (nǐ hǎo), KHÔNG phải IPA'
+    : '\n- "en", "phonetic" → viết thường'}
 - "part" → "${part}" (viết HOA, giữ nguyên)
-- "level" → viết HOA (A1, B2, ...)
-- "example" → viết hoa chữ cái đầu câu
-- "image" → dùng định dạng: images/pages/${part.toLowerCase()}/ten_tu.jpg (gạch dưới thay khoảng trắng)
+- "level" → viết HOA (${isZh ? 'HSK1, HSK3, ...' : 'A1, B2, ...'})
+- "lang" → LUÔN là "${langValue}"
+- "example" → ${isZh ? 'câu ví dụ bằng tiếng Trung' : 'viết hoa chữ cái đầu câu'}${imageRule}
 - Nếu không có dữ liệu, để chuỗi rỗng ""
 
 Danh sách từ vựng cần chuyển:
