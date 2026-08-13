@@ -39,9 +39,20 @@ describe('ô Part', () => {
         expect(j).toBeGreaterThan(i);
     });
 
-    test('để trống thì dùng part mặc định, không chặn người dùng', () => {
-        // Không bắt ai nghĩ ra tên trước khi lưu được từ đầu tiên.
-        expect(src).toMatch(/typed \|\| \(isZhWord \? 'DICH-NHANH-ZH' : 'DICH-NHANH-EN'\)/);
+    test('để trống thì part BÁM theo source, không chặn người dùng', () => {
+        // Không bắt ai nghĩ ra tên trước khi lưu được từ đầu tiên. Và part mặc
+        // định phải bám source: gõ source riêng mà part vẫn là DICH-NHANH-* thì
+        // hai trường nói hai chuyện khác nhau về cùng một từ.
+        expect(src).toMatch(/part = typed \|\| source\.toUpperCase\(\)/);
+    });
+
+    test('để trống SOURCE thì vẫn tách theo ngôn ngữ như cũ', () => {
+        expect(src).toMatch(/typedSource \|\| \(isZhWord \? 'dich-nhanh-zh' : 'dich-nhanh-en'\)/);
+    });
+
+    test('source hạ CHỮ THƯỜNG — backend lower() nó trước khi ghi', () => {
+        // Gõ HOA mà không hạ ở đây thì tưởng tạo kho mới, thực tế vào kho cũ.
+        expect(src).toMatch(/sourceDraft\.trim\(\)\.toLowerCase\(\)/);
     });
 
     test('Enter trong ô Part = lưu luôn', () => {
@@ -60,7 +71,7 @@ describe('ô Part', () => {
 
     test('localStorage bị chặn không làm hỏng việc lưu từ', () => {
         // Chế độ riêng tư / bị chặn cookie: mất tính nhớ thì được, mất từ thì không.
-        expect(src).toMatch(/try \{[\s\S]{0,120}localStorage\.setItem\(PART_KEY[\s\S]{0,60}\} catch/);
+        expect(src).toMatch(/try \{[\s\S]{0,200}localStorage\.setItem\(PART_KEY[\s\S]{0,200}\} catch/);
     });
 });
 

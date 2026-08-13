@@ -60,10 +60,11 @@ describe('TranslateModal thực sự tách kho', () => {
         .split('\n').filter(l => !/^\s*\/\//.test(l) && !/^\s*\*/.test(l)).join('\n');
 
     test('có nhánh chọn kho theo ngôn ngữ', () => {
+        // Chỉ còn cặp `source`; `part` giờ SUY TỪ source (source.toUpperCase())
+        // thay vì có bảng hằng riêng — hai trường nói cùng một chuyện về một từ.
         expect(src).toMatch(/dich-nhanh-zh/);
-        expect(src).toMatch(/DICH-NHANH-ZH/);
         expect(src).toMatch(/dich-nhanh-en/);
-        expect(src).toMatch(/DICH-NHANH-EN/);
+        expect(src).toMatch(/part = typed \|\| source\.toUpperCase\(\)/);
     });
 
     test('KHÔNG còn gán cứng source/part cho mọi từ', () => {

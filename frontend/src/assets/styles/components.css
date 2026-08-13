@@ -8358,10 +8358,11 @@ mark {
 
 /* Ô nhập Part trong popup Dịch nhanh — nhóm từ vào chủ đề để luyện tập lọc được.
    Nhớ giá trị qua localStorage nên gõ một lần dùng cho cả đợt lưu. */
+/* Hàng này có hai ô: Source (kho) rồi Part (nhóm trong kho) — xếp theo thứ tự
+   bao hàm. Chia đôi chiều ngang, cùng kiểu dáng. */
+.translate-source-input,
 .translate-part-input {
-    /* Chiếm TRỌN chiều ngang: nút lưu đã chuyển xuống hàng dưới cạnh nút "Xem
-       từ vựng riêng", nên hàng này chỉ còn mình ô Part. */
-    flex: 1 1 100%;
+    flex: 1 1 0;
     min-width: 0;
     padding: 7px 10px;
     border: 1px solid var(--border-color);
@@ -8373,5 +8374,7 @@ mark {
     letter-spacing: 0.02em;
     outline: none;
 }
+.translate-source-input:focus,
 .translate-part-input:focus { border-color: var(--primary-color); }
+.translate-source-input::placeholder,
 .translate-part-input::placeholder { font-weight: 400; letter-spacing: 0; }

@@ -76,6 +76,7 @@ const SELECT_LANGS = [
 
 // Khoá localStorage cho ô Part — nhớ giá trị lần trước để không phải gõ lại.
 const PART_KEY = 'translate:lastPart';
+const SOURCE_KEY = 'translate:lastSource';
 
 /**
  * Popup dịch trong app — gọi API công khai của Google Translate (không cần key).
@@ -107,6 +108,10 @@ export default function TranslateModal({ text, onClose, editWord = null, onSaved
     // theo đợt, hôm nay một ít mai một ít, cùng một chủ đề.
     const [partDraft, setPartDraft] = useState(() => {
         try { return localStorage.getItem(PART_KEY) || ''; } catch { return ''; }
+    });
+    // Source cũng nhớ, cùng lý do: một đợt lưu thường vào cùng một kho.
+    const [sourceDraft, setSourceDraft] = useState(() => {
+        try { return localStorage.getItem(SOURCE_KEY) || ''; } catch { return ''; }
     });
 
     useEscapeToClose(onClose);
@@ -355,7 +360,18 @@ export default function TranslateModal({ text, onClose, editWord = null, onSaved
             // nói được nó chứa thứ tiếng gì, mà giờ có tới hai kho. Bản ghi cũ
             // trong 'dich-nhanh' đã chuyển hết bằng scripts/splitDichNhanhByLang.js.
             const isZhWord = savedLang === 'zh';
-            const source = isZhWord ? 'dich-nhanh-zh' : 'dich-nhanh-en';
+
+            // Source do NGƯỜI DÙNG đặt. Để trống thì vẫn tách theo ngôn ngữ như
+            // cũ — mặc định đó tồn tại để `你好` và `hello` không nằm chung kho,
+            // và nó vẫn đúng khi người dùng không muốn nghĩ ra tên riêng.
+            //
+            // Chuẩn hoá về CHỮ THƯỜNG vì `source` là khoá: backend lower() nó
+            // trước khi ghi (uploadController), nên gõ HOA mà không hạ ở đây thì
+            // tưởng tạo kho mới, thực tế vẫn vào kho cũ.
+            const typedSource = sourceDraft.trim().toLowerCase();
+            const source = typedSource || (isZhWord ? 'dich-nhanh-zh' : 'dich-nhanh-en');
+            // Part mặc định BÁM theo source: gõ source riêng mà part vẫn là
+            // DICH-NHANH-* thì hai trường nói hai chuyện khác nhau về cùng một từ.
 
             // Part do NGƯỜI DÙNG đặt, không gán cứng nữa.
             //
@@ -364,7 +380,7 @@ export default function TranslateModal({ text, onClose, editWord = null, onSaved
             // rổ thì không tách được chủ đề nào. Để trống thì vẫn dùng tên cũ,
             // không bắt ai phải nghĩ ra tên trước khi lưu được từ đầu tiên.
             const typed = partDraft.trim().toUpperCase();
-            const part = typed || (isZhWord ? 'DICH-NHANH-ZH' : 'DICH-NHANH-EN');
+            const part = typed || source.toUpperCase();
 
             const res = await UploadVocabAPI.create({
                 en, vn, lang: savedLang,
@@ -382,8 +398,9 @@ export default function TranslateModal({ text, onClose, editWord = null, onSaved
                 // ghi sớm là nhớ luôn cả giá trị vừa bị server từ chối.
                 try {
                     if (typed) localStorage.setItem(PART_KEY, typed);
+                    if (typedSource) localStorage.setItem(SOURCE_KEY, typedSource);
                 } catch { /* trình duyệt chặn localStorage — không sao, chỉ mất tính nhớ */ }
-                Notification.show({ type: 'success', message: `Đã lưu "${en}" vào part ${part}`, duration: 1800 });
+                Notification.show({ type: 'success', message: `Đã lưu "${en}" → ${source} · ${part}`, duration: 1800 });
             } else {
                 Notification.error(res?.message || 'Lưu thất bại (cần đăng nhập?)');
             }
@@ -515,6 +532,23 @@ export default function TranslateModal({ text, onClose, editWord = null, onSaved
                             từ tự dịch vào đó là trộn hai loại dữ liệu khác nhau và
                             làm danh sách ôn tập loãng đi. Tính năng yêu thích vẫn
                             còn nguyên ở các màn khác. */}
+                        {/* Source = KHO chứa (một bộ từ), Part = nhóm nhỏ bên trong.
+                            Xếp trái→phải theo thứ tự bao hàm: chọn kho trước, rồi
+                            mới nhóm trong kho đó. */}
+                        <input
+                            className="translate-source-input"
+                            value={sourceDraft}
+                            onChange={e => setSourceDraft(e.target.value)}
+                            onKeyDown={e => {
+                                if (e.key !== 'Enter') return;
+                                e.preventDefault();
+                                if (loading || error || savedVocab) return;
+                                handleSaveVocab();
+                            }}
+                            placeholder="Source (vd: hsk1)"
+                            title="Bộ từ nào — mỗi source là một kho riêng trong Từ vựng riêng. Để trống sẽ tách theo ngôn ngữ như cũ."
+                            style={{ textTransform: 'lowercase' }}
+                        />
                         <input
                             className="translate-part-input"
                             value={partDraft}
