@@ -170,6 +170,25 @@ describe('ô tìm kiếm thu gọn thành nút kính lúp', () => {
         expect(r).toMatch(/z-index:\s*\d+/);
     });
 
+    test('lúc THU: lề đối xứng và icon căn GIỮA — không lệch tâm', () => {
+        // `padding: 8px 0 8px 34px` trong ô rộng 40px đẩy vùng nền lệch hẳn sang
+        // phải so với icon; còn `left: 12px` cố định là đúng khi ô rộng 400px
+        // nhưng ở ô 40px thì 12px không còn là "mép" mà thành gần tâm.
+        expect(ruleFor('.search-bar input')).toMatch(/padding:\s*8px 0;/);
+        const icon = ruleFor('.search-bar > .fa-search,\n    .search-bar > .fa-lock');
+        expect(icon).toMatch(/left:\s*0/);
+        expect(icon).toMatch(/right:\s*0/);
+        expect(icon).toMatch(/margin:\s*auto/);
+    });
+
+    test('lúc BUNG: trả lại lề lệch trái, icon về mép', () => {
+        // Ô đủ rộng rồi thì chữ phải bắt đầu sau icon, không căn giữa.
+        expect(ruleFor('.top-nav.search-active .search-bar input'))
+            .toMatch(/text-align:\s*left/);
+        expect(ruleFor('.top-nav.search-active .search-bar > .fa-search,\n    .top-nav.search-active .search-bar > .fa-lock'))
+            .toMatch(/left:\s*\d+px/);
+    });
+
     test('lúc thu thì chữ và placeholder trong suốt, lúc bung thì trả lại màu', () => {
         // Ẩn bằng `color: transparent` chứ không `display: none`: ô thu lại vẫn
         // phải là CHÍNH cái input để một cú chạm là focus + mở bàn phím. Nút giả

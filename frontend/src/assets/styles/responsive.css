@@ -704,7 +704,23 @@
     .search-bar input {
         color: transparent;
         caret-color: transparent;
-        padding: 8px 0 8px 34px;
+        /* Lề ĐỐI XỨNG. Trước để `8px 0 8px 34px`: trong ô rộng 40px, lề trái
+           34px đẩy toàn bộ vùng nền/viền lệch hẳn sang phải so với icon kính
+           lúp — nhìn như vòng tròn bị đặt lệch tâm. */
+        padding: 8px 0;
+        text-align: center;
+    }
+
+    /* Icon căn GIỮA ô khi thu, không còn bám mép trái.
+       `left: 12px` cố định là đúng khi ô rộng 400px, nhưng ô thu về 40px thì
+       12px không còn là "mép" mà thành gần tâm — lệch chính là ở đây. */
+    .search-bar > .fa-search,
+    .search-bar > .fa-lock {
+        left: 0;
+        right: 0;
+        margin: auto;
+        width: 1em;
+        text-align: center;
     }
 
     .search-bar input::placeholder {
@@ -808,10 +824,19 @@
     /* Nav giữ NGUYÊN khi ô tìm mở — ô đã bay lên lớp trên nên không che gì,
        và người dùng vẫn bấm được menu / trang chủ / sáng-tối. */
 
+    /* Bung ra thì trả lại lề lệch trái như thường — lúc này ô đủ rộng, icon
+       về đúng mép trái và chữ bắt đầu sau nó. */
     .top-nav.search-active .search-bar input {
         color: var(--text-primary);
         caret-color: var(--text-primary);
         padding: 8px 40px 8px 35px;
+        text-align: left;
+    }
+
+    .top-nav.search-active .search-bar > .fa-search,
+    .top-nav.search-active .search-bar > .fa-lock {
+        left: 18px;
+        right: auto;
     }
 
     .top-nav.search-active .search-bar input::placeholder {

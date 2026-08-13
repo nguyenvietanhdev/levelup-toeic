@@ -91,6 +91,40 @@ describe('hai bản cùng tồn tại thì phải đồng bộ', () => {
     });
 });
 
+describe('chọn ngôn ngữ học dùng <select>', () => {
+    test('là select, không phải nút bật/tắt', () => {
+        // Đồng bộ với ba lựa chọn còn lại trong nhóm; nút chỉ hiện giá trị hiện
+        // tại nên phải bấm thử mới biết lựa chọn kia là gì.
+        expect(quick).toMatch(/id=\{inMenu \? 'menu-lang-select' : 'quick-lang-select'\}/);
+        expect(quick).toMatch(/<option value="en">/);
+        expect(quick).toMatch(/<option value="zh">/);
+    });
+
+    test('KHÔNG dùng `disabled` khi bị khoá', () => {
+        // Select mờ đi thì bấm vào không có gì xảy ra và người dùng không biết
+        // vì sao. Vẫn cho chọn, rồi báo rõ lý do.
+        const i = quick.indexOf("id={inMenu ? 'menu-lang-select'");
+        const block = quick.slice(i, i + 700);
+        expect(block).not.toMatch(/disabled=/);
+    });
+
+    test('nhãn tiếng Trung NÓI RÕ mốc Level khi chưa mở', () => {
+        // Chỉ để tên trơn thì chọn xong bị từ chối mà không hiểu tại sao.
+        expect(quick).toMatch(/zhBlocked \? `🔒 Tiếng Trung \(Lv\.\$\{zhLock\.requiredLevel\}\)`/);
+    });
+
+    test('chọn lại đúng ngôn ngữ đang dùng thì không làm gì', () => {
+        expect(quick).toMatch(/if \(next === vocabLang\) return/);
+    });
+
+    test('dùng lại đúng đường xử lý cũ, không chép logic khoá', () => {
+        // `handleToggleVocabLang` đã lo khách chưa đăng nhập, mốc Level,
+        // localStorage và reload. Chép lại là hai bản sẽ lệch nhau.
+        const i = quick.indexOf('const handleSelectLang');
+        expect(quick.slice(i, i + 400)).toMatch(/handleToggleVocabLang\(\)/);
+    });
+});
+
 describe('nút đảo chiều luyện tập', () => {
     test('chỉ hiện khi ĐÃ đăng nhập', () => {
         // Khách chưa có hồ sơ nên lựa chọn của họ bốc hơi khi đóng trình duyệt —

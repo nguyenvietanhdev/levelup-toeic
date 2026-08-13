@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '@components/auth/AuthContext.jsx';
 import { GameState } from '@game/state.js';
 import { EventBus, GameEvents } from '@game/eventBus.js';
-import FlagIcon from '@ui/FlagIcon.jsx';
 import { Notification } from '@ui/Toaster.jsx';
 import { loadUnlocks, lockInfo } from '@game/featureUnlocks.js';
 
@@ -140,26 +139,42 @@ export default function QuickSettings({ variant = 'bar' }) {
     const blocked = guestBlocked || zhBlocked;
     const inMenu = variant === 'menu';
 
+    // Ngôn ngữ học dùng <select> cho ĐỒNG BỘ với các lựa chọn nhanh còn lại
+    // (số câu · độ khó · chiều luyện tập) — trước đây nó là nút bật/tắt duy nhất
+    // trong nhóm, mà nút chỉ hiện giá trị hiện tại nên phải bấm thử mới biết
+    // lựa chọn kia là gì.
+    //
+    // KHÔNG dùng `disabled` khi bị khoá: select mờ đi thì bấm vào không có gì
+    // xảy ra và người dùng không biết vì sao. Vẫn cho chọn, rồi `handleSelectLang`
+    // NÓI RÕ lý do (mời đăng nhập / cần Level N) và trả giá trị về như cũ.
+    const handleSelectLang = (e) => {
+        const next = e.target.value;
+        if (next === vocabLang) return;
+        // Dùng lại đúng đường cũ: nó đã lo khách chưa đăng nhập, mốc Level,
+        // localStorage và reload.
+        handleToggleVocabLang();
+    };
+
     const langBtn = (
-        <button
-            onClick={handleToggleVocabLang}
-            title={guestBlocked ? 'Đăng nhập để đổi ngôn ngữ học'
-                : zhBlocked ? `Học tiếng Trung mở ở Level ${zhLock.requiredLevel}`
-                : (vocabLang === 'en' ? 'Đang học Tiếng Anh — bấm để chuyển Tiếng Trung' : 'Đang học Tiếng Trung — bấm để chuyển Tiếng Anh')}
-            style={{
-                display: 'flex', alignItems: 'center', gap: '4px',
-                padding: '3px 8px', border: '1px solid var(--border-color)',
-                borderRadius: '20px', background: 'var(--bg-secondary)',
-                color: 'var(--text-primary)', fontSize: '12px', fontWeight: 500,
-                cursor: blocked ? 'not-allowed' : 'pointer', opacity: blocked ? 0.55 : 1,
-                width: inMenu ? '100%' : undefined,
-                justifyContent: inMenu ? 'flex-start' : undefined,
-            }}
-        >
-            <FlagIcon lang={vocabLang} size={18} />
-            <span>{vocabLang === 'en' ? 'Tiếng Anh' : 'Tiếng Trung'}</span>
-            {blocked && <i className="fas fa-lock" style={{ fontSize: 10, marginLeft: 2 }}></i>}
-        </button>
+        <div className="quick-difficulty-selector" style={{ width: inMenu ? '100%' : undefined }}>
+            <select
+                id={inMenu ? 'menu-lang-select' : 'quick-lang-select'}
+                value={vocabLang}
+                onChange={handleSelectLang}
+                title={guestBlocked ? 'Đăng nhập để đổi ngôn ngữ học'
+                    : zhBlocked ? `Học tiếng Trung mở ở Level ${zhLock.requiredLevel}`
+                    : 'Ngôn ngữ đang học'}
+                style={{
+                    width: inMenu ? '100%' : undefined,
+                    opacity: blocked ? 0.7 : 1,
+                }}
+            >
+                <option value="en">🇬🇧 Tiếng Anh</option>
+                <option value="zh">
+                    {zhBlocked ? `🔒 Tiếng Trung (Lv.${zhLock.requiredLevel})` : '🇨🇳 Tiếng Trung'}
+                </option>
+            </select>
+        </div>
     );
 
     // Trong menu: mỗi lựa chọn một dòng, có nhãn chữ. Thanh trạng thái chỉ có
