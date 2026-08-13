@@ -229,10 +229,26 @@ describe('mic đi cùng ô tìm; sáng/tối ở lại nav', () => {
         expect(ruleFor('.mic-btn')).toMatch(/display:\s*none/);
     });
 
-    test('ô đang bung: mic hiện lại, nằm trong lớp vừa mở', () => {
+    test('ô đang bung: mic hiện lại, nổi phía TRÊN ô', () => {
         const r = ruleFor('.top-nav.search-active .mic-btn');
         expect(r).toMatch(/display:\s*flex/);
         expect(r).toMatch(/bottom:\s*calc\(100%/);
+    });
+
+    test('mic là nút TRÒN TO, không phải icon nhỏ trong ô', () => {
+        // Nó phải giữ vài giây (nhấn giữ để nói): đích nhỏ thì ngón tay che mất
+        // chính nó, và giữ lâu rất dễ trượt ra ngoài — trượt ra là
+        // `pointerleave` dừng thu giữa câu.
+        const r = ruleFor('.top-nav.search-active .mic-btn');
+        const size = Number(r.match(/width:\s*(\d+)px/)?.[1] || 0);
+        expect(size).toBeGreaterThanOrEqual(48);
+        expect(r).toMatch(/border-radius:\s*50%/);
+    });
+
+    test('đang nghe thì có dấu hiệu nhìn thấy được', () => {
+        // Giữ tay mà không có phản hồi thì không biết micro đã bắt đầu chưa.
+        expect(ruleFor('.top-nav.search-active .mic-btn.is-listening'))
+            .toMatch(/animation:\s*micPulse/);
     });
 
     test('nút sáng/tối KHÔNG bị ẩn — nó ở lại nav', () => {
@@ -383,8 +399,14 @@ describe('khoảng cách bị sát', () => {
         expect(ruleFor('.stats-section h2')).toMatch(/margin-bottom:/);
     });
 
-    test('thanh tìm cài đặt không dính phần bên dưới', () => {
-        expect(ruleFor('.settings-search')).toMatch(/margin-bottom:/);
+    test('thanh tìm cài đặt không dính phần bên dưới — ở MỌI khổ màn', () => {
+        // Quy tắc nằm ở components.css chứ không trong block mobile: bản desktop
+        // cũng dính sát y hệt, đặt riêng cho mobile là sửa nửa vời.
+        const comp = readFileSync(join(__dirname, 'components.css'), 'utf8')
+            .replace(/\/\*[\s\S]*?\*\//g, '');
+        const m = comp.match(/\.settings-search\s*\{([^}]*)\}/);
+        expect(m).toBeTruthy();
+        expect(m[1]).toMatch(/margin:\s*0 auto \d+px/);
     });
 });
 

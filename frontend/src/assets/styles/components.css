@@ -4010,7 +4010,9 @@ mark {
   align-items: center;
   gap: 8px;
   max-width: 1200px;
-  margin: 0 auto;
+  /* Khoảng thở dưới ở MỌI khổ màn, không riêng điện thoại: ô tìm dính sát hộp
+     nội dung bên dưới thì hai thứ đọc ra như một khối. */
+  margin: 0 auto 14px;
   padding: 0 var(--spacing-md);
 }
 

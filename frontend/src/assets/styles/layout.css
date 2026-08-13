@@ -1630,6 +1630,15 @@
 .nav-center:has(.clear-search-btn) .mic-btn {
     margin-left: calc(-60px - var(--spacing-sm));
 }
+/* Vòng sáng lan ra khi đang nghe — dấu hiệu micro CÒN chạy. Dùng box-shadow
+   chứ không đổi kích thước: đổi kích thước là đích chạm nhảy dưới ngón tay
+   đang giữ, và trượt ra ngoài đích thì thu âm dừng giữa câu. */
+@keyframes micPulse {
+    0%   { box-shadow: 0 4px 16px rgba(0,0,0,.35), 0 0 0 0 rgba(239,68,68,.55); }
+    70%  { box-shadow: 0 4px 16px rgba(0,0,0,.35), 0 0 0 14px rgba(239,68,68,0); }
+    100% { box-shadow: 0 4px 16px rgba(0,0,0,.35), 0 0 0 0 rgba(239,68,68,0); }
+}
+
 .mic-btn:hover { color: var(--text-primary); background: var(--border-color); }
 .mic-btn:focus-visible { outline: 2px solid var(--primary-color); outline-offset: 1px; }
 

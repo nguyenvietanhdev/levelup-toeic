@@ -105,6 +105,23 @@ describe('CSS: hai cột trên máy tính, accordion trên màn nhỏ', () => {
     });
 });
 
+describe('mọi panel đều có hộp riêng', () => {
+    test('ToeicExamPanel bọc .settings-section như các panel khác', () => {
+        // Thiếu nó thì panel không có nền/padding/bo góc riêng, nội dung tràn
+        // lên đè cả thanh tìm phía trên — chỉ lộ ở bản desktop.
+        const toeic = readFileSync(join(__dirname, 'panels', 'ToeicExamPanel.jsx'), 'utf8');
+        expect(toeic).toMatch(/className="settings-section"/);
+    });
+
+    test('không panel nào bị bỏ sót', () => {
+        const names = ['GeneralPanel', 'SoundPanel', 'PracticePanel', 'ToeicExamPanel', 'AccountPanel'];
+        for (const n of names) {
+            const src = readFileSync(join(__dirname, 'panels', `${n}.jsx`), 'utf8');
+            expect(src, `${n} thiếu .settings-section`).toMatch(/settings-section/);
+        }
+    });
+});
+
 describe('tìm nhanh', () => {
     test('khớp cả TỪ KHOÁ, không chỉ nhãn', () => {
         // Người dùng gõ thứ họ muốn đổi ("mật khẩu"), không gõ tên nhóm.

@@ -514,11 +514,6 @@
         padding-bottom: 16px;
     }
 
-    /* ── Thanh tìm cài đặt sát phần dưới ──────────────────────────────── */
-    .settings-search {
-        margin-bottom: 12px;
-    }
-
     /* Nút "Nhận tất cả" (Nhiệm vụ + Thành tích) — ẩn ở khổ này.
        Hàng tiêu đề đã có quay lại + tiêu đề + 2 nút nữa. */
     .quest-claim-all-btn {
@@ -773,13 +768,31 @@
 
     /* Ô tìm ĐANG BUNG: mic và sáng/tối hiện ra CÙNG nó.
        Đây là lúc chúng có ích — nói để tìm, và đọc kết quả nên cần chỉnh nền. */
-    /* Mic hiện lại CÙNG ô tìm, nằm ở mép phải bên trong lớp vừa mở. */
+    /* Mic hiện lại cùng ô tìm, nhưng là NÚT TRÒN TO nổi phía trên ô — không
+       phải icon nhỏ nhét trong ô nữa.
+       Nó là đích chạm phải giữ vài giây (nhấn giữ để nói), nên 56px và tách hẳn
+       ra: icon 26px trong ô thì ngón tay che mất chính nó, và giữ lâu trên một
+       đích nhỏ rất dễ trượt ra ngoài — mà trượt ra là `pointerleave` dừng thu
+       giữa câu. */
     .top-nav.search-active .mic-btn {
         display: flex;
         position: absolute;
-        right: 16px;
-        bottom: calc(100% + 13px);
+        left: 50%;
+        transform: translateX(-50%);
+        bottom: calc(100% + 62px);
+        width: 56px;
+        height: 56px;
+        font-size: 22px;
+        border-radius: 50%;
+        background: var(--primary-color);
+        color: #fff;
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
         z-index: 101;
+    }
+
+    /* Đang nghe: vòng sáng nhấp nháy quanh nút để biết micro CÒN chạy. */
+    .top-nav.search-active .mic-btn.is-listening {
+        animation: micPulse 1.2s ease-out infinite;
     }
 
     /* Nav giữ NGUYÊN khi ô tìm mở — ô đã bay lên lớp trên nên không che gì,

@@ -252,6 +252,41 @@ export default function TopNav() {
         }
     }, [startSpeech, stopSpeech]);
 
+    // NHẤN GIỮ để nói, NHẢ ra thì dừng và điền — cùng cử chỉ với giữ Shift.
+    //
+    // `heldRef` phân biệt hai lối dùng trên CÙNG một nút: giữ lâu thì nhả là
+    // dừng; chạm nhanh thì rơi về bật/tắt như cũ. Không phân biệt thì người
+    // quen chạm nhanh sẽ bật micro rồi không biết tắt kiểu gì.
+    const micHeldRef = useRef(false);
+    const micJustHeldRef = useRef(false);
+
+    const handleMicDown = useCallback((e) => {
+        if (!speechSupported) return warnNoSpeech();
+        // Chặn chuỗi chuột giả lập sau cú chạm, và chặn việc nút cướp focus khỏi
+        // ô nhập — mất focus là ô tìm tự thu lại giữa chừng.
+        e.preventDefault();
+        if (speechRef.current?.isListening()) return;
+        micHeldRef.current = true;
+        autoTranslateRef.current = false;
+        startSpeech();
+    }, [speechSupported, warnNoSpeech, startSpeech]);
+
+    const handleMicUp = useCallback(() => {
+        if (!micHeldRef.current) return;
+        micHeldRef.current = false;
+        // `click` LUÔN bắn sau `pointerup`. Không đánh dấu thì nó chạy
+        // `toggleSpeech` ngay sau khi ta vừa dừng — tức là BẬT LẠI micro, và
+        // người dùng thấy nhả tay xong micro vẫn chạy.
+        micJustHeldRef.current = true;
+        stopSpeech();
+    }, [stopSpeech]);
+
+    const handleMicClick = useCallback(() => {
+        if (!speechSupported) return warnNoSpeech();
+        if (micJustHeldRef.current) { micJustHeldRef.current = false; return; }
+        toggleSpeech();
+    }, [speechSupported, warnNoSpeech, toggleSpeech]);
+
     // GIỮ Shift để nói, thả ra thì dừng — và thả xong TỰ MỞ popup dịch với nội
     // dung vừa nói (xem autoTranslateRef trong onStateChange). Dùng được ở bất kỳ
     // đâu trong trang, không cần bấm vào ô tìm kiếm trước: `startSpeech` tự kéo
@@ -492,14 +527,23 @@ export default function TopNav() {
                     <button
                         type="button"
                         className={`mic-btn${speechOn ? ' is-listening' : ''}${speechSupported ? '' : ' is-unsupported'}`}
-                        onClick={speechSupported ? toggleSpeech : warnNoSpeech}
+                        // Giữ để nói, nhả để điền. `onClick` vẫn còn cho lối chạm
+                        // nhanh — `handleMicUp` đã nuốt trường hợp giữ nên hai lối
+                        // không chồng nhau.
+                        onPointerDown={handleMicDown}
+                        onPointerUp={handleMicUp}
+                        // Kéo ngón ra ngoài nút rồi nhả: `pointerup` bắn ở chỗ khác,
+                        // không có dòng này là micro chạy mãi.
+                        onPointerLeave={handleMicUp}
+                        onPointerCancel={handleMicUp}
+                        onClick={handleMicClick}
                         aria-pressed={speechSupported ? speechOn : undefined}
                         aria-label={!speechSupported
                             ? 'Nhập bằng giọng nói — trình duyệt này không hỗ trợ'
                             : speechOn ? 'Dừng nhập bằng giọng nói' : 'Nhập bằng giọng nói'}
                         title={!speechSupported
                             ? 'Trình duyệt này không hỗ trợ nhập giọng nói — dùng Chrome hoặc Edge'
-                            : speechOn ? 'Đang nghe — bấm để dừng' : 'Nói để tìm (hoặc giữ Shift)'}
+                            : speechOn ? 'Đang nghe — nhả ra để điền' : 'Nhấn GIỮ để nói (hoặc giữ Shift)'}
                     >
                         <i className={`fas ${!speechSupported ? 'fa-microphone-slash' : speechOn ? 'fa-stop' : 'fa-microphone'}`}></i>
                     </button>

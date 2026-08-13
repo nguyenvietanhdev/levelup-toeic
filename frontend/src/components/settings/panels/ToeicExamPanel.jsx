@@ -35,7 +35,10 @@ export default function ToeicExamPanel({ s, updateSetting }) {
     const overBudget = totalReadMin - READING_BUDGET_MIN;
 
     return (
-        <div>
+        // `.settings-section` như MỌI panel khác — nó mang nền, padding và bo
+        // góc của khối. Thiếu nó thì panel này không có hộp riêng, nội dung
+        // tràn lên đè cả thanh tìm phía trên (chỉ lộ ở bản desktop).
+        <div className="settings-section">
             <h3>Bài thi TOEIC</h3>
             <p className="settings-panel-hint">
                 Chỉ áp dụng cho Mini Test. <strong>Full Test luôn chạy giờ chuẩn ETS</strong>

@@ -44,6 +44,46 @@ describe('cấu trúc DOM', () => {
     });
 });
 
+describe('nhấn GIỮ để nói, nhả để điền', () => {
+    test('bắt đầu thu ở pointerdown, dừng ở pointerup', () => {
+        expect(nav).toMatch(/onPointerDown=\{handleMicDown\}/);
+        expect(nav).toMatch(/onPointerUp=\{handleMicUp\}/);
+    });
+
+    test('kéo ngón RA NGOÀI nút rồi nhả cũng phải dừng', () => {
+        // `pointerup` bắn ở chỗ khác — thiếu hai dòng này là micro chạy mãi.
+        expect(nav).toMatch(/onPointerLeave=\{handleMicUp\}/);
+        expect(nav).toMatch(/onPointerCancel=\{handleMicUp\}/);
+    });
+
+    test('chặn `click` bắn sau khi vừa giữ xong', () => {
+        // `click` LUÔN bắn sau `pointerup`; không chặn thì nó toggle lại và
+        // micro BẬT LẠI ngay sau khi người dùng nhả tay.
+        expect(nav).toMatch(/micJustHeldRef\.current = true/);
+        expect(nav).toMatch(/if \(micJustHeldRef\.current\) \{ micJustHeldRef\.current = false; return; \}/);
+    });
+
+    test('vẫn giữ lối CHẠM NHANH để bật/tắt', () => {
+        // Người quen chạm nhanh mà chỉ có giữ thì bật xong không biết tắt kiểu gì.
+        expect(nav).toMatch(/onClick=\{handleMicClick\}/);
+        expect(nav).toMatch(/toggleSpeech\(\);/);
+    });
+
+    test('preventDefault ở pointerdown — không cướp focus khỏi ô nhập', () => {
+        // Mất focus là ô tìm tự thu lại giữa chừng.
+        const i = nav.indexOf('const handleMicDown');
+        expect(nav.slice(i, i + 500)).toMatch(/e\.preventDefault\(\)/);
+    });
+});
+
+describe('nhận diện theo NGÔN NGỮ ĐANG HỌC', () => {
+    test('lấy ngôn ngữ từ vocabLang, không đoán từ âm thanh', () => {
+        // Chọn sẵn ngôn ngữ thì bộ nhận diện ra đúng mặt chữ; để nó tự suy từ
+        // âm là tiếng Trung ra chữ Latin.
+        expect(nav).toMatch(/lang: speechLangFor\(getVocabLang\(\)\)/);
+    });
+});
+
 describe('vị trí trên máy tính', () => {
     function micRule() {
         const m = layout.match(/(^|\n)\.mic-btn\s*\{([^}]*)\}/);
