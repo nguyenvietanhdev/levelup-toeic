@@ -209,11 +209,40 @@ describe('ô tìm kiếm thu gọn thành nút kính lúp', () => {
         expect(b).not.toMatch(/\.speech-btn/);
     });
 
-    test('ô bung ra CHỪA nhóm trái, ẩn nhóm phải', () => {
+    test('ô bung ra CHỪA nhóm trái và chừa chỗ nút sáng/tối', () => {
         // Trước đây `left: 8px; right: 8px` phủ trọn hàng: nhóm nút phải bị che
         // một nửa (nhìn như vỡ giao diện), còn menu bên trái cũng bị đè mất.
-        expect(ruleFor('.top-nav.search-active .search-bar')).toMatch(/left:\s*\d{2,}px/);
-        expect(ruleFor('.top-nav.search-active .nav-right')).toMatch(/visibility:\s*hidden/);
+        const r = ruleFor('.top-nav.search-active .search-bar');
+        expect(r).toMatch(/left:\s*\d{2,}px/);
+        expect(r).toMatch(/right:\s*\d{2}px/);
+    });
+});
+
+describe('mic và sáng/tối đi CÙNG ô tìm', () => {
+    test('ô đang thu: cả hai đều ẩn, nav chỉ còn kính lúp', () => {
+        // Chúng chỉ có nghĩa khi đang gõ/nói; để rời rạc là ba nút chen chỗ.
+        expect(ruleFor('.mic-btn,\n    #theme-toggle-btn')).toMatch(/display:\s*none/);
+    });
+
+    test('ô đang bung: cả hai hiện ra cùng nó', () => {
+        expect(ruleFor('.top-nav.search-active .mic-btn')).toMatch(/display:\s*flex/);
+        expect(ruleFor('.top-nav.search-active #theme-toggle-btn')).toMatch(/display:\s*inline-flex/);
+    });
+
+    test('cả hai NỔI lên trên ô tìm — ô phủ ngang bằng absolute', () => {
+        // Thiếu z-index là chính ô tìm che mất hai nút vừa cho hiện.
+        expect(ruleFor('.top-nav.search-active .mic-btn')).toMatch(/z-index:\s*10[1-9]/);
+        expect(ruleFor('.top-nav.search-active #theme-toggle-btn')).toMatch(/z-index:\s*10[1-9]/);
+    });
+
+    test('các nút CÒN LẠI của nhóm phải mới ẩn, không ẩn cả nhóm', () => {
+        // Ẩn cả nhóm bằng `visibility` là giấu luôn nút sáng/tối vừa cho hiện.
+        expect(ruleFor('.top-nav.search-active .nav-right > *:not(#theme-toggle-btn)'))
+            .toMatch(/display:\s*none/);
+    });
+
+    test('nút từ vựng yêu thích ẩn hẳn ở khổ này', () => {
+        expect(ruleFor('#nav-favorite-btn')).toMatch(/display:\s*none/);
     });
 });
 

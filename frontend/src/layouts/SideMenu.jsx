@@ -87,8 +87,12 @@ export default function SideMenu() {
                                 </button>
                             </>
                         ) : (
-                            <button id="logout-menu-btn" className="menu-auth-btn logout" onClick={logout}>
-                                <i className="fas fa-sign-out-alt"></i> Đăng xuất
+                            // Chỉ ICON, không chữ: mũi tên-ra-khỏi-cửa là ký hiệu ai
+                            // cũng đọc được, bỏ chữ thì header còn chỗ. `title` +
+                            // `aria-label` giữ nghĩa cho hover và trình đọc màn hình.
+                            <button id="logout-menu-btn" className="menu-auth-btn logout logout-icon-only"
+                                onClick={logout} title="Đăng xuất" aria-label="Đăng xuất">
+                                <i className="fas fa-sign-out-alt"></i>
                             </button>
                         )}
                     </div>

@@ -91,6 +91,29 @@ describe('hai bản cùng tồn tại thì phải đồng bộ', () => {
     });
 });
 
+describe('nút đảo chiều luyện tập', () => {
+    test('chỉ hiện khi ĐÃ đăng nhập', () => {
+        // Khách chưa có hồ sơ nên lựa chọn của họ bốc hơi khi đóng trình duyệt —
+        // bày ra rồi để nó mất thì tệ hơn là không bày. Nút này gắn với sự có
+        // mặt của "Đăng xuất".
+        const i = quick.indexOf('Chiều luyện tập');
+        expect(i).toBeGreaterThan(-1);
+        expect(quick.slice(Math.max(0, i - 300), i)).toMatch(/isLoggedIn && \(/);
+    });
+
+    test('ghi vào đúng khoá localStorage mà gameLogic đọc', () => {
+        // gameLogic.js:179 đọc thẳng `localStorage.getItem('reverseMode')`.
+        // Ghi khoá khác là nút bấm có phản hồi mà bài luyện không đổi gì.
+        expect(quick).toMatch(/localStorage\.setItem\('reverseMode', String\(next\)\)/);
+    });
+
+    test('nhãn nói rõ chiều hiện tại, theo ĐÚNG ngôn ngữ đang học', () => {
+        // "Tiếng Anh → Tiếng Việt" hay "Tiếng Việt → Tiếng Trung" tuỳ vocabLang;
+        // ghi cứng "EN/VN" là sai khi người dùng đang học tiếng Trung.
+        expect(quick).toMatch(/vocabLang === 'en' \? 'Tiếng Anh' : 'Tiếng Trung'/);
+    });
+});
+
 describe('bản trong menu', () => {
     test('có NHÃN CHỮ — điện thoại không hover được để đọc `title`', () => {
         expect(quick).toMatch(/className="menu-quick-label"/);

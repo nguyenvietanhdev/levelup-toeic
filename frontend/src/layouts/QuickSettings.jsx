@@ -28,6 +28,12 @@ export default function QuickSettings({ variant = 'bar' }) {
     const [questionsPerSession, setQuestionsPerSession] = useState('auto');
     const [difficulty, setDifficulty] = useState('adaptive');
 
+    // Đảo chiều hỏi–đáp: EN→VN hay VN→EN (áp dụng cho cả tiếng Trung).
+    // `gameLogic.js:179` đọc thẳng localStorage nên đây là nguồn duy nhất.
+    const [reverseMode, setReverseMode] = useState(
+        () => localStorage.getItem('reverseMode') === 'true'
+    );
+
     const [vocabLang, setVocabLang] = useState(() => {
         try {
             return localStorage.getItem('vocabLang') || window.GameState?.state?.settings?.vocabLang || 'en';
@@ -120,6 +126,15 @@ export default function QuickSettings({ variant = 'bar' }) {
         window.location.reload();
     };
 
+    const handleToggleReverse = () => {
+        const next = !reverseMode;
+        setReverseMode(next);
+        localStorage.setItem('reverseMode', String(next));
+        Notification.success(next
+            ? 'Đảo chiều: hỏi bằng Tiếng Việt → trả lời bằng từ đang học'
+            : 'Chiều thường: hỏi bằng từ đang học → trả lời bằng Tiếng Việt');
+    };
+
     const guestBlocked = !isLoggedIn;
     const zhBlocked = vocabLang === 'en' && zhLock.locked;   // chỉ khoá chiều sang tiếng Trung
     const blocked = guestBlocked || zhBlocked;
@@ -175,6 +190,37 @@ export default function QuickSettings({ variant = 'bar' }) {
                         <option value="adaptive">Toàn bộ</option>
                     </select>
                 </div>
+
+                {/* Đảo chiều hỏi–đáp. CHỈ hiện khi đã đăng nhập: khách chưa có
+                    hồ sơ nên mọi lựa chọn của họ đều mất khi đóng trình duyệt —
+                    bày ra rồi để nó bốc hơi thì tệ hơn là không bày.
+                    Nút đổi ngôn ngữ bên dưới thì vẫn hiện, ở dạng khoá, vì nó
+                    NÓI RÕ lý do khi bấm (mời đăng nhập). */}
+                {isLoggedIn && (
+                    <>
+                        <label className="menu-quick-label">Chiều luyện tập</label>
+                        <button
+                            onClick={handleToggleReverse}
+                            title={reverseMode
+                                ? 'Đang hỏi bằng Tiếng Việt — bấm để đổi lại'
+                                : 'Đang hỏi bằng từ đang học — bấm để đảo chiều'}
+                            style={{
+                                display: 'flex', alignItems: 'center', gap: '6px',
+                                width: '100%', padding: '3px 8px',
+                                border: '1px solid var(--border-color)', borderRadius: '20px',
+                                background: 'var(--bg-secondary)', color: 'var(--text-primary)',
+                                fontSize: '12px', fontWeight: 500, cursor: 'pointer',
+                            }}
+                        >
+                            <i className="fas fa-right-left"></i>
+                            <span>
+                                {reverseMode
+                                    ? `Tiếng Việt → ${vocabLang === 'en' ? 'Tiếng Anh' : 'Tiếng Trung'}`
+                                    : `${vocabLang === 'en' ? 'Tiếng Anh' : 'Tiếng Trung'} → Tiếng Việt`}
+                            </span>
+                        </button>
+                    </>
+                )}
 
                 <label className="menu-quick-label">Ngôn ngữ học</label>
                 {langBtn}

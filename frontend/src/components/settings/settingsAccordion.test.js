@@ -89,6 +89,20 @@ describe('CSS: hai cột trên máy tính, accordion trên màn nhỏ', () => {
     test('không còn quy tắc mồ côi `.settings-nav` (đã bỏ khỏi JSX)', () => {
         expect(css).not.toMatch(/(^|\n)\.settings-nav\s*\{/);
     });
+
+    test('dòng TRẢI HẾT bề ngang — `flex-start` bóp panel thành một chữ mỗi dòng', () => {
+        // Ở flex CỘT, trục ngang là trục phụ: `align-items: flex-start` co mỗi
+        // dòng về đúng bề rộng nội dung. Panel nằm trong dòng đó hẹp theo, và
+        // chữ bị ép xuống thành MỘT CHỮ MỖI DÒNG — đúng triệu chứng đã gặp.
+        const m = css.match(/\.settings-layout\s*\{([^}]*)\}/);
+        expect(m).toBeTruthy();
+        expect(m[1]).toMatch(/align-items:\s*stretch/);
+        expect(m[1]).not.toMatch(/align-items:\s*flex-start/);
+    });
+
+    test('chỉ MỘT quy tắc .settings-layout — hai bản là sửa nhầm chỗ', () => {
+        expect((css.match(/(^|\n)\.settings-layout\s*\{/g) || [])).toHaveLength(1);
+    });
 });
 
 describe('tìm nhanh', () => {

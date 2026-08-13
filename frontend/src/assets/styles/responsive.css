@@ -620,6 +620,20 @@
         margin-left: 0;
     }
 
+    /* Ô tìm ĐANG THU: chỉ còn đúng nút kính lúp trên nav.
+       Mic và nút sáng/tối là bạn đồng hành của ô tìm — chúng chỉ có nghĩa khi
+       đang gõ/nói, nên giấu cùng nhau thay vì để ba nút rời rạc chen chỗ. */
+    .mic-btn,
+    #theme-toggle-btn {
+        display: none;
+    }
+
+    /* Nút từ vựng yêu thích: ẩn hẳn ở khổ này. Vào được qua menu bên, còn
+       hàng nav thì mỗi chỗ trống đều đáng giá. */
+    #nav-favorite-btn {
+        display: none;
+    }
+
     /* Có focus → bung ra chiếm cả hàng, đè lên các nhóm bên cạnh.
        `position: absolute` + `z-index` thay vì đẩy các nút đi: nav chỉ có một
        hàng, đẩy là các nút bị bóp về 0 rồi biến mất (đúng lỗi cũ của nút chuông). */
@@ -640,16 +654,36 @@
            vẫn bấm được — đó là lối thoát khi ô đang chiếm màn. Nhóm phải thì ẩn
            hẳn (dưới đây) vì chừa cho cả 5 nút nữa thì ô chẳng còn bao nhiêu. */
         left: 124px;
-        right: 8px;
+        /* Chừa mép phải cho nút sáng/tối — nó hiện CÙNG ô tìm nên không được
+           để ô đè lên. 44px = nút 32px + lề. */
+        right: 44px;
         width: auto;
         min-width: 0;
         z-index: 100;
     }
 
-    /* Chỉ ẩn nhóm PHẢI. `.nav-left` (menu, trang chủ, chuông) vẫn để nguyên —
-       ô tìm bung ra không chạm tới đó, và menu là lối thoát cần luôn bấm được. */
-    .top-nav.search-active .nav-right {
-        visibility: hidden;
+    /* Ô tìm ĐANG BUNG: mic và sáng/tối hiện ra CÙNG nó.
+       Đây là lúc chúng có ích — nói để tìm, và đọc kết quả nên cần chỉnh nền. */
+    /* Mic nằm TRONG ô tìm đang bung (ô phủ ngang bằng `absolute`), nên phải
+       nổi lên trên nó — không thì bị chính ô che mất. */
+    .top-nav.search-active .mic-btn {
+        display: flex;
+        position: absolute;
+        right: 52px;
+        z-index: 101;
+    }
+
+    .top-nav.search-active #theme-toggle-btn {
+        display: inline-flex;
+        /* Nổi lên trên ô tìm đang phủ ngang, nếu không thì bị nó che. */
+        position: relative;
+        z-index: 101;
+    }
+
+    /* Nhóm phải vẫn hiện (để lộ nút sáng/tối) nhưng các nút CÒN LẠI thì ẩn —
+       ẩn cả nhóm bằng `visibility` như bản trước là giấu luôn nút sáng/tối. */
+    .top-nav.search-active .nav-right > *:not(#theme-toggle-btn) {
+        display: none;
     }
 
     .top-nav.search-active .search-bar input {

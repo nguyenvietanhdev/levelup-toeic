@@ -448,6 +448,14 @@
     transition: all var(--transition-fast);
     white-space: nowrap;
 }
+/* Đăng xuất chỉ có icon — vuông, không kéo dài như nút có chữ. */
+.menu-auth-btn.logout-icon-only {
+    justify-content: center;
+    padding: 7px;
+    width: 34px;
+    gap: 0;
+}
+
 .menu-auth-btn.login {
     background: transparent;
     color: var(--primary-color);

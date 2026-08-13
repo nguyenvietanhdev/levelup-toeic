@@ -4055,14 +4055,20 @@ mark {
   display: flex;
   /* CỘT, không phải hàng: mỗi `.settings-item` là một dòng của thanh điều
      hướng bên trái. Panel của mục đang mở được định vị tuyệt đối sang cột
-     phải (xem dưới), nên nó không chiếm chỗ trong dòng chảy này. */
+     phải (xem dưới), nên nó không chiếm chỗ trong dòng chảy này.
+
+     `stretch` chứ KHÔNG `flex-start`: ở flex cột, trục ngang là trục phụ nên
+     `flex-start` bóp mỗi dòng về đúng bề rộng nội dung. Panel nằm trong dòng
+     đó sẽ hẹp theo, và chữ bị ép xuống thành MỘT CHỮ MỖI DÒNG. */
   flex-direction: column;
-  align-items: flex-start;
+  align-items: stretch;
   gap: 4px;
   min-height: 60vh;
   max-width: 1200px;
   margin: 0 auto;
   padding: var(--spacing-md);
+  /* Mốc cho panel định vị tuyệt đối ở cột phải (máy tính). */
+  position: relative;
 }
 
 .settings-nav-item {
@@ -4162,10 +4168,6 @@ mark {
    điện thoại nó thành accordion). Ở đây tách lại thành hai cột bằng cách cho
    mỗi ``.settings-item`` trải ngang toàn khung, panel định vị tuyệt đối vào
    cột phải — không phải hai khối DOM riêng như trước. */
-.settings-layout {
-  position: relative;
-}
-
 .settings-item {
   width: 180px;
   flex-shrink: 0;
