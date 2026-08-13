@@ -49,6 +49,12 @@ export function openUploadModal({ tab } = {}) {
 
         let _lastSource = '';
         let _lastPart = '';
+        // Từ đang SỬA (null = đang thêm mới). Form "Thêm từ mới" dùng lại cho cả
+        // hai việc: nó có đủ 9 trường, còn popup Dịch nhanh chỉ có 4 — sửa `type`,
+        // `level`, `example` hay `image` thì phải có form này.
+        let _editing = null;
+        // Tải lại bảng đang mở sau khi sửa xong.
+        let _onEditSaved = null;
 
         const resultHtml = (type, msg) => {
             const c = type === 'success'
@@ -68,6 +74,7 @@ export function openUploadModal({ tab } = {}) {
             </div>`;
 
         const addTabHtml = () => `
+            <div id="vocab-edit-bar" style="display:none;align-items:center;gap:8px;margin-bottom:10px;padding:6px 10px;border:1px solid var(--border-color);border-radius:8px;background:var(--bg-secondary)"></div>
             <p style="margin:0 0 14px;font-size:13px;color:var(--text-secondary)">
                 Điền thông tin từ vựng. Các trường <span style="color:#ef4444">*</span> là bắt buộc.<br>
                 <small>• <code>part</code> và <code>level</code> sẽ viết HOA. Các trường khác viết thường. <code>example</code> tự viết hoa chữ cái đầu.</small>
@@ -157,11 +164,105 @@ export function openUploadModal({ tab } = {}) {
             if (part) _lastPart = part.toUpperCase();
         };
 
+        // ── Sửa từ bằng chính form "Thêm từ mới" ────────────────────────────
+        //
+        // Trước đây nút bút chì mở popup Dịch nhanh. Popup đó chỉ có 4 trường
+        // (en/vn/phonetic/synonyms) nên không sửa được `type`, `level`,
+        // `example`, `image` — mà đó mới là những thứ hay phải sửa sau khi nhập
+        // hàng loạt bằng JSON. Form này có đủ 9 trường.
+
+        /** Đổ dữ liệu từ đang sửa vào form. */
+        const fillEditForm = () => {
+            if (!_editing) return;
+            const set = (id, v) => { const el = document.getElementById(id); if (el) el.value = v ?? ''; };
+            set('vocab-en', _editing.en);
+            set('vocab-vn', _editing.vn);
+            set('vocab-part', _editing.part);
+            set('vocab-source', _editing.source);
+            set('vocab-level', _editing.level);
+            set('vocab-phonetic', _editing.phonetic);
+            set('vocab-example', _editing.example);
+            set('vocab-synonyms', _editing.synonyms);
+            set('vocab-image', _editing.image);
+
+            // `type` nằm ở MỘT trong HAI select (từ đơn / cụm từ) — điền nhầm ô là
+            // giá trị biến mất khỏi form và lưu lại thành rỗng.
+            const t1 = document.getElementById('vocab-type1');
+            const t2 = document.getElementById('vocab-type2');
+            if (t1) t1.value = '';
+            if (t2) t2.value = '';
+            const t = (_editing.type || '').toLowerCase();
+            if (t) {
+                if (TYPE1.includes(t) && t1) t1.value = t;
+                else if (TYPE2.includes(t) && t2) t2.value = t;
+            }
+
+            // Source/Part khoá lại: đổi chúng ở đây không chuyển được từ sang kho
+            // khác (route sửa cố ý không nhận hai trường đó), nên cho sửa là hứa
+            // suông. Muốn chuyển kho thì xoá rồi thêm lại.
+            const lock = (id) => {
+                const el = document.getElementById(id);
+                if (!el) return;
+                el.readOnly = true;
+                el.style.opacity = '0.6';
+                el.title = 'Không đổi được khi sửa — muốn chuyển kho thì xoá rồi thêm lại';
+            };
+            lock('vocab-source');
+            lock('vocab-part');
+
+            const btn = document.getElementById('vocab-save-btn');
+            if (btn) btn.innerHTML = '<i class="fas fa-check"></i> Cập nhật';
+
+            const bar = document.getElementById('vocab-edit-bar');
+            if (bar) {
+                bar.style.display = 'flex';   // về '' là rơi lại 'block' của div, mất căn hàng ngang
+                bar.innerHTML = `
+                    <span style="flex:1;min-width:0;font-size:12px;color:var(--text-secondary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">
+                        <i class="fas fa-pen"></i> Đang sửa: <b>${esc(_editing.en)}</b>
+                    </span>
+                    <button type="button" id="vocab-cancel-edit"
+                        style="padding:3px 10px;font-size:11px;border:1px solid var(--border-color);border-radius:6px;background:var(--bg-secondary);color:var(--text-primary);cursor:pointer">Huỷ</button>`;
+                bar.querySelector('#vocab-cancel-edit')?.addEventListener('click', () => exitEditMode());
+            }
+            document.getElementById('vocab-en')?.focus();
+        };
+
+        /** Rời chế độ sửa, trả form về trạng thái thêm mới. */
+        const exitEditMode = () => {
+            _editing = null;
+            _onEditSaved = null;
+            ['vocab-en','vocab-vn','vocab-level','vocab-phonetic','vocab-example','vocab-synonyms','vocab-image']
+                .forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+            ['vocab-source','vocab-part'].forEach(id => {
+                const el = document.getElementById(id);
+                if (!el) return;
+                el.readOnly = false;
+                el.style.opacity = '';
+                el.title = '';
+            });
+            const btn = document.getElementById('vocab-save-btn');
+            if (btn) btn.innerHTML = '<i class="fas fa-save"></i> Lưu từ';
+            const bar = document.getElementById('vocab-edit-bar');
+            if (bar) { bar.style.display = 'none'; bar.innerHTML = ''; }
+        };
+
+        /** Mở form ở chế độ sửa cho một từ. */
+        const startEdit = (word, onSaved) => {
+            _editing = word;
+            _onEditSaved = onSaved;
+            document.dispatchEvent(new CustomEvent('upload-set-tab', { detail: 'add' }));
+            // Tab dựng DOM bất đồng bộ; fillEditForm chạy lại trong attachAddHandlers.
+        };
+
         const attachAddHandlers = () => {
             const t1 = document.getElementById('vocab-type1');
             const t2 = document.getElementById('vocab-type2');
             t1?.addEventListener('change', () => { if (t1.value) t2.value = ''; });
             t2?.addEventListener('change', () => { if (t2.value) t1.value = ''; });
+
+            // Đang ở chế độ sửa thì đổ dữ liệu vào form. Chạy trong attachAddHandlers
+            // vì tab chỉ dựng DOM lúc được mở — điền trước đó là điền vào hư không.
+            if (_editing) fillEditForm();
 
             document.getElementById('vocab-save-btn')?.addEventListener('click', async () => {
                 const en = document.getElementById('vocab-en')?.value.trim();
@@ -182,6 +283,21 @@ export function openUploadModal({ tab } = {}) {
                     image: document.getElementById('vocab-image')?.value });
                 resultDiv.innerHTML = '<p style="color:var(--text-secondary);font-size:13px"><i class="fas fa-spinner fa-spin"></i> Đang lưu...</p>';
                 try {
+                    if (_editing) {
+                        // SỬA: phải dùng updateWord, KHÔNG dùng create.
+                        //
+                        // `create` là upsert theo (ownerEmail, source, en) — đổi `en`
+                        // rồi gọi nó là tạo bản ghi THỨ HAI, bản cũ vẫn nằm đó. Người
+                        // dùng tưởng đã đổi tên từ, thực tế nhân đôi nó.
+                        const res = await UploadVocabAPI.updateWord(_editing._id, payload);
+                        if (!res.success) throw new Error(res.message);
+                        resultDiv.innerHTML = resultHtml('success', `Đã cập nhật "${payload.en}"`);
+                        const done = _onEditSaved;
+                        exitEditMode();
+                        done?.();
+                        return;
+                    }
+
                     const res = await UploadVocabAPI.create({ ...payload, retentionDays: readRetention() });
                     if (!res.success) throw new Error(res.message);
                     resultDiv.innerHTML = resultHtml('success', `Đã lưu "${payload.en}" vào source "${payload.source}"`);
@@ -547,11 +663,17 @@ Danh sách từ vựng cần chuyển:
                     btn.addEventListener('click', () => {
                         const w = res.data.find(x => String(x._id) === btn.dataset.id);
                         if (!w) return;
-                        window._reactOpenTranslate?.({
-                            text: w.en,
-                            editWord: w,
-                            // Tải lại đúng bảng đang mở để thấy nội dung vừa sửa.
-                            onSaved: () => loadWords(source, panel),
+                        // Sửa bằng chính form "Thêm từ mới", KHÔNG mở popup Dịch
+                        // nhanh: popup đó chỉ có 4 trường nên không sửa được
+                        // `type`/`level`/`example`/`image`, mà đó mới là những thứ
+                        // hay phải chỉnh sau khi nhập hàng loạt bằng JSON.
+                        // Cũng không phải gọi API dịch cho một từ đã có sẵn nghĩa.
+                        // Sau khi cập nhật thì QUAY LẠI tab quản lý, không gọi
+                        // loadWords(source, panel): chuyển tab làm onEnterTab
+                        // dựng lại toàn bộ danh sách, nên `panel` đang cầm đã bị
+                        // gỡ khỏi DOM — ghi vào đó là ghi vào hư không.
+                        startEdit(w, () => {
+                            document.dispatchEvent(new CustomEvent('upload-set-tab', { detail: 'manage' }));
                         });
                     });
                 });
