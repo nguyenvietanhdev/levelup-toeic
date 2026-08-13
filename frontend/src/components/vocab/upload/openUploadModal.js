@@ -502,7 +502,13 @@ Danh sách từ vựng cần chuyển:
                 const res = await UploadVocabAPI.myTopics();
                 const topics = res?.success ? (res.data || []) : [];
                 if (topics.length === 0) {
-                    box.innerHTML = '<p style="font-size:13px;color:var(--text-secondary)">Chưa có bộ từ nào để chia sẻ.</p>';
+                    // Chưa có bộ nào của mình thì vẫn phải hiện HỘP THƯ ĐẾN — người
+                    // mới chưa tạo bộ nào nhưng vẫn có thể được người khác chia sẻ,
+                    // `return` sớm ở đây là họ không bao giờ thấy lời mời.
+                    box.innerHTML = `
+                        <p style="font-size:13px;color:var(--text-secondary)">Bạn chưa có bộ từ nào để chia sẻ.</p>
+                        <div id="share-inbox" style="margin-top:16px;padding-top:14px;border-top:1px solid var(--border-color)"></div>`;
+                    loadShareInbox();
                     return;
                 }
 
@@ -526,7 +532,8 @@ Danh sách từ vựng cần chuyển:
                         Lấy ID ở <b>Bảng xếp hạng</b> → bấm vào người chơi → nút <i class="fas fa-copy"></i>.
                         Người nhận LUYỆN TẬP và sao chép được, không sửa/xoá được bộ của bạn.
                     </div>
-                    <div id="share-people"></div>`;
+                    <div id="share-people"></div>
+                    <div id="share-inbox" style="margin-top:16px;padding-top:14px;border-top:1px solid var(--border-color)"></div>`;
 
                 const sel = box.querySelector('#share-source-select');
                 sel?.addEventListener('change', () => { _shareSource = sel.value; loadSharePeople(); });
@@ -548,8 +555,104 @@ Danh sách từ vựng cần chuyển:
                 input?.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); submit(); } });
 
                 loadSharePeople();
+                loadShareInbox();
             } catch (err) {
                 box.innerHTML = `<p style="color:#dc2626;font-size:13px">Lỗi: ${esc(err.message)}</p>`;
+            }
+        };
+
+        /** Lời mời chia sẻ CHỜ duyệt — tích chọn rồi bấm Nhận. */
+        const loadShareInbox = async () => {
+            const box = document.getElementById('share-inbox');
+            if (!box) return;
+            try {
+                const res = await UploadVocabAPI.pendingShares();
+                const rows = res?.success ? (res.data || []) : [];
+                if (rows.length === 0) {
+                    box.innerHTML = `
+                        <div style="font-size:12px;font-weight:600;color:var(--text-primary);margin-bottom:6px">
+                            Bộ từ được chia sẻ cho tôi
+                        </div>
+                        <p style="font-size:12px;color:var(--text-tertiary,#94a3b8);margin:0">
+                            Chưa có ai chia sẻ bộ từ nào cho bạn.
+                        </p>`;
+                    return;
+                }
+
+                box.innerHTML = `
+                    <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+                        <div style="flex:1;font-size:12px;font-weight:600;color:var(--text-primary)">
+                            Bộ từ được chia sẻ cho tôi
+                            <span style="color:var(--text-tertiary,#94a3b8);font-weight:400">— tích chọn rồi bấm Nhận</span>
+                        </div>
+                        <button class="inbox-accept-btn btn btn-primary" style="padding:4px 12px;font-size:12px;white-space:nowrap" disabled>
+                            Nhận (0)
+                        </button>
+                    </div>
+                    ${rows.map(r => `
+                        <label class="inbox-row" style="display:flex;align-items:center;gap:10px;padding:8px 10px;margin-bottom:6px;border:1px solid var(--border-color);border-radius:8px;background:var(--bg-secondary);cursor:${r.expired ? 'not-allowed' : 'pointer'};opacity:${r.expired ? '0.55' : '1'}">
+                            <input type="checkbox" class="inbox-check"
+                                data-owner="${esc(r.ownerEmail)}" data-source="${esc(r.source)}"
+                                ${r.expired ? 'disabled' : ''}
+                                style="width:15px;height:15px;cursor:inherit;accent-color:var(--primary-color)">
+                            <div style="flex:1;min-width:0">
+                                <div style="font-size:13px;font-weight:600;color:var(--text-primary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">
+                                    ${esc(sourceLabel(r.source))}
+                                    <span style="font-weight:400;color:var(--text-tertiary,#94a3b8)">
+                                        ${r.expired ? '— đã hết hạn' : `— ${r.wordCount} từ`}
+                                    </span>
+                                </div>
+                                <div style="font-size:11px;color:var(--text-tertiary,#94a3b8);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">
+                                    <i class="fas fa-user"></i> ${esc(r.ownerName)}
+                                </div>
+                            </div>
+                            <button class="inbox-reject-btn" data-owner="${esc(r.ownerEmail)}" data-source="${esc(r.source)}"
+                                title="Bỏ qua lời mời này"
+                                style="padding:4px 10px;font-size:12px;background:var(--bg-primary);color:var(--text-secondary);border:1px solid var(--border-color);border-radius:6px;cursor:pointer;white-space:nowrap">Bỏ qua</button>
+                        </label>`).join('')}`;
+
+                const btn = box.querySelector('.inbox-accept-btn');
+                const checks = [...box.querySelectorAll('.inbox-check')];
+
+                // Nút Nhận hiện SỐ đang chọn và tắt khi chưa chọn gì — bấm một nút
+                // không làm gì mà không nói vì sao là kiểu hỏng im lặng.
+                const sync = () => {
+                    const n = checks.filter(c => c.checked).length;
+                    btn.textContent = `Nhận (${n})`;
+                    btn.disabled = n === 0;
+                };
+                checks.forEach(c => c.addEventListener('change', sync));
+
+                btn?.addEventListener('click', async () => {
+                    const items = checks.filter(c => c.checked)
+                        .map(c => ({ ownerEmail: c.dataset.owner, source: c.dataset.source }));
+                    if (items.length === 0) return;
+                    const r = await UploadVocabAPI.acceptShares(items);
+                    if (r?.success) {
+                        Notification.show({ type: 'success', message: r.message, duration: 2200 });
+                        loadShareInbox();
+                    } else {
+                        Notification.error(r?.message || 'Nhận thất bại');
+                    }
+                });
+
+                box.querySelectorAll('.inbox-reject-btn').forEach(b => {
+                    b.addEventListener('click', async (e) => {
+                        // Nút nằm trong <label>: không chặn thì bấm nó cũng tích luôn ô.
+                        e.preventDefault();
+                        e.stopPropagation();
+                        if (!window.confirm('Bỏ qua lời mời này? Chủ bộ từ vẫn chia sẻ lại được.')) return;
+                        const r = await UploadVocabAPI.rejectShare(b.dataset.owner, b.dataset.source);
+                        if (r?.success) {
+                            Notification.show({ type: 'success', message: r.message, duration: 2000 });
+                            loadShareInbox();
+                        } else {
+                            Notification.error(r?.message || 'Bỏ qua thất bại');
+                        }
+                    });
+                });
+            } catch (err) {
+                box.innerHTML = `<p style="color:#dc2626;font-size:12px">Lỗi: ${esc(err.message)}</p>`;
             }
         };
 

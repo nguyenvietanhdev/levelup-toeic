@@ -14,6 +14,9 @@ const {
   getSharedTopics,
   getSharedVocabulary,
   copySharedSource,
+  getPendingShares,
+  acceptShares,
+  rejectShare,
   deleteMySource,
   extendMySource,
   getMonitoring,
@@ -47,6 +50,12 @@ router.get('/share/:source', protect, listSharees);
 router.get('/shared-topics', protect, getSharedTopics);
 router.get('/shared-vocabulary/:ownerEmail/:source', protect, getSharedVocabulary);
 router.post('/shared-vocabulary/:ownerEmail/:source/copy', protect, copySharedSource);
+
+// Lời mời chia sẻ CHỜ DUYỆT. Chia sẻ không còn tự đẩy bộ từ vào danh sách
+// chọn đề của người nhận — họ phải đồng ý trước.
+router.get('/shares/pending', protect, getPendingShares);
+router.post('/shares/accept', protect, acceptShares);
+router.delete('/shares/pending/:ownerEmail/:source', protect, rejectShare);
 router.post('/extend/:source', protect, extendMySource);
 router.delete('/my-source/:source', protect, deleteMySource);
 

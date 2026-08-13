@@ -557,7 +557,10 @@ exports.listSharees = async (req, res, next) => {
 exports.getSharedTopics = async (req, res, next) => {
   try {
     const me = req.user.email;
-    const grants = await VocabShare.find({ granteeEmail: me })
+    // Chỉ bộ ĐÃ DUYỆT mới vào danh sách chọn đề. Bộ chờ duyệt nằm ở
+    // getPendingShares, người nhận tự bấm đồng ý — không ai đẩy được bộ từ vào
+    // màn hình người khác mà không hỏi.
+    const grants = await VocabShare.find({ granteeEmail: me, status: 'accepted' })
       .select('ownerEmail source createdAt')
       .lean();
     if (grants.length === 0) return res.json({ success: true, data: [] });
@@ -683,10 +686,13 @@ exports.copySharedSource = async (req, res, next) => {
 
     // Tra grant TRƯỚC — cùng lý do như getSharedVocabulary: không có bước này thì
     // đoán đúng email + tên bộ là chép được kho của bất kỳ ai.
-    const grant = await VocabShare.findOne({ ownerEmail, source, granteeEmail: me })
+    //
+    // Và phải ĐÃ DUYỆT: sao chép là hành động GHI vào kho của mình, đếm vào giới
+    // hạn từ. Cho chép khi chưa đồng ý nhận thì bước duyệt chỉ là trang trí.
+    const grant = await VocabShare.findOne({ ownerEmail, source, granteeEmail: me, status: 'accepted' })
       .select('ownerEmail source').lean();
     if (!grant) {
-      return res.status(403).json({ success: false, message: 'Bạn không có quyền sao chép bộ từ này' });
+      return res.status(403).json({ success: false, message: 'Bạn chưa nhận bộ từ này (cần đồng ý trong mục Bộ từ được chia sẻ)' });
     }
 
     const words = await UserUpload.find({ ownerEmail: grant.ownerEmail, source: grant.source }).lean();
@@ -745,6 +751,117 @@ exports.copySharedSource = async (req, res, next) => {
     });
   } catch (err) {
     console.error('copySharedSource error:', err);
+    next(err);
+  }
+};
+
+// GET /api/upload/shares/pending — bộ người khác chia sẻ cho tôi, CHỜ tôi duyệt.
+//
+// Tách khỏi getSharedTopics: cái đó chỉ trả bộ đã duyệt (để đưa vào danh sách
+// chọn đề). Bộ chờ duyệt nằm riêng ở đây, người nhận tự bấm đồng ý.
+exports.getPendingShares = async (req, res, next) => {
+  try {
+    const me = req.user.email;
+    const grants = await VocabShare.find({ granteeEmail: me, status: 'pending' })
+      .select('ownerEmail source createdAt')
+      .sort({ createdAt: -1 })
+      .lean();
+    if (grants.length === 0) return res.json({ success: true, data: [] });
+
+    // Đếm từ để người nhận biết bộ này to nhỏ ra sao TRƯỚC khi đồng ý.
+    const stats = await UserUpload.aggregate([
+      { $match: { $or: grants.map(g => ({ ownerEmail: g.ownerEmail, source: g.source })) } },
+      { $group: { _id: { ownerEmail: '$ownerEmail', source: '$source' }, wordCount: { $sum: 1 } } },
+    ]);
+    const byKey = new Map(stats.map(s => [`${s._id.ownerEmail}|${s._id.source}`, s.wordCount]));
+
+    // Tên chủ sở hữu — người nhận cần biết ai gửi, nhưng không cần thấy email.
+    const owners = await User.find({ email: { $in: [...new Set(grants.map(g => g.ownerEmail))] } })
+      .select('_id email').lean();
+    const ownerIdByEmail = new Map(owners.map(u => [u.email, String(u._id)]));
+    const profiles = await UserProfile.find({ userId: { $in: owners.map(u => u._id) } })
+      .select('userId displayName username').lean();
+    const nameByUserId = new Map(profiles.map(p => [String(p.userId), p.displayName || p.username]));
+
+    const data = grants.map(g => {
+      const wordCount = byKey.get(`${g.ownerEmail}|${g.source}`) || 0;
+      return {
+        ownerEmail: g.ownerEmail,
+        ownerName: nameByUserId.get(ownerIdByEmail.get(g.ownerEmail)) || 'Người chơi',
+        source: g.source,
+        wordCount,
+        // Bộ đã bị TTL xoá sạch vẫn hiện ra — nhận về cũng chẳng có gì, nhưng
+        // biến mất im lặng thì người nhận không hiểu lời mời đi đâu.
+        expired: wordCount === 0,
+        sharedAt: g.createdAt,
+      };
+    });
+
+    res.json({ success: true, data });
+  } catch (err) {
+    console.error('getPendingShares error:', err);
+    next(err);
+  }
+};
+
+// POST /api/upload/shares/accept — đồng ý nhận một hoặc nhiều bộ.
+// Body: { items: [{ ownerEmail, source }, ...] }
+exports.acceptShares = async (req, res, next) => {
+  try {
+    const me = req.user.email;
+    const items = Array.isArray(req.body?.items) ? req.body.items : [];
+    if (items.length === 0) {
+      return res.status(400).json({ success: false, message: 'Chưa chọn bộ từ nào' });
+    }
+
+    // Lọc kèm `granteeEmail: me` — không có thì gửi cặp (ownerEmail, source) bất
+    // kỳ là tự duyệt được grant của người khác.
+    const filters = items
+      .map(it => ({
+        ownerEmail: String(it?.ownerEmail || '').trim().toLowerCase(),
+        source: String(it?.source || '').trim().toLowerCase(),
+      }))
+      .filter(f => f.ownerEmail && f.source)
+      .map(f => ({ ...f, granteeEmail: me, status: 'pending' }));
+
+    if (filters.length === 0) {
+      return res.status(400).json({ success: false, message: 'Danh sách không hợp lệ' });
+    }
+
+    const r = await VocabShare.updateMany({ $or: filters }, { $set: { status: 'accepted' } });
+    if (r.modifiedCount === 0) {
+      return res.status(404).json({ success: false, message: 'Không tìm thấy lời mời nào đang chờ' });
+    }
+
+    res.json({ success: true, accepted: r.modifiedCount, message: `Đã nhận ${r.modifiedCount} bộ từ` });
+  } catch (err) {
+    console.error('acceptShares error:', err);
+    next(err);
+  }
+};
+
+// DELETE /api/upload/shares/pending/:ownerEmail/:source — từ chối một lời mời.
+//
+// XOÁ hẳn grant chứ không đặt cờ 'rejected': chủ bộ từ chia sẻ lại được, và
+// người nhận không phải nhìn mãi một lời mời đã bỏ qua.
+exports.rejectShare = async (req, res, next) => {
+  try {
+    const me = req.user.email;
+    const ownerEmail = String(req.params.ownerEmail || '').trim().toLowerCase();
+    const source = String(req.params.source || '').trim().toLowerCase();
+
+    if (!EMAIL_RE.test(ownerEmail)) {
+      return res.status(400).json({ success: false, message: 'Email chủ sở hữu không hợp lệ' });
+    }
+
+    const r = await VocabShare.deleteOne({ ownerEmail, source, granteeEmail: me, status: 'pending' });
+    if (r.deletedCount === 0) {
+      return res.status(404).json({ success: false, message: 'Không tìm thấy lời mời này' });
+    }
+
+    res.json({ success: true, message: 'Đã bỏ qua lời mời' });
+  } catch (err) {
+    console.error('rejectShare error:', err);
     next(err);
   }
 };

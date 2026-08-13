@@ -68,8 +68,11 @@ describe('getSharedTopics — bộ hết hạn vẫn phải hiện làm bia mộ
         expect(b).toMatch(/expiringSoon/);
     });
 
-    test('chỉ lấy grant của CHÍNH người gọi', () => {
-        expect(body()).toMatch(/VocabShare\.find\(\{\s*granteeEmail:\s*me\s*\}\)/);
+    test('chỉ lấy grant của CHÍNH người gọi, và ĐÃ DUYỆT', () => {
+        // Thêm `status: 'accepted'`: chia sẻ không còn tự đẩy bộ từ vào danh sách
+        // chọn đề của người nhận — ai biết ID cũng làm được thì đó là đường spam.
+        // Bộ chờ duyệt nằm ở getPendingShares.
+        expect(body()).toMatch(/VocabShare\.find\(\{\s*granteeEmail:\s*me,\s*status:\s*'accepted'\s*\}\)/);
     });
 
     test('không có grant nào thì trả sớm, không chạy aggregate rỗng', () => {

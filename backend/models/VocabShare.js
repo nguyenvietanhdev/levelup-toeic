@@ -41,6 +41,22 @@ const vocabShareSchema = new mongoose.Schema(
             trim: true,
             match: [EMAIL_RE, 'Email không hợp lệ'],
         },
+        // Người nhận đã ĐỒNG Ý nhận bộ này chưa.
+        //
+        // Trước đây chia sẻ là bộ từ hiện NGAY trong danh sách chọn đề của người
+        // nhận, không hỏi han gì. Ai biết ID cũng đẩy được bộ từ vào màn hình
+        // người khác — phiền, và về lâu dài là đường spam.
+        //
+        // Mặc định 'pending': grant CŨ (tạo trước khi có trường này) sẽ thành chờ
+        // duyệt, tức là biến khỏi danh sách chọn đề cho tới khi người nhận bấm
+        // đồng ý. Đó là hành vi ĐÚNG với ý định mới, và người nhận vẫn thấy chúng
+        // trong mục "Bộ từ được chia sẻ cho tôi" chứ không mất đi đâu.
+        status: {
+            type: String,
+            enum: ['pending', 'accepted'],
+            default: 'pending',
+            index: true,
+        },
     },
     {
         timestamps: true,

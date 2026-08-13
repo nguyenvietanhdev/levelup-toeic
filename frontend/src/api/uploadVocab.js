@@ -88,6 +88,30 @@ export const UploadVocabAPI = {
             .then(r => r.json());
     },
 
+    /** Lời mời chia sẻ CHỜ tôi duyệt. */
+    async pendingShares() {
+        return fetch('/api/upload/shares/pending', { headers: authHeaders() })
+            .then(r => r.json())
+            .catch(() => ({ success: false, data: [] }));
+    },
+
+    /** Đồng ý nhận một hoặc nhiều bộ. `items` = [{ ownerEmail, source }, …] */
+    async acceptShares(items) {
+        return fetch('/api/upload/shares/accept', {
+            method: 'POST',
+            headers: { ...JSON_HEADERS, ...authHeaders() },
+            body: JSON.stringify({ items }),
+        }).then(r => r.json());
+    },
+
+    /** Bỏ qua một lời mời. */
+    async rejectShare(ownerEmail, source) {
+        return fetch(
+            `/api/upload/shares/pending/${encodeURIComponent(ownerEmail)}/${encodeURIComponent(source)}`,
+            { method: 'DELETE', headers: authHeaders() },
+        ).then(r => r.json());
+    },
+
     /** Những bộ NGƯỜI KHÁC đã chia sẻ cho tôi (kèm cờ `expired` cho bộ đã hết hạn). */
     async sharedTopics() {
         return fetch('/api/upload/shared-topics', { headers: authHeaders() })
