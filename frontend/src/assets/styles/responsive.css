@@ -677,6 +677,28 @@
        khoảng chừa cũ, và trông như lỗi căn lề chứ không như hệ quả của việc dời. */
     .status-bar {
         top: 0;
+        /* Thanh kinh nghiệm XUỐNG DÒNG RIÊNG.
+           Hàng này phải chứa: bảng Part · năng lượng · xu · ngọc · thanh XP ·
+           chữ "1057/5238 XP". Ép một hàng thì thanh XP bị bóp còn vài chục pixel
+           — nhìn không ra tiến độ, mà đó mới là việc của nó. */
+        flex-wrap: wrap;
+        row-gap: 4px;
+        padding: 6px 10px;
+    }
+
+    /* Chiếm trọn dòng dưới. `order` để nó xuống dưới bất kể vị trí trong DOM. */
+    .status-bar-center {
+        order: 2;
+        flex: 1 0 100%;
+    }
+
+    /* Hai nhóm còn lại ở lại dòng trên, chia nhau chỗ. */
+    .status-bar-left {
+        order: 1;
+        flex: 1 1 auto;
+        min-width: 0;
+        flex-wrap: wrap;
+        row-gap: 4px;
     }
 
     /* ── Ô tìm kiếm THU GỌN thành nút kính lúp ────────────────────────────
@@ -713,10 +735,15 @@
            lúp — nhìn như vòng tròn bị đặt lệch tâm. */
         padding: 8px 0;
         text-align: center;
-        /* Input KHÔNG mang viền. Bản trước tôi đặt viền + bo tròn lên chính nó,
-           mà nó cao ~34px trong ô rộng 40px nên `50%` cho ra bầu dục. Viền
-           thuộc về ICON (quy tắc ngay dưới) — nó mới là thứ người dùng nhìn. */
+        /* Input KHÔNG mang viền LẪN NỀN khi thu.
+           Viền: bản trước tôi đặt viền + bo tròn lên chính nó, mà nó cao ~34px
+           trong ô rộng 40px nên `50%` cho ra bầu dục — viền thuộc về ICON.
+           Nền: `background: var(--card-bg)` của quy tắc gốc phủ nguyên hình
+           40×34, còn icon tròn chỉ 32px — phần nền thừa hai bên lộ ra thành
+           VỆT DỌC xám. Bỏ nền thì chỉ còn đúng vòng tròn. */
         border-color: transparent;
+        background: transparent;
+        box-shadow: none;
     }
 
 
@@ -853,9 +880,10 @@
         caret-color: var(--text-primary);
         padding: 8px 40px 8px 35px;
         text-align: left;
-        /* Trả lại viền của ô nhập (lúc thu nó trong suốt — viền khi đó thuộc
-           về icon). */
+        /* Trả lại viền + nền của ô nhập (lúc thu cả hai đều trong suốt —
+           khi đó chỉ có vòng tròn quanh icon là thứ nhìn thấy). */
         border-color: var(--border-color);
+        background: var(--card-bg, var(--bg-primary, #fff));
     }
 
     /* Bung ra: icon trở lại dạng ký hiệu thường trong ô, BỎ viền tròn. */

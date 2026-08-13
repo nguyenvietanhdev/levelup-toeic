@@ -155,6 +155,26 @@ describe('ẩn thứ chiếm chỗ', () => {
     });
 });
 
+describe('thanh kinh nghiệm xuống dòng riêng', () => {
+    test('thanh trạng thái cho xuống dòng', () => {
+        // Hàng này phải chứa bảng Part · năng lượng · xu · ngọc · thanh XP ·
+        // chữ "1057/5238 XP". Ép một hàng thì thanh XP bị bóp còn vài chục
+        // pixel — nhìn không ra tiến độ, mà đó mới là việc của nó.
+        expect(ruleFor('.status-bar')).toMatch(/flex-wrap:\s*wrap/);
+    });
+
+    test('thanh XP chiếm TRỌN dòng dưới', () => {
+        const r = ruleFor('.status-bar-center');
+        expect(r).toMatch(/flex:\s*1 0 100%/);
+        // `order` để nó xuống dưới bất kể vị trí trong DOM.
+        expect(r).toMatch(/order:\s*2/);
+    });
+
+    test('nhóm trái ở lại dòng trên', () => {
+        expect(ruleFor('.status-bar-left')).toMatch(/order:\s*1/);
+    });
+});
+
 describe('ô tìm kiếm thu gọn thành nút kính lúp', () => {
     test('mặc định thu về cỡ một nút', () => {
         const r = ruleFor('.search-bar');
@@ -192,9 +212,20 @@ describe('ô tìm kiếm thu gọn thành nút kính lúp', () => {
         expect(icon).toMatch(/box-sizing:\s*border-box/);
     });
 
-    test('ô nhập KHÔNG mang viền lúc thu', () => {
-        // Hai viền lồng nhau (ô + icon) là hai vòng đồng tâm, rối mắt.
-        expect(ruleFor('.search-bar input')).toMatch(/border-color:\s*transparent/);
+    test('ô nhập KHÔNG mang viền LẪN NỀN lúc thu', () => {
+        // Viền: hai vòng lồng nhau (ô + icon) là hai vòng đồng tâm, rối mắt.
+        // Nền: `background: var(--card-bg)` của quy tắc gốc phủ nguyên hình
+        // 40×34, còn icon tròn chỉ 32px — phần nền thừa hai bên lộ ra thành
+        // VỆT DỌC xám cạnh vòng tròn.
+        const r = ruleFor('.search-bar input');
+        expect(r).toMatch(/border-color:\s*transparent/);
+        expect(r).toMatch(/background:\s*transparent/);
+    });
+
+    test('bung ra thì ô nhập lấy lại NỀN của nó', () => {
+        // Không trả lại là ô nhập trong suốt, chữ nổi thẳng trên nền nav.
+        expect(ruleFor('.top-nav.search-active .search-bar input'))
+            .toMatch(/background:\s*var\(--card-bg/);
     });
 
     test('bung ra thì icon BỎ viền, trở lại ký hiệu thường', () => {
