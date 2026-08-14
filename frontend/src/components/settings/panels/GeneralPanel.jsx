@@ -57,7 +57,10 @@ export default function GeneralPanel({
                         <h4>Mục tiêu điểm TOEIC</h4>
                         <p>Phân tích sẽ đối chiếu điểm ước lượng của bạn với mốc này</p>
                     </div>
-                    <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                    {/* Cả CỤM rộng đúng bằng một select thường (240px, xem
+                        `.settings-section select`), rồi chia bên trong — không
+                        thì hàng này dài hơn mọi hàng khác vì có thêm ô số. */}
+                    <div className="setting-inline-group" style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                         <select
                             value={isTargetCustom ? 'custom' : targetVal}
                             onChange={e => {
@@ -79,7 +82,7 @@ export default function GeneralPanel({
                                 value={targetVal}
                                 clamp={clampTarget}
                                 onCommit={v => updateSetting('toeicTargetScore', v)}
-                                style={{ width: 90 }}
+                                style={{ width: 64, minWidth: 0 }}
                                 placeholder="điểm"
                             />
                         )}
@@ -91,7 +94,10 @@ export default function GeneralPanel({
                         <h4>Mục tiêu thời gian học mỗi ngày</h4>
                         <p>Vòng tiến độ ở trang chủ tính theo mốc này</p>
                     </div>
-                    <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                    {/* Cả CỤM rộng đúng bằng một select thường (240px, xem
+                        `.settings-section select`), rồi chia bên trong — không
+                        thì hàng này dài hơn mọi hàng khác vì có thêm ô số. */}
+                    <div className="setting-inline-group" style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                         <select
                             value={isGoalCustom ? 'custom' : goalVal}
                             onChange={e => {
@@ -114,7 +120,7 @@ export default function GeneralPanel({
                                 value={goalVal}
                                 clamp={v => Math.max(5, Math.min(600, v))}
                                 onCommit={v => updateSetting('dailyStudyGoalMin', v || 15)}
-                                style={{ width: 90 }}
+                                style={{ width: 64, minWidth: 0 }}
                                 placeholder="phút"
                             />
                         )}

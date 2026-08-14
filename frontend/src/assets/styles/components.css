@@ -4407,6 +4407,22 @@ mark {
   width: 240px;
 }
 
+/* Hàng có nhiều điều khiển cạnh nhau (select + ô số + "/990"): cả CỤM rộng
+   đúng bằng một select thường, rồi chia bên trong. Không ghim thì hàng đó dài
+   hơn mọi hàng khác và cột phải lại răng cưa. */
+.setting-inline-group {
+  width: 240px;
+  max-width: 100%;
+  flex-shrink: 0;
+}
+
+/* Select bên trong cụm co theo chỗ còn lại, không giữ 240px của riêng nó. */
+.setting-inline-group select {
+  width: auto !important;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
 .volume-slider {
   width: 200px;
   margin: 0 var(--spacing-md);

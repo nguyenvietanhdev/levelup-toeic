@@ -74,6 +74,19 @@ describe('chọn lại giá trị đang dùng thì không làm gì', () => {
     });
 });
 
+describe('hàng nhiều điều khiển', () => {
+    test('select bên trong cụm CO theo chỗ còn lại', () => {
+        // Giữ 240px của riêng nó thì cụm phình gấp đôi. `!important` để thắng
+        // quy tắc `.settings-section select` ở trên.
+        const css2 = readFileSync(
+            join(__dirname, '..', '..', 'assets', 'styles', 'components.css'), 'utf8');
+        const m = css2.match(/\.setting-inline-group select\s*\{([^}]*)\}/);
+        expect(m).toBeTruthy();
+        expect(m[1]).toMatch(/width:\s*auto\s*!important/);
+        expect(m[1]).toMatch(/min-width:\s*0/);
+    });
+});
+
 describe('không để lại CSS mồ côi', () => {
     test('đã xoá quy tắc của nút gạt', () => {
         expect(css).not.toMatch(/\.toggle-switch\s*\{/);
@@ -92,8 +105,16 @@ describe('không để lại CSS mồ côi', () => {
         // vừa sửa: hàng này ngắn, hàng kia dài.
         const tg = css.match(/\.toggle-select select\s*\{([^}]*)\}/);
         expect(tg).toBeTruthy();
+
+        // Hàng có NHIỀU điều khiển (select + ô số + "/990") cũng phải rộng đúng
+        // bằng đó — không ghim thì hàng ấy dài hơn mọi hàng khác.
+        const grp = css.match(/\.setting-inline-group\s*\{([^}]*)\}/);
+        expect(grp).toBeTruthy();
+
         // `\\s` chứ không `\s`: trong template literal, `\s` bị nuốt thành `s`
         // thường và regex đi tìm chuỗi "widths240px" — không bao giờ khớp.
-        expect(tg[1]).toMatch(new RegExp(`width:\\s*${w}px`));
+        const sameWidth = new RegExp(`width:\\s*${w}px`);
+        expect(grp[1]).toMatch(sameWidth);
+        expect(tg[1]).toMatch(sameWidth);
     });
 });
