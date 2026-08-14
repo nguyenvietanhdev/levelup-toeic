@@ -179,15 +179,30 @@ describe('nút mic nổi ĐÚNG CHỖ nút kính lúp', () => {
         expect(ruleFor('.nav-center')).toMatch(/position:\s*relative/);
     });
 
-    test('nằm HẲN TRÊN ô tìm, không đè lên ô nhập', () => {
-        // `100%` của `.nav-center` KHÔNG phải mép trên ô tìm: ô đó cũng
-        // `absolute` bay lên (`bottom: 100% + 6px` so với `.top-nav`) chứ không
-        // nằm trong dòng chảy. Cộng thêm chiều cao ô (~46px) mới ra mép trên —
-        // để `+ 10px` là nút rơi đúng giữa ô và che mất chữ đang gõ.
+    test('mọc lên ĐÚNG TẠI CHỖ nút kính lúp', () => {
+        // Không bay lên lơ lửng phía trên: nút phải xuất hiện ngay chỗ ngón tay
+        // vừa chạm. `inset: 0` + `margin: auto` căn giữa `.nav-center` cả hai
+        // trục, và vẫn đúng khi kích thước nút đổi.
         const r = ruleFor('.top-nav.search-active .mic-btn');
-        const gap = Number(r.match(/bottom:\s*calc\(100% \+ (\d+)px\)/)?.[1] || 0);
-        expect(gap).toBeGreaterThanOrEqual(52);
-        expect(r).toMatch(/left:\s*50%/);
+        expect(r).toMatch(/inset:\s*0/);
+        expect(r).toMatch(/margin:\s*auto/);
+        expect(r).not.toMatch(/bottom:\s*calc\(100%/);
+    });
+
+    test('không to hơn hàng nav', () => {
+        // Hàng nav cao ~40px; nút 56px sẽ trồi ra khỏi thanh.
+        const r = ruleFor('.top-nav.search-active .mic-btn');
+        const size = Number(r.match(/width:\s*(\d+)px/)?.[1] || 0);
+        expect(size).toBeGreaterThanOrEqual(40);   // vẫn đủ lớn để giữ ngón tay
+        expect(size).toBeLessThanOrEqual(48);
+    });
+
+    test('.nav-center GIỮ CHỖ khi ô tìm bay đi', () => {
+        // Ô tìm bung ra thành `absolute` và rời dòng chảy; không ghim kích thước
+        // thì `.nav-center` co về 0 và nút mic (căn giữa theo nó) lệch chỗ.
+        const r = ruleFor('.nav-center');
+        expect(r).toMatch(/width:\s*40px/);
+        expect(r).toMatch(/height:\s*40px/);
     });
 });
 
@@ -368,20 +383,15 @@ describe('mic đi cùng ô tìm; sáng/tối ở lại nav', () => {
         expect(ruleFor('.mic-btn')).toMatch(/display:\s*none/);
     });
 
-    test('ô đang bung: mic hiện lại, nổi phía TRÊN ô', () => {
-        const r = ruleFor('.top-nav.search-active .mic-btn');
-        expect(r).toMatch(/display:\s*flex/);
-        expect(r).toMatch(/bottom:\s*calc\(100%/);
+    test('ô đang bung: mic hiện lại', () => {
+        expect(ruleFor('.top-nav.search-active .mic-btn')).toMatch(/display:\s*flex/);
     });
 
-    test('mic là nút TRÒN TO, không phải icon nhỏ trong ô', () => {
+    test('mic là nút TRÒN, đủ lớn để giữ ngón tay', () => {
         // Nó phải giữ vài giây (nhấn giữ để nói): đích nhỏ thì ngón tay che mất
         // chính nó, và giữ lâu rất dễ trượt ra ngoài — trượt ra là
-        // `pointerleave` dừng thu giữa câu.
-        const r = ruleFor('.top-nav.search-active .mic-btn');
-        const size = Number(r.match(/width:\s*(\d+)px/)?.[1] || 0);
-        expect(size).toBeGreaterThanOrEqual(48);
-        expect(r).toMatch(/border-radius:\s*50%/);
+        // `pointerleave` dừng thu giữa câu. Cỡ khoá ở ca "không to hơn hàng nav".
+        expect(ruleFor('.top-nav.search-active .mic-btn')).toMatch(/border-radius:\s*50%/);
     });
 
     test('đang nghe thì có dấu hiệu nhìn thấy được', () => {
