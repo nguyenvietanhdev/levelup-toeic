@@ -155,6 +155,38 @@ describe('ẩn thứ chiếm chỗ', () => {
     });
 });
 
+describe('hàng tiêu đề: nút không đè, không rớt dòng', () => {
+    test('nhãn trực tuyến ở Bảng xếp hạng CO ĐƯỢC', () => {
+        // `marginLeft: auto` đẩy nó sang phải, mà nó giữ nguyên bề rộng chữ nên
+        // đẩy luôn nút Làm mới xuống dòng dưới.
+        const r = ruleFor('.leaderboard-online-badge');
+        expect(r).toMatch(/flex:\s*0 1 auto/);
+        expect(r).toMatch(/min-width:\s*0/);
+    });
+
+    test('nút Điểm danh chừa chỗ để không đè nút bên cạnh', () => {
+        // Nó có chấm báo nhô ra -4px ở góc phải trên; hai nút sát nhau thì chấm
+        // đó phủ lên nút kế.
+        expect(ruleFor('.screen-header .checkin-trigger-btn'))
+            .toMatch(/margin-right:\s*\d+px/);
+    });
+});
+
+describe('nút mic nổi ĐÚNG CHỖ nút kính lúp', () => {
+    test('bám vào .nav-center, không phải giữa màn hình', () => {
+        // Thiếu `position: relative` ở `.nav-center` thì `absolute` bám lên
+        // `.top-nav` và nút nhảy về giữa MÀN HÌNH thay vì giữa ô tìm.
+        expect(ruleFor('.nav-center')).toMatch(/position:\s*relative/);
+    });
+
+    test('nổi ngay TRÊN ô tìm, không bay lên xa', () => {
+        // Bay lên 62px là nút nhảy đi một quãng xa chỗ ngón tay vừa chạm.
+        const r = ruleFor('.top-nav.search-active .mic-btn');
+        expect(r).toMatch(/bottom:\s*calc\(100% \+ 10px\)/);
+        expect(r).toMatch(/left:\s*50%/);
+    });
+});
+
 describe('ba loại tiền đều hiện', () => {
     test('đá quý KHÔNG bị ẩn', () => {
         // Nó là một trong ba loại tiền; ẩn đi thì người dùng không biết mình có

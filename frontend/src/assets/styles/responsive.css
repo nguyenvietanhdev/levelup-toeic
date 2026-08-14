@@ -722,6 +722,11 @@
        đó là trúng input, nên nút ghi âm coi như không tồn tại trên điện thoại. */
     .nav-center {
         flex: 0 0 auto !important;
+        /* Mốc cho nút mic bay lên (xem `.top-nav.search-active .mic-btn`).
+           Phải đặt ở quy tắc NÀY: có hai quy tắc `.nav-center` trong cùng khối
+           và cái sau thắng — đặt ở cái trước là không có tác dụng, nút mic nhảy
+           về giữa MÀN HÌNH thay vì giữa ô tìm. */
+        position: relative;
     }
 
     .search-bar {
@@ -857,9 +862,13 @@
     .top-nav.search-active .mic-btn {
         display: flex;
         position: absolute;
+        /* NGAY TRÊN chỗ nút kính lúp cũ, không phải giữa màn hình.
+           `.nav-center` là mốc (nó `position: relative` bên dưới), nên `left:
+           50%` ở đây là giữa CHÍNH Ô TÌM — đúng chỗ ngón tay vừa chạm. Bay lên
+           62px như bản trước là nút nhảy đi một quãng xa chỗ vừa bấm. */
         left: 50%;
         transform: translateX(-50%);
-        bottom: calc(100% + 62px);
+        bottom: calc(100% + 10px);
         width: 56px;
         height: 56px;
         font-size: 22px;
@@ -1033,6 +1042,22 @@
     /* Nút Làm mới (chỉ icon) giữ nguyên cỡ, không giãn theo. */
     .screen-header .icon-btn:not(.back-btn-screen) {
         flex: 0 0 auto;
+    }
+
+    /* Nhãn "N / M trực tuyến" ở Bảng xếp hạng phải CO ĐƯỢC.
+       `marginLeft: auto` đẩy nó sang phải, mà nó lại giữ nguyên bề rộng chữ nên
+       đẩy luôn nút Làm mới xuống dòng dưới. */
+    .leaderboard-online-badge {
+        flex: 0 1 auto;
+        min-width: 0;
+        overflow: hidden;
+    }
+
+    /* Nút Điểm danh KHÔNG được đè lên nút Làm mới bên cạnh.
+       Nó có chấm báo nhô ra -4px ở góc phải trên; hai nút sát nhau thì chấm đó
+       phủ lên nút kế. Chừa một khoảng bằng đúng phần nhô ra. */
+    .screen-header .checkin-trigger-btn {
+        margin-right: 6px;
     }
 
     /* Cài đặt dạng accordion: quy tắc nằm ở components.css (@media 640px) để
