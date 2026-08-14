@@ -21,8 +21,13 @@ export function useTopics({ enabled = true } = {}) {
     const copiedRef = useRef(copied);
     useEffect(() => { copiedRef.current = copied; }, [copied]);
 
-    const loadShared = useCallback(async () => {
-        if (TopicSelector.getAvailableTopics()?.length > 0) {
+    // `force` = bỏ qua bộ nhớ đệm và gọi lại server.
+    //
+    // Mở popup thì KHÔNG force: đã có sẵn thì hiện ngay, không bắt chờ mạng.
+    // Nhưng nút "Tải lại" thì phải force — không có cờ này, bấm nút chỉ set lại
+    // đúng mảng đang có, danh sách y nguyên và người dùng tưởng nút hỏng.
+    const loadShared = useCallback(async (force = false) => {
+        if (!force && TopicSelector.getAvailableTopics()?.length > 0) {
             setShared(TopicSelector.getAvailableTopics());
             return;
         }
@@ -67,14 +72,23 @@ export function useTopics({ enabled = true } = {}) {
         try {
             const res = await WrongWordsAPI.list();
             const list = res.success ? (res.data || []) : [];
-            // Gom theo source — mỗi source là một thẻ riêng.
+            // Gom theo source — mỗi source là một thẻ riêng. Đếm luôn phân bố
+            // độ khó A/B/C trong CÙNG vòng lặp để vẽ dải màu: API đã trả về
+            // nguyên từng từ (kèm `level`), không phải gọi thêm gì.
             const bySource = new Map();
             for (const w of list) {
                 const key = w.source || '';
-                bySource.set(key, (bySource.get(key) || 0) + 1);
+                let g = bySource.get(key);
+                if (!g) bySource.set(key, g = { wordCount: 0, levelStats: { a: 0, b: 0, c: 0 } });
+                g.wordCount++;
+                // Chỉ lấy CHỮ CÁI ĐẦU: dữ liệu thật có cả "A", "A1", "a2"…
+                const lv = String(w.level || '').trim().toUpperCase()[0];
+                if (lv === 'A') g.levelStats.a++;
+                else if (lv === 'B') g.levelStats.b++;
+                else if (lv === 'C') g.levelStats.c++;
             }
             const groups = [...bySource.entries()]
-                .map(([source, wordCount]) => ({ source, wordCount }))
+                .map(([source, g]) => ({ source, ...g }))
                 .sort((a, b) => b.wordCount - a.wordCount);
             setWrong(groups);
         } catch {

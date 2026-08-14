@@ -29,6 +29,10 @@ export const TopicSelector = {
                 name: t.displayName,
                 source: t.sourceKeys[0],
                 wordCount: t.wordCount || 0,
+                // Phân bố độ khó A/B/C để vẽ dải màu trên thẻ đề (chỉ desktop).
+                // Server cũ chưa trả trường này → về `null`, thẻ đơn giản là
+                // không có dải, không vỡ gì.
+                levelStats: t.levelStats || null,
                 icon: t.icon || '📚',
                 color: t.color || '#3b82f6',
                 description: t.description || '',

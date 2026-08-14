@@ -1,6 +1,7 @@
 const Topic = require("../models/Topic");
 const Vocabulary = require("../models/Vocabulary");
 const VocabularyZh = require("../models/VocabularyZh");
+const { groupLevelRows, sumStatsFor } = require("../utils/levelStats");
 
 // Parse sourceKeys từ string hoặc array, lowercase + dedupe
 function parseSourceKeys(raw) {
@@ -22,13 +23,69 @@ async function countWords(sourceKeys, lang = "en") {
   });
 }
 
+/**
+ * Đếm số từ theo MỨC ĐỘ KHÓ (A/B/C) cho nhiều topic trong MỘT truy vấn.
+ *
+ * Trả về Map: sourceKey -> { a, b, c }.
+ *
+ * Gộp hết vào một `$group` theo (source, level) thay vì lặp từng topic gọi một
+ * lần: bảng đề có ~10 topic, mỗi topic một truy vấn là 10 vòng khứ hồi cho một
+ * màn hình chọn đề — chính là N+1. Trường `level` đã có index sẵn.
+ *
+ * Chỉ lấy CHỮ CÁI ĐẦU của level: dữ liệu thật có cả "A", "A1", "a2"… mà phân
+ * loại ở đây chỉ cần ba nhóm.
+ */
+async function countByLevel(allSourceKeys, lang = "en") {
+  const Model = getVocabularyModelByLang(lang);
+  const rows = await Model.aggregate([
+    { $match: { source: { $in: allSourceKeys }, scope: { $ne: "private" } } },
+    {
+      $group: {
+        _id: { source: "$source", level: "$level" },
+        count: { $sum: 1 },
+      },
+    },
+  ]);
+  // Việc gom nằm ở utils/levelStats.js — test được mà không cần MongoDB.
+  return groupLevelRows(rows);
+}
+
 // GET /api/topics — public, dùng cho frontend chọn đề
 exports.getTopics = async (req, res, next) => {
   try {
     const filter = { isPublic: true };
     if (req.query.lang) filter.lang = req.query.lang;
     const topics = await Topic.find(filter).sort({ order: 1, displayName: 1 });
-    res.json({ success: true, data: topics });
+
+    // Kèm phân bố độ khó để popup Chọn đề vẽ dải màu A/B/C (giống popup Chọn
+    // Part). Một truy vấn gộp cho TẤT CẢ topic, không phải mỗi topic một lần.
+    //
+    // Gom theo `lang` vì từ vựng EN và ZH nằm ở hai collection khác nhau; trộn
+    // chung một lượt là đếm nhầm sang collection kia.
+    const byLang = new Map();
+    for (const t of topics) {
+      const lang = t.lang || "en";
+      if (!byLang.has(lang)) byLang.set(lang, new Set());
+      for (const k of t.sourceKeys || []) byLang.get(lang).add(k);
+    }
+    const statsByLang = new Map();
+    await Promise.all(
+      [...byLang.entries()].map(async ([lang, keys]) => {
+        statsByLang.set(lang, await countByLevel([...keys], lang));
+      }),
+    );
+
+    const data = topics.map((t) => {
+      const stats = statsByLang.get(t.lang || "en");
+      // `toObject()` vì `Topic.find()` trả về document Mongoose — rải trực tiếp
+      // bằng `...t` chỉ lấy được thuộc tính nội bộ, mất sạch các trường thật.
+      return {
+        ...t.toObject(),
+        levelStats: sumStatsFor(t.sourceKeys || [], stats),
+      };
+    });
+
+    res.json({ success: true, data });
   } catch (err) {
     next(err);
   }
