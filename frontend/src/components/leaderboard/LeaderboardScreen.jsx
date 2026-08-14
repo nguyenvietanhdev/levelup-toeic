@@ -181,7 +181,7 @@ export default function LeaderboardScreen({ active }) {
                     // nó giữ nguyên bề rộng chữ và đẩy nút Làm mới xuống dòng.
                     <span className="leaderboard-online-badge" style={{ marginLeft: 'auto', fontSize: '0.82em', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: 6, minWidth: 0 }}>
                         <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#22c55e', display: 'inline-block', boxShadow: '0 0 6px #22c55e' }} />
-                        <span><strong style={{ color: '#22c55e' }}>{onlineCount}</strong> / {totalCount} trực tuyến</span>
+                        <span><strong style={{ color: '#22c55e' }}>{onlineCount}</strong> / {totalCount} online</span>
                     </span>
                 )}
                 <button id="refresh-leaderboard-btn" className="icon-btn" title="Làm mới" onClick={() => loadLeaderboard(period)}>

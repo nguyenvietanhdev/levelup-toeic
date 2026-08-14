@@ -1040,11 +1040,15 @@
        sau rơi xuống: nhìn như nút bị thiếu chứ không như một hàng nút. */
     .screen-header .inventory-btn,
     .screen-header .checkin-trigger-btn {
-        flex: 1 1 0;
-        min-width: 0;
+        /* `min-width: auto` (mặc định của flex) chứ KHÔNG `0`: cặp
+           `min-width: 0` + `white-space: nowrap` cho phép nút co xuống dưới cỡ
+           chữ — nền bo tròn teo lại thành hình tròn nhỏ còn chữ tràn ra ngoài
+           nó. Nút vẫn chia đều dòng nhờ `flex-grow`, chỉ là không nhỏ hơn nội
+           dung của chính nó. */
+        flex: 1 1 auto;
         justify-content: center;
         font-size: 12px;
-        padding: 6px 8px;
+        padding: 6px 10px;
         white-space: nowrap;
     }
 

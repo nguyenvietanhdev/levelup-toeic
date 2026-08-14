@@ -156,7 +156,7 @@ describe('ẩn thứ chiếm chỗ', () => {
 });
 
 describe('hàng tiêu đề: nút không đè, không rớt dòng', () => {
-    test('nhãn trực tuyến ở Bảng xếp hạng CO ĐƯỢC', () => {
+    test('nhãn online ở Bảng xếp hạng CO ĐƯỢC', () => {
         // `marginLeft: auto` đẩy nó sang phải, mà nó giữ nguyên bề rộng chữ nên
         // đẩy luôn nút Làm mới xuống dòng dưới.
         const r = ruleFor('.leaderboard-online-badge');
@@ -493,10 +493,15 @@ describe('tiêu đề màn hình không vỡ dòng giữa từ', () => {
         expect(r).toMatch(/min-width:\s*0/);
     });
 
-    test('nhóm nút CHIA ĐỀU dòng dưới', () => {
+    test('nhóm nút chia đều dòng dưới, nhưng KHÔNG nhỏ hơn chữ', () => {
+        // `flex: 1 1 0` + `min-width: 0` chia đều thật, nhưng cho nút co xuống
+        // dưới cỡ nội dung — nền bo tròn teo lại còn chữ tràn ra ngoài.
+        // `1 1 auto` vẫn giãn đều nhờ `flex-grow`, chỉ là có sàn.
         const r = ruleFor('.screen-header .inventory-btn,\n    .screen-header .checkin-trigger-btn');
-        expect(r).toMatch(/flex:\s*1 1 0/);
-        expect(r).toMatch(/min-width:\s*0/);
+        expect(r).toMatch(/flex:\s*1 1 auto/);
+        // `min-width: 0` là nửa còn lại của lỗi: một mình `basis: 0` chưa cho
+        // co dưới nội dung, hai cái cộng lại mới ra nút bị nén.
+        expect(r).not.toMatch(/min-width:\s*0/);
     });
 
     test('huỷ `margin-left: auto` cho CẢ nút Điểm danh', () => {
