@@ -453,11 +453,17 @@ describe('tiêu đề màn hình không vỡ dòng giữa từ', () => {
         expect(r).toMatch(/min-width:\s*0/);
     });
 
-    test('huỷ `margin-left: auto` viết inline ở ShopScreen', () => {
-        // Nó đẩy nút đầu sang phải, để lại khoảng trống lớn khi nhóm nút đã
-        // xuống dòng riêng. Inline nên phải !important.
-        expect(ruleFor('.screen-header .inventory-btn:first-of-type'))
-            .toMatch(/margin-left:\s*0\s*!important/);
+    test('huỷ `margin-left: auto` cho CẢ nút Điểm danh', () => {
+        // `auto` đẩy nút sang mép phải — đúng khi cả hàng một dòng, nhưng nhóm
+        // nút giờ ở dòng RIÊNG nên nó chỉ tạo khoảng trống rồi ép nút cuối tràn
+        // ra ngoài (đúng triệu chứng nút Điểm danh bị cắt).
+        //
+        // Nút Điểm danh có `auto` ở CẢ HAI nơi: `.checkin-trigger-btn` trong
+        // components.css VÀ style inline ở QuestScreen — chỉ `!important` mới
+        // thắng được cái inline.
+        const r = ruleFor(
+            '.screen-header .inventory-btn:first-of-type,\n    .screen-header .checkin-trigger-btn');
+        expect(r).toMatch(/margin-left:\s*0\s*!important/);
     });
 });
 

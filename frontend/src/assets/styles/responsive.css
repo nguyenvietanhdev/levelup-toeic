@@ -1006,9 +1006,14 @@
         flex: 0 0 auto;
     }
 
-    /* `margin-left: auto` viết inline ở ShopScreen đẩy nút đầu tiên sang phải,
-       tạo khoảng trống lớn khi nhóm nút đã ở dòng riêng. */
-    .screen-header .inventory-btn:first-of-type {
+    /* `margin-left: auto` đẩy nút sang mép phải — đúng khi cả hàng nằm một
+       dòng, nhưng nhóm nút giờ đã ở dòng RIÊNG nên nó chỉ tạo khoảng trống lớn
+       rồi ép nút cuối tràn ra ngoài.
+       Nút Điểm danh có `auto` ở CẢ HAI nơi: `.checkin-trigger-btn` trong
+       components.css VÀ style inline ở QuestScreen — phải `!important` mới
+       thắng được cái inline. */
+    .screen-header .inventory-btn:first-of-type,
+    .screen-header .checkin-trigger-btn {
         margin-left: 0 !important;
     }
 
