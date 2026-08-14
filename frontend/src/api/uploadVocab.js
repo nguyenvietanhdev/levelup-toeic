@@ -150,4 +150,20 @@ export const UploadVocabAPI = {
             headers: authHeaders(),
         }).then(r => r.json());
     },
+
+    /**
+     * Xóa TRỌN một Part trong một nguồn.
+     *
+     * `encodeURIComponent` cho CẢ hai đoạn: tên Part do người dùng đặt, có thể
+     * chứa dấu cách ("BUOI 3") hay dấu `/` — không mã hoá thì `/` cắt URL thành
+     * đoạn khác và route không khớp.
+     *
+     * @returns parsed JSON — kèm `sourceGone` nếu đó là Part cuối cùng.
+     */
+    async deleteSourcePart(source, part) {
+        return fetch(
+            `/api/upload/my-source/${encodeURIComponent(source)}/part/${encodeURIComponent(part)}`,
+            { method: 'DELETE', headers: authHeaders() },
+        ).then(r => r.json());
+    },
 };

@@ -11,6 +11,7 @@ const UserProfile = require('../models/UserProfile');
 const UserStats = require('../models/UserStats');
 const { logTxn } = require('../utils/economyLog');
 const { getGameConfig } = require('../services/gameConfig');
+const { levelSumStage, LEVEL_STATS_PROJECT } = require('../utils/levelStats');
 
 // Private uploads: user picks retention at upload time.
 const ALLOWED_RETENTION_DAYS = [3, 7, 14, 30];
@@ -143,6 +144,9 @@ exports.getMyTopics = async (req, res, next) => {
             $sum: { $cond: [{ $and: [{ $ne: ['$expiresAt', null] }, { $lte: ['$expiresAt', soonThreshold] }] }, 1, 0] },
           },
           nearestExpiry: { $min: '$expiresAt' },
+          // Phân bố độ khó cho dải màu trên thẻ. Đếm ngay trong `$group` đang
+          // có sẵn — không thêm truy vấn nào.
+          ...levelSumStage(),
         },
       },
       { $sort: { lastUpload: -1 } },
@@ -154,6 +158,7 @@ exports.getMyTopics = async (req, res, next) => {
           lastUpload: 1,
           expiringSoon: 1,
           nearestExpiry: 1,
+          levelStats: LEVEL_STATS_PROJECT,
         },
       },
     ]);
@@ -350,6 +355,61 @@ exports.deleteMySource = async (req, res, next) => {
     res.json({ success: true, message: `Đã xóa ${result.deletedCount} từ trong "${source}"`, deletedCount: result.deletedCount });
   } catch (err) {
     console.error('deleteMySource error:', err);
+    next(err);
+  }
+};
+
+// DELETE /api/upload/my-source/:source/part/:part
+//
+// Xóa TRỌN một Part trong một nguồn. Trước đây chỉ có hai mức: xóa từng từ, hoặc
+// xóa sạch cả nguồn. Muốn bỏ một buổi học nhập nhầm thì phải bấm × mấy chục lần,
+// hoặc xóa cả nguồn rồi nhập lại từ đầu.
+exports.deleteMySourcePart = async (req, res, next) => {
+  try {
+    const email = req.user.email;
+    const { source, part } = req.params;
+
+    // So khớp part theo dạng ĐÃ CHUẨN HOÁ: lúc nhập, `part` được đẩy về chữ hoa
+    // (xem `upper()` ở uploadVocabulary). Không chuẩn hoá ở đây thì "buoi 3" từ
+    // URL không khớp "BUOI 3" trong DB → xóa 0 từ, báo thành công, người dùng
+    // tưởng hỏng.
+    const normalizedPart = upper(part);
+    if (!normalizedPart) {
+      return res.status(400).json({ success: false, message: 'Thiếu tên Part' });
+    }
+
+    const filter = { ownerEmail: email, source, part: normalizedPart };
+
+    // Đếm TRƯỚC khi xóa để biết nguồn có còn từ nào không.
+    const [inPart, inSource] = await Promise.all([
+      UserUpload.countDocuments(filter),
+      UserUpload.countDocuments({ ownerEmail: email, source }),
+    ]);
+
+    if (!inPart) {
+      return res.status(404).json({
+        success: false,
+        message: `Không tìm thấy Part "${normalizedPart}" trong "${source}"`,
+      });
+    }
+
+    const result = await UserUpload.deleteMany(filter);
+
+    // Xóa Part CUỐI CÙNG nghĩa là nguồn cũng biến mất khỏi danh sách (nguồn chỉ
+    // tồn tại chừng nào còn từ). Nói rõ ra, không để người dùng bất ngờ vì cả
+    // thẻ nguồn cũng đi mất.
+    const sourceGone = inPart >= inSource;
+
+    res.json({
+      success: true,
+      deletedCount: result.deletedCount,
+      sourceGone,
+      message: sourceGone
+        ? `Đã xóa ${result.deletedCount} từ — "${source}" không còn Part nào nên cũng bị xóa`
+        : `Đã xóa ${result.deletedCount} từ thuộc Part "${normalizedPart}"`,
+    });
+  } catch (err) {
+    console.error('deleteMySourcePart error:', err);
     next(err);
   }
 };
@@ -579,6 +639,8 @@ exports.getSharedTopics = async (req, res, next) => {
             $sum: { $cond: [{ $and: [{ $ne: ['$expiresAt', null] }, { $lte: ['$expiresAt', soonThreshold] }] }, 1, 0] },
           },
           nearestExpiry: { $min: '$expiresAt' },
+          // Phân bố độ khó — đếm kèm trong `$group` sẵn có, không thêm truy vấn.
+          ...levelSumStage(),
         },
       },
     ]);
@@ -612,6 +674,8 @@ exports.getSharedTopics = async (req, res, next) => {
         ownerName: ownerNameOf(g.ownerEmail),
         source: g.source,
         wordCount,
+        // Bộ đã bị TTL xoá sạch (`s` không có) → ba số 0, client không vẽ dải.
+        levelStats: { a: s?._lvA || 0, b: s?._lvB || 0, c: s?._lvC || 0 },
         lastUpload: s?.lastUpload || null,
         // Người nhận không gia hạn được (không phải dữ liệu của họ) nhưng PHẢI
         // thấy ngày chết — không thì bộ từ biến mất mà không báo trước.

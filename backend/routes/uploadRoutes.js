@@ -18,6 +18,7 @@ const {
   acceptShares,
   rejectShare,
   deleteMySource,
+  deleteMySourcePart,
   extendMySource,
   getMonitoring,
   getStats,
@@ -57,6 +58,13 @@ router.get('/shares/pending', protect, getPendingShares);
 router.post('/shares/accept', protect, acceptShares);
 router.delete('/shares/pending/:ownerEmail/:source', protect, rejectShare);
 router.post('/extend/:source', protect, extendMySource);
+// Xóa TRỌN một Part — đặt TRƯỚC `/my-source/:source`.
+//
+// Express khớp theo thứ tự khai báo, nhưng `/my-source/:source` chỉ có MỘT đoạn
+// nên `/my-source/abc/part/BUOI 3` không khớp nó — thứ tự ở đây không bắt buộc
+// về mặt kỹ thuật. Vẫn đặt trước để đọc từ hẹp tới rộng, và để nếu sau này ai
+// đổi `:source` thành `:source*` (khớp nhiều đoạn) thì không nuốt mất route này.
+router.delete('/my-source/:source/part/:part', protect, deleteMySourcePart);
 router.delete('/my-source/:source', protect, deleteMySource);
 
 // Admin routes
