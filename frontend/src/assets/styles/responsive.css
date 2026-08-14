@@ -1057,10 +1057,12 @@
         flex: 0 0 auto;
     }
 
-    /* Nhãn "N / M trực tuyến" ở Bảng xếp hạng phải CO ĐƯỢC.
-       `marginLeft: auto` đẩy nó sang phải, mà nó lại giữ nguyên bề rộng chữ nên
-       đẩy luôn nút Làm mới xuống dòng dưới. */
-    .leaderboard-online-badge {
+    /* Nhãn ĐẾM trên hàng tiêu đề ("N / M online", "31 / 50 đã mở") phải CO
+       ĐƯỢC. `marginLeft: auto` đẩy nó sang phải, mà nó lại giữ nguyên bề rộng
+       chữ nên đẩy luôn nút Làm mới xuống dòng dưới.
+       Dùng CHUNG một class cho cả Bảng xếp hạng lẫn Thành tích — vá riêng từng
+       màn là màn thứ ba lại lặp đúng lỗi này. */
+    .header-count-badge {
         flex: 0 1 auto;
         min-width: 0;
         overflow: hidden;

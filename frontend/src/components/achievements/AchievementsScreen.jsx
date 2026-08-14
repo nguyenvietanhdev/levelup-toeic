@@ -210,7 +210,10 @@ export default function AchievementsScreen({ active }) {
                 </button>
                 <h2><i className="fas fa-medal"></i> Thành tích</h2>
                 {achievements.length > 0 && (
-                    <span style={{ marginLeft: 'auto', fontSize: '0.82em', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: 6 }}>
+                    // Cùng class với nhãn "N/M online" ở Bảng xếp hạng: cả hai
+                    // là nhãn đếm nằm giữa tiêu đề và nút Làm mới, và cùng đẩy
+                    // nút đó xuống dòng nếu không cho co.
+                    <span className="header-count-badge" style={{ marginLeft: 'auto', fontSize: '0.82em', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: 6, minWidth: 0 }}>
                         <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#f59e0b', display: 'inline-block', boxShadow: '0 0 6px #f59e0b' }} />
                         <span><strong style={{ color: '#f59e0b' }}>{unlocked}</strong> / {achievements.length} đã mở</span>
                     </span>

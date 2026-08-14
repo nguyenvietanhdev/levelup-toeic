@@ -156,12 +156,22 @@ describe('ẩn thứ chiếm chỗ', () => {
 });
 
 describe('hàng tiêu đề: nút không đè, không rớt dòng', () => {
-    test('nhãn online ở Bảng xếp hạng CO ĐƯỢC', () => {
+    test('nhãn đếm trên hàng tiêu đề CO ĐƯỢC', () => {
         // `marginLeft: auto` đẩy nó sang phải, mà nó giữ nguyên bề rộng chữ nên
         // đẩy luôn nút Làm mới xuống dòng dưới.
-        const r = ruleFor('.leaderboard-online-badge');
+        const r = ruleFor('.header-count-badge');
         expect(r).toMatch(/flex:\s*0 1 auto/);
         expect(r).toMatch(/min-width:\s*0/);
+    });
+
+    test('CẢ HAI màn dùng chung class, không vá riêng từng chỗ', () => {
+        // Bảng xếp hạng và Thành tích có cùng khuôn (tiêu đề · nhãn đếm · nút
+        // Làm mới) và cùng dính đúng lỗi này. Vá riêng từng màn là màn thứ ba
+        // lại lặp lại.
+        for (const f of ['leaderboard/LeaderboardScreen.jsx', 'achievements/AchievementsScreen.jsx']) {
+            const src = readFileSync(join(__dirname, '..', '..', 'components', f), 'utf8');
+            expect(src, f).toMatch(/className="header-count-badge"/);
+        }
     });
 
     test('nút Điểm danh chừa chỗ để không đè nút bên cạnh', () => {
