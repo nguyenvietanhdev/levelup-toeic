@@ -80,8 +80,20 @@ describe('không để lại CSS mồ côi', () => {
         expect(css).not.toMatch(/\.toggle-slider\s*\{/);
     });
 
-    test('select có bề rộng cố định để các dòng thẳng hàng', () => {
-        // `auto` thì "Bật" và "Tắt" cho hai bề rộng khác nhau, cột phải răng cưa.
-        expect(css).toMatch(/\.toggle-select select\s*\{[^}]*width:\s*\d+px/);
+    test('MỌI select trong Cài đặt cùng một bề rộng', () => {
+        // Không đặt thì mỗi ô rộng theo nội dung: "Bật" ngắn tũn, còn
+        // "Yunyang — Trưởng thành (CN) 👨" dài gấp năm — cột phải răng cưa.
+        const shared = css.match(/\.settings-section select[^{]*\{([^}]*)\}/);
+        expect(shared).toBeTruthy();
+        const w = shared[1].match(/width:\s*(\d+)px/)?.[1];
+        expect(w).toBeTruthy();
+
+        // Ô bật/tắt phải dùng CÙNG con số — cho nó hẹp riêng là lại đúng vấn đề
+        // vừa sửa: hàng này ngắn, hàng kia dài.
+        const tg = css.match(/\.toggle-select select\s*\{([^}]*)\}/);
+        expect(tg).toBeTruthy();
+        // `\\s` chứ không `\s`: trong template literal, `\s` bị nuốt thành `s`
+        // thường và regex đi tìm chuỗi "widths240px" — không bao giờ khớp.
+        expect(tg[1]).toMatch(new RegExp(`width:\\s*${w}px`));
     });
 });

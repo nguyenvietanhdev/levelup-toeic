@@ -4390,11 +4390,21 @@ mark {
   font-size: 14px;
 }
 
-/* Lựa chọn bật/tắt dùng <select> (Toggle.jsx), không còn nút gạt.
-   Rộng cố định để mọi dòng cài đặt thẳng hàng — `auto` thì "Bật" và "Tắt" cho
-   hai bề rộng khác nhau và cột phải răng cưa. */
+/* ── Mọi <select> trong Cài đặt CÙNG BỀ RỘNG ─────────────────────────────────
+   Không đặt thì mỗi ô rộng theo nội dung của nó: "Bật" ngắn tũn, còn
+   "Yunyang — Trưởng thành (CN) 👨" thì dài gấp năm — cột phải răng cưa, mỗi
+   dòng một cỡ.
+   240px vừa đủ cho nhãn dài nhất hiện có (~38 ký tự) mà không phình quá. */
+.settings-section select,
+.settings-section .quick-difficulty-selector select {
+  width: 240px;
+  max-width: 100%;
+}
+
+/* Ô bật/tắt cũng dùng CHUNG bề rộng đó — cho nó hẹp riêng thì lại đúng vấn đề
+   vừa sửa: hàng này ngắn, hàng kia dài. */
 .toggle-select select {
-  width: 92px;
+  width: 240px;
 }
 
 .volume-slider {
