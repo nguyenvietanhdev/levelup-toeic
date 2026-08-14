@@ -3,7 +3,11 @@
             <div class="tab-header">
               <h2><i class="fas fa-bullhorn"></i> Gửi thông báo hệ thống</h2>
             </div>
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;align-items:start">
+            <!-- `bc-layout`: cần CLASS thì media query mới bẻ về 1 cột được.
+                 Lưới nằm hoàn toàn trong `style=` inline thì mọi quy tắc
+                 responsive đều thua — trên điện thoại cột form bị bóp còn
+                 ~110px, nhãn và ô nhập chồng lên nhau. -->
+            <div class="bc-layout" style="display:grid;grid-template-columns:1fr 1fr;gap:24px;align-items:start">
 
               <!-- LEFT: Form -->
               <div style="background:var(--bg-card);border:1px solid var(--border-color);border-radius:12px;padding:24px;display:flex;flex-direction:column;gap:20px">
@@ -35,7 +39,7 @@
                 <!-- Group 2: Gửi tới -->
                 <div>
                   <h4 style="font-size:11px;font-weight:700;color:var(--text-secondary);text-transform:uppercase;letter-spacing:.6px;margin-bottom:12px">Gửi tới</h4>
-                  <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">
+                  <div class="bc-target-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">
                     <label id="bc-target-all-lbl" style="display:flex;align-items:center;gap:8px;padding:10px 14px;border:2px solid var(--primary-color);border-radius:8px;cursor:pointer;font-size:13px;font-weight:600;transition:border-color .2s">
                       <input type="radio" name="bc-target" value="all" checked style="accent-color:var(--primary-color)"> 🌐 Tất cả
                     </label>
@@ -59,7 +63,7 @@
                 <!-- Group 3: Quà tặng -->
                 <div>
                   <h4 style="font-size:11px;font-weight:700;color:var(--text-secondary);text-transform:uppercase;letter-spacing:.6px;margin-bottom:12px">🎁 Kèm quà tặng <span style="font-weight:400;text-transform:none;font-size:12px">(tùy chọn)</span></h4>
-                  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
+                  <div class="bc-gift-grid" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
                     <div>
                       <label style="font-size:12px;color:var(--text-secondary);margin-bottom:4px;display:block">🪙 Coins</label>
                       <input type="number" id="bc-gift-coins" min="0" placeholder="0" style="width:100%;padding:8px 10px;border:1.5px solid var(--border-color);border-radius:8px;background:var(--bg-secondary);color:var(--text-primary);box-sizing:border-box">

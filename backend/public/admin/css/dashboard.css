@@ -1499,6 +1499,10 @@ table tbody tr:hover td { background: var(--hover-bg); }
   .filter-bar-row.cols-3,
   .filter-bar-row.cols-4 { grid-template-columns: 1fr 1fr; }
 
+  /* `cols-4` có cột cuối `auto` (thường là nút) — bẻ về 2 cột mà quên nó thì
+     nút bị nhét vào ô hẹp còn lại và chữ vỡ dòng. */
+  .filter-bar-row.cols-4 > *:last-child { grid-column: 1 / -1; }
+
   .avatar-btn-name { display: none; }
   .avatar-btn-chevron { display: none; }
 }
@@ -1507,14 +1511,222 @@ table tbody tr:hover td { background: var(--hover-bg); }
   .stats-grid { grid-template-columns: 1fr 1fr; gap: 10px; }
 
   .stat-info .value { font-size: 22px; }
-  .stat-icon { width: 38px; height: 38px; font-size: 16px; }
+  .stat-icon { width: 38px; height: 38px; font-size: 16px; flex-shrink: 0; }
 
+  /* Tiêu đề ô thống kê ĐƯỢC PHÉP xuống dòng.
+     Bản gốc `white-space: nowrap` — trên lưới 2 cột của điện thoại thì
+     "TỪ VỰNG TOEIC" / "CÂU HỎI TOEIC" dài hơn ô, chữ tràn ra ngoài và bị viền
+     thẻ cắt cụt (đúng chỗ đang thấy). `min-width: 0` ở `.stat-info` chỉ cho
+     HỘP co lại, không ngăn được CHỮ tràn khi cấm xuống dòng. */
+  .stat-info h3 {
+    white-space: normal;
+    font-size: 10.5px;
+    line-height: 1.3;
+    word-break: break-word;
+  }
+
+  /* Thẻ hẹp lại thì padding 20px ăn mất gần nửa chỗ của chữ. */
+  .stat-card { padding: 14px; gap: 8px; }
+
+  .stat-meta { font-size: 11px; }
+
+  /* MỌI dạng lọc về một cột — kể cả `cols-2`.
+     Thiếu `cols-2` ở đây là lỗi đang thấy trên ảnh: hàng "Tất cả / Tất cả /
+     Tất c…" giữ nguyên hai cột trên màn 320px nên ô thứ hai bị đẩy tràn ra
+     ngoài mép phải. */
+  .filter-bar-row.cols-2,
   .filter-bar-row.cols-3,
   .filter-bar-row.cols-4 { grid-template-columns: 1fr; }
 
-  table th:nth-child(n+5),
-  table td:nth-child(n+5) { display: none; }
+  .filter-bar { padding: 12px 14px; }
+
+  /* ── Hàng lọc "tự chế" của 10 tab (Đề luyện tập, Từ vựng, Đề thi…) ────
+     Mấy tab này KHÔNG dùng `.filter-bar-row` mà viết thẳng
+     `style="display:flex;gap:8px"` kèm `min-width` inline cho từng select —
+     nên mọi quy tắc ở trên không với tới, và hàng lọc vẫn tràn ("Tất cả
+     ngôn…" bị cắt trong ảnh).
+     Nhắm qua `:has(> .card-search)`: đó là dấu hiệu nhận biết hàng lọc, không
+     phải mọi khối flex trong trang. KHÔNG ràng buộc `.card >` vì mức lồng khác
+     nhau tuỳ tab (tab Từ vựng lồng sâu hơn tab Đề luyện tập). */
+  div:has(> .card-search) {
+    flex-wrap: wrap;
+  }
+
+  /* Ô tìm kiếm chiếm TRỌN một dòng, các select xuống hàng dưới chia đều nhau.
+     `flex-basis: 100%` chứ không `width` — trong flex thì basis mới quyết định
+     chỗ đứng, và nó thắng được `flex: 1` đặt inline. */
+  div:has(> .card-search) > .card-search {
+    flex: 0 0 100% !important;
+    margin-bottom: 0;
+  }
+
+  /* `min-width` inline (120–130px) là thứ giữ ba select nằm cùng một hàng rồi
+     đẩy tràn — phải hạ xuống 0 mới cho chúng co và xuống dòng được. */
+  div:has(> .card-search) > .filter-select {
+    flex: 1 1 calc(50% - 4px) !important;
+    min-width: 0 !important;
+    width: auto !important;
+  }
+
+  /* Chân thanh lọc ("còn N kết quả" + nút Xóa lọc) cũng xếp dọc — `space-between`
+     trên màn hẹp làm hai cụm dính sát nhau rồi tràn. */
+  .filter-bar-footer {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+
+  /* ── Dải phân trang ──────────────────────────────────────────────────
+     `space-between` + không xuống dòng là nguyên nhân cụm "1–15 / 24 đề" bị
+     bóp thành từng chữ một dòng (thấy rõ trên ảnh). Cho phép xuống dòng và
+     xếp dọc thì mỗi cụm được trọn một hàng. */
+  .pagination-row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+
+  /* Nhóm nút thao tác (Ngưng xuất bản / Sync / Xóa lọc) trải hết bề ngang,
+     không dồn về mép phải nữa. */
+  .pagination-row > * {
+    width: 100%;
+  }
+
+  .pagination-row .pager {
+    justify-content: center;
+  }
+
+  /* Cụm nút (Xuất bản tất cả · Sync tất cả · Xóa lọc) được xuống dòng và chia
+     đều chỗ. Chỉ cho khối cha `width: 100%` là chưa đủ: bên trong nó vẫn là
+     `display:flex` một hàng đặt inline, ba nút chữ dài vẫn chen nhau rồi tràn. */
+  .pagination-row > div[style*="flex"] {
+    flex-wrap: wrap;
+  }
+
+  .pagination-row .btn {
+    flex: 1 1 auto;
+    justify-content: center;
+    white-space: nowrap;
+  }
+
+  /* `renderPager` đặt `.pager-info` NẰM TRONG `.pager` (cùng một hàng flex với
+     các nút số trang). Trên màn hẹp hai thứ tranh chỗ nhau, và vì `.pager` có
+     `flex-wrap` nên dòng chữ "1–15 / 24 đề" bị bẻ thành từng mẩu mỗi dòng —
+     đúng cái đang thấy trên ảnh. Ép nó chiếm trọn một dòng riêng thì các nút
+     số trang được nguyên một hàng bên dưới. */
+  .pager-info {
+    flex: 0 0 100%;
+    margin-right: 0;
+    margin-bottom: 4px;
+    text-align: center;
+  }
+
+  /* Số trang bấm được bằng ngón tay: 28px là cỡ chuột, không phải cỡ ngón. */
+  .pager-btn {
+    min-width: 34px;
+    padding: 7px 10px;
+    font-size: 13px;
+  }
+
+  /* ── Bảng ────────────────────────────────────────────────────────────
+     KHÔNG ẩn cột nữa. Bản cũ `display: none` từ cột 5 trở đi — trên trang
+     "Ngân hàng câu hỏi" thì cột 5 lại chính là NGUỒN/thao tác, tức là ẩn mất
+     đúng thứ người ta cần. Thà cho cuộn ngang trong khung của bảng: dữ liệu
+     còn đủ, và `.table-container` vốn đã `overflow-x: auto` sẵn.
+     `-webkit-overflow-scrolling` cho đà cuộn mượt trên iOS. */
+  .table-container {
+    max-height: 60vh;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  table thead th { padding: 9px 10px; font-size: 10px; }
+  table td { padding: 9px 10px; font-size: 12.5px; }
+
+  /* Tiêu đề thẻ và nhóm nút của nó xếp dọc, nút trải hết bề ngang — bấm bằng
+     ngón cái thay vì nhắm vào nút cao 28px ở góc. */
+  .card { padding: 12px 14px; }
+  .card-header-actions { width: 100%; }
+  .card-header-actions .btn { flex: 1 1 auto; justify-content: center; }
+
+  /* ── Cấu hình mùa giải ───────────────────────────────────────────────
+     Lưới 2 cột đặt INLINE trong overview.html, nên phải `!important` mới
+     thắng được. Không bẻ về 1 cột thì hai ô "Bắt đầu mùa" / "Kết thúc mùa"
+     mỗi cái chỉ còn ~140px — ô `datetime-local` có bề rộng tối thiểu của
+     riêng nó nên tràn ra ngoài và bị cắt. */
+  .season-config-grid {
+    grid-template-columns: 1fr !important;
+    padding: 14px !important;
+  }
+
+  /* Nhãn checkbox dài ("Tài nguyên (Vàng/Đá quý/Level/XP + đồ tiêu hao…)")
+     phải xuống dòng được, và checkbox không co theo chữ. */
+  .season-config-grid label { word-break: break-word; }
+  .season-config-grid input[type="checkbox"] { flex-shrink: 0; }
+
+  /* Hai nút Lưu / Reset xếp dọc, trải hết bề ngang thay vì dồn mép phải. */
+  .season-config-grid > div:last-child {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  /* ── Gửi thông báo hệ thống ──────────────────────────────────────────
+     Cả trang là lưới 2 cột (form gửi | lịch sử) đặt INLINE. Trên màn 320px
+     mỗi cột chỉ còn ~110px: nhãn "NỘI DUNG"/"GỬI TỚI" chồng lên ô nhập, ô
+     Coins/Gems/XP bóp còn hai chữ số. Xếp DỌC thì form được trọn bề ngang,
+     lịch sử nằm dưới. `!important` để thắng inline style. */
+  .bc-layout {
+    grid-template-columns: 1fr !important;
+    gap: 16px !important;
+  }
+
+  /* Thẻ form bớt padding — 24px mỗi bên ăn mất 1/6 bề ngang màn 320px. */
+  .bc-layout > div:first-child {
+    padding: 16px !important;
+    gap: 14px !important;
+  }
+
+  /* Hai nút "🌐 Tất cả" / "👤 Người cụ thể" vẫn 2 cột, nhưng bớt padding và cỡ
+     chữ. Giữ `padding:10px 14px` inline thì "Người cụ thể" không vừa nửa màn
+     320px và bị bẻ làm hai dòng, hai nút cao lệch nhau (thấy rõ trong ảnh). */
+  .bc-target-grid > label {
+    padding: 9px 8px !important;
+    font-size: 12px !important;
+    gap: 5px !important;
+  }
+
+  /* Ba ô quà Coins/Gems/XP bẻ về 1 cột: ba ô số cạnh nhau trên màn hẹp thì mỗi
+     ô chưa đủ chỗ cho bốn chữ số. */
+  .bc-gift-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* ── Bảng kinh tế (faucet / sink) ────────────────────────────────────
+     Ba thẻ tổng kết là lưới 3 cột đặt INLINE. Trên màn 320px mỗi thẻ chỉ còn
+     ~95px, mà bên trong mỗi dòng lại là `space-between` (nhãn trái · số phải):
+     "▲ Thu (faucet)" và con số không đủ chỗ đứng cạnh nhau nên vỡ thành từng
+     mẩu chồng lên nhau — đúng cái đang thấy. Một cột thì mỗi thẻ được trọn bề
+     ngang và dòng nhãn·số về đúng một hàng. */
+  #eco-summary {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Ô chọn số ngày + nút Làm mới: mỗi thứ một dòng, trải hết bề ngang. */
+  #main-tab-economy .card-header-actions { width: 100%; }
+  #main-tab-economy .card-header-actions > * { flex: 1 1 100%; }
+  #main-tab-economy #eco-days { width: 100% !important; }
+
+  /* DB Manager: quy tắc mobile nằm NGAY SAU phần định nghĩa gốc ở cuối file
+     (tìm "DB Manager — bản mobile"). Đặt ở đây thì thua, vì bản gốc
+     `.db-manager-layout { grid-template-columns: 220px 1fr }` viết sau — cùng
+     độ cụ thể thì cái viết sau thắng. */
 }
+
+/* Chặn cuộn ngang CẢ TRANG.
+   Bảng rộng phải cuộn TRONG khung của nó (`.table-container`), không được đẩy
+   cả bố cục sang phải — khi đó thanh bên và tiêu đề cũng trôi theo, đúng kiểu
+   "vỡ" đang thấy. Đặt ngoài media query vì nó đúng ở mọi khổ. */
+.admin-content { overflow-x: hidden; }
+.admin-content .main-tab-content { min-width: 0; }
 
 /* ===================================
    MODAL RESPONSIVE OVERRIDES
@@ -2429,3 +2641,58 @@ table tbody tr:hover td { background: var(--hover-bg); }
         resize: vertical;
         box-sizing: border-box;
       }
+
+/* ===================================
+   DB Manager — bản mobile
+   ===================================
+   PHẢI nằm SAU khối định nghĩa gốc ở trên. Bản gốc là
+   `.db-manager-layout { grid-template-columns: 220px 1fr }` — cùng độ cụ thể
+   với quy tắc mobile, nên cái viết SAU thắng. Để khối này ở giữa file (chỗ các
+   media query khác) thì `220px` ghi đè ngược lại và sidebar vẫn bị bó ~230px,
+   chừa một dải trống bên phải. Đã dính đúng lỗi đó một lần.
+
+   Cách trình bày: hai cột → hai CẢNH. Màn 320px mà chia đôi thì panel document
+   chỉ còn ~85px, JSON không đọc nổi. Mặc định hiện danh sách chiếm TRỌN bề
+   ngang; chọn collection thì `.db-showing-doc` (JS gắn) đổi sang panel document
+   kèm nút ‹ Quay lại. */
+@media (max-width: 600px) {
+  .db-manager-layout {
+    grid-template-columns: 1fr;
+    height: auto;
+    gap: 0;
+  }
+
+  /* Cao theo màn hình chứ không `height: 100%` của lưới — lưới giờ `auto` nên
+     `100%` sẽ co về đúng nội dung rồi mất khung cuộn. */
+  .db-col-sidebar,
+  .db-doc-panel {
+    height: calc(100vh - 150px);
+  }
+
+  /* Đang xem danh sách → giấu panel document (kể cả chỗ "Chọn một
+     collection…", trên mobile nó thừa vì danh sách đã chiếm cả màn). */
+  .db-manager-layout .db-doc-panel { display: none; }
+
+  /* Đang xem document → giấu danh sách. */
+  .db-manager-layout.db-showing-doc .db-col-sidebar { display: none; }
+  .db-manager-layout.db-showing-doc .db-doc-panel { display: block; }
+
+  /* Nút Quay lại chỉ có nghĩa ở khổ này (desktop hai cột luôn thấy cả hai). */
+  #db-back-btn { display: inline-flex !important; }
+
+  .db-doc-panel { padding: 12px 14px; }
+
+  /* Tên collection dài ("toeic_question_sets", "achievement_definitions") có
+     chỗ để hiện trọn vẹn khi sidebar rộng hết màn. */
+  .db-col-item { padding: 11px 12px; font-size: 14px; }
+  .db-col-name { font-size: 14px; }
+
+  /* Ba nút Thêm/Xóa/Drop chữ dài — xuống dòng và chia đều thay vì tràn. */
+  #db-doc-content .card-header { flex-direction: column; align-items: stretch; }
+  #db-doc-content .card-header-actions { width: 100%; }
+  #db-doc-content .card-header-actions .btn { flex: 1 1 auto; justify-content: center; }
+}
+
+/* Nút Quay lại là thứ CHỈ dành cho mobile — desktop hiện cả hai cột nên nó vô
+   nghĩa. Ẩn mặc định, media query ở trên bật lại. */
+#db-back-btn { display: none; }

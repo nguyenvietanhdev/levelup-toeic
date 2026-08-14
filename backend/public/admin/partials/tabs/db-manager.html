@@ -38,6 +38,13 @@
                   <!-- Header -->
                   <div class="card-header" style="margin-bottom:12px;padding:0">
                     <div style="display:flex;align-items:center;gap:8px">
+                      <!-- Chỉ hiện ở khổ điện thoại (dashboard.css): ở đó danh
+                           sách collection và panel này thay phiên nhau chiếm
+                           trọn màn, nên phải có đường quay lại. Desktop hai cột
+                           luôn thấy cả hai nên nút bị ẩn. -->
+                      <button class="btn btn-ghost btn-sm" id="db-back-btn" title="Quay lại danh sách collection">
+                        <i class="fas fa-chevron-left"></i>
+                      </button>
                       <h2 style="margin:0;font-size:16px">
                         <i class="fas fa-table"></i>
                         <span id="db-col-title">—</span>

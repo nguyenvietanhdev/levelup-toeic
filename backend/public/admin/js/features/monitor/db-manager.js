@@ -48,6 +48,11 @@ function initDbManager() {
         if (item) selectDbCollection(item.dataset.col);
     });
 
+    // Quay lại danh sách (khổ điện thoại). `addEventListener` chứ KHÔNG phải
+    // `onclick=` inline: CSP của server đặt `script-src-attr 'none'` nên mọi
+    // thuộc tính sự kiện inline đều bị chặn thẳng, nút sẽ không bao giờ chạy.
+    document.getElementById('db-back-btn')?.addEventListener('click', showDbCollectionList);
+
     document.getElementById('db-search-btn')?.addEventListener('click', () => {
         _db.currentSearch = document.getElementById('db-search')?.value.trim() || '';
         loadDbDocuments(1);
@@ -257,7 +262,18 @@ function selectDbCollection(name) {
     document.getElementById('db-doc-content').style.display = 'block';
     document.getElementById('db-col-title').textContent = name;
 
+    // Khổ điện thoại: danh sách và panel document thay phiên nhau chiếm trọn
+    // màn (xem `.db-showing-doc` trong dashboard.css). Class này là thứ chuyển
+    // cảnh. Trên desktop nó không có tác dụng gì — quy tắc chỉ sống trong
+    // media query — nên gắn vô điều kiện, không cần đo bề rộng màn hình.
+    document.querySelector('.db-manager-layout')?.classList.add('db-showing-doc');
+
     loadDbDocuments(1);
+}
+
+/** Về lại danh sách collection (chỉ dùng ở khổ điện thoại). */
+function showDbCollectionList() {
+    document.querySelector('.db-manager-layout')?.classList.remove('db-showing-doc');
 }
 
 // Expose for inline onclick
@@ -541,6 +557,10 @@ async function dropCurrentCollection() {
         _db.currentCollection = null;
         document.getElementById('db-doc-empty').style.display = '';
         document.getElementById('db-doc-content').style.display = 'none';
+        // Drop xong thì không còn gì để xem — trên điện thoại phải trả về danh
+        // sách, nếu không màn hình trống trơn mà nút Quay lại cũng vừa bị ẩn
+        // theo `db-doc-content`.
+        showDbCollectionList();
         loadDbCollections();
     } catch (err) {
         showToast(`Lỗi: ${err.message}`, 'error');

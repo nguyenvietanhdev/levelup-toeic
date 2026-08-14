@@ -74,7 +74,11 @@
                 <h2><i class="fas fa-trophy"></i> Mùa giải <span id="season-num-badge" class="badge" style="background:#e11d48">SS1</span></h2>
                 <span id="season-config-status" style="font-size:13px;color:var(--text-secondary)"></span>
               </div>
-              <div style="padding:16px;display:grid;grid-template-columns:1fr 1fr;gap:14px">
+              <!-- `season-config-grid`: có class thì media query mới bẻ về 1 cột
+                   được. Để lưới nằm hoàn toàn trong `style=` inline thì mọi quy
+                   tắc responsive đều thua, và trên điện thoại hai ô ngày giờ bị
+                   ép còn một nửa bề ngang rồi cắt cụt. -->
+              <div class="season-config-grid" style="padding:16px;display:grid;grid-template-columns:1fr 1fr;gap:14px">
                 <div>
                   <label style="display:block;font-size:12px;font-weight:600;margin-bottom:4px">Bắt đầu mùa</label>
                   <input type="datetime-local" id="season-start" style="width:100%;padding:8px 10px;border:1px solid var(--border-color);border-radius:6px;background:var(--bg-secondary);color:var(--text-primary)">
