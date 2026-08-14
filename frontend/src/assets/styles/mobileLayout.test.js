@@ -156,14 +156,6 @@ describe('ẩn thứ chiếm chỗ', () => {
 });
 
 describe('hàng tiêu đề: nút không đè, không rớt dòng', () => {
-    test('nhãn đếm trên hàng tiêu đề CO ĐƯỢC', () => {
-        // `marginLeft: auto` đẩy nó sang phải, mà nó giữ nguyên bề rộng chữ nên
-        // đẩy luôn nút Làm mới xuống dòng dưới.
-        const r = ruleFor('.header-count-badge');
-        expect(r).toMatch(/flex:\s*0 1 auto/);
-        expect(r).toMatch(/min-width:\s*0/);
-    });
-
     test('CẢ HAI màn dùng chung class, không vá riêng từng chỗ', () => {
         // Bảng xếp hạng và Thành tích có cùng khuôn (tiêu đề · nhãn đếm · nút
         // Làm mới) và cùng dính đúng lỗi này. Vá riêng từng màn là màn thứ ba
@@ -172,13 +164,6 @@ describe('hàng tiêu đề: nút không đè, không rớt dòng', () => {
             const src = readFileSync(join(__dirname, '..', '..', 'components', f), 'utf8');
             expect(src, f).toMatch(/className="header-count-badge"/);
         }
-    });
-
-    test('nút Điểm danh chừa chỗ để không đè nút bên cạnh', () => {
-        // Nó có chấm báo nhô ra -4px ở góc phải trên; hai nút sát nhau thì chấm
-        // đó phủ lên nút kế.
-        expect(ruleFor('.screen-header .checkin-trigger-btn'))
-            .toMatch(/margin-right:\s*\d+px/);
     });
 });
 
@@ -493,38 +478,41 @@ describe('tiêu đề màn hình không vỡ dòng giữa từ', () => {
         expect(ruleFor('.screen-header')).toMatch(/flex-wrap:\s*wrap/);
     });
 
-    test('tiêu đề giữ NGUYÊN một dòng và ĐẨY HẾT nhóm nút xuống dòng dưới', () => {
-        // `flex-basis: auto` chỉ chiếm bằng nội dung, nên hai nút đầu vẫn lọt
-        // lên cùng dòng với tiêu đề còn hai nút sau rơi xuống — nhìn như nút bị
-        // thiếu. Basis đủ lớn thì dòng đầu hết chỗ và cả nhóm cùng xuống.
+    test('tiêu đề chiếm chỗ còn lại, đẩy nút Làm mới về mép phải', () => {
+        // Hàng giờ chỉ còn: quay lại · tiêu đề · Làm mới.
         const r = ruleFor('.screen-header h2');
         expect(r).toMatch(/white-space:\s*nowrap/);
-        expect(r).toMatch(/flex:\s*1 1 \d+%/);
+        expect(r).toMatch(/flex:\s*1 1 auto/);
         expect(r).toMatch(/min-width:\s*0/);
     });
 
-    test('nhóm nút chia đều dòng dưới, nhưng KHÔNG nhỏ hơn chữ', () => {
-        // `flex: 1 1 0` + `min-width: 0` chia đều thật, nhưng cho nút co xuống
-        // dưới cỡ nội dung — nền bo tròn teo lại còn chữ tràn ra ngoài.
-        // `1 1 auto` vẫn giãn đều nhờ `flex-grow`, chỉ là có sàn.
-        const r = ruleFor('.screen-header .inventory-btn,\n    .screen-header .checkin-trigger-btn');
-        expect(r).toMatch(/flex:\s*1 1 auto/);
-        // `min-width: 0` là nửa còn lại của lỗi: một mình `basis: 0` chưa cho
-        // co dưới nội dung, hai cái cộng lại mới ra nút bị nén.
-        expect(r).not.toMatch(/min-width:\s*0/);
+    test('mọi nút hành động trên hàng tiêu đề đều ẩn', () => {
+        // Màn 360px không đủ cho tiêu đề + nhãn đếm + 2-4 nút. Tất cả đều vào
+        // được bằng đường khác (menu bên, hoặc chỉ để tham khảo).
+        const r = ruleFor([
+            '.header-count-badge',
+            '.profile-leaderboard-btn',
+            '.screen-header .checkin-trigger-btn',
+            '.screen-header .inventory-btn',
+            '.stats-export-btn',
+            '.toeic-header-btn',
+        ].join(',\n    '));
+        expect(r).toMatch(/display:\s*none\s*!important/);
     });
 
-    test('huỷ `margin-left: auto` cho CẢ nút Điểm danh', () => {
-        // `auto` đẩy nút sang mép phải — đúng khi cả hàng một dòng, nhưng nhóm
-        // nút giờ ở dòng RIÊNG nên nó chỉ tạo khoảng trống rồi ép nút cuối tràn
-        // ra ngoài (đúng triệu chứng nút Điểm danh bị cắt).
-        //
-        // Nút Điểm danh có `auto` ở CẢ HAI nơi: `.checkin-trigger-btn` trong
-        // components.css VÀ style inline ở QuestScreen — chỉ `!important` mới
-        // thắng được cái inline.
-        const r = ruleFor(
-            '.screen-header .inventory-btn:first-of-type,\n    .screen-header .checkin-trigger-btn');
-        expect(r).toMatch(/margin-left:\s*0\s*!important/);
+    test('hàng nút màn Từ vựng riêng chỉ còn nút Đồng bộ', () => {
+        // "Quản lý từ vựng" và ô thời hạn lưu đều ẩn.
+        expect(ruleFor('#upload-tab-manage,\n    #upload-retention'))
+            .toMatch(/display:\s*none\s*!important/);
+    });
+
+    test('"Quản lý" phải thành TAB trước khi ẩn nút của nó', () => {
+        // Nút header từng là lối vào DUY NHẤT — ẩn mà không thêm tab là mất hẳn
+        // tính năng trên điện thoại, im lặng.
+        const mod = readFileSync(
+            join(__dirname, '..', '..', 'components', 'vocab', 'upload', 'openUploadModal.js'),
+            'utf8');
+        expect(mod).toMatch(/\{ key: 'manage', label: 'Quản lý'/);
     });
 });
 

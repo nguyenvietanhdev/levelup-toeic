@@ -991,6 +991,10 @@ Danh sách từ vựng cần chuyển:
                 { key: 'json', label: 'Thêm JSON', icon: 'fa-code' },
                 { key: 'share', label: 'Chia sẻ', icon: 'fa-user-plus' },
                 { key: 'received', label: 'Được chia sẻ', icon: 'fa-handshake' },
+                // "Quản lý" vào THANH TAB, không chỉ nằm sau nút ở header.
+                // Nút header bị ẩn ở khổ điện thoại (responsive.css) — mà đó
+                // từng là lối vào DUY NHẤT, ẩn đi là mất hẳn tính năng.
+                { key: 'manage', label: 'Quản lý', icon: 'fa-list' },
             ],
             initialTab: tab === 'manage' ? 'manage' : (tab === 'share' ? 'share' : (tab === 'received' ? 'received' : 'add')),
             renderBody: (t) => (

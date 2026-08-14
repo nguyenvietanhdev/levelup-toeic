@@ -1011,10 +1011,9 @@
        nút hành động bị đẩy xuống dòng dưới. Không dùng `order`: thứ tự DOM
        (back → tiêu đề → nút) vốn đã đúng, đảo thêm chỉ làm khó đọc. */
     .screen-header h2 {
-        /* Chiếm phần còn lại của dòng đầu (sau nút quay lại) NHƯNG không kéo
-           nút nào lên cùng: `flex-basis` đủ lớn để dòng đầu hết chỗ, nên cả
-           nhóm nút hành động rơi xuống dòng dưới thay vì chen hai cái lên. */
-        flex: 1 1 60%;
+        /* Hàng giờ chỉ còn: quay lại · tiêu đề · Làm mới. Tiêu đề chiếm phần
+           còn lại và đẩy nút Làm mới về mép phải. */
+        flex: 1 1 auto;
         min-width: 0;
         font-size: 1.05rem;
         white-space: nowrap;
@@ -1024,55 +1023,39 @@
         flex: 0 0 auto;
     }
 
-    /* `margin-left: auto` đẩy nút sang mép phải — đúng khi cả hàng nằm một
-       dòng, nhưng nhóm nút giờ đã ở dòng RIÊNG nên nó chỉ tạo khoảng trống lớn
-       rồi ép nút cuối tràn ra ngoài.
-       Nút Điểm danh có `auto` ở CẢ HAI nơi: `.checkin-trigger-btn` trong
-       components.css VÀ style inline ở QuestScreen — phải `!important` mới
-       thắng được cái inline. */
-    .screen-header .inventory-btn:first-of-type,
-    .screen-header .checkin-trigger-btn {
-        margin-left: 0 !important;
-    }
-
-    /* Nhóm nút CHIA ĐỀU dòng dưới. Trước để `flex: 0 0 auto` — chúng giữ nguyên
-       bề rộng nội dung nên hai cái đầu bị kéo lên chen với tiêu đề, còn hai cái
-       sau rơi xuống: nhìn như nút bị thiếu chứ không như một hàng nút. */
-    .screen-header .inventory-btn,
-    .screen-header .checkin-trigger-btn {
-        /* `min-width: auto` (mặc định của flex) chứ KHÔNG `0`: cặp
-           `min-width: 0` + `white-space: nowrap` cho phép nút co xuống dưới cỡ
-           chữ — nền bo tròn teo lại thành hình tròn nhỏ còn chữ tràn ra ngoài
-           nó. Nút vẫn chia đều dòng nhờ `flex-grow`, chỉ là không nhỏ hơn nội
-           dung của chính nó. */
-        flex: 1 1 auto;
-        justify-content: center;
-        font-size: 12px;
-        padding: 6px 10px;
-        white-space: nowrap;
-    }
-
     /* Nút Làm mới (chỉ icon) giữ nguyên cỡ, không giãn theo. */
     .screen-header .icon-btn:not(.back-btn-screen) {
         flex: 0 0 auto;
     }
 
-    /* Nhãn ĐẾM trên hàng tiêu đề ("N / M online", "31 / 50 đã mở") phải CO
-       ĐƯỢC. `marginLeft: auto` đẩy nó sang phải, mà nó lại giữ nguyên bề rộng
-       chữ nên đẩy luôn nút Làm mới xuống dòng dưới.
-       Dùng CHUNG một class cho cả Bảng xếp hạng lẫn Thành tích — vá riêng từng
-       màn là màn thứ ba lại lặp đúng lỗi này. */
-    .header-count-badge {
-        flex: 0 1 auto;
-        min-width: 0;
-        overflow: hidden;
+    /* ── Hàng tiêu đề CHỈ GIỮ: nút quay lại · tiêu đề · nút Làm mới ───────
+       Màn 360px không đủ cho tiêu đề + nhãn đếm + 2-4 nút hành động. Mọi thứ
+       dưới đây đều vào được bằng đường khác, nên ẩn ở đây không mất chức năng:
+
+       · Nhãn đếm ("N / M online", "31 / 50 đã mở") — chỉ để tham khảo.
+       · Bảng xếp hạng (ở Hồ sơ) — có mục riêng trong menu bên.
+       · Điểm danh (ở Nhiệm vụ) và Vòng quay (ở Cửa hàng) — cùng class
+         `.checkin-trigger-btn`.
+       · Lịch sử · Túi đồ (ở Cửa hàng) — cùng class `.inventory-btn`; Túi đồ
+         còn có mục riêng trong menu bên.
+       · Xuất báo cáo (ở Thống kê). */
+    .header-count-badge,
+    .profile-leaderboard-btn,
+    .screen-header .checkin-trigger-btn,
+    .screen-header .inventory-btn,
+    .stats-export-btn,
+    .toeic-header-btn {
+        display: none !important;
     }
 
-    /* Nút Điểm danh KHÔNG được đè lên nút Làm mới bên cạnh.
-       Nó có chấm báo nhô ra -4px ở góc phải trên; hai nút sát nhau thì chấm đó
-       phủ lên nút kế. Chừa một khoảng bằng đúng phần nhô ra. */
-    .screen-header .checkin-trigger-btn {
-        margin-right: 6px;
+    /* Hàng nút của màn "Từ vựng riêng": chỉ giữ nút Đồng bộ.
+       · "Quản lý từ vựng" — đã thành một TAB trong thanh tab, nên ẩn nút này
+         không mất đường vào (trước đây nó là lối vào duy nhất).
+       · Thời hạn lưu — mặc định 30 ngày vẫn áp dụng; ai cần đổi thì mở trên
+         máy tính. */
+    #upload-tab-manage,
+    #upload-retention {
+        display: none !important;
     }
 
     /* Cài đặt dạng accordion: quy tắc nằm ở components.css (@media 640px) để
