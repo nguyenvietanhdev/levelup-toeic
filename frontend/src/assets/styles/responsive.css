@@ -471,6 +471,32 @@
         min-width: 0;
     }
 
+    /* Ô bật/tắt mượn class `.quick-difficulty-selector` của thanh nav, nên ở
+       khổ này nó dính luôn bản NÉN của nav (`font-size: 10px; min-width: 70px`,
+       xem đầu file) — trong khi select thường cạnh nó vẫn 14px. Bằng nhau bề
+       ngang mà chữ một bên bé hơn hẳn thì vẫn là hai cỡ khác nhau. Kéo nó về
+       đúng bộ dùng chung của màn Cài đặt. */
+    .settings-section .quick-difficulty-selector select {
+        min-width: 0;
+        height: 38px;
+        padding: 0 10px;
+        font-size: 14px;
+    }
+
+    /* Cụm nhiều điều khiển cũng trải hết bề ngang ở khổ này.
+       Bản desktop ghim nó 240px — giữ nguyên trên màn 360px là hàng đó hẹp hơn
+       hẳn mọi hàng khác (các hàng kia đã `width: 100%` ở trên). */
+    .setting-inline-group {
+        width: 100%;
+    }
+
+    /* `!important` để thắng `.setting-inline-group select { width: auto
+       !important }` của bản desktop — không có thì select bên trong cụm giữ
+       `auto` và co về đúng bề rộng chữ. */
+    .setting-inline-group select {
+        width: 100% !important;
+    }
+
     /* ── Popup Vòng quay ──────────────────────────────────────────────────
        `width: 660px` cố định + hai cột (bánh xe trái · bảng thưởng phải). Trên
        màn 360px cột phải bị bóp tới mức chữ xếp dọc từng chữ, và cả hộp tràn
@@ -930,14 +956,21 @@
         display: flex;
     }
 
-    /* Thanh tab của popup "Từ vựng riêng" có 4 nhãn — trên màn hẹp chữ 13px bị
-       cắt thành "Được ch…". Thu chữ và bỏ icon: icon ở đây chỉ trang trí, còn
-       nhãn mới là thứ phân biệt được tab nào.
-       Giới hạn trong .modal-body: nút "Quản lý từ vựng" ở HEADER cũng mang id
-       `upload-tab-manage`, không loại nó ra thì nó mất icon và co chữ theo. */
+    /* Thanh tab của popup "Từ vựng riêng" — trên màn hẹp chữ 13px bị cắt thành
+       "Được ch…". Thu chữ và bỏ icon: icon ở đây chỉ trang trí, còn nhãn mới là
+       thứ phân biệt được tab nào.
+       Giới hạn trong .modal-body là BẮT BUỘC: nút "Quản lý từ vựng" ở HEADER
+       cũng mang id `upload-tab-manage`, không loại nó ra thì nó mất icon và co
+       chữ theo — mà nút đó giờ là lối vào duy nhất của phần Quản lý. */
     #modal-container .modal-body [id^="upload-tab-"] {
         font-size: 11px;
-        padding: 10px 2px;
+        padding: 8px 2px;
+    }
+
+    /* Dải nền của thanh tab bám sát mép hơn ở khổ này — .modal-body đã có
+       padding riêng, cộng thêm 16px của bản desktop là thừa. */
+    .upload-tab-nav {
+        margin: 8px 0 0;
     }
 
     #modal-container .modal-body [id^="upload-tab-"] i {
@@ -1048,12 +1081,12 @@
         display: none !important;
     }
 
-    /* Hàng nút của màn "Từ vựng riêng": chỉ giữ nút Đồng bộ.
-       · "Quản lý từ vựng" — đã thành một TAB trong thanh tab, nên ẩn nút này
-         không mất đường vào (trước đây nó là lối vào duy nhất).
+    /* Hàng nút của màn "Từ vựng riêng".
+       · "Quản lý từ vựng" — PHẢI hiện ở khổ này. Trước đây ẩn được vì đã có tab
+         "Quản lý" trên thanh tab đỡ; tab đó nay bỏ rồi nên nút này lại là lối
+         vào DUY NHẤT, ẩn đi là mất hẳn tính năng trên điện thoại.
        · Thời hạn lưu — mặc định 30 ngày vẫn áp dụng; ai cần đổi thì mở trên
          máy tính. */
-    #upload-tab-manage,
     #upload-retention {
         display: none !important;
     }

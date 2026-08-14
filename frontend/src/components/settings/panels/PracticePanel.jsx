@@ -63,7 +63,10 @@ export default function PracticePanel({ s, handleQPS, updateSetting, handleDiffi
                             <h4>Thời gian mỗi câu</h4>
                             <p>Chọn chế độ (hoặc “Toàn bộ”) rồi đặt số giây cho mỗi câu hỏi</p>
                         </div>
-                        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                        {/* Hai select cạnh nhau — cả CỤM rộng đúng bằng một
+                            select thường, rồi chia đôi bên trong. Không ghim thì
+                            mỗi cái tự lấy 240px và hàng này rộng gấp đôi. */}
+                        <div className="setting-inline-group" style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                             <select value={tmMode} onChange={e => setTmMode(e.target.value)} title="Áp dụng cho chế độ nào">
                                 <option value="all">Toàn bộ</option>
                                 {QUESTION_TIME_MODES.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}

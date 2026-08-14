@@ -3718,6 +3718,27 @@ mark {
   color: #fff;
 }
 
+/* Thanh tab của popup "Từ vựng riêng" — mượn nguyên kiểu `.stats-tab-nav`.
+   Chỉ chỉnh chỗ đặt: thanh này nằm sát mép trên của .modal-body (không có
+   padding bao ngoài như màn Thống kê), nên tự chừa lề cho mình. */
+.upload-tab-nav {
+  margin: 12px 16px 0;
+}
+
+/* Bốn tab, nhãn dài nhất là "Được chia sẻ" — cho phép co lại thay vì đẩy vỡ
+   hàng. `.stats-tab-btn` mặc định `min-width: max-content` (thanh Thống kê chỉ
+   có 3 tab ngắn nên không sao). Giữ nguyên `display: flex` của bản gốc để icon
+   và chữ vẫn căn giữa cùng nhau. */
+.upload-tab-nav .stats-tab-btn {
+  min-width: 0;
+  padding: 8px 6px;
+}
+
+/* Chữ co được, icon thì không (`flex-shrink: 0` — icon bé, co nó là méo). */
+.upload-tab-nav .stats-tab-btn i {
+  flex-shrink: 0;
+}
+
 /* Stats tab panels */
 .stats-tab-panel {
   display: none;
@@ -4390,21 +4411,34 @@ mark {
   font-size: 14px;
 }
 
-/* ── Mọi <select> trong Cài đặt CÙNG BỀ RỘNG ─────────────────────────────────
-   Không đặt thì mỗi ô rộng theo nội dung của nó: "Bật" ngắn tũn, còn
-   "Yunyang — Trưởng thành (CN) 👨" thì dài gấp năm — cột phải răng cưa, mỗi
-   dòng một cỡ.
-   240px vừa đủ cho nhãn dài nhất hiện có (~38 ký tự) mà không phình quá. */
+/* ── Mọi <select> trong Cài đặt CÙNG MỘT KÍCH CỠ ─────────────────────────────
+   Không chỉ bề RỘNG. Bằng nhau bề ngang mà cái cao cái thấp, cái chữ 12px cái
+   chữ mặc định thì cột phải vẫn lệch — chỉ là lệch theo chiều khác.
+
+   Rộng: không ghim thì mỗi ô rộng theo nội dung của nó — "Bật" ngắn tũn, còn
+   "Yunyang — Trưởng thành (CN) 👨" dài gấp năm. 240px vừa đủ cho nhãn dài nhất
+   hiện có (~38 ký tự) mà không phình quá.
+
+   Cao/chữ/viền: ô bật/tắt (Toggle) mượn class `.quick-difficulty-selector` của
+   thanh nav, nên nó kéo theo `padding: 3px 8px; font-size: 12px` của nav
+   (layout.css) — trong khi select thường ở đây không có quy tắc nào, dùng mặc
+   định của trình duyệt. Hai kiểu hộp khác hẳn nhau đứng cạnh nhau. Ghi rõ cả
+   bộ ở đây để mọi ô cùng một hộp, bất kể nó mang class gì. */
 .settings-section select,
 .settings-section .quick-difficulty-selector select {
   width: 240px;
   max-width: 100%;
-}
-
-/* Ô bật/tắt cũng dùng CHUNG bề rộng đó — cho nó hẹp riêng thì lại đúng vấn đề
-   vừa sửa: hàng này ngắn, hàng kia dài. */
-.toggle-select select {
-  width: 240px;
+  box-sizing: border-box;
+  height: 38px;
+  padding: 0 10px;
+  font-size: 14px;
+  font-family: inherit;
+  font-weight: 500;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  cursor: pointer;
 }
 
 /* Hàng có nhiều điều khiển cạnh nhau (select + ô số + "/990"): cả CỤM rộng
@@ -4416,11 +4450,79 @@ mark {
   flex-shrink: 0;
 }
 
-/* Select bên trong cụm co theo chỗ còn lại, không giữ 240px của riêng nó. */
+/* ── Ô bật/tắt: MÀU nói lên trạng thái ───────────────────────────────────────
+   Trước đây mọi ô bật/tắt đều mang nền gradient đỏ-cam (thừa hưởng từ
+   `.quick-difficulty-selector` của thanh nav, xem dark-mode.css) — "Tắt" trông
+   rực rỡ y hệt "Bật", nên phải ĐỌC chữ mới biết trạng thái. Màu chẳng mang
+   thông tin gì, mà lại là thứ mắt bắt trước tiên.
+
+   Giờ: BẬT = màu chủ đề, TẮT = nền trung tính như mọi select khác.
+
+   Đối thủ là `[data-theme="dark"] .quick-difficulty-selector select` trong
+   dark-mode.css — độ cụ thể 0-2-1 (thuộc tính `[data-theme="dark"]` tính NGANG
+   một class).
+
+   Bản đầu của quy tắc này là `.settings-section .toggle-select select`, cũng
+   0-2-1 → HOÀ. Mà index.css nạp dark-mode.css SAU components.css, nên hoà là
+   thua: chế độ tối vẫn tô gradient cho cả Bật lẫn Tắt (đúng lỗi vừa gặp).
+
+   Nên nhánh thứ hai kèm `[data-theme]` + `.quick-difficulty-selector` (class mà
+   Toggle thật sự mang) để lên 0-4-1 — hơn hẳn, thắng bất kể thứ tự nạp. Nhánh
+   đầu giữ lại cho trường hợp thẻ <html> chưa có thuộc tính `data-theme`. */
+.settings-section .toggle-select select,
+[data-theme] .settings-section .quick-difficulty-selector.toggle-select select {
+  background: var(--bg-secondary);
+  border-color: var(--border-color);
+  color: var(--text-primary);
+  font-weight: 600;
+  transition: background 0.18s ease, border-color 0.18s ease, color 0.18s ease;
+}
+
+.settings-section .toggle-select--on select,
+[data-theme] .settings-section .quick-difficulty-selector.toggle-select--on select {
+  background: linear-gradient(135deg, var(--primary-color, #E11D48), var(--secondary-color, #F97316));
+  border-color: var(--primary-color, #E11D48);
+  color: #fff;
+}
+
+/* Danh sách xổ xuống luôn dùng nền thường — chữ trắng trên nền trắng là không
+   đọc được, và trình duyệt không kế thừa gradient vào <option>. */
+.settings-section .toggle-select select option,
+[data-theme] .settings-section .quick-difficulty-selector.toggle-select select option {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+}
+
+/* Select bên trong cụm co theo chỗ còn lại, không giữ 240px của riêng nó.
+   Chỉ đụng tới bề rộng — chiều cao/chữ/viền vẫn lấy từ bộ dùng chung ở trên. */
 .setting-inline-group select {
   width: auto !important;
   flex: 1 1 auto;
   min-width: 0;
+}
+
+/* Ô số đứng cạnh select trong cùng một cụm phải CAO BẰNG nó, không thì cụm đó
+   so le ngay bên trong. Ô số tự đặt `width` inline (64px/76px) nên ở đây không
+   nói gì về bề rộng. */
+.setting-inline-group input[type="number"],
+.setting-item > input[type="number"] {
+  box-sizing: border-box;
+  height: 38px;
+  padding: 0 10px;
+  font-size: 14px;
+  font-family: inherit;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+}
+
+/* NGOẠI LỆ có chủ ý: hàng chọn giọng đọc.
+   Nó xếp DỌC (nhãn trên, ô chọn dưới) và ô chọn trải hết bề ngang, vì tên giọng
+   dài gấp nhiều lần mọi nhãn khác ("Yunyang — Trưởng thành (CN) 👨"). Ép 240px
+   ở đây là cắt mất tên, không phải làm cho đều. */
+.voice-select-row select {
+  width: 100% !important;
 }
 
 .volume-slider {
@@ -6414,6 +6516,11 @@ mark {
     align-items: center;
     justify-content: space-between;
     gap: var(--spacing-sm);
+    /* Cho xuống dòng: nhiệm vụ nhiều phần thưởng (xu · XP · đá · vật phẩm · x2)
+       có hàng thưởng dài gần bằng cả thẻ. Ép chung MỘT hàng thì tên nhiệm vụ bị
+       bóp còn vài ký tự và vỡ thành "ván / trong / tháng" mỗi từ một dòng. Thà
+       để cụm thưởng rơi xuống hàng dưới, tên vẫn đọc liền mạch. */
+    flex-wrap: wrap;
 }
 
 .quest-title {
@@ -6422,9 +6529,17 @@ mark {
     gap: var(--spacing-sm);
     font-weight: 600;
     color: var(--text-primary);
+    /* Chiếm chỗ trước, và được co — nhưng không dưới ~55% bề ngang thẻ, đủ cho
+       một cụm từ tiếng Việt đứng trọn vẹn. */
+    flex: 1 1 55%;
+    min-width: 0;
 }
 
-.quest-icon { font-size: 1.4rem; }
+.quest-icon {
+    font-size: 1.4rem;
+    /* Icon co lại là méo; nó cũng chỉ rộng hơn 20px. */
+    flex-shrink: 0;
+}
 
 .quest-reward {
     display: flex;
@@ -6433,7 +6548,13 @@ mark {
     font-size: var(--font-size-sm);
     color: var(--accent-color);
     font-weight: 600;
+    /* `nowrap` chỉ áp cho TỪNG mục thưởng (không cắt "380 XP" làm đôi), còn cả
+       cụm thì được xuống dòng khi hết chỗ. */
     white-space: nowrap;
+    flex-wrap: wrap;
+    /* Không giành chỗ của tên nữa: chỉ lấy phần còn thừa. */
+    flex: 0 1 auto;
+    min-width: 0;
 }
 
 .quest-reward-item {
@@ -8404,10 +8525,66 @@ mark {
    lỗi, mà đây là danh sách bình thường. */
 .uv-del-btn:hover { background: #dc2626; border-color: #dc2626; }
 
+/* ── Hàng "Xóa trọn một Part" ────────────────────────────────────────────────
+   Trước đây chỉ có hai mức: xoá từng từ, hoặc xoá sạch cả nguồn. Bỏ một buổi
+   nhập nhầm nghĩa là bấm × mấy chục lần. Hàng này lấp khoảng giữa. */
+.uv-part-bar {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 8px;
+}
+
+.uv-part-bar-label {
+    font-size: 11px;
+    color: var(--text-secondary);
+    margin-right: 2px;
+}
+
+/* Giống hệt `.uv-part` (badge Part trong bảng) để nhìn là biết cùng một khái
+   niệm — chỉ khác là bấm được. Nền/viền trung tính: đây là nút XOÁ nhưng đỏ
+   thường trực thì cả hàng trông như đang báo lỗi. */
+.uv-part-del {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 3px 9px;
+    border-radius: 999px;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    color: var(--text-secondary);
+    font-size: 11px;
+    font-weight: 600;
+    font-family: inherit;
+    cursor: pointer;
+    transition: background 0.12s, color 0.12s, border-color 0.12s;
+}
+
+.uv-part-del:hover {
+    background: #dc2626;
+    border-color: #dc2626;
+    color: #fff;
+}
+
+/* Số từ của Part — nền mờ để tách khỏi tên Part mà không cần dấu ngoặc. */
+.uv-part-del-n {
+    padding: 0 5px;
+    border-radius: 999px;
+    background: var(--bg-tertiary, rgba(0, 0, 0, 0.08));
+    font-size: 10px;
+}
+
+.uv-part-del:hover .uv-part-del-n { background: rgba(255, 255, 255, 0.25); }
+
 @media (max-width: 560px) {
     /* Điện thoại: bỏ cột Part và Ngày hết hạn, giữ từ - nghĩa - nút. */
     .uv-th:nth-child(3), .uv-th:nth-child(4),
     .uv-row td:nth-child(3), .uv-row td:nth-child(4) { display: none; }
+
+    /* Cột Part bị ẩn ở khổ này, nên hàng nút Part là chỗ DUY NHẤT còn thấy được
+       bộ Part của nguồn — giữ nguyên, chỉ nới cho dễ chạm. */
+    .uv-part-del { padding: 5px 10px; font-size: 12px; }
 }
 
 /* Số lượng trên hai nút "Xem ..." của Dịch nhanh. Badge riêng thay vì nhét số

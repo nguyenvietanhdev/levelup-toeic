@@ -500,19 +500,26 @@ describe('tiêu đề màn hình không vỡ dòng giữa từ', () => {
         expect(r).toMatch(/display:\s*none\s*!important/);
     });
 
-    test('hàng nút màn Từ vựng riêng chỉ còn nút Đồng bộ', () => {
-        // "Quản lý từ vựng" và ô thời hạn lưu đều ẩn.
-        expect(ruleFor('#upload-tab-manage,\n    #upload-retention'))
-            .toMatch(/display:\s*none\s*!important/);
+    test('hàng nút màn Từ vựng riêng: ẩn ô thời hạn lưu', () => {
+        // Mặc định 30 ngày vẫn áp dụng; ai cần đổi thì mở trên máy tính.
+        expect(ruleFor('#upload-retention')).toMatch(/display:\s*none\s*!important/);
     });
 
-    test('"Quản lý" phải thành TAB trước khi ẩn nút của nó', () => {
-        // Nút header từng là lối vào DUY NHẤT — ẩn mà không thêm tab là mất hẳn
-        // tính năng trên điện thoại, im lặng.
+    test('nút "Quản lý từ vựng" KHÔNG được ẩn — nó là lối vào duy nhất', () => {
+        // Trước đây nút này ẩn được vì có tab "Quản lý" trên thanh tab đỡ. Tab đó
+        // đã bỏ, nên ẩn nút là mất hẳn tính năng trên điện thoại — im lặng, vì
+        // trên máy tính vẫn chạy ngon.
         const mod = readFileSync(
             join(__dirname, '..', '..', 'components', 'vocab', 'upload', 'openUploadModal.js'),
             'utf8');
-        expect(mod).toMatch(/\{ key: 'manage', label: 'Quản lý'/);
+        expect(mod, 'tab "Quản lý" quay lại rồi → xem lại quy tắc ẩn nút')
+            .not.toMatch(/\{ key: 'manage', label: 'Quản lý'/);
+
+        // Không khối nào trong responsive.css được `display:none` id này.
+        const blocks = css.match(/[^}]*#upload-tab-manage[^{]*\{[^}]*\}/g) || [];
+        for (const b of blocks) {
+            expect(b, `nút quản lý bị ẩn:\n${b}`).not.toMatch(/display:\s*none/);
+        }
     });
 });
 

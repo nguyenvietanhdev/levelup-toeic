@@ -1066,6 +1066,36 @@
     color: var(--text-secondary);
 }
 
+/* Nút "Tải lại" ở header modal — phải SÁT nút đóng.
+   `margin-left: auto` là chỗ mấu chốt: `.modal-header` dùng
+   `justify-content: space-between`, mà ô tìm bị chặn `max-width: 320px` nên
+   không lấp hết chỗ trống. Không có nó thì 4 phần tử (tiêu đề · ô tìm · tải
+   lại · đóng) bị dàn đều ra, nút tải lại lơ lửng giữa header thay vì nằm cạnh
+   nút đóng. Dồn hết khoảng trống vào TRƯỚC nút này là hai nút dính liền nhau.
+   `flex-shrink: 0` để trên màn hẹp nút không bị bóp méo thành bầu dục. */
+.modal-header-refresh {
+    margin-left: auto;
+    flex-shrink: 0;
+    color: var(--text-secondary);
+}
+
+/* Nút đóng theo ngay sau — bỏ `gap` của header để hai nút thành một cụm, không
+   phải hai thứ rời nhau. */
+.modal-header-refresh + .modal-close-btn {
+    margin-left: calc(var(--spacing-md) * -1 + 4px);
+}
+
+.modal-header-refresh:hover:not(:disabled) {
+    color: var(--primary-color);
+}
+
+/* Đang tải: icon đã tự quay (fa-spin) nên không đổi màu nhấp nháy thêm; chỉ
+   chặn bấm tiếp và cho con trỏ nói rõ là đang bận. */
+.modal-header-refresh:disabled {
+    cursor: default;
+    opacity: 0.6;
+}
+
 .modal-body {
     padding: var(--spacing-lg);
     overflow-y: auto;
@@ -1079,60 +1109,64 @@
 }
 
 /* ===== Practice Mode Selector Buttons ===== */
+/* Chọn chế độ luyện tập — trình bày như THANH TAB (giống `.topic-tabs` của
+   popup Chọn đề), không phải ba thẻ bo góc.
+   Ba nút này là ba lựa chọn loại trừ nhau, đúng nghĩa một thanh tab. Kiểu thẻ
+   cũ (viền 2px + nền gradient khi chọn) nặng hơn hẳn mọi thứ quanh nó và hút
+   mắt hơn cả lưới Part bên dưới — thứ mới là nội dung chính. */
 .pmode-group {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 10px;
-    margin-bottom: 10px;
+    display: flex;
+    gap: 0;
+    border-bottom: 2px solid var(--border-color, #e0e0e0);
+    margin-bottom: 12px;
 }
 
 .pmode-btn {
+    flex: 1;
     display: flex;
-    flex-direction: column;
     align-items: center;
-    gap: 2px;
-    padding: 8px 8px;
-    border: 2px solid var(--border-color);
-    border-radius: 12px;
-    background: var(--bg-secondary);
-    color: var(--text-secondary);
+    justify-content: center;
+    gap: 6px;
+    padding: 9px 14px;
+    background: transparent;
+    border: none;
     cursor: pointer;
-    transition: all 0.2s ease;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-secondary, #666);
+    position: relative;
+    transition: color 0.3s ease;
 }
 
 .pmode-btn i {
-    font-size: 16px;
-    margin-bottom: 0;
+    font-size: 14px;
 }
 
 .pmode-label {
-    font-size: 13px;
-    font-weight: 700;
-    color: var(--text-primary);
-}
-
-.pmode-sub {
-    font-size: 10px;
-    opacity: 0.65;
-    text-align: center;
-    line-height: 1.3;
+    font-size: 14px;
+    font-weight: 500;
 }
 
 .pmode-btn:hover {
-    border-color: var(--primary-color);
-    background: var(--bg-tertiary);
+    color: var(--text-primary, #333);
 }
 
-.pmode-btn--active {
-    border-color: var(--primary-color);
-    background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
-    color: #fff;
+.pmode-btn--active,
+.pmode-btn--active .pmode-label {
+    color: var(--primary-color, #2196f3);
+    font-weight: 600;
 }
 
-.pmode-btn--active .pmode-label,
-.pmode-btn--active .pmode-sub {
-    color: #fff;
-    opacity: 1;
+/* Gạch chân tab đang chọn — `bottom: -2px` để đè lên đúng đường viền của
+   `.pmode-group`, không nằm hụt phía trên nó. */
+.pmode-btn--active::after {
+    content: '';
+    position: absolute;
+    bottom: -2px;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: var(--primary-color, #2196f3);
 }
 
 .pmode-hint {
@@ -1213,29 +1247,12 @@
         padding: 12px;
     }
 
-    /* pmode: 3 cột → 1 cột nhỏ gọn dạng ngang */
-    .pmode-group {
-        grid-template-columns: 1fr;
-        gap: 6px;
-        margin-bottom: 10px;
-    }
-
-    .pmode-btn {
-        flex-direction: row;
-        justify-content: flex-start;
-        gap: 10px;
-        padding: 10px 12px;
-        text-align: left;
-    }
-
-    .pmode-btn i {
-        font-size: 16px;
-        margin-bottom: 0;
-        flex-shrink: 0;
-    }
-
-    .pmode-sub {
-        text-align: left;
+    /* Khổ này đã nằm trong ngưỡng ≤600px của topicSelector.css — ở đó tab chế độ
+       đã được xếp DỌC thành từng hộp full bề ngang. Nên chỗ này KHÔNG bóp chữ
+       hay ẩn icon nữa: xếp dọc là có thừa chỗ, bóp thêm chỉ làm khó đọc.
+       (Bản cũ ẩn icon và thu chữ 12px vì lúc đó ba tab còn nhồi nằm ngang.) */
+    .pmode-label {
+        font-size: 13px;
     }
 
     /* topics-grid: 1 cột trên mobile */
