@@ -835,7 +835,33 @@ Danh sách từ vựng cần chuyển:
                 const res = await UploadVocabAPI.myVocabulary(source);
                 if (!res.success) throw new Error(res.message);
                 if (!res.data.length) { panel.innerHTML = `<p style="font-size:13px;color:var(--text-secondary);padding:8px 0">Không có từ nào trong "${source}".</p>`; return; }
+
+                // Gom các Part có mặt + đếm số từ mỗi Part. Trước đây muốn bỏ
+                // trọn một Part (nhập nhầm cả buổi) thì chỉ có hai đường: bấm ×
+                // từng từ mấy chục lần, hoặc xóa sạch cả nguồn rồi nhập lại.
+                const partCount = new Map();
+                for (const w of res.data) {
+                    const p = (w.part || '').trim();
+                    if (!p) continue;
+                    partCount.set(p, (partCount.get(p) || 0) + 1);
+                }
+                const parts = [...partCount.entries()].sort((a, b) => a[0].localeCompare(b[0], 'vi'));
+
+                // Chỉ hiện hàng này khi có TỪ HAI Part trở lên: một Part duy nhất
+                // thì "xóa Part" trùng đúng với "Xóa tất" đã có sẵn ở trên.
+                const partBarHtml = parts.length > 1 ? `
+                    <div class="uv-part-bar">
+                        <span class="uv-part-bar-label">Xóa trọn một Part:</span>
+                        ${parts.map(([p, n]) => `
+                            <button type="button" class="uv-part-del" data-part="${esc(p)}" data-n="${n}"
+                                    title="Xóa toàn bộ ${n} từ thuộc Part &quot;${esc(p)}&quot;">
+                                ${esc(p)} <span class="uv-part-del-n">${n}</span>
+                                <i class="fas fa-trash"></i>
+                            </button>`).join('')}
+                    </div>` : '';
+
                 panel.innerHTML = `
+                    ${partBarHtml}
                     <div style="max-height:260px;overflow-y:auto;border:1px solid var(--border-color);border-radius:8px">
                         <table style="width:100%;border-collapse:collapse;font-size:12px">
                             <thead><tr style="background:var(--bg-tertiary,var(--bg-secondary))">
@@ -883,6 +909,10 @@ Danh sách từ vựng cần chuyển:
                     btn.addEventListener('click', () => deleteWord(btn.dataset.id, btn.dataset.en, source));
                 });
 
+                panel.querySelectorAll('.uv-part-del').forEach(btn => {
+                    btn.addEventListener('click', () => deletePart(source, btn.dataset.part, btn.dataset.n, panel));
+                });
+
                 // Nghe phát âm. `data-lang` đã tính sẵn theo từng từ (xem wordLang):
                 // bộ này trộn Anh–Trung nên đọc cả bảng bằng một giọng là sai.
                 panel.querySelectorAll('.uv-speak-btn').forEach(btn => {
@@ -915,6 +945,44 @@ Danh sách từ vựng cần chuyển:
                     });
                 });
             } catch (err) { panel.innerHTML = `<p style="color:#dc2626;font-size:13px">Lỗi: ${err.message}</p>`; }
+        };
+
+        /**
+         * Xóa TRỌN một Part trong một nguồn.
+         *
+         * Hỏi xác nhận kèm SỐ TỪ sẽ mất — đây là thao tác không hoàn tác được và
+         * xóa hàng loạt, khác hẳn nút × của một từ.
+         */
+        const deletePart = async (source, part, n, panel) => {
+            if (!confirm(`Xóa toàn bộ ${n} từ thuộc Part "${part}" trong "${source}"?\n\nKhông thể hoàn tác.`)) return;
+            try {
+                const res = await UploadVocabAPI.deleteSourcePart(source, part);
+                if (!res.success) throw new Error(res.message);
+
+                const topicRow = document.querySelector(`.topic-row[data-source="${source}"]`);
+
+                // Đó là Part cuối cùng → nguồn không còn từ nào nên biến mất
+                // luôn. Dựng lại bảng ở đây là dựng vào một thẻ sắp bị gỡ.
+                if (res.sourceGone) {
+                    if (topicRow) (topicRow.closest('.topic-item') || topicRow).remove();
+                    Notification.success(res.message);
+                    return;
+                }
+
+                // Cập nhật số từ trên thẻ nguồn — không cập nhật thì nó vẫn hiện
+                // con số cũ cho tới lần mở lại popup.
+                if (topicRow) {
+                    const newCount = Math.max(0, parseInt(topicRow.dataset.count, 10) - (res.deletedCount || 0));
+                    topicRow.dataset.count = newCount;
+                    topicRow.querySelector('div:first-child div:last-child').textContent = `${newCount} từ`;
+                }
+
+                // Tải lại danh sách để hàng Part và bảng khớp trạng thái mới.
+                loadWords(source, panel);
+                Notification.success(res.message);
+            } catch (err) {
+                Notification.error(err.message || 'Không xóa được Part');
+            }
         };
 
         const deleteWord = async (wordId, wordEn, source) => {
@@ -991,10 +1059,11 @@ Danh sách từ vựng cần chuyển:
                 { key: 'json', label: 'Thêm JSON', icon: 'fa-code' },
                 { key: 'share', label: 'Chia sẻ', icon: 'fa-user-plus' },
                 { key: 'received', label: 'Được chia sẻ', icon: 'fa-handshake' },
-                // "Quản lý" vào THANH TAB, không chỉ nằm sau nút ở header.
-                // Nút header bị ẩn ở khổ điện thoại (responsive.css) — mà đó
-                // từng là lối vào DUY NHẤT, ẩn đi là mất hẳn tính năng.
-                { key: 'manage', label: 'Quản lý', icon: 'fa-list' },
+                // "Quản lý" KHÔNG nằm trên thanh tab — vào bằng nút "Quản lý từ
+                // vựng" ở header (nút đó hiện ở MỌI khổ màn hình, xem
+                // responsive.css). Trạng thái `manage` vẫn còn nguyên: nút
+                // header và luồng "sửa xong thì quay lại" đều phát
+                // `upload-set-tab` → 'manage'.
             ],
             initialTab: tab === 'manage' ? 'manage' : (tab === 'share' ? 'share' : (tab === 'received' ? 'received' : 'add')),
             renderBody: (t) => (

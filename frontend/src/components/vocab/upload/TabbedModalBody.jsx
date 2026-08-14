@@ -26,31 +26,22 @@ export default function TabbedModalBody({ tabs, initialTab, renderBody, onEnterT
 
     return (
         <div style={{ padding: 0 }}>
-            <div style={{ display: 'flex', borderBottom: '1px solid var(--border-color)' }}>
-                {tabs.map(t => {
-                    const active = tab === t.key;
-                    return (
-                        <button
-                            key={t.key}
-                            type="button"
-                            id={`upload-tab-${t.key}`}
-                            onClick={() => go(t.key)}
-                            style={{
-                                // `minWidth: 0` là bắt buộc khi có 4 tab: flex item
-                                // không co dưới kích thước nội dung nếu thiếu nó, nên
-                                // nhãn dài ("Được chia sẻ") đẩy thanh tab vỡ hàng.
-                                flex: 1, minWidth: 0, padding: '10px 6px',
-                                border: 'none', cursor: 'pointer',
-                                fontSize: 13, fontWeight: 600, borderRadius: 0,
-                                whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
-                                background: active ? 'var(--primary-color)' : 'var(--bg-secondary)',
-                                color: active ? '#fff' : 'var(--text-primary)',
-                            }}
-                        >
-                            <i className={`fas ${t.icon}`}></i> {t.label}
-                        </button>
-                    );
-                })}
+            {/* Dùng CHUNG kiểu `.stats-tab-nav` với thanh tab màn Thống kê: viên
+                thuốc bo tròn nằm trên một dải nền, không phải bốn ô vuông dính
+                liền chạm mép. Trước đây chỗ này tự đặt style inline nên hai thanh
+                tab trong cùng một app trông như hai thời kỳ khác nhau. */}
+            <div className="stats-tab-nav upload-tab-nav">
+                {tabs.map(t => (
+                    <button
+                        key={t.key}
+                        type="button"
+                        id={`upload-tab-${t.key}`}
+                        onClick={() => go(t.key)}
+                        className={`stats-tab-btn ${tab === t.key ? 'active' : ''}`}
+                    >
+                        <i className={`fas ${t.icon}`}></i> {t.label}
+                    </button>
+                ))}
             </div>
             {/* key={tab} → đổi tab thì remount (chạy onEnterTab); cùng tab thì string bằng nhau
                 nên React bỏ qua, KHÔNG ghi đè input người dùng khi re-render. */}

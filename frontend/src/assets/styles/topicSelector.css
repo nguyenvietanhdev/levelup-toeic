@@ -93,13 +93,17 @@
   gap: 10px;
 }
 
-/* pmode-group và hint span full 3 cột */
-.part-selector-modal .pmode-group,
+/* pmode-group và hint trải hết bề ngang của lưới cha.
+   KHÔNG ép `display: grid` cho `.pmode-group` nữa: nó đã là THANH TAB (flex,
+   xem layout.css). Ghi đè ở đây thì ba tab lại bị bẻ về ba ô lưới và gạch chân
+   tab đang chọn nằm sai chỗ. */
+.part-selector-modal .pmode-group {
+  grid-column: 1 / -1;
+  margin-bottom: 12px;
+}
+
 .part-selector-modal .pmode-hint {
   grid-column: 1 / -1;
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 10px;
   margin-bottom: 0;
 }
 
@@ -111,6 +115,22 @@
   gap: 10px;
 }
 
+/* Dải phân bố độ khó (A xanh · B vàng · C đỏ) — CHỈ dải màu, không chữ.
+   Dùng CHUNG cho cả hai popup: Chọn Part (dựng chuỗi HTML trong partSelector.js)
+   và Chọn đề (component LevelBar.jsx). Một class cho cả hai thì chúng luôn cùng
+   chiều cao/bo góc, và chỉ cần một quy tắc để ẩn ở mobile.
+   Tỉ lệ mỗi đoạn do `flex` inline quyết định (phải tính động theo số từ).
+   `overflow: hidden` để bo góc cắt được hai đầu dải; `gap: 1px` tách các đoạn
+   cho thấy rõ ranh giới khi hai màu cạnh nhau đều sẫm. */
+.part-level-bar {
+  display: flex;
+  height: 5px;
+  border-radius: 3px;
+  overflow: hidden;
+  gap: 1px;
+  margin-top: 6px;
+}
+
 /* ── Mobile: ≤600px ─────────────────────────────────────────────────── */
 @media (max-width: 600px) {
   /* outer grid 2 cột cho part cards */
@@ -119,22 +139,60 @@
     gap: 8px;
   }
 
-  /* pmode-group: 1 cột dọc — nút horizontal (khớp với layout.css mobile) */
+  /* Tab chế độ xếp DỌC, hệt cách `.topic-tabs` làm ở popup Chọn đề (xem cuối
+     file). Ba nhãn "Tuần tự" / "Ngẫu nhiên 1 Part" / "Ngẫu nhiên tất cả" nhồi
+     ngang trên màn 380px thì hai cái sau bị cắt cụt. Xếp dọc, mỗi tab một hộp
+     viền tròn full bề ngang — đọc trọn vẹn và đủ to để chạm. */
   .part-selector-modal .pmode-group {
-    grid-template-columns: 1fr !important;
+    flex-direction: column;
     gap: 6px;
+    border-bottom: none;
+    margin-bottom: 12px;
   }
 
-  /* MỘT Part mỗi dòng. Nhồi 2 cột trên màn 380px thì tên part (FREFIX-A, số từ,
-     thanh tiến độ) bị ép vào ~170px — chữ cắt cụt và thanh tiến độ ngắn tới mức
-     không đọc được tỉ lệ. Một dòng một part thì đủ chỗ cho cả ba thông tin. */
+  .part-selector-modal .pmode-btn {
+    width: 100%;
+    justify-content: flex-start;
+    padding: 10px 12px;
+    font-size: 13px;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+  }
+
+  /* Xếp dọc thì gạch chân vô nghĩa — đổi sang viền + nền như `.tab-btn.active`. */
+  .part-selector-modal .pmode-btn--active {
+    border-color: var(--primary-color);
+    background: var(--bg-secondary);
+  }
+
+  .part-selector-modal .pmode-btn--active::after {
+    display: none;
+  }
+
+  /* Icon hiện lại ở khổ này: xếp dọc là có thừa chỗ, mà icon giúp phân biệt ba
+     chế độ nhanh hơn đọc chữ. (layout.css ẩn nó đi cho bản nằm ngang.) */
+  .part-selector-modal .pmode-btn i {
+    display: inline-block;
+    width: 18px;
+    text-align: center;
+  }
+
+  /* MỘT Part mỗi dòng — tên part (kiểu "FREFIX-A") nhồi 2 cột trên màn 380px thì
+     chỉ còn ~170px và bị cắt cụt. */
   .part-selector-modal .topics-grid {
     grid-template-columns: 1fr !important;
     gap: 8px;
   }
 
-  /* Một dòng một part thì thẻ nằm NGANG được: icon | tên + số từ | tiến độ.
-     Xếp dọc (như khi còn 2 cột) giờ chỉ làm mỗi thẻ cao gấp đôi vô ích. */
+  /* Dải độ khó CHỈ dành cho desktop. Trên màn hẹp thẻ nằm ngang, khối chữ chỉ
+     rộng ~200px — dải màu ở đó vừa mỏng vừa ngắn, không đọc ra tỉ lệ gì, mà
+     con số thì nằm trong `title` (điện thoại không có chuột để rê xem). */
+  .part-level-bar {
+    display: none;
+  }
+
+  /* Thẻ nằm NGANG: icon | tên + số từ. Không có dải độ khó nên khối chữ chỉ còn
+     hai dòng ngắn — xếp dọc chỉ tổ cao vô ích. */
   .part-selector-modal .topic-card {
     padding: 10px 12px;
     flex-direction: row;
@@ -160,10 +218,6 @@
     font-size: 12px;
     white-space: normal;
     word-break: break-word;
-  }
-
-  .part-selector-modal .topic-info p {
-    font-size: 11px;
   }
 
   .part-selector-modal .topic-action {

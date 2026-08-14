@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from "react";
 import { useEscapeToClose } from '@lib/useEscapeToClose.js';
 import { Notification } from "@ui/Toaster.jsx";
 import { useTopics } from "./useTopics.js";
+import LevelBar from "./LevelBar.jsx";
 
 export default function TopicModal({ open, onClose, onSelected }) {
     useEscapeToClose(onClose, open);
@@ -51,6 +52,27 @@ export default function TopicModal({ open, onClose, onSelected }) {
         (t.name || "").toLowerCase().includes(kw),
     );
   }, [shared, query]);
+
+  // Đang tải tab nào thì nút quay tab đó. Lấy từ chính cờ của `useTopics` chứ
+  // không nuôi state riêng — hai nguồn sự thật thì có lúc nút quay mãi không
+  // dừng (hoặc dừng trước khi dữ liệu về).
+  const refreshing =
+    tab === "shared" ? loadingShared
+    : tab === "personal" ? loadingPersonal
+    : loadingWrong;
+
+  async function handleRefresh() {
+    if (refreshing) return;
+    try {
+      // `true` = bỏ qua đệm. Thiếu nó thì tab "Từ vựng chung" chỉ set lại đúng
+      // mảng đang có và danh sách không đổi gì cả.
+      if (tab === "shared") await loadShared(true);
+      else if (tab === "personal") await loadPersonal();
+      else await loadWrong();
+    } catch (err) {
+      Notification.error(err.message || "Không tải lại được danh sách");
+    }
+  }
 
   if (!open) return null;
 
@@ -164,6 +186,17 @@ export default function TopicModal({ open, onClose, onSelected }) {
               fontSize: 13,
             }}
           />
+          {/* Tải lại ĐÚNG tab đang mở — mỗi tab một nguồn dữ liệu riêng, làm
+              mới cả ba là ba request thừa cho thứ người dùng không nhìn thấy. */}
+          <button
+            className="icon-btn modal-header-refresh"
+            onClick={handleRefresh}
+            disabled={refreshing}
+            title="Tải lại danh sách"
+            aria-label="Tải lại danh sách"
+          >
+            <i className={`fas fa-rotate-right${refreshing ? ' fa-spin' : ''}`}></i>
+          </button>
           <button className="icon-btn modal-close-btn" onClick={onClose}>
             <i className="fas fa-times"></i>
           </button>
@@ -243,6 +276,7 @@ export default function TopicModal({ open, onClose, onSelected }) {
                                 {topic.wordCount} từ
                               </span>
                             </div>
+                            <LevelBar stats={topic.levelStats} />
                           </div>
                           {isSelected && (
                             <div className="current-badge">
@@ -360,6 +394,9 @@ export default function TopicModal({ open, onClose, onSelected }) {
                                 </span>
                               )}
                             </div>
+                            {/* Bộ đã hết hạn thì không còn từ nào để phân loại —
+                                vẽ dải ở đó là vẽ một vạch rỗng khó hiểu. */}
+                            {!dead && <LevelBar stats={t.levelStats} />}
                           </div>
                           {/* Sao chép về kho riêng — lối thoát khỏi TTL: bộ gốc
                               hết hạn thì bản sao vẫn còn. Bộ đã chết thì không
@@ -460,6 +497,7 @@ export default function TopicModal({ open, onClose, onSelected }) {
                                 <i className="fas fa-book"></i> {g.wordCount} từ
                               </span>
                             </div>
+                            <LevelBar stats={g.levelStats} />
                           </div>
                           {isSelected && (
                             <div className="current-badge">

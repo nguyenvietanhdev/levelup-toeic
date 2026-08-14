@@ -81,11 +81,17 @@ export const PartSelector = {
             EventBus.emit('vocab:reload-requested');
         }
 
+        // Thanh phân bố độ khó: CHỈ dải màu, không chữ.
+        //
+        // Bản cũ in kèm dòng "A: 18 • B: 5" bên dưới — ba con số đó làm mỗi thẻ
+        // cao thêm một dòng mà không ai đọc. Dải màu thì liếc một cái là thấy
+        // ngay Part nào nhiều từ khó. Con số vẫn còn ở `title` của từng đoạn,
+        // rê chuột là ra (desktop mới có chuột — hợp lý vì thanh này cũng chỉ
+        // hiện ở desktop, xem `.part-level-bar` trong topicSelector.css).
         const getLevelBar = (part) => {
             const s = this.partStats?.[part];
-            if (!s) return '';
+            if (!s || !s.count) return '';
             const total = s.count;
-            if (!total) return '';
             const { a, b, c } = s;
             const pA = Math.round(a / total * 100);
             const pB = Math.round(b / total * 100);
@@ -95,19 +101,15 @@ export const PartSelector = {
                 b ? `<div style="flex:${pB};background:#f59e0b;height:100%" title="B: ${b} từ"></div>` : '',
                 c ? `<div style="flex:${pC};background:#ef4444;height:100%;border-radius:${a||b?'0 3px 3px 0':'3px'}" title="C: ${c} từ"></div>` : '',
             ].join('');
-            const labels = [
-                a ? `<span style="color:#22c55e">A: ${a}</span>` : '',
-                b ? `<span style="color:#f59e0b">B: ${b}</span>` : '',
-                c ? `<span style="color:#ef4444">C: ${c}</span>` : '',
-            ].filter(Boolean).join(' • ');
-            return `
-                <div style="margin-top:6px">
-                    <div style="display:flex;height:5px;border-radius:3px;overflow:hidden;gap:1px">${segments}</div>
-                    <div style="display:flex;gap:6px;font-size:10px;margin-top:3px;opacity:0.85">${labels}</div>
-                </div>`;
+            return `<div class="part-level-bar">${segments}</div>`;
         };
 
         const renderModal = () => {
+            // Thẻ Part: TÊN + số từ + dải màu độ khó (dải chỉ hiện ở desktop).
+            //
+            // Số từ dùng đúng khuôn `.topic-meta > .word-count` của popup "Chọn
+            // đề luyện tập" (kèm icon sách) để hai popup trông như một, thay vì
+            // thẻ <p> tự chế như bản cũ.
             const partsHTML = this.parts.map(part => {
                 const isSelected = this.selectedPart === part;
                 const disabled = currentMode === 'random-all';
@@ -117,13 +119,19 @@ export const PartSelector = {
                         <div class="topic-icon"><i class="fas fa-layer-group"></i></div>
                         <div class="topic-info">
                             <h3 title="${part}">${part}</h3>
-                            <p>${this.partCounts[part]} từ vựng</p>
+                            <div class="topic-meta">
+                                <span class="word-count"><i class="fas fa-book"></i> ${this.partCounts[part]} từ</span>
+                            </div>
                             ${!disabled ? getLevelBar(part) : ''}
                         </div>
                         ${isSelected ? '<div class="topic-action"><i class="fas fa-check-circle" style="color:#10b981;font-size:20px"></i></div>' : ''}
                     </div>`;
             }).join('');
 
+            // Không còn dòng `sub` mô tả dưới mỗi nút: ba cái nhãn đã tự nói hết
+            // ý ("Tuần tự" / "Ngẫu nhiên 1 Part" / "Ngẫu nhiên tất cả"), thêm một
+            // câu giải thích nữa chỉ làm dày thanh chọn và đẩy lưới Part xuống
+            // dưới nếp gấp. Giữ lại ở `title` cho ai cần rê chuột xem.
             const modes = [
                 { id: 'sequential',  icon: 'fa-list-ol', label: 'Tuần tự',           sub: 'Học lần lượt từ đầu đến cuối Part' },
                 { id: 'random-part', icon: 'fa-shuffle', label: 'Ngẫu nhiên 1 Part', sub: 'Lấy ngẫu nhiên trong Part đã chọn' },
@@ -134,10 +142,9 @@ export const PartSelector = {
                 <div class="part-selector-modal">
                     <div class="pmode-group">
                         ${modes.map(m => `
-                            <button class="pmode-btn ${currentMode === m.id ? 'pmode-btn--active' : ''}" data-mode="${m.id}">
+                            <button class="pmode-btn ${currentMode === m.id ? 'pmode-btn--active' : ''}" data-mode="${m.id}" title="${m.sub}">
                                 <i class="fas ${m.icon}"></i>
                                 <span class="pmode-label">${m.label}</span>
-                                <span class="pmode-sub">${m.sub}</span>
                             </button>`).join('')}
                     </div>
                     ${currentMode === 'random-all'
@@ -161,11 +168,17 @@ export const PartSelector = {
         // Chỉ đụng DOM khi part-modal VẪN là modal đang mở (tránh listener cũ ghi
         // đè popup khác → "đơ"). Huỷ subscription cũ trước khi đăng ký mới (chống chồng).
         this._modalOpen = true;
+        // Khai báo TRƯỚC `Modal.show`: `onClose` và `onVocabLoaded` bên dưới đều
+        // đụng tới nó.
+        let _refreshTimer = null;
         const onVocabLoaded = () => {
             if (!this._modalOpen) return;
             this.loadParts();
             const body = document.querySelector('#modal-container .modal-body');
             if (body) { body.innerHTML = renderModal(); setupHeaderSearch(); attachListeners(); }
+            // Tải xong thì trả nút về trạng thái bấm được. Đặt ở đây chứ không
+            // hẹn giờ trong hàm bấm: chỉ chỗ này mới biết dữ liệu đã thực sự về.
+            setRefreshing(false);
         };
         this._unsubVocab?.();
         this._unsubVocab = EventBus.on('vocab:loaded', onVocabLoaded);
@@ -173,11 +186,18 @@ export const PartSelector = {
         Modal.show({
             title: '📚 Chọn Part để luyện tập',
             content: renderModal(),
+            // Nút Đóng ở đáy — giống popup "Chọn đề luyện tập". Trên điện thoại
+            // nút × ở góc trên phải nằm ngoài tầm ngón cái, mà đây là popup dài
+            // phải cuộn: đọc tới cuối rồi còn phải vuốt ngược lên mới đóng được.
+            buttons: [{ text: 'Đóng', className: 'btn-secondary' }],
             onClose: () => {
                 this.pendingMode = null;
                 this._modalOpen = false;
                 this._unsubVocab?.();
                 this._unsubVocab = null;
+                // Đóng lúc đang tải mà không huỷ thì 10 giây sau vẫn nhảy ra
+                // thông báo lỗi cho một popup đã biến mất.
+                clearTimeout(_refreshTimer);
             },
         });
 
@@ -187,6 +207,58 @@ export const PartSelector = {
                 const part = (card.dataset.part || '').toLowerCase();
                 card.style.display = (!kw || part.includes(kw)) ? '' : 'none';
             });
+        };
+
+        /** Bật/tắt trạng thái "đang tải" của nút Tải lại. */
+        const setRefreshing = (busy) => {
+            const btn = document.getElementById('part-refresh-btn');
+            clearTimeout(_refreshTimer);
+            _refreshTimer = null;
+            if (!btn) return;
+            btn.disabled = busy;
+            const icon = btn.querySelector('i');
+            if (icon) icon.className = `fas fa-rotate-right${busy ? ' fa-spin' : ''}`;
+
+            // Chốt chặn: `vocab:loaded` chỉ phát khi tải THÀNH CÔNG. Nguồn lỗi
+            // mạng hoặc trả về rỗng thì `loadVocabularyBySource` return false
+            // lặng lẽ, không có sự kiện nào — nút sẽ quay mãi không dừng. Hết
+            // giờ thì trả nút về và nói rõ là không tải được.
+            if (busy) {
+                _refreshTimer = setTimeout(() => {
+                    _refreshTimer = null;
+                    setRefreshing(false);
+                    Notification.error('Không tải lại được — thử lại sau');
+                }, 10000);
+            }
+        };
+
+        // Nút "Tải lại" — NGAY TRƯỚC nút đóng, giống popup "Chọn đề luyện tập".
+        //
+        // Chỉ PHÁT YÊU CẦU như chỗ tự phục hồi ở trên, không tự gọi API: nguồn
+        // đang chọn có thể là kho chung / bộ riêng / bộ được chia sẻ / nhóm từ
+        // sai, mỗi thứ một đường API mà file này không được biết (import ngược
+        // `topicSelector` là vòng phụ thuộc). `vocab:loaded` sẽ dựng lại lưới.
+        const setupHeaderRefresh = () => {
+            const header = document.querySelector('#modal-container .modal-header');
+            if (!header || header.querySelector('#part-refresh-btn')) return;
+            const closeBtn = header.querySelector('.modal-close-btn');
+            const btn = document.createElement('button');
+            btn.id = 'part-refresh-btn';
+            btn.type = 'button';
+            btn.className = 'icon-btn modal-header-refresh';
+            btn.title = 'Tải lại danh sách Part';
+            btn.setAttribute('aria-label', 'Tải lại danh sách Part');
+            btn.innerHTML = '<i class="fas fa-rotate-right"></i>';
+            btn.addEventListener('click', () => {
+                if (btn.disabled) return;
+                if (!GameLogic.currentSource) {
+                    Notification.info('Chưa chọn đề — không có gì để tải lại');
+                    return;
+                }
+                setRefreshing(true);
+                EventBus.emit('vocab:reload-requested');
+            });
+            header.insertBefore(btn, closeBtn);
         };
 
         // Inject a search box into the modal header (cạnh tiêu đề, giống popup Chọn đề)
@@ -262,7 +334,10 @@ export const PartSelector = {
             });
         };
 
-        setTimeout(() => { setupHeaderSearch(); attachListeners(); }, 50);
+        // Thứ tự gọi QUYẾT ĐỊNH thứ tự hiển thị: cả hai đều chèn ngay trước nút
+        // đóng, nên cái gọi sau nằm sát nút đóng hơn. Muốn "tìm · tải lại · đóng"
+        // thì phải gọi search trước.
+        setTimeout(() => { setupHeaderSearch(); setupHeaderRefresh(); attachListeners(); }, 50);
     },
 
     async _saveSetting(key, value) {
