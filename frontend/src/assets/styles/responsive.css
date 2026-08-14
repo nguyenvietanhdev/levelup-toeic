@@ -862,13 +862,17 @@
     .top-nav.search-active .mic-btn {
         display: flex;
         position: absolute;
-        /* NGAY TRÊN chỗ nút kính lúp cũ, không phải giữa màn hình.
-           `.nav-center` là mốc (nó `position: relative` bên dưới), nên `left:
-           50%` ở đây là giữa CHÍNH Ô TÌM — đúng chỗ ngón tay vừa chạm. Bay lên
-           62px như bản trước là nút nhảy đi một quãng xa chỗ vừa bấm. */
+        /* Nằm HẲN TRÊN ô tìm, không đè lên chữ đang gõ.
+           Tính theo `.nav-center` (mốc định vị): ô tìm bung ra ở
+           `bottom: 100% + 6px` so với `.top-nav` và cao ~46px (padding 6px×2 +
+           input 34px), nên mép TRÊN của nó ở khoảng `100% + 52px`. Nút phải bắt
+           đầu từ đó trở lên.
+           `+ 10px` như bản trước là nút rơi đúng vào giữa ô và che mất ô nhập —
+           `100%` của `.nav-center` KHÔNG phải mép trên ô tìm, vì ô đó cũng
+           `absolute` bay lên chứ không nằm trong dòng chảy. */
         left: 50%;
         transform: translateX(-50%);
-        bottom: calc(100% + 10px);
+        bottom: calc(100% + 58px);
         width: 56px;
         height: 56px;
         font-size: 22px;

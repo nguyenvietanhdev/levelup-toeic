@@ -179,10 +179,14 @@ describe('nút mic nổi ĐÚNG CHỖ nút kính lúp', () => {
         expect(ruleFor('.nav-center')).toMatch(/position:\s*relative/);
     });
 
-    test('nổi ngay TRÊN ô tìm, không bay lên xa', () => {
-        // Bay lên 62px là nút nhảy đi một quãng xa chỗ ngón tay vừa chạm.
+    test('nằm HẲN TRÊN ô tìm, không đè lên ô nhập', () => {
+        // `100%` của `.nav-center` KHÔNG phải mép trên ô tìm: ô đó cũng
+        // `absolute` bay lên (`bottom: 100% + 6px` so với `.top-nav`) chứ không
+        // nằm trong dòng chảy. Cộng thêm chiều cao ô (~46px) mới ra mép trên —
+        // để `+ 10px` là nút rơi đúng giữa ô và che mất chữ đang gõ.
         const r = ruleFor('.top-nav.search-active .mic-btn');
-        expect(r).toMatch(/bottom:\s*calc\(100% \+ 10px\)/);
+        const gap = Number(r.match(/bottom:\s*calc\(100% \+ (\d+)px\)/)?.[1] || 0);
+        expect(gap).toBeGreaterThanOrEqual(52);
         expect(r).toMatch(/left:\s*50%/);
     });
 });
