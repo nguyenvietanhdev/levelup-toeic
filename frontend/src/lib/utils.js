@@ -323,14 +323,36 @@ export const Utils = {
      */
     playSound(soundUrl, volume = 1.0, { ignoreSettings = false } = {}) {
         try {
+            const isFeedbackSound = soundUrl && (
+                soundUrl.includes('correct') || soundUrl.includes('wrong') || soundUrl.includes('complete')
+            );
+
+            // Âm phản hồi đúng/sai có công tắc RIÊNG ("Âm phản hồi đúng / sai").
+            //
+            // Chặn ở đây chứ không ở ~20 chỗ gọi trong practice/modes/: mỗi mode
+            // tự kiểm `settings.soundEnabled` rồi mới gọi, thêm điều kiện vào
+            // từng chỗ là chắc chắn sót vài mode — mà sót thì âm vẫn kêu dù đã
+            // tắt, kiểu lỗi phải mở đúng mode đó mới phát hiện.
+            //
+            // `ignoreSettings` KHÔNG bỏ qua được kiểm tra này: cờ đó dành cho
+            // lớp phát thô (uiSounds tự kiểm cài đặt của riêng nó trước khi
+            // gọi), không phải giấy phép bỏ qua lựa chọn của người dùng.
+            //
+            // Đọc qua `window.GameState` chứ KHÔNG import `@game/state.js`:
+            // state.js đã import ngược file này (dòng 6 của nó), thêm chiều kia
+            // là vòng phụ thuộc. `PracticeManager` ngay bên dưới cũng lấy theo
+            // đúng cách này. Chưa gán global (lúc khởi động sớm) thì `s` là
+            // null và âm vẫn kêu — mặc định đúng.
+            if (isFeedbackSound) {
+                const s = window.GameState?.state?.settings;
+                if (s?.answerFeedbackSound === false) return;
+            }
+
             // Kiểm tra setting âm thanh luyện tập
             if (!ignoreSettings) {
                 const inPractice = typeof PracticeManager !== 'undefined' && PracticeManager.currentSession;
                 if (inPractice) {
                     const enabled = localStorage.getItem('practiceSoundEnabled');
-                    const isFeedbackSound = soundUrl && (
-                        soundUrl.includes('correct') || soundUrl.includes('wrong') || soundUrl.includes('complete')
-                    );
                     if (enabled === 'false' && !isFeedbackSound) return;
                 }
             }

@@ -12,8 +12,9 @@ import { logger } from '@lib/logger.js';
 // and "restore default settings" (avoids the two drifting apart).
 export const DEFAULT_SETTINGS = {
     randomQuestions: false,
-    soundEnabled: true,
-    soundEffects: true,
+    soundEnabled: true,        // công tắc TỔNG — tắt là im hết
+    soundEffects: true,        // âm thao tác giao diện (bấm nút, mở rương…)
+    answerFeedbackSound: true, // âm báo đúng/sai lúc luyện tập
     autoPronunciation: true,
     practiceSoundEnabled: true,
     notificationsEnabled: true,

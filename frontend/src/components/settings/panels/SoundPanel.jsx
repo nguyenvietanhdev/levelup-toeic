@@ -2,6 +2,10 @@
 import Toggle from './Toggle.jsx';
 import FlagIcon from '@ui/FlagIcon.jsx';
 
+// Thụt lề + vạch trái cho cài đặt PHỤ THUỘC một toggle phía trên (cùng quy ước
+// với ToeicExamPanel).
+const NESTED = { paddingLeft: 14, borderLeft: '2px solid var(--border-color)' };
+
 export default function SoundPanel({
     s,
     updateSetting,
@@ -19,19 +23,64 @@ export default function SoundPanel({
 
     return (
         <>
+            {/* Bốn mục, KHÔNG gộp thành một "Hiệu ứng âm thanh" chung chung.
+                Tên cũ nói "âm thanh khi trả lời" nhưng thực ra nó tắt cả tiếng
+                bấm nút, tiếng mở rương, tiếng vòng quay… — người dùng tắt vì
+                khó chịu tiếng click thì mất luôn phản hồi đúng/sai, thứ họ vẫn
+                muốn giữ.
+                Thực tế trong code đã có SẴN hai công tắc riêng (`soundEnabled`
+                tổng và `soundEffects` cho âm giao diện, xem uiSounds.js), chỉ
+                là màn Cài đặt chưa bao giờ lộ cái thứ hai ra. */}
             <div className="settings-section">
                 <h3>Âm thanh</h3>
                 <div className="setting-item">
-                    <div className="setting-info"><h4>Hiệu ứng âm thanh</h4><p>Bật/tắt âm thanh khi trả lời</p></div>
+                    <div className="setting-info">
+                        <h4>Âm thanh</h4>
+                        <p>Công tắc tổng — tắt là im hết mọi âm trong ứng dụng</p>
+                    </div>
                     <Toggle checked={s.soundEnabled !== false} onChange={v => updateSetting('soundEnabled', v)} />
                 </div>
-                <div className="setting-item">
-                    <div className="setting-info"><h4>Âm nhạc luyện tập</h4><p>Nhạc nền khi luyện tập</p></div>
-                    <Toggle checked={s.practiceSoundEnabled !== false} onChange={v => {
-                        updateSetting('practiceSoundEnabled', v);
-                        localStorage.setItem('practiceSoundEnabled', JSON.stringify(v));
-                    }} />
-                </div>
+
+                {/* Ba mục dưới phụ thuộc công tắc tổng: tắt tổng thì chúng vô
+                    nghĩa, hiện ra chỉ khiến người dùng chỉnh mà không thấy gì
+                    đổi. Thụt lề + vạch trái để thấy rõ quan hệ phụ thuộc. */}
+                {s.soundEnabled !== false && (
+                    <>
+                        <div className="setting-item" style={NESTED}>
+                            <div className="setting-info">
+                                <h4>Âm phản hồi đúng / sai</h4>
+                                <p>Tiếng báo khi trả lời đúng hoặc sai lúc luyện tập</p>
+                            </div>
+                            <Toggle
+                                checked={s.answerFeedbackSound !== false}
+                                onChange={v => updateSetting('answerFeedbackSound', v)}
+                            />
+                        </div>
+
+                        <div className="setting-item" style={NESTED}>
+                            <div className="setting-info">
+                                <h4>Âm thao tác giao diện</h4>
+                                <p>Tiếng bấm nút, mở rương, vòng quay…</p>
+                            </div>
+                            <Toggle
+                                checked={s.soundEffects !== false}
+                                onChange={v => updateSetting('soundEffects', v)}
+                            />
+                        </div>
+
+                        <div className="setting-item" style={NESTED}>
+                            <div className="setting-info">
+                                <h4>Nhạc nền luyện tập</h4>
+                                <p>Nhạc chạy suốt trong lúc luyện tập</p>
+                            </div>
+                            <Toggle checked={s.practiceSoundEnabled !== false} onChange={v => {
+                                updateSetting('practiceSoundEnabled', v);
+                                localStorage.setItem('practiceSoundEnabled', JSON.stringify(v));
+                            }} />
+                        </div>
+                    </>
+                )}
+
                 <div className="setting-item">
                     <div className="setting-info"><h4>Phát âm tự động</h4><p>Tự động phát âm từ mới</p></div>
                     <Toggle checked={s.autoPronunciation === true} onChange={v => updateSetting('autoPronunciation', v)} />

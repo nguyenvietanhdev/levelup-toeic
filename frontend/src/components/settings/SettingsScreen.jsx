@@ -32,7 +32,7 @@ const NAV_ITEMS = [
     { key: 'general',   label: 'Chung',       icon: 'fa-sliders',
       keywords: 'giao diện màu sắc chủ đề theme sáng tối mục tiêu ngôn ngữ đảo chiều' },
     { key: 'sound',     label: 'Âm thanh',    icon: 'fa-volume-high',
-      keywords: 'giọng đọc tốc độ phát âm loa tiếng nói voice tts' },
+      keywords: 'giọng đọc tốc độ phát âm loa tiếng nói voice tts hiệu ứng nhạc nền đúng sai phản hồi bấm nút im lặng tắt tiếng' },
     { key: 'practice',  label: 'Luyện tập',   icon: 'fa-gamepad',
       keywords: 'số câu độ khó thời gian tự động chuyển câu gợi ý' },
     { key: 'toeic',     label: 'Thi TOEIC',   icon: 'fa-graduation-cap',

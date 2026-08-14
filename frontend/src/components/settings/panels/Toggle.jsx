@@ -14,7 +14,17 @@ export default function Toggle({ checked, onChange, labels }) {
     const off = labels?.off || 'Tắt';
 
     return (
-        <div className="quick-difficulty-selector toggle-select">
+        /* `quick-difficulty-selector` là class của thanh nav, mượn lại để lấy
+           kiểu nền/viền. Cái giá của việc mượn: ô này dính luôn mọi quy tắc của
+           nav — kể cả bản NÉN ở @media 480px (`font-size: 10px`) và nền
+           GRADIENT ở dark-mode. Cả ba đã được kéo về bộ dùng chung của Cài đặt
+           trong components.css / responsive.css.
+
+           `toggle-select--on` là thứ báo TRẠNG THÁI ra ngoài cho CSS: bật thì
+           tô màu chủ đề, tắt thì để nền trung tính. Trước đây mọi ô đều mang
+           gradient đỏ-cam nên nhìn lướt không phân biệt được Bật với Tắt —
+           phải đọc chữ mới biết, tức là màu sắc chẳng nói lên gì. */
+        <div className={`quick-difficulty-selector toggle-select${checked ? ' toggle-select--on' : ''}`}>
             <select
                 value={checked ? 'on' : 'off'}
                 onChange={e => {
