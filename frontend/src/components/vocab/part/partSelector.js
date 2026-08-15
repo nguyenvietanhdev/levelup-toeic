@@ -180,8 +180,21 @@ export const PartSelector = {
             // hẹn giờ trong hàm bấm: chỉ chỗ này mới biết dữ liệu đã thực sự về.
             setRefreshing(false);
         };
+        // Nghe CẢ HAI sự kiện, vì mỗi đường tải phát một cái khác nhau:
+        //
+        //   `vocab:loaded`   — chỉ gameLogic phát, tức là kho CHUNG.
+        //   `topic:changed`  — topicSelector phát ở cả 4 nhánh (đề chung, bộ
+        //                      riêng, bộ được chia sẻ, nhóm từ sai).
+        //
+        // Chỉ nghe `vocab:loaded` là lỗi đang gặp: đang dùng bộ từ RIÊNG mà bấm
+        // Tải lại thì `selectPersonalTopic` đặt thẳng `GameLogic.vocabularyData`
+        // rồi phát `topic:changed` — không có `vocab:loaded` nào cả. Lưới Part
+        // không dựng lại, nút quay đủ 10 giây rồi báo "không tải lại được",
+        // TRONG KHI dữ liệu đã về xong từ lâu.
         this._unsubVocab?.();
-        this._unsubVocab = EventBus.on('vocab:loaded', onVocabLoaded);
+        const offLoaded = EventBus.on('vocab:loaded', onVocabLoaded);
+        const offChanged = EventBus.on('topic:changed', onVocabLoaded);
+        this._unsubVocab = () => { offLoaded?.(); offChanged?.(); };
 
         Modal.show({
             title: '📚 Chọn Part để luyện tập',

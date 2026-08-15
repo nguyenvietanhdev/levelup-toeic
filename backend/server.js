@@ -239,6 +239,25 @@ app.get('/health', async (_, res) => {
 });
 
 // ===================================
+// KHÔNG CACHE PHẢN HỒI API
+// ===================================
+// Express bật ETag mặc định cho MỌI phản hồi. Với API dữ liệu động thì đó là
+// cái bẫy: trình duyệt gửi kèm `If-None-Match`, server thấy nội dung chưa đổi
+// (theo hash) nên trả 304 và `fetch` dùng lại body CŨ trong cache.
+//
+// Triệu chứng thực tế: bấm "Tải lại" ở popup Chọn đề thì danh sách không đổi —
+// phải đóng popup mở lại mới thấy dữ liệu mới. Không có lỗi nào, request vẫn
+// 200/304 bình thường, nên rất khó lần ra.
+//
+// Đặt TRƯỚC mọi route /api để phủ hết. Tài nguyên tĩnh (ảnh, JS, CSS) vẫn giữ
+// cache — chúng nằm ở middleware khác.
+app.use('/api', (req, res, next) => {
+    res.set('Cache-Control', 'no-store, no-cache, must-revalidate');
+    next();
+});
+app.set('etag', false);
+
+// ===================================
 // ADMIN METRICS + STATS (system metrics, user growth)
 // ===================================
 app.use('/api/admin', require('./routes/adminMetrics'));

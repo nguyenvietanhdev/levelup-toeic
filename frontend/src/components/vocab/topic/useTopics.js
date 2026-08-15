@@ -32,9 +32,16 @@ export function useTopics({ enabled = true } = {}) {
             return;
         }
         setLoadingShared(true);
-        await TopicSelector.loadAvailableTopics();
-        setShared(TopicSelector.getAvailableTopics() || []);
-        setLoadingShared(false);
+        try {
+            await TopicSelector.loadAvailableTopics();
+            setShared(TopicSelector.getAvailableTopics() || []);
+        } finally {
+            // `finally` chứ không đặt sau `await`: hàm tải ném lỗi (mất mạng,
+            // token hết hạn) thì dòng tắt cờ bị nhảy qua và nút Tải lại QUAY MÃI
+            // không dừng — người dùng phải đóng popup mở lại. Hai hàm tải kia đã
+            // có try/catch, riêng hàm này thì không.
+            setLoadingShared(false);
+        }
     }, []);
 
     // Gộp kho CỦA MÌNH và kho ĐƯỢC CHIA SẺ vào cùng một danh sách.
@@ -62,8 +69,11 @@ export function useTopics({ enabled = true } = {}) {
             setPersonal([...own, ...got]);
         } catch {
             setPersonal([]);
+        } finally {
+            // Trong `finally` để chắc chắn tắt cờ — đặt sau khối try thì thêm
+            // một `return` sớm nào đó trong tương lai là spinner kẹt lại.
+            setLoadingPersonal(false);
         }
-        setLoadingPersonal(false);
     }, []);
 
     const loadWrong = useCallback(async () => {
@@ -93,8 +103,9 @@ export function useTopics({ enabled = true } = {}) {
             setWrong(groups);
         } catch {
             setWrong([]);
+        } finally {
+            setLoadingWrong(false);
         }
-        setLoadingWrong(false);
     }, []);
 
     const selectWrong = useCallback(async (source) => {

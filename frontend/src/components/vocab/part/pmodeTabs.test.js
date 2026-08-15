@@ -170,6 +170,38 @@ describe('thẻ Part: dải độ khó chỉ có MÀU, số từ vẫn hiện', 
     });
 });
 
+describe('nút Tải lại — nghe ĐÚNG sự kiện', () => {
+    test('nghe CẢ `vocab:loaded` lẫn `topic:changed`', () => {
+        // Mỗi đường tải phát một sự kiện khác nhau:
+        //   `vocab:loaded`  — chỉ gameLogic phát (kho CHUNG)
+        //   `topic:changed` — topicSelector phát ở cả 4 nhánh (đề chung, bộ
+        //                     riêng, bộ được chia sẻ, nhóm từ sai)
+        // Chỉ nghe cái đầu là bộ từ RIÊNG bấm Tải lại sẽ không dựng lại lưới.
+        expect(src).toMatch(/EventBus\.on\('vocab:loaded', onVocabLoaded\)/);
+        expect(src).toMatch(/EventBus\.on\('topic:changed', onVocabLoaded\)/);
+    });
+
+    test('gỡ CẢ HAI listener khi đóng popup', () => {
+        // Gỡ thiếu một cái thì mở lại lần hai có hai listener cùng chạy, cái cũ
+        // trỏ vào DOM đã bị vứt.
+        expect(src).toMatch(/this\._unsubVocab = \(\) => \{ offLoaded\?\.\(\); offChanged\?\.\(\); \}/);
+    });
+
+    test('`topic:changed` thật sự được phát ở nhánh bộ từ riêng', () => {
+        // Nếu ai đó đổi tên sự kiện bên topicSelector thì test này đỏ, thay vì
+        // để nút quay 10 giây rồi báo lỗi sai sự thật.
+        const topicSel = readFileSync(
+            join(__dirname, '..', 'topic', 'topicSelector.js'), 'utf8');
+        const i = topicSel.indexOf('async selectPersonalTopic');
+        expect(i).toBeGreaterThan(-1);
+        expect(topicSel.slice(i, i + 900)).toMatch(/EventBus\.emit\('topic:changed'/);
+    });
+
+    test('vẫn có chốt chặn thời gian phòng khi không sự kiện nào tới', () => {
+        expect(src).toMatch(/_refreshTimer = setTimeout/);
+    });
+});
+
 describe('nút Đóng ở đáy popup Chọn Part', () => {
     test('có nút Đóng, dùng footer sẵn có của Modal', () => {
         // Trên điện thoại nút × góc trên phải nằm ngoài tầm ngón cái, mà popup
