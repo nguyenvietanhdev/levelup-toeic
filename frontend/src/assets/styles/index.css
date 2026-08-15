@@ -1,4 +1,11 @@
-@import '@fortawesome/fontawesome-free/css/all.min.css';
+/* FontAwesome: nạp RIÊNG solid + regular, KHÔNG lấy `all.min.css`.
+   `all` kéo theo cả bộ brands (fa-brands-400.woff2, 110 kB) — mà dự án không
+   dùng icon thương hiệu nào (đã quét: không có class `fab` trong src/).
+   `fontawesome.min.css` là phần lõi (biến, kích thước, xoay…), bắt buộc phải
+   có; `solid`/`regular` chỉ khai font-face + mã icon. */
+@import '@fortawesome/fontawesome-free/css/fontawesome.min.css';
+@import '@fortawesome/fontawesome-free/css/solid.min.css';
+@import '@fortawesome/fontawesome-free/css/regular.min.css';
 @import './base.css';
 @import './layout.css';
 @import './components.css';

@@ -5,6 +5,7 @@ import { GameLogic } from '@game/gameLogic.js';
 import { Modal } from '@ui/Modal.jsx';
 import { markStatsExported, shouldExportStats } from './statsExportSignal.js';
 import { EventBus, GameEvents } from '@game/eventBus.js';
+import { loadChart } from '@lib/loadChart.js';
 
 const MODE_NAMES = {
     'multiple-choice': 'Trắc nghiệm',
@@ -130,7 +131,16 @@ export default function StatisticsScreen({ active }) {
         // Destroy trước khi vẽ để tránh "Canvas already in use"
         if (chartInstance.current) { chartInstance.current.destroy(); chartInstance.current = null; }
         if (!active || activeTab !== 'overview') return;
-        drawChart();
+
+        // Nạp Chart.js theo yêu cầu (xem `lib/loadChart.js`) thay vì ở main.jsx.
+        //
+        // `cancelled` chặn việc vẽ khi người dùng đã rời tab trong lúc chờ tải:
+        // không có nó thì Chart dựng lên trên canvas đã bị gỡ khỏi DOM.
+        let cancelled = false;
+        loadChart()
+            .then(() => { if (!cancelled) drawChart(); })
+            .catch(() => { /* mất mạng — canvas để trống, không làm sập màn hình */ });
+        return () => { cancelled = true; };
     }, [active, activeTab, tick]);
 
     useEffect(() => () => {
