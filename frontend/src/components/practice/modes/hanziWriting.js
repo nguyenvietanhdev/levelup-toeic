@@ -9,7 +9,25 @@
 // Dữ liệu tải THEO YÊU CẦU: mỗi chữ một file ~2,8 KB. Cả bộ là 8,1 MB nên không
 // thể nhét vào bundle — người học chữ nào thì tải chữ đó.
 
-import HanziWriter from 'hanzi-writer';
+/**
+ * `hanzi-writer` nạp THEO YÊU CẦU, không import tĩnh.
+ *
+ * Import tĩnh kéo cả thư viện (~35 kB, 11 kB gzip) vào chunk khởi động, nên
+ * MỌI người dùng tải nó — kể cả người chỉ học tiếng Anh và không bao giờ mở
+ * chế độ này (nó còn bị chặn hẳn khi ngôn ngữ từ vựng không phải tiếng Trung).
+ *
+ * Giữ trong biến module: nạp một lần rồi dùng lại cho mọi lượt luyện sau.
+ */
+let HanziWriter = null;
+
+/** Bảo đảm thư viện sẵn sàng. Gọi lại nhiều lần chỉ tải một lần. */
+async function ensureHanziWriter() {
+    if (!HanziWriter) {
+        const mod = await import('hanzi-writer');
+        HanziWriter = mod.default;
+    }
+    return HanziWriter;
+}
 import { GameState } from '@game/state.js';
 import { PartSelector } from '@components/vocab/part/partSelector.js';
 import { EventBus, GameEvents } from '@game/eventBus.js';
@@ -36,6 +54,26 @@ export const HanziWriting = {
     async start(config) {
         this.config = config;
         this.currentIndex = 0;
+
+        // Nạp thư viện TRƯỚC khi dựng câu hỏi đầu tiên.
+        //
+        // `mountWriter` là hàm ĐỒNG BỘ và được gọi lại cho từng chữ — biến nó
+        // thành async là phải sửa cả hai nơi gọi và dễ sinh tình trạng chạy
+        // chồng. Nạp một lần ở đây thì mọi chỗ sau đó dùng như cũ.
+        try {
+            await ensureHanziWriter();
+        } catch {
+            // Mất mạng giữa chừng: nói rõ lý do rồi thoát, thay vì để người dùng
+            // nhìn ô trống và tưởng chế độ hỏng.
+            PracticeManager.complete();
+            Notification.show({
+                type: 'error',
+                title: 'Không tải được bộ vẽ chữ',
+                message: 'Kiểm tra kết nối mạng rồi thử lại.',
+                duration: 4000,
+            });
+            return;
+        }
 
         await this.generateQuestions();
         this.setupHintSkipListeners();
@@ -127,6 +165,7 @@ export const HanziWriting = {
         const target = document.getElementById(`hanzi-box-${i}`);
         if (!target) return;
 
+
         // Ô đang viết sáng, các ô khác mờ đi — không thì người học không biết phải
         // vẽ vào ô nào, và HanziWriter chỉ nhận chuột ở ô đang gắn.
         q.chars.forEach((_, k) => {
@@ -142,7 +181,14 @@ export const HanziWriting = {
         // đổi ngưỡng lúc nào cũng tự khớp.
         const size = Math.round(target.getBoundingClientRect().width) || 260;
 
-        this.writer = HanziWriter.create(target, q.chars[i], {
+        // Chỉ bỏ qua phần DỰNG BỘ VẼ khi thư viện chưa sẵn sàng — phần tô sáng ô
+        // và cuộn tới ô đang viết vẫn phải chạy, chúng không phụ thuộc vào nó.
+        //
+        // `start()` đã `await ensureHanziWriter()` nên đường chạy bình thường
+        // luôn có. Nhưng hàm này còn được gọi trực tiếp lúc chuyển sang chữ kế
+        // tiếp, nên vẫn tự bảo vệ: thiếu lớp này thì `HanziWriter.create` ném
+        // "Cannot read properties of null" và cả lượt luyện chết giữa chừng.
+        this.writer = HanziWriter?.create(target, q.chars[i], {
             width: size,
             height: size,
             padding: 12,
@@ -163,7 +209,9 @@ export const HanziWriting = {
             },
         });
 
-        this._writers.push(this.writer);
+        // Chỉ gom writer THẬT: thư viện chưa nạp thì `create` không chạy, đẩy
+        // `undefined` vào danh sách huỷ là rác.
+        if (this.writer) this._writers.push(this.writer);
         this.strokeNum = 0;
         this.openQuiz(q);
 

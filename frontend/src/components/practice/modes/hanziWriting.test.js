@@ -7,6 +7,8 @@
  * `fetch('/hanzi/，.json')` trả 404 và màn hình trắng.
  */
 import { describe, test, expect, vi, beforeEach, afterEach } from 'vitest';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { splitHanzi, HanziWriting } from './hanziWriting.js';
 import { PartSelector } from '@components/vocab/part/partSelector.js';
 
@@ -201,5 +203,53 @@ describe('mountWriter — cuộn ô đang viết vào tầm nhìn', () => {
         mode.currentIndex = 0;
         mode.openQuiz = () => {};
         expect(() => mode.mountWriter(q)).not.toThrow();
+    });
+});
+
+/**
+ * `hanzi-writer` nạp THEO YÊU CẦU.
+ *
+ * Import tĩnh kéo cả thư viện (~35 kB, 11 kB gzip) vào chunk khởi động, nên MỌI
+ * người dùng tải nó — kể cả người chỉ học tiếng Anh, mà chế độ này còn bị chặn
+ * hẳn khi ngôn ngữ từ vựng không phải tiếng Trung.
+ *
+ * Chỗ dễ hỏng: `mountWriter` là hàm ĐỒNG BỘ và được gọi lại cho từng chữ. Nạp
+ * xong ở `start()` thì đường chạy bình thường luôn có thư viện, nhưng hàm vẫn
+ * phải tự bảo vệ — thiếu thì `HanziWriter.create` ném "Cannot read properties
+ * of null" và cả lượt luyện chết giữa chừng.
+ */
+describe('nạp thư viện theo yêu cầu', () => {
+    const src = readFileSync(join(__dirname, 'hanziWriting.js'), 'utf8');
+
+    test('KHÔNG import tĩnh hanzi-writer', () => {
+        expect(src).not.toMatch(/^import HanziWriter from 'hanzi-writer'/m);
+    });
+
+    test('dùng dynamic import, giữ lại để tải một lần', () => {
+        expect(src).toMatch(/await import\('hanzi-writer'\)/);
+        expect(src).toMatch(/if \(!HanziWriter\)/);
+    });
+
+    test('start() nạp TRƯỚC khi dựng câu hỏi', () => {
+        const i = src.indexOf('await ensureHanziWriter()');
+        const j = src.indexOf('await this.generateQuestions()');
+        expect(i).toBeGreaterThan(-1);
+        expect(i).toBeLessThan(j);
+    });
+
+    test('nạp hỏng thì báo rõ, không để màn hình trống', () => {
+        const i = src.indexOf('await ensureHanziWriter()');
+        const block = src.slice(i, i + 600);
+        expect(block).toMatch(/catch/);
+        expect(block).toMatch(/Không tải được bộ vẽ chữ/);
+    });
+
+    test('mountWriter tự bảo vệ khi thư viện chưa sẵn sàng', () => {
+        // Nó còn được gọi trực tiếp lúc chuyển sang chữ kế tiếp.
+        expect(src).toMatch(/HanziWriter\?\.create\(/);
+    });
+
+    test('không đẩy writer rỗng vào danh sách huỷ', () => {
+        expect(src).toMatch(/if \(this\.writer\) this\._writers\.push/);
     });
 });
