@@ -5,8 +5,24 @@ const settingsSchema = new mongoose.Schema(
         // Audio
         soundEnabled: { type: Boolean, default: true },
         soundEffects: { type: Boolean, default: true },
+        answerFeedbackSound: { type: Boolean, default: true },
+        practiceSoundEnabled: { type: Boolean, default: true },
         volume: { type: Number, default: 70, min: 0, max: 100 },
         autoPronunciation: { type: Boolean, default: false },
+
+        // Giọng đọc — lưu THEO TÀI KHOẢN, không chỉ localStorage.
+        //
+        // Trước đây ba trường này chỉ nằm ở localStorage nên đăng nhập máy khác
+        // là mất lựa chọn, rơi về "Tự động — Random". Máy cũ vẫn nhớ nên rất dễ
+        // tưởng là đã lưu rồi.
+        //
+        // Chuỗi rỗng = chưa chọn → client dùng mặc định của nó. KHÔNG đặt mặc
+        // định là '__gtts_random__' ở đây: làm vậy thì không phân biệt được
+        // "chưa từng chọn" với "cố ý chọn random".
+        voiceEn: { type: String, default: '' },
+        voiceZh: { type: String, default: '' },
+        // Tốc độ đọc, % (50–150). Cũng chỉ nằm ở localStorage như trên.
+        speechRate: { type: Number, default: 80, min: 50, max: 150 },
 
         // Game
         randomQuestions: { type: Boolean, default: false },

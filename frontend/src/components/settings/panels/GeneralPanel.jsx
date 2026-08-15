@@ -59,8 +59,11 @@ export default function GeneralPanel({
                     </div>
                     {/* Cả CỤM rộng đúng bằng một select thường (240px, xem
                         `.settings-section select`), rồi chia bên trong — không
-                        thì hàng này dài hơn mọi hàng khác vì có thêm ô số. */}
-                    <div className="setting-inline-group" style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                        thì hàng này dài hơn mọi hàng khác vì có thêm ô số.
+                        Riêng lúc bật "Tùy chỉnh…" thì nới ra, vì lúc đó cụm
+                        phải chứa cả ô số và nhãn "/ 990". */}
+                    <div className={`setting-inline-group${isTargetCustom ? ' setting-inline-group--with-number' : ''}`}
+                        style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                         <select
                             value={isTargetCustom ? 'custom' : targetVal}
                             onChange={e => {
@@ -82,11 +85,10 @@ export default function GeneralPanel({
                                 value={targetVal}
                                 clamp={clampTarget}
                                 onCommit={v => updateSetting('toeicTargetScore', v)}
-                                style={{ width: 64, minWidth: 0 }}
                                 placeholder="điểm"
                             />
                         )}
-                        {isTargetCustom && <span style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>/ 990</span>}
+                        {isTargetCustom && <span className="setting-inline-unit">/ 990</span>}
                     </div>
                 </div>
                 <div className="setting-item">
@@ -94,10 +96,10 @@ export default function GeneralPanel({
                         <h4>Mục tiêu thời gian học mỗi ngày</h4>
                         <p>Vòng tiến độ ở trang chủ tính theo mốc này</p>
                     </div>
-                    {/* Cả CỤM rộng đúng bằng một select thường (240px, xem
-                        `.settings-section select`), rồi chia bên trong — không
-                        thì hàng này dài hơn mọi hàng khác vì có thêm ô số. */}
-                    <div className="setting-inline-group" style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                    {/* Nới rộng khi bật "Tùy chỉnh…" — xem ghi chú ở hàng
+                        "Mục tiêu điểm TOEIC" phía trên. */}
+                    <div className={`setting-inline-group${isGoalCustom ? ' setting-inline-group--with-number' : ''}`}
+                        style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                         <select
                             value={isGoalCustom ? 'custom' : goalVal}
                             onChange={e => {
@@ -120,11 +122,10 @@ export default function GeneralPanel({
                                 value={goalVal}
                                 clamp={v => Math.max(5, Math.min(600, v))}
                                 onCommit={v => updateSetting('dailyStudyGoalMin', v || 15)}
-                                style={{ width: 64, minWidth: 0 }}
                                 placeholder="phút"
                             />
                         )}
-                        {isGoalCustom && <span style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>phút</span>}
+                        {isGoalCustom && <span className="setting-inline-unit">phút</span>}
                     </div>
                 </div>
             </div>

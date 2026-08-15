@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import Toggle from './Toggle.jsx';
 import { QUESTION_TIME_MODES, getQuestionTimeDefault } from '@components/practice/questionTime.js';
+import { bandLabel, BANDS } from '@lib/levelBands.js';
 
 const SEC_OPTIONS = [10, 15, 20, 25, 30, 45, 60, 90, 120];
 
@@ -102,11 +103,12 @@ export default function PracticePanel({ s, handleQPS, updateSetting, handleDiffi
             </div>
             <div className="setting-item">
                 <label>Độ khó</label>
+                {/* Nhãn đổi theo ngôn ngữ: tiếng Trung phân cấp theo HSK, không
+                    phải khung châu Âu — ghi "A1-A2" ở đó là sai hẳn hệ quy chiếu. */}
                 <select value={s.difficulty || 'adaptive'} onChange={e => handleDifficulty(e.target.value)}>
-                    <option value="easy">Dễ (A1-A2)</option>
-                    <option value="medium">Trung bình (B1-B2)</option>
-                    <option value="hard">Khó (C1-C2)</option>
-                    <option value="adaptive">Toàn bộ</option>
+                    {BANDS.map(b => (
+                        <option key={b} value={b}>{bandLabel(b, s.vocabLang || 'en')}</option>
+                    ))}
                 </select>
             </div>
             <div className="setting-item">

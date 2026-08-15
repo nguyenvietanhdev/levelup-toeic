@@ -4,9 +4,11 @@ import { GameState } from '@game/state.js';
 import { EventBus, GameEvents } from '@game/eventBus.js';
 import { Notification } from '@ui/Toaster.jsx';
 import { loadUnlocks, lockInfo } from '@game/featureUnlocks.js';
+import { levelsFor, bandLabel, BANDS } from '@lib/levelBands.js';
 
-const LEVEL_MAP = { easy: ['A1', 'A2'], medium: ['B1', 'B2'], hard: ['C1', 'C2'], adaptive: null };
-const LEVEL_LABEL = { easy: 'Dễ (A1-A2)', medium: 'Trung bình (B1-B2)', hard: 'Khó (C1-C2)', adaptive: 'Toàn bộ' };
+// Bảng mức độ khó theo ngôn ngữ nằm ở `@lib/levelBands.js` — tiếng Trung dùng
+// HSK, tiếng Anh dùng CEFR. Trước đây bảng CEFR bị chép cứng ở đây, nên chọn
+// "Dễ" lúc học tiếng Trung là lọc ra 0 từ (kho zh toàn HSK*).
 
 /**
  * Ba lựa chọn nhanh: số câu mỗi lượt · độ khó · ngôn ngữ học.
@@ -85,13 +87,15 @@ export default function QuickSettings({ variant = 'bar' }) {
         s.difficulty = val;
         // BẮT BUỘC: bộ lọc từ vựng đọc `levelFilter`, không đọc `difficulty`.
         // Thiếu dòng này thì đổi cấp độ sẽ không có tác dụng.
-        s.levelFilter = LEVEL_MAP[val] ?? null;
+        // Theo ĐÚNG khung của ngôn ngữ đang học: zh → HSK*, en → CEFR.
+        const levels = levelsFor(val, vocabLang);
+        s.levelFilter = levels;
         GameState.save?.();
         // Để bản còn lại (thanh trạng thái / menu bên) cập nhật theo.
         EventBus.emit(GameEvents.SESSION_BADGE_UPDATED);
         Notification.info(val === 'adaptive'
             ? 'Cấp độ: Toàn bộ — không lọc theo trình độ'
-            : `Cấp độ: ${LEVEL_LABEL[val]} — chỉ lấy từ ${LEVEL_MAP[val].join('/')}`);
+            : `Cấp độ: ${bandLabel(val, vocabLang)} — chỉ lấy từ ${levels.join('/')}`);
     };
 
     const handleToggleVocabLang = () => {
@@ -119,7 +123,17 @@ export default function QuickSettings({ variant = 'bar' }) {
             localStorage.setItem('vocabLang', next);
         } catch {}
         if (window.GameState?.state?.settings) {
-            window.GameState.state.settings.vocabLang = next;
+            const s = window.GameState.state.settings;
+            s.vocabLang = next;
+            // Dịch bộ lọc độ khó sang khung của ngôn ngữ MỚI.
+            //
+            // Hai kho dùng hai khung (en → CEFR, zh → HSK) và bộ lọc so khớp
+            // CHÍNH XÁC từng chuỗi. Giữ nguyên `['A1','A2']` khi chuyển sang
+            // tiếng Trung là lọc ra 0 từ — vào luyện tập báo hết từ mà không ai
+            // hiểu vì sao, vì ô độ khó vẫn hiện "Dễ" như bình thường.
+            if (s.difficulty && s.difficulty !== 'adaptive') {
+                s.levelFilter = levelsFor(s.difficulty, next);
+            }
             window.GameState.save?.();
         }
         window.location.reload();
@@ -199,10 +213,9 @@ export default function QuickSettings({ variant = 'bar' }) {
                 <label className="menu-quick-label" htmlFor="menu-difficulty-select">Độ khó</label>
                 <div className="quick-difficulty-selector">
                     <select id="menu-difficulty-select" value={difficulty} onChange={handleDifficultyChange}>
-                        <option value="easy">Dễ (A1-A2)</option>
-                        <option value="medium">Trung bình (B1-B2)</option>
-                        <option value="hard">Khó (C1-C2)</option>
-                        <option value="adaptive">Toàn bộ</option>
+                        {BANDS.map(b => (
+                            <option key={b} value={b}>{bandLabel(b, vocabLang)}</option>
+                        ))}
                     </select>
                 </div>
 
@@ -260,10 +273,9 @@ export default function QuickSettings({ variant = 'bar' }) {
             </div>
             <div className="quick-difficulty-selector" title="Độ khó câu hỏi">
                 <select id="quick-difficulty-select" value={difficulty} onChange={handleDifficultyChange}>
-                    <option value="easy">Dễ (A1-A2)</option>
-                    <option value="medium">Trung bình (B1-B2)</option>
-                    <option value="hard">Khó (C1-C2)</option>
-                    <option value="adaptive">Toàn bộ</option>
+                    {BANDS.map(b => (
+                        <option key={b} value={b}>{bandLabel(b, vocabLang)}</option>
+                    ))}
                 </select>
             </div>
             {langBtn}

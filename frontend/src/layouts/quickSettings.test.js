@@ -54,7 +54,12 @@ describe('hành vi phải giữ nguyên sau khi tách', () => {
         // Bộ lọc từ vựng đọc `levelFilter`, không đọc `difficulty`. Thiếu dòng
         // này thì đổi cấp độ không có tác dụng, mà giao diện vẫn hiện lựa chọn
         // mới nên trông như đã ăn.
-        expect(quick).toMatch(/s\.levelFilter = LEVEL_MAP\[val\] \?\? null/);
+        //
+        // Bảng level giờ nằm ở `@lib/levelBands.js` (tiếng Trung dùng HSK, tiếng
+        // Anh dùng CEFR) thay vì hằng LEVEL_MAP chép cứng trong file này — điều
+        // cần giữ là VẪN GHI vào `levelFilter`, không phải tên biến nào.
+        expect(quick).toMatch(/s\.levelFilter = levels/);
+        expect(quick).toMatch(/levelsFor\(val, vocabLang\)/);
     });
 
     test('chỉ khoá chiều SANG tiếng Trung, luôn cho quay về tiếng Anh', () => {

@@ -19,6 +19,7 @@ import AccountPanel from './panels/AccountPanel.jsx';
 import AboutPanel from './panels/AboutPanel.jsx';
 import ReportPanel from './panels/ReportPanel.jsx';
 import ToeicExamPanel from './panels/ToeicExamPanel.jsx';
+import { levelsFor } from '@lib/levelBands.js';
 
 // Thứ tự = mức độ thường dùng, và gom theo LĨNH VỰC:
 //   Chung (mục tiêu + giao diện) · Âm thanh · Luyện tập từ vựng · Thi TOEIC
@@ -135,6 +136,28 @@ export default function SettingsScreen({ active }) {
             Object.assign(st, local);
         } catch {}
         setS({ ...st });
+
+        // Kéo lựa chọn GIỌNG ĐỌC từ hồ sơ trên server xuống.
+        //
+        // Ba giá trị này trước đây chỉ nằm ở localStorage, nên đăng nhập máy
+        // khác là mất — ô chọn rơi về "Tự động — Random" dù người dùng đã chọn
+        // giọng khác. Máy cũ vẫn nhớ nên rất dễ tưởng đã lưu rồi.
+        //
+        // Server là NGUỒN CHÍNH (đúng nguyên tắc của dự án: localStorage chỉ là
+        // bản sao dự phòng). Chuỗi rỗng = chưa từng chọn → giữ giá trị đang có,
+        // không ghi đè bằng rỗng.
+        if (st.voiceEn) {
+            setSelectedVoiceEn(st.voiceEn);
+            localStorage.setItem('toeic_voice_en', st.voiceEn);
+        }
+        if (st.voiceZh) {
+            setSelectedVoiceZh(st.voiceZh);
+            localStorage.setItem('toeic_voice_zh', st.voiceZh);
+        }
+        if (st.speechRate) {
+            setSpeechRate(st.speechRate);
+            localStorage.setItem('toeic_speech_rate', String(st.speechRate));
+        }
     }, [active]);
 
     useEffect(() => {
@@ -197,25 +220,31 @@ export default function SettingsScreen({ active }) {
     const handleVoiceChangeEn = (name) => {
         setSelectedVoiceEn(name);
         localStorage.setItem('toeic_voice_en', name);
+        updateSetting('voiceEn', name);
     };
 
     const handleVoiceChangeZh = (name) => {
         setSelectedVoiceZh(name);
+        // Ghi CẢ HAI nơi: localStorage cho lần mở sau trên chính máy này (đọc
+        // được ngay, không chờ mạng), và server để máy khác cũng thấy.
         localStorage.setItem('toeic_voice_zh', name);
+        updateSetting('voiceZh', name);
     };
 
     const handleSpeechRate = (val) => {
         setSpeechRate(val);
         localStorage.setItem('toeic_speech_rate', String(val));
+        updateSetting('speechRate', val);
     };
 
     const handleTestVoiceEn = () => GameLogic.speakWord('vocabulary', 'en-US');
     const handleTestVoiceZh = () => GameLogic.speakWord('你好，我正在学习汉语。', 'zh-CN');
 
     const handleDifficulty = (value) => {
-        const levelMap = { easy: ['A1', 'A2'], medium: ['B1', 'B2'], hard: ['C1', 'C2'], adaptive: null };
+        // Theo ĐÚNG khung của ngôn ngữ đang học: zh → HSK*, en → CEFR. Bảng
+        // CEFR chép cứng như bản cũ thì học tiếng Trung chọn "Dễ" ra 0 từ.
         updateSetting('difficulty', value);
-        updateSetting('levelFilter', levelMap[value] ?? null);
+        updateSetting('levelFilter', levelsFor(value, s.vocabLang || 'en'));
         const qs = document.getElementById('quick-difficulty-select');
         if (qs) qs.value = value;
     };
@@ -345,20 +374,43 @@ export default function SettingsScreen({ active }) {
                 là việc không ai muốn làm. Gõ vài chữ là lọc thẳng tới nhóm. */}
             <div className="settings-search">
                 <i className="fas fa-search"></i>
+                {/* `type="text"` chứ KHÔNG phải `search`: `search` sinh thêm nút
+                    × RIÊNG của trình duyệt, nằm ngay cạnh nút × của app — bấm
+                    cái này thì cái kia biến mất, nhìn như giao diện giật.
+
+                    Chrome bỏ qua `autoComplete="off"` cho ô trông giống ô đăng
+                    nhập. `name` lạ + `data-form-type="other"` + `data-1p-ignore`
+                    (1Password) mới thật sự chặn được — không thì nó điền email
+                    vào đây, và vì không mục cài đặt nào khớp "…@gmail.com" thì
+                    cả danh sách biến mất, chỉ còn dòng "Không có mục nào khớp". */}
                 <input
-                    type="search"
+                    type="text"
                     id="settings-search-input"
+                    name="settings-filter-query"
                     placeholder="Tìm cài đặt… (giao diện, âm thanh, mật khẩu…)"
                     value={navQuery}
                     onChange={(e) => handleNavQuery(e.target.value)}
                     autoComplete="off"
+                    autoCorrect="off"
+                    autoCapitalize="off"
+                    spellCheck="false"
+                    data-form-type="other"
+                    data-1p-ignore="true"
+                    data-lpignore="true"
                 />
-                {navQuery && (
-                    <button className="settings-search-clear" title="Xoá"
-                        onClick={() => setNavQuery('')}>
-                        <i className="fas fa-times"></i>
-                    </button>
-                )}
+                {/* Nút xoá LUÔN chiếm chỗ, chỉ ẩn/hiện bằng opacity. Gắn/gỡ khỏi
+                    DOM (`{navQuery && …}` như bản cũ) làm ô nhập đổi bề rộng
+                    ngay lúc gõ ký tự đầu và lúc xoá xong — đúng cái "giật". */}
+                <button
+                    className={`settings-search-clear${navQuery ? ' is-visible' : ''}`}
+                    title="Xoá"
+                    type="button"
+                    tabIndex={navQuery ? 0 : -1}
+                    aria-hidden={!navQuery}
+                    onClick={() => setNavQuery('')}
+                >
+                    <i className="fas fa-times"></i>
+                </button>
             </div>
 
             <div className="settings-layout">
@@ -476,7 +528,15 @@ export default function SettingsScreen({ active }) {
                     dùng tưởng trang hỏng chứ không nghĩ là do từ khoá. */}
                 {visibleCount === 0 && (
                     <p className="settings-empty">
-                        Không có mục nào khớp từ khoá đang gõ.
+                        Không có mục nào khớp <strong>“{navQuery}”</strong>.{' '}
+                        {/* Lối thoát một chạm. Trình duyệt có thể TỰ ĐIỀN email vào ô
+                            tìm — lúc đó cả trang Cài đặt trống trơn mà người dùng
+                            không hề gõ gì, nên phải có nút trả về nguyên trạng
+                            ngay tại chỗ họ đang nhìn. */}
+                        <button type="button" className="settings-empty-reset"
+                            onClick={() => setNavQuery('')}>
+                            Xoá từ khoá
+                        </button>
                     </p>
                 )}
 

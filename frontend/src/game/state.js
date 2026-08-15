@@ -15,6 +15,12 @@ export const DEFAULT_SETTINGS = {
     soundEnabled: true,        // công tắc TỔNG — tắt là im hết
     soundEffects: true,        // âm thao tác giao diện (bấm nút, mở rương…)
     answerFeedbackSound: true, // âm báo đúng/sai lúc luyện tập
+    // Giọng đọc — chuỗi rỗng nghĩa là CHƯA CHỌN, để bộ đọc dùng mặc định của
+    // nó. Không đặt sẵn '__gtts_random__' vì như thế không phân biệt được
+    // "chưa từng chọn" với "cố ý chọn random".
+    voiceEn: '',
+    voiceZh: '',
+    speechRate: 80,
     autoPronunciation: true,
     practiceSoundEnabled: true,
     notificationsEnabled: true,
@@ -230,6 +236,20 @@ export const GameState = {
             const userSettings = JSON.parse(localStorage.getItem('userSettings') || '{}');
             Object.assign(this.state.settings, userSettings);
         } catch { /* localStorage unavailable - keep merged value */ }
+
+        // Đổ lựa chọn GIỌNG ĐỌC từ hồ sơ server xuống localStorage.
+        //
+        // Bộ đọc (gameLogic.speakWord) lấy giọng THẲNG từ localStorage cho
+        // nhanh, không qua GameState. Trên máy mới thì localStorage rỗng → đọc
+        // bằng giọng mặc định, dù hồ sơ trên server đã lưu giọng người dùng
+        // chọn. Sao xuống ngay lúc nạp hồ sơ thì lần phát âm ĐẦU TIÊN đã đúng,
+        // không phải chờ mở màn Cài đặt.
+        try {
+            const st = this.state.settings || {};
+            if (st.voiceEn) localStorage.setItem('toeic_voice_en', st.voiceEn);
+            if (st.voiceZh) localStorage.setItem('toeic_voice_zh', st.voiceZh);
+            if (st.speechRate) localStorage.setItem('toeic_speech_rate', String(st.speechRate));
+        } catch { /* localStorage unavailable - bộ đọc dùng mặc định */ }
 
         this.state.user.lastLoginAt = Date.now();
 
