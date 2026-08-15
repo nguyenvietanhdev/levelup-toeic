@@ -13,6 +13,14 @@ public/images/pages/
 uploads/
 cache.json
 
+# Bản sao dữ liệu do script migration ghi ra trước khi đổi DB.
+# KHÔNG track: đó là dữ liệu thật của người dùng (có cả email), dung lượng lớn,
+# và chỉ có ý nghĩa trên chính máy đã chạy migration.
+backend/scripts/backup-*.json
+
+# Log hoạt động sinh lúc chạy — đổi liên tục, không phải mã nguồn.
+backend/data/activity-logs.json
+
 # Ảnh/audio TOEIC đã migrate lên Cloudinary — không track nữa (xem docs/backend)
 backend/public/images/
 backend/public/assets/
