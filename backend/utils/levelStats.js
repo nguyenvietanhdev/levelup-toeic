@@ -9,6 +9,37 @@
 const emptyStats = () => ({ a: 0, b: 0, c: 0 });
 
 /**
+ * Quy một giá trị `level` bất kỳ về MỘT nhóm A / B / C.
+ *
+ * Hệ thống dùng SONG SONG hai khung:
+ *   - Tiếng Anh: CEFR   A1 A2 · B1 B2 · C1 C2
+ *   - Tiếng Trung: HSK  HSK1 HSK2 · HSK3 HSK4 · HSK5 HSK6 HSK7-9
+ *
+ * Lấy chữ cái đầu là ĐỦ cho CEFR nhưng SAI cho HSK: "HSK1" ra chữ "H", không
+ * rơi vào nhóm nào, nên cả bộ từ mất dải phân bố độ khó mà không lỗi nào báo.
+ * Đây đúng là lỗi đã gặp.
+ *
+ * @returns {'A'|'B'|'C'|null}
+ */
+function toBand(level) {
+    const s = String(level == null ? '' : level).trim().toUpperCase();
+    if (!s) return null;
+
+    // HSK phải xét TRƯỚC: nếu không, "HSK1" lọt xuống nhánh chữ cái đầu.
+    // `HSK7-9` khớp chữ số đầu tiên là 7 → nhóm C, đúng như mong muốn.
+    const hsk = s.match(/^HSK\s*-?\s*(\d)/);
+    if (hsk) {
+        const n = Number(hsk[1]);
+        if (n <= 2) return 'A';
+        if (n <= 4) return 'B';
+        return 'C';          // HSK5, HSK6, HSK7-9
+    }
+
+    const first = s[0];
+    return first === 'A' || first === 'B' || first === 'C' ? first : null;
+}
+
+/**
  * Biến kết quả `$group` thành Map: source -> { a, b, c }.
  *
  * @param {Array<{_id: {source: string, level: string}, count: number}>} rows
@@ -21,8 +52,8 @@ function groupLevelRows(rows = []) {
         if (!source) continue;                       // dòng hỏng → bỏ, không ném
         if (!bySource.has(source)) bySource.set(source, emptyStats());
         const s = bySource.get(source);
-        // Chỉ lấy CHỮ CÁI ĐẦU: dữ liệu thật có cả "A", "A1", "a2"…
-        const lv = String(r?._id?.level || '').trim().toUpperCase()[0];
+        // `toBand` hiểu CẢ hai khung: CEFR (A1/B2…) và HSK (HSK1…HSK7-9).
+        const lv = toBand(r?._id?.level);
         const n = Number(r?.count) || 0;
         if (lv === 'A') s.a += n;
         else if (lv === 'B') s.b += n;
@@ -53,13 +84,64 @@ function sumStatsFor(sourceKeys = [], bySource = new Map()) {
 }
 
 /**
- * Chữ cái đầu của `level`, viết hoa — dạng biểu thức aggregation.
+ * `level` đã viết hoa và bỏ khoảng trắng — dạng biểu thức aggregation.
  *
- * Dữ liệu thật có cả "A", "A1", "a2", null. So sánh nguyên chuỗi (`$eq: 'A'`)
- * thì "A1" rơi ra ngoài: dải màu vẫn vẽ, chỉ là tỉ lệ SAI mà không lỗi gì.
+ * Dữ liệu thật có cả "A1", "a2", "HSK1", "hsk7-9", "", null.
  */
-const LEVEL_INITIAL = {
-    $toUpper: { $substrBytes: [{ $ifNull: ['$level', ''] }, 0, 1] },
+const LEVEL_UPPER = { $toUpper: { $trim: { input: { $ifNull: ['$level', ''] } } } };
+
+/** Chữ cái đầu — đủ cho CEFR, KHÔNG đủ cho HSK (xem `LEVEL_BAND`). */
+const LEVEL_INITIAL = { $substrBytes: [LEVEL_UPPER, 0, 1] };
+
+/**
+ * Quy `level` về một nhóm 'A' / 'B' / 'C' — bản aggregation của `toBand()`.
+ *
+ * PHẢI xử lý HSK riêng: "HSK1" lấy chữ cái đầu ra "H", không rơi vào nhóm nào,
+ * nên cả bộ từ tiếng Trung mất dải phân bố độ khó mà không có lỗi nào báo.
+ * (Kho zh đã chuyển hẳn sang HSK; kho en vẫn dùng CEFR — hàm này phục vụ cả hai.)
+ *
+ * Chữ số sau "HSK": 1-2 → A, 3-4 → B, 5 trở lên → C. "HSK7-9" lấy chữ số đầu
+ * là 7 → nhóm C, đúng như mong muốn.
+ */
+const LEVEL_BAND = {
+    $let: {
+        vars: {
+            up: LEVEL_UPPER,
+        },
+        in: {
+            $cond: [
+                // Bắt đầu bằng "HSK" → đọc chữ số ngay sau đó.
+                { $eq: [{ $substrBytes: ['$$up', 0, 3] }, 'HSK'] },
+                {
+                    $let: {
+                        // `$toInt` NÉM LỖI nếu ký tự không phải số ("HSK", "HSKA")
+                        // → sập cả endpoint. `onError/onNull` biến nó thành 0 và
+                        // rơi vào nhánh '' (không tính vào nhóm nào).
+                        vars: {
+                            d: {
+                                $convert: {
+                                    input: { $substrBytes: ['$$up', 3, 1] },
+                                    to: 'int', onError: 0, onNull: 0,
+                                },
+                            },
+                        },
+                        in: {
+                            $switch: {
+                                branches: [
+                                    { case: { $lte: ['$$d', 0] }, then: '' },   // "HSK" trống số
+                                    { case: { $lte: ['$$d', 2] }, then: 'A' },
+                                    { case: { $lte: ['$$d', 4] }, then: 'B' },
+                                ],
+                                default: 'C',
+                            },
+                        },
+                    },
+                },
+                // Còn lại: CEFR — chữ cái đầu đã là nhóm.
+                { $substrBytes: ['$$up', 0, 1] },
+            ],
+        },
+    },
 };
 
 /**
@@ -70,7 +152,7 @@ const LEVEL_INITIAL = {
  */
 function levelSumStage() {
     const count = (letter) => ({
-        $sum: { $cond: [{ $eq: [LEVEL_INITIAL, letter] }, 1, 0] },
+        $sum: { $cond: [{ $eq: [LEVEL_BAND, letter] }, 1, 0] },
     });
     return { _lvA: count('A'), _lvB: count('B'), _lvC: count('C') };
 }
@@ -79,10 +161,12 @@ function levelSumStage() {
 const LEVEL_STATS_PROJECT = { a: '$_lvA', b: '$_lvB', c: '$_lvC' };
 
 module.exports = {
+    toBand,
     groupLevelRows,
     sumStatsFor,
     emptyStats,
     levelSumStage,
     LEVEL_STATS_PROJECT,
     LEVEL_INITIAL,
+    LEVEL_BAND,
 };

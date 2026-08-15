@@ -9,7 +9,7 @@
  */
 const {
     groupLevelRows, sumStatsFor, emptyStats,
-    levelSumStage, LEVEL_STATS_PROJECT, LEVEL_INITIAL,
+    levelSumStage, LEVEL_STATS_PROJECT, LEVEL_INITIAL, LEVEL_BAND,
 } = require('../utils/levelStats');
 
 /** Dựng một dòng kết quả `$group` cho gọn. */
@@ -74,6 +74,45 @@ describe('groupLevelRows', () => {
     });
 });
 
+describe('toBand — hiểu CẢ hai khung CEFR và HSK', () => {
+    const { toBand } = require('../utils/levelStats');
+
+    test('CEFR: chữ cái đầu là nhóm', () => {
+        expect(toBand('A1')).toBe('A');
+        expect(toBand('a2')).toBe('A');
+        expect(toBand('B2')).toBe('B');
+        expect(toBand('C1')).toBe('C');
+    });
+
+    test('HSK1-2 → A, HSK3-4 → B, HSK5+ → C', () => {
+        // Đây là lỗi đã gặp: lấy chữ cái đầu của "HSK1" ra "H", không rơi vào
+        // nhóm nào → cả bộ tiếng Trung mất dải mà không lỗi nào báo.
+        expect(toBand('HSK1')).toBe('A');
+        expect(toBand('HSK2')).toBe('A');
+        expect(toBand('HSK3')).toBe('B');
+        expect(toBand('HSK4')).toBe('B');
+        expect(toBand('HSK5')).toBe('C');
+        expect(toBand('HSK6')).toBe('C');
+    });
+
+    test('HSK7-9 (hai chữ số có gạch) → C', () => {
+        // Lấy chữ số ĐẦU (7) — không được vấp vì chuỗi có dấu gạch.
+        expect(toBand('HSK7-9')).toBe('C');
+        expect(toBand('hsk7-9')).toBe('C');
+    });
+
+    test('viết thường / có khoảng trắng vẫn nhận', () => {
+        expect(toBand('hsk1')).toBe('A');
+        expect(toBand('  HSK 3  ')).toBe('B');
+    });
+
+    test('giá trị lạ/rỗng → null, không đoán bừa', () => {
+        for (const v of ['', null, undefined, 'D1', 'HSK', 'xyz']) {
+            expect(toBand(v)).toBeNull();
+        }
+    });
+});
+
 describe('levelSumStage — đếm A/B/C ngay trong $group sẵn có', () => {
     const stage = levelSumStage();
 
@@ -87,18 +126,31 @@ describe('levelSumStage — đếm A/B/C ngay trong $group sẵn có', () => {
         }
     });
 
-    test('so khớp theo CHỮ CÁI ĐẦU, không phải nguyên chuỗi', () => {
+    test('so khớp theo NHÓM đã quy đổi, không phải nguyên chuỗi', () => {
         // `$eq: ['$level', 'A']` thì "A1" không được đếm — tỉ lệ sai trong im
-        // lặng. Phải cắt ký tự đầu và viết hoa trước khi so.
+        // lặng. Phải quy về nhóm (LEVEL_BAND) trước khi so.
         const cond = stage._lvA.$sum.$cond;
-        expect(cond[0]).toEqual({ $eq: [LEVEL_INITIAL, 'A'] });
-        expect(JSON.stringify(LEVEL_INITIAL)).toContain('$substrBytes');
-        expect(JSON.stringify(LEVEL_INITIAL)).toContain('$toUpper');
+        expect(cond[0]).toEqual({ $eq: [LEVEL_BAND, 'A'] });
+        expect(JSON.stringify(LEVEL_BAND)).toContain('$substrBytes');
+        expect(JSON.stringify(LEVEL_BAND)).toContain('$toUpper');
     });
 
-    test('level null không làm hỏng $substrBytes', () => {
-        // `$substrBytes` ném lỗi nếu nhận null — phải có `$ifNull` bọc ngoài.
-        expect(JSON.stringify(LEVEL_INITIAL)).toContain('$ifNull');
+    test('biểu thức aggregation cũng hiểu HSK, không chỉ CEFR', () => {
+        // Kho tiếng Trung dùng HSK. Chỉ cắt chữ cái đầu thì "HSK1" ra "H" →
+        // không nhóm nào, mất sạch dải màu cho toàn bộ tiếng Trung.
+        const s = JSON.stringify(LEVEL_BAND);
+        expect(s).toContain('HSK');
+        expect(s).toContain('$switch');
+    });
+
+    test('level null/lạ không làm sập truy vấn', () => {
+        const s = JSON.stringify(LEVEL_BAND);
+        // `$substrBytes` ném lỗi nếu nhận null → phải có `$ifNull`.
+        expect(s).toContain('$ifNull');
+        // `$toInt` ném lỗi nếu ký tự sau "HSK" không phải số ("HSK", "HSKA") →
+        // phải dùng `$convert` có onError/onNull, nếu không sập cả endpoint.
+        expect(s).toContain('onError');
+        expect(s).not.toContain('$toInt');
     });
 
     test('$project gói ba biến thành levelStats', () => {
