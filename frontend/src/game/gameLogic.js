@@ -718,14 +718,27 @@ export const GameLogic = {
         return sel.size === cor.length && cor.every(c => sel.has(c));
     },
 
-    generateWordTypeCheck(word, optionsCount = 6, availableTypes = null) {
+    generateWordTypeCheck(word, optionsCount = 4, availableTypes = null) {
         const correctAnswer = word.type || 'unknown';
 
         // Dùng hoàn toàn từ dữ liệu thực — không hardcode.
         // availableTypes là unique types collect từ tập từ đang luyện.
         const allTypes = availableTypes || [correctAnswer];
 
-        const wrongTypes = allTypes.filter(t => t.toLowerCase() !== correctAnswer.toLowerCase());
+        // Bỏ trùng NGAY TỪ ĐẦU rồi mới lọc.
+        //
+        // `availableTypes` do nơi gọi dựng nên, có thể lọt giá trị chỉ khác nhau
+        // hoa/thường ("Noun" vs "noun") — hai chuỗi khác nhau nên `Set` ở nơi
+        // gọi không gộp được, nhưng với người học thì đó là MỘT đáp án. Không
+        // gộp là hàng đáp án hiện hai ô đọc y hệt nhau.
+        const seen = new Set([correctAnswer.trim().toLowerCase()]);
+        const wrongTypes = [];
+        for (const t of allTypes) {
+            const key = String(t ?? '').trim().toLowerCase();
+            if (!key || seen.has(key)) continue;
+            seen.add(key);
+            wrongTypes.push(t);
+        }
 
         const selectedWrongTypes = Utils.randomSample(wrongTypes, Math.min(optionsCount - 1, wrongTypes.length));
 

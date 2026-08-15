@@ -498,11 +498,25 @@ export default function TranslateModal({ text, onClose, editWord = null, onSaved
                             {result?.sourceLang && result.sourceLang !== 'auto' && (
                                 <span className="translate-detected"> · {LANG_NAMES[result.sourceLang] || result.sourceLang}</span>
                             )}
+                            {/* Dấu hiệu ĐANG THU ÂM.
+                                Trước đây giữ Shift thì micro chạy mà giao diện
+                                không đổi gì — người dùng không biết máy đã nghe
+                                chưa, nên hay nhả phím sớm rồi tưởng hỏng.
+                                Ba chấm nảy + chữ để không chỉ dựa vào chuyển
+                                động (người tắt hiệu ứng vẫn đọc được chữ). */}
+                            {listening && (
+                                <span className="translate-listening" role="status" aria-live="polite">
+                                    <span className="tl-dot"></span>
+                                    <span className="tl-dot"></span>
+                                    <span className="tl-dot"></span>
+                                    Đang nghe…
+                                </span>
+                            )}
                         </div>
                         <div className="translate-row">
                             <input
                                 id="translate-src-input"
-                                className="translate-input"
+                                className={`translate-input${listening ? ' is-listening' : ''}`}
                                 /* Focus ngay khi popup mở: nói xong ở thanh nav là
                                    popup hiện lên, con trỏ phải sẵn ở đây để giữ
                                    Shift nói tiếp được luôn — không phải bấm chuột
@@ -521,7 +535,10 @@ export default function TranslateModal({ text, onClose, editWord = null, onSaved
                                     const v = srcDraft.trim();
                                     if (v && v !== inputText) setInputText(v);
                                 }}
-                                placeholder="Nhập từ cần dịch..."
+                                /* Đang nghe thì ô đã bị xoá trắng (onStart) —
+                                   placeholder là chỗ DUY NHẤT còn nói được là
+                                   máy đang chờ giọng, thay vì để ô trống trơn. */
+                                placeholder={listening ? '🎤 Đang nghe… nói đi' : 'Nhập từ cần dịch...'}
                             />
                             <button className="translate-speak" title="Phát âm" onClick={() => speak(srcDraft, result?.sourceLang || 'en')}>
                                 <i className="fas fa-volume-up"></i>

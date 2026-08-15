@@ -6,6 +6,7 @@ import { logger } from '@lib/logger.js';
 import { EventBus, GameEvents } from '@game/eventBus.js';
 import { GameLogic, vocabLang } from '@game/gameLogic.js';
 import { Http, API } from '@api/http.js';
+import { bandLabel } from '@lib/levelBands.js';
 import { Energy } from '@game/energy.js';
 import { Quest } from '@components/quest/quest.js';
 import { getQuestionTime, QUESTION_TIME_MODES } from '@components/practice/questionTime.js';
@@ -16,6 +17,37 @@ import { startPracticeBgm, stopPracticeBgm } from '@game/uiSounds.js';
 // đúng/sai không còn nổi lên, mà đó mới là tín hiệu quan trọng lúc học. Cùng lý
 // do khiến tiếng bấm nút để 0.22: thứ gì kêu liên tục thì phải nhỏ.
 const BGM_VOLUME = 0.25;
+
+/**
+ * Số từ TỐI THIỂU để mở được một chế độ.
+ *
+ * Trước đây mọi chế độ đều bị chặn ở 4 từ, nhưng con số đó chỉ đúng với các chế
+ * độ TRẮC NGHIỆM: chúng cần 1 đáp án đúng + 3 nhiễu, lấy từ chính bộ từ đang
+ * luyện. Áp cho cả những chế độ không có đáp án nhiễu là chặn nhầm — bộ 2 từ
+ * vẫn lật thẻ (flashcard) hay tập viết (hanzi-writing) được bình thường.
+ *
+ * Chỉ liệt kê NGOẠI LỆ; chế độ không có tên ở đây dùng mặc định 4.
+ */
+const MIN_WORDS_BY_MODE = {
+    // Không có đáp án nhiễu — chỉ hiện một từ mỗi lượt.
+    'flashcard': 1,        // lật thẻ xem nghĩa
+    'hanzi-writing': 1,    // tập viết chữ Hán
+    'pronunciation': 1,    // đọc theo, chấm bằng micro
+    'dictation': 1,        // nghe rồi gõ lại
+    'fill-blank': 1,       // gõ từ vào chỗ trống
+    'sentence-builder': 1, // xếp lại câu ví dụ của chính từ đó
+
+    // Cần ÍT NHẤT một từ khác để làm đáp án sai (đúng/sai, không phải 4 lựa chọn).
+    'speed-quiz': 2,
+
+    // Ghép đôi: một cặp thì bấm phát trúng ngay, không còn là bài tập.
+    'matching': 3,
+};
+
+/** Ngưỡng tối thiểu của một chế độ. Mặc định 4 (các chế độ trắc nghiệm). */
+function minWordsFor(mode) {
+    return MIN_WORDS_BY_MODE[mode] ?? 4;
+}
 
 // 9 chế độ hỏi–đáp: đếm ngược THEO TỪNG CÂU (mỗi câu một đồng hồ riêng).
 // Các chế độ đặc biệt (ghép từ, tốc độ, xếp câu, chép chính tả, phát âm…) giữ
@@ -114,9 +146,9 @@ export const PracticeManager = {
         // review-mistakes dùng pool riêng (wrong words) nên bỏ qua.
         if (mode !== 'review-mistakes') {
             const pool = this._getFilteredPool();
-            if (pool.length < 4) {
+            const minWords = minWordsFor(mode);
+            if (pool.length < minWords) {
                 const settings = GameState.state?.settings || {};
-                const levelNames = { easy: 'Dễ (A1-A2)', medium: 'Trung bình (B1-B2)', hard: 'Khó (C1-C2)', adaptive: 'Tự động' };
                 const filterDesc = [];
                 if (PartSelector.selectedPart) filterDesc.push(`Part: <strong>${PartSelector.selectedPart}</strong>`);
                 if (settings.levelFilter?.length > 0) filterDesc.push(`Cấp độ: <strong>${settings.levelFilter.join(', ')}</strong>`);
@@ -130,7 +162,7 @@ export const PracticeManager = {
                                 Bộ lọc hiện tại chỉ tìm được <strong style="color:var(--error-color,#ef4444)">${pool.length} từ</strong>.
                             </p>
                             <p style="margin:0 0 12px;font-size:13px;color:var(--text-secondary)">
-                                Cần ít nhất <strong>4 từ</strong> để bắt đầu luyện tập.
+                                Chế độ này cần ít nhất <strong>${minWords} từ</strong> để bắt đầu.
                             </p>
                             ${filterDesc.length > 0 ? `<p style="margin:0;font-size:13px;color:var(--text-secondary)">
                                 Điều kiện lọc: ${filterDesc.join(' · ')}
@@ -413,14 +445,12 @@ export const PracticeManager = {
         const difficulty = settings.difficulty || 'adaptive';
         const isRandom = settings.randomQuestions !== false;
 
-        const difficultyNames = {
-            'adaptive': 'Tự động',
-            'easy': 'Dễ (A1-A2)',
-            'medium': 'Trung bình (B1-B2)',
-            'hard': 'Khó (C1-C2)'
-        };
-
-        let badgeText = difficultyNames[difficulty] || 'Tự động';
+        // Nhãn theo khung của ngôn ngữ đang học (zh → HSK, en → CEFR).
+        // "Toàn bộ" ở đây gọi là "Tự động" cho khớp cách nói của badge cũ.
+        const lang = settings.vocabLang || 'en';
+        let badgeText = difficulty === 'adaptive'
+            ? 'Tự động'
+            : bandLabel(difficulty, lang);
         badgeText += isRandom ? ' • Ngẫu nhiên' : ' • Tuần tự';
 
         badgeEl.textContent = badgeText;

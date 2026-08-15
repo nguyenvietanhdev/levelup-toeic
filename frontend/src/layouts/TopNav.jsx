@@ -30,6 +30,14 @@ export default function TopNav() {
     // Khoá khi đang làm Full Test TOEIC (mini/đục lỗ không khoá) — báo qua EventBus.
     const [toeicFullTestLock, setToeicFullTestLock] = useState(false);
     const isInPractice = currentScreen === 'practice-screen' || currentScreen === 'toeic-test-screen' || toeicFullTestLock;
+
+    // Đang THI thật (bài TOEIC) — khác với đang luyện từ vựng.
+    //
+    // Hai thứ này gộp chung trong `isInPractice` để khoá ô tìm kiếm, nhưng với
+    // việc TRA NGHĨA thì chúng ngược nhau hoàn toàn:
+    //   · luyện từ vựng → tra nghĩa CHÍNH LÀ học, chặn là cản trở người dùng;
+    //   · làm bài thi   → tra nghĩa là xem đáp án, phải chặn.
+    const isInExam = currentScreen === 'toeic-test-screen' || toeicFullTestLock;
     const { isLoggedIn, setAuthModal } = useAuth();
     const { badges: menuBadges } = useMenuBadges(isLoggedIn, { listenEvents: true });
     // Number = unclaimed quest + achievement rewards; dot = other menu items have badges
@@ -324,7 +332,66 @@ export default function TopNav() {
             return !!(el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.isContentEditable);
         };
 
+        /**
+         * Đoạn chữ người dùng đang bôi đen — '' nếu không nên tra nghĩa.
+         *
+         * Loại bỏ ba trường hợp:
+         *  - Bôi đen TRONG ô nhập (input/textarea/contentEditable): ở đó Shift+Z
+         *    là gõ chữ "Z" hoa. Cướp mất thì đang soạn dở bị nuốt phím, mà lỗi
+         *    kiểu đó rất khó đoán ra nguyên nhân.
+         *  - Đang mở popup dịch: tra tiếp trong chính popup là vòng lặp vô nghĩa.
+         *  - Đoạn quá dài: bôi nhầm cả trang (Ctrl+A) mà gửi đi dịch là tốn
+         *    token AI cho thứ người dùng không định tra.
+         */
+        const MAX_SELECTION = 300;
+        const readSelection = () => {
+            const sel = window.getSelection?.();
+            const raw = sel ? String(sel).trim() : '';
+            if (!raw || raw.length > MAX_SELECTION) return '';
+
+            // Vùng chọn nằm trong ô nhập nào không? Kiểm theo NODE của vùng chọn
+            // chứ không theo `activeElement`: bôi đen bằng chuột thì tiêu điểm
+            // có thể vẫn ở chỗ khác.
+            const node = sel.anchorNode;
+            const el = node?.nodeType === 3 ? node.parentElement : node;
+            if (el?.closest?.('input, textarea, [contenteditable="true"]')) return '';
+            // Popup dịch đang mở thì để nó tự xử lý.
+            if (el?.closest?.('#modal-container, .translate-modal')) return '';
+
+            return raw;
+        };
+
         const onKeyDown = (e) => {
+            // ── Bôi đen chữ + Shift+Z = tra nghĩa đoạn đó ────────────────────
+            //
+            // Đặt TRƯỚC nhánh Shift: bấm Z trong lúc giữ Shift sẽ rơi vào nhánh
+            // `else` bên dưới và gọi `gesture.otherKeyDown()` — tức là huỷ cử
+            // chỉ nói. Xử lý xong thì `return` luôn, không để lọt xuống.
+            //
+            // `e.repeat` bỏ qua các lần lặp khi GIỮ phím, không thì giữ một giây
+            // là popup mở đi mở lại hàng chục lần.
+            //
+            // Chỉ chặn khi đang THI (`isInExam`), KHÔNG chặn lúc luyện từ vựng.
+            //
+            // Bản đầu dùng `isInPractice` — gộp cả hai — nên tra nghĩa chết luôn
+            // ở màn luyện tập, đúng nơi cần nó nhất: gặp từ lạ trong câu hỏi thì
+            // tra là HỌC. Còn giữa bài thi thì tra chính là xem đáp án.
+            if (e.shiftKey && (e.key === 'Z' || e.key === 'z')) {
+                if (e.repeat || isInExam) return;
+                const picked = readSelection();
+                if (!picked) return;   // không bôi gì thì coi như không có phím tắt
+
+                // Bỏ bôi đen NGAY: giữ lại thì bấm lần nữa vẫn thấy vùng chọn cũ
+                // và mở lại popup của từ đã tra rồi.
+                window.getSelection?.()?.removeAllRanges();
+                e.preventDefault();
+                // Qua `openTranslateRef` chứ KHÔNG gọi thẳng `setTranslateText`:
+                // hàm đó mới kiểm khoá theo Level và dọn trạng thái "đang sửa
+                // từ". Gọi thẳng là mở được popup cả khi tính năng chưa mở khoá.
+                openTranslateRef.current?.(picked);
+                return;
+            }
+
             if (e.key === 'Shift') {
                 if (busyElsewhere() || isInPractice) return;
                 gesture.keyDown({ repeat: e.repeat });
@@ -346,7 +413,9 @@ export default function TopNav() {
             window.removeEventListener('blur', onBlur);
             gesture.reset();
         };
-    }, [speechSupported, isInPractice, startSpeech, stopSpeech]);
+        // `isInExam` phải có mặt: listener đóng gói giá trị của lần render này,
+        // thiếu nó thì vào/ra màn thi mà handler vẫn dùng giá trị cũ.
+    }, [speechSupported, isInPractice, isInExam, startSpeech, stopSpeech]);
 
     // Vào màn luyện tập giữa chừng thì ngắt luôn, không để micro chạy nền.
     useEffect(() => { if (isInPractice) stopSpeech(); }, [isInPractice, stopSpeech]);
@@ -467,7 +536,7 @@ export default function TopNav() {
                                 ? '🎤 Đang nghe... nói từ bạn muốn tìm'
                                 : translateLock.locked
                                     ? `Tìm từ vựng... (Dịch nhanh mở ở Level ${translateLock.requiredLevel})`
-                                    : 'Tìm từ vựng... (Enter: dịch · giữ Shift: nói · Esc: xoá)'}
+                                    : 'Tìm từ vựng... (Enter: dịch · giữ Shift: nói · bôi đen + Shift+Z: tra nghĩa)'}
                         autoComplete="off"
                         readOnly={searchReadOnly || isInPractice}
                         disabled={isInPractice}

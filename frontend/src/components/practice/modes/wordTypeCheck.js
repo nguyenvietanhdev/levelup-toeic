@@ -53,9 +53,26 @@ export const WordTypeCheck = {
             ? words
             : words.slice(0, this.config.questionsPerRound || 20);
 
+        const optionsCount = this.config.optionsCount || 4;
+
+        // Từ loại lấy từ TẬP ĐANG LUYỆN trước — nhiễu cùng bộ thì sát thực tế hơn.
         const uniqueTypes = [...new Set(selectedWords.map(w => w.type).filter(Boolean))];
+
+        // Nhưng có nguồn quá hẹp: `部首` chỉ có ĐÚNG MỘT từ loại, `zh_giaotiep_cau`
+        // có hai. Lúc đó hàng đáp án chỉ hiện 1–2 ô — gần như lộ đáp án. Bù thêm
+        // từ loại của TOÀN KHO cho đủ số lựa chọn.
+        if (uniqueTypes.length < optionsCount) {
+            const pool = new Set(uniqueTypes);
+            for (const w of (GameLogic.vocabularyData || [])) {
+                if (pool.size >= optionsCount) break;
+                if (w.type) pool.add(w.type);
+            }
+            uniqueTypes.length = 0;
+            uniqueTypes.push(...pool);
+        }
+
         this.questions = selectedWords.map(word =>
-            GameLogic.generateWordTypeCheck(word, this.config.optionsCount, uniqueTypes)
+            GameLogic.generateWordTypeCheck(word, optionsCount, uniqueTypes)
         );
     },
 
@@ -113,11 +130,57 @@ export const WordTypeCheck = {
             'gerund phrase': 'Cụm danh động từ',
             'infinitive phrase': 'Cụm động từ nguyên thể',
             'unknown': 'Không rõ',
+
+            // ── Từ loại tiếng Trung (chữ Hán) ────────────────────────────
+            // Kho tiếng Trung lưu `名词`, `动词`… chứ không phải `noun`/`verb`.
+            // Thiếu mấy dòng này thì Proxy bên dưới trả về CHÍNH KEY làm nhãn,
+            // và ô đáp án in ra "数词 数词" — nhãn và chú thích trùng nhau.
+            '名词': 'Danh từ',
+            '动词': 'Động từ',
+            '形容词': 'Tính từ',
+            '副词': 'Trạng từ',
+            '代词': 'Đại từ',
+            '介词': 'Giới từ',
+            '连词': 'Liên từ',
+            '助词': 'Trợ từ',
+            '助动词': 'Trợ động từ',
+            '叹词': 'Thán từ',
+            '量词': 'Lượng từ',
+            '数词': 'Số từ',
+            '数量词': 'Số lượng từ',
+            '拟声词': 'Từ tượng thanh',
+            '成语': 'Thành ngữ',
+            '短语': 'Cụm từ',
+            '名词短语': 'Cụm danh từ',
+            '动词短语': 'Cụm động từ',
+            '形容词短语': 'Cụm tính từ',
+            '副词短语': 'Cụm trạng từ',
+            '连词短语': 'Cụm liên từ',
+            '代词短语': 'Cụm đại từ',
+            '前缀': 'Tiền tố',
+            '后缀': 'Hậu tố',
+            'bộ thủ': 'Bộ thủ',
         };
-        // Type ngoài danh sách trên vẫn hiển thị được — dùng chính key làm label
-        const typeLabels = new Proxy(TYPE_LABELS_VI, {
-            get: (target, key) => target[key] ?? key,
-        });
+
+        /**
+         * Nhãn tiếng Việt cho một `type`.
+         *
+         * Từ loại GHÉP (`名词/动词`) không nằm trong bảng — dịch từng thành phần
+         * rồi nối lại, thay vì trả về nguyên chuỗi Hán. Có 331 từ mang
+         * `名词/动词`, bỏ qua là chúng hiện ra chữ Hán trần giữa danh sách tiếng
+         * Việt.
+         */
+        const labelOf = (type) => {
+            const key = String(type ?? '');
+            if (TYPE_LABELS_VI[key]) return TYPE_LABELS_VI[key];
+            if (key.includes('/')) {
+                return key.split('/')
+                    .map(p => TYPE_LABELS_VI[p.trim()] || p.trim())
+                    .join(' / ');
+            }
+            // Type lạ vẫn hiện được — dùng chính nó làm nhãn.
+            return key;
+        };
 
         container.innerHTML = `
             <div class="question-container">
@@ -147,12 +210,19 @@ export const WordTypeCheck = {
                 </div>
 
                 <div class="choices-container word-type-choices">
-                    ${question.options.map((option, index) => `
+                    ${question.options.map((option, index) => {
+                        const label = labelOf(option);
+                        // Chỉ hiện dòng phụ khi nó KHÁC nhãn chính. Type lạ
+                        // (không có trong bảng) thì nhãn = chính nó, in cả hai
+                        // là ra "数词 数词" — đúng lỗi đã gặp.
+                        const sub = label === option ? '' :
+                            `<span class="type-english">${option}</span>`;
+                        return `
                         <button class="choice-btn word-type-btn" data-index="${index}">
-                            <span class="type-label">${typeLabels[option] || option}</span>
-                            <span class="type-english">${option}</span>
-                        </button>
-                    `).join('')}
+                            <span class="type-label">${label}</span>
+                            ${sub}
+                        </button>`;
+                    }).join('')}
                 </div>
             </div>
         `;

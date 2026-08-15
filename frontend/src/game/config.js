@@ -412,7 +412,12 @@ export const Config = {
         'word-type-check': {
             questionsPerRound: 10,
             timeLimit: 300, // 5 minutes
-            optionsCount: 6, // noun, verb, adjective, adverb, preposition, conjunction
+            // 4 như mọi chế độ trắc nghiệm khác: 1 đúng + 3 nhiễu.
+            //
+            // Trước là 6 với lý do "đủ 6 từ loại cơ bản" — nhưng kho tiếng Trung
+            // có tới 56 từ loại, nên 6 ô không hề "đủ" mà chỉ làm hàng đáp án
+            // tràn xuống hai dòng và loãng lựa chọn.
+            optionsCount: 4,
             pointsPerCorrect: 100
         },
         'example-fill-blank': {
