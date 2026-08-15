@@ -32,6 +32,30 @@ function handlerBody() {
     return controller.slice(i, j > -1 ? j : controller.length);
 }
 
+describe('route lọc-xoá (Xóa chọn lọc)', () => {
+    test('có endpoint POST nhận nhiều điều kiện', () => {
+        // POST vì mang body `filters`, không phải DELETE.
+        expect(routes).toMatch(/router\.post\(\s*'\/my-source\/:source\/filter-delete'/);
+    });
+
+    test('bắt buộc đăng nhập', () => {
+        expect(routes).toMatch(/'\/my-source\/:source\/filter-delete',\s*protect,\s*filterDeleteMySource/);
+    });
+
+    test('danh sách trắng chặn lọc theo trường lạ', () => {
+        // Không chặn thì lọc được cả `ownerEmail` — chạm sang dữ liệu người khác.
+        expect(controller).toMatch(/const FILTER_DELETE_FIELDS = \[/);
+        expect(controller).not.toMatch(/FILTER_DELETE_FIELDS = \[[^\]]*ownerEmail/);
+    });
+
+    test('không điều kiện nào thì TỪ CHỐI, không xoá sạch nguồn', () => {
+        // `deleteMany({ownerEmail, source})` không kèm điều kiện = xoá cả nguồn.
+        const i = controller.indexOf('exports.filterDeleteMySource');
+        const body = controller.slice(i, i + 3000);
+        expect(body).toMatch(/Cần ít nhất một điều kiện/);
+    });
+});
+
 describe('route', () => {
     test('có endpoint xoá theo Part', () => {
         expect(routes).toMatch(/router\.delete\(\s*'\/my-source\/:source\/part\/:part'/);

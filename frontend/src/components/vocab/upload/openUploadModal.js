@@ -369,8 +369,29 @@ export function buildUploadContent({ tab } = {}) {
                 const exampleLabel = isZh
                     ? 'Câu ví dụ bằng tiếng Trung.'
                     : 'Câu ví dụ bằng tiếng anh (viết hoa chữ cái đầu câu).';
-                const levelLabel = isZh ? 'HSK1 / HSK2 / HSK3 / HSK4 / HSK5 / HSK6' : 'A1 / A2 / B1 / B2 / C1 / C2';
+                // Mỗi ngôn ngữ một khung riêng: tiếng Trung dùng HSK (đúng cách
+                // tiếng Trung được dạy và phân cấp), tiếng Anh dùng CEFR.
+                // Toàn bộ kho zh đã chuyển sang HSK, nên prompt phải sinh ra
+                // đúng khung đó — AI thường mặc định trả A1/B2 cho MỌI ngôn ngữ
+                // nếu không dặn rõ.
+                const levelLabel = isZh
+                    ? 'HSK1 / HSK2 / HSK3 / HSK4 / HSK5 / HSK6 / HSK7-9'
+                    : 'A1 / A2 / B1 / B2 / C1 / C2';
                 const langValue = isZh ? 'zh' : 'en';
+
+                // TỪ LOẠI cũng theo ngôn ngữ. Kho tiếng Trung lưu `名词`/`动词`
+                // (11.783/12.266 từ), không phải `noun`/`verb` — để AI trả nhãn
+                // tiếng Anh thì từ mới nằm riêng một mục, lọc `名词` bỏ sót.
+                const typeLabel = isZh
+                    ? '名词 / 动词 / 形容词 / 副词 / 代词 / 量词 / 数词 / 介词 / 连词 / 助词 / 叹词 / 成语 / 短语 …'
+                    : 'noun / verb / adjective / adverb / phrasal verb / noun phrase / … (viết thường)';
+
+                // ĐỒNG NGHĨA phải cùng ngôn ngữ với từ. Trước đây chỉ ghi "viết
+                // thường" — vô nghĩa với chữ Hán, và không nói rõ phải viết bằng
+                // gì, nên AI hay trả nghĩa tiếng Việt hoặc phiên âm.
+                const synonymsLabel = isZh
+                    ? 'từ đồng nghĩa BẰNG CHỮ HÁN, cách nhau bằng dấu phẩy (để trống nếu không có)'
+                    : 'từ đồng nghĩa, cách nhau bằng dấu phẩy (viết thường, để trống nếu không có)';
 
                 const imageLine = withImage
                     ? `\n  "image": "images/pages/${part.toLowerCase()}/ten_tu_viet_thuong_gach_duoi.jpg",`
@@ -387,8 +408,8 @@ Mỗi từ có cấu trúc:
   "vn": "nghĩa tiếng việt (viết thường)",
   "phonetic": "${phoneticLabel}",
   "part": "${part}",
-  "synonyms": "từ đồng nghĩa, cách nhau bằng dấu phẩy (viết thường, để trống nếu không có)",
-  "type": "noun / verb / adjective / adverb / phrasal verb / noun phrase / ... (viết thường)",${imageLine}
+  "synonyms": "${synonymsLabel}",
+  "type": "${typeLabel}",${imageLine}
   "example": "${exampleLabel}",
   "level": "${levelLabel}",
   "lang": "${langValue}",
@@ -396,11 +417,21 @@ Mỗi từ có cấu trúc:
 }
 
 Quy tắc:
-- "vn", "synonyms", "type", "source" → viết thường${isZh
-    ? '\n- "en" → giữ nguyên chữ Hán, KHÔNG phiên âm sang chữ Latin\n- "phonetic" → pinyin có dấu thanh (nǐ hǎo), KHÔNG phải IPA'
-    : '\n- "en", "phonetic" → viết thường'}
+- "vn", "source" → viết thường${isZh
+    ? '\n- "en" → giữ nguyên chữ Hán, KHÔNG phiên âm sang chữ Latin'
+      + '\n- "phonetic" → pinyin có dấu thanh (nǐ hǎo), KHÔNG phải IPA'
+      + '\n- "synonyms" → viết BẰNG CHỮ HÁN (vd: 否, 不是), KHÔNG dùng pinyin hay tiếng Việt'
+      + '\n- "type" → viết BẰNG CHỮ HÁN (名词, 动词, 形容词…), KHÔNG dùng noun/verb.'
+      + ' Từ mang nhiều loại thì nối bằng "/" không có khoảng trắng: 名词/动词'
+    : '\n- "en", "phonetic" → viết thường'
+      + '\n- "synonyms", "type" → viết thường'}
 - "part" → "${part}" (viết HOA, giữ nguyên)
-- "level" → viết HOA (${isZh ? 'HSK1, HSK3, ...' : 'A1, B2, ...'})
+- "level" → viết HOA. ${isZh
+    ? 'BẮT BUỘC dùng khung HSK (HSK1…HSK6, HSK7-9), KHÔNG dùng A1/B2/C1 — '
+      + 'từ vựng tiếng Trung phân cấp theo HSK. Nếu bạn chỉ biết mức theo khung '
+      + 'châu Âu thì quy đổi: A1→HSK1, A2→HSK2, B1→HSK3, B2→HSK4, C1→HSK5 hoặc '
+      + 'HSK6, C2→HSK7-9.'
+    : 'Dùng khung CEFR (A1, A2, B1, B2, C1, C2).'}
 - "lang" → LUÔN là "${langValue}"
 - "example" → ${isZh ? 'câu ví dụ bằng tiếng Trung' : 'viết hoa chữ cái đầu câu'}${imageRule}
 - Nếu không có dữ liệu, để chuỗi rỗng ""
@@ -847,18 +878,20 @@ Danh sách từ vựng cần chuyển:
                 }
                 const parts = [...partCount.entries()].sort((a, b) => a[0].localeCompare(b[0], 'vi'));
 
-                // Chỉ hiện hàng này khi có TỪ HAI Part trở lên: một Part duy nhất
-                // thì "xóa Part" trùng đúng với "Xóa tất" đã có sẵn ở trên.
-                const partBarHtml = parts.length > 1 ? `
+                // Một nút mở popup lọc, thay cho hàng nút Part của bản trước.
+                //
+                // Nút-mỗi-Part chỉ giải quyết được đúng một tiêu chí. Muốn bỏ
+                // "mọi danh từ mức HSK1 trong BUỔI 3" thì lại phải bấm × từng
+                // dòng. Popup lọc theo nhiều điều kiện (AND) — cùng kiểu "Xóa
+                // chọn lọc" bên admin — phủ được cả hai nhu cầu, mà hàng nút
+                // cũng không còn dài ra theo số Part.
+                const partBarHtml = `
                     <div class="uv-part-bar">
-                        <span class="uv-part-bar-label">Xóa trọn một Part:</span>
-                        ${parts.map(([p, n]) => `
-                            <button type="button" class="uv-part-del" data-part="${esc(p)}" data-n="${n}"
-                                    title="Xóa toàn bộ ${n} từ thuộc Part &quot;${esc(p)}&quot;">
-                                ${esc(p)} <span class="uv-part-del-n">${n}</span>
-                                <i class="fas fa-trash"></i>
-                            </button>`).join('')}
-                    </div>` : '';
+                        <button type="button" class="uv-filter-del-btn">
+                            <i class="fas fa-filter"></i> Xóa chọn lọc
+                        </button>
+                        <span class="uv-part-bar-hint">${parts.length} Part · ${res.data.length} từ</span>
+                    </div>`;
 
                 panel.innerHTML = `
                     ${partBarHtml}
@@ -909,8 +942,11 @@ Danh sách từ vựng cần chuyển:
                     btn.addEventListener('click', () => deleteWord(btn.dataset.id, btn.dataset.en, source));
                 });
 
-                panel.querySelectorAll('.uv-part-del').forEach(btn => {
-                    btn.addEventListener('click', () => deletePart(source, btn.dataset.part, btn.dataset.n, panel));
+                panel.querySelector('.uv-filter-del-btn')?.addEventListener('click', () => {
+                    // Truyền cả `res.data` để popup gợi ý sẵn các giá trị CÓ THẬT
+                    // trong nguồn — người dùng chọn từ danh sách thay vì gõ tay
+                    // rồi trượt vì sai một chữ.
+                    showFilterDeleteModal(source, res.data, panel);
                 });
 
                 // Nghe phát âm. `data-lang` đã tính sẵn theo từng từ (xem wordLang):
@@ -948,41 +984,156 @@ Danh sách từ vựng cần chuyển:
         };
 
         /**
-         * Xóa TRỌN một Part trong một nguồn.
+         * Popup "Xóa chọn lọc" — lọc theo nhiều điều kiện AND rồi xóa hàng loạt.
          *
-         * Hỏi xác nhận kèm SỐ TỪ sẽ mất — đây là thao tác không hoàn tác được và
-         * xóa hàng loạt, khác hẳn nút × của một từ.
+         * Dựng theo đúng kiểu popup cùng tên bên admin, nhưng khác một điểm quan
+         * trọng: ô GIÁ TRỊ là <select> chứa các giá trị CÓ THẬT trong nguồn, chứ
+         * không phải ô gõ tự do. Gõ tay thì sai một chữ ("buoi 3" vs "BUỔI 3") là
+         * khớp 0 từ — báo thành công mà chẳng xóa gì.
          */
-        const deletePart = async (source, part, n, panel) => {
-            if (!confirm(`Xóa toàn bộ ${n} từ thuộc Part "${part}" trong "${source}"?\n\nKhông thể hoàn tác.`)) return;
-            try {
-                const res = await UploadVocabAPI.deleteSourcePart(source, part);
-                if (!res.success) throw new Error(res.message);
+        const FILTER_FIELDS = [
+            { value: 'part',  label: 'Part' },
+            { value: 'level', label: 'Cấp độ (level)' },
+            { value: 'type',  label: 'Loại từ (type)' },
+        ];
 
-                const topicRow = document.querySelector(`.topic-row[data-source="${source}"]`);
+        const showFilterDeleteModal = (source, words, panel) => {
+            document.getElementById('uv-filter-delete-modal')?.remove();
 
-                // Đó là Part cuối cùng → nguồn không còn từ nào nên biến mất
-                // luôn. Dựng lại bảng ở đây là dựng vào một thẻ sắp bị gỡ.
-                if (res.sourceGone) {
-                    if (topicRow) (topicRow.closest('.topic-item') || topicRow).remove();
-                    Notification.success(res.message);
+            // Các giá trị CÓ THẬT của từng trường, kèm số từ — để người dùng thấy
+            // trước mình sắp xoá bao nhiêu.
+            const valuesOf = (field) => {
+                const m = new Map();
+                for (const w of words) {
+                    const v = String(w[field] || '').trim();
+                    if (!v) continue;
+                    m.set(v, (m.get(v) || 0) + 1);
+                }
+                return [...m.entries()].sort((a, b) => a[0].localeCompare(b[0], 'vi'));
+            };
+
+            const rowHtml = (idx) => {
+                const fieldOpts = FILTER_FIELDS
+                    .map(f => `<option value="${f.value}">${f.label}</option>`).join('');
+                return `
+                    <div class="uv-fd-row" data-idx="${idx}">
+                        <select class="uv-fd-field">
+                            <option value="">— Trường —</option>
+                            ${fieldOpts}
+                        </select>
+                        <select class="uv-fd-value" disabled>
+                            <option value="">— Giá trị —</option>
+                        </select>
+                    </div>`;
+            };
+
+            const modal = document.createElement('div');
+            modal.id = 'uv-filter-delete-modal';
+            modal.className = 'uv-fd-overlay';
+            modal.innerHTML = `
+                <div class="uv-fd-box" role="dialog" aria-modal="true" aria-label="Xóa chọn lọc">
+                    <h3 class="uv-fd-title"><i class="fas fa-filter"></i> Xóa chọn lọc</h3>
+                    <p class="uv-fd-desc">
+                        Xóa mọi từ trong <strong>${esc(source)}</strong> thỏa <strong>tất cả</strong>
+                        điều kiện bên dưới. Dòng để trống được bỏ qua.
+                    </p>
+                    <div class="uv-fd-head"><span>TRƯỜNG</span><span>GIÁ TRỊ</span></div>
+                    <div class="uv-fd-rows">${rowHtml(0)}${rowHtml(1)}${rowHtml(2)}</div>
+                    <p class="uv-fd-preview"></p>
+                    <div class="uv-fd-actions">
+                        <button type="button" class="uv-fd-cancel">Hủy</button>
+                        <button type="button" class="uv-fd-confirm"><i class="fas fa-trash"></i> Xóa</button>
+                    </div>
+                </div>`;
+            document.body.appendChild(modal);
+
+            const preview = modal.querySelector('.uv-fd-preview');
+            const close = () => modal.remove();
+
+            /** Điều kiện đang chọn (bỏ dòng trống). */
+            const readFilters = () => [...modal.querySelectorAll('.uv-fd-row')]
+                .map(r => ({
+                    field: r.querySelector('.uv-fd-field').value,
+                    value: r.querySelector('.uv-fd-value').value,
+                }))
+                .filter(p => p.field && p.value);
+
+            /** Đếm TRƯỚC ở client để hiện "sẽ xóa N từ" — không phải gọi server. */
+            const updatePreview = () => {
+                const filters = readFilters();
+                if (!filters.length) { preview.textContent = ''; return; }
+                const n = words.filter(w =>
+                    filters.every(f => String(w[f.field] || '').trim() === f.value)).length;
+                const cond = filters.map(f => `${f.field} = "${f.value}"`).join(' VÀ ');
+                preview.innerHTML = n
+                    ? `Sẽ xóa <strong>${n}</strong> từ — ${esc(cond)}`
+                    : `<span class="uv-fd-warn">Không từ nào khớp — ${esc(cond)}</span>`;
+            };
+
+            // Chọn trường thì đổ danh sách giá trị tương ứng.
+            modal.querySelectorAll('.uv-fd-field').forEach(sel => {
+                sel.addEventListener('change', () => {
+                    const valSel = sel.closest('.uv-fd-row').querySelector('.uv-fd-value');
+                    const field = sel.value;
+                    if (!field) {
+                        valSel.innerHTML = '<option value="">— Giá trị —</option>';
+                        valSel.disabled = true;
+                    } else {
+                        const opts = valuesOf(field)
+                            .map(([v, n]) => `<option value="${esc(v)}">${esc(v)} (${n})</option>`).join('');
+                        valSel.innerHTML = `<option value="">— Giá trị —</option>${opts}`;
+                        valSel.disabled = false;
+                    }
+                    updatePreview();
+                });
+            });
+            modal.querySelectorAll('.uv-fd-value').forEach(sel => {
+                sel.addEventListener('change', updatePreview);
+            });
+
+            modal.querySelector('.uv-fd-cancel').addEventListener('click', close);
+            // Bấm ra nền ngoài thì đóng — nhưng chỉ khi bấm ĐÚNG lớp phủ, không
+            // phải khi bấm bên trong hộp rồi thả chuột ra ngoài.
+            modal.addEventListener('click', (e) => { if (e.target === modal) close(); });
+
+            const confirmBtn = modal.querySelector('.uv-fd-confirm');
+            confirmBtn.addEventListener('click', async () => {
+                const filters = readFilters();
+                if (!filters.length) {
+                    preview.innerHTML = '<span class="uv-fd-warn">Chọn ít nhất một điều kiện.</span>';
                     return;
                 }
+                const cond = filters.map(f => `${f.field} = "${f.value}"`).join(' VÀ ');
+                if (!confirm(`Xóa mọi từ thỏa:\n${cond}\n\nKhông thể hoàn tác.`)) return;
 
-                // Cập nhật số từ trên thẻ nguồn — không cập nhật thì nó vẫn hiện
-                // con số cũ cho tới lần mở lại popup.
-                if (topicRow) {
-                    const newCount = Math.max(0, parseInt(topicRow.dataset.count, 10) - (res.deletedCount || 0));
-                    topicRow.dataset.count = newCount;
-                    topicRow.querySelector('div:first-child div:last-child').textContent = `${newCount} từ`;
+                confirmBtn.disabled = true;
+                confirmBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Đang xóa...';
+                try {
+                    const res = await UploadVocabAPI.filterDeleteSource(source, filters);
+                    if (!res.success) throw new Error(res.message);
+                    close();
+
+                    const topicRow = document.querySelector(`.topic-row[data-source="${source}"]`);
+                    // Xóa sạch nguồn → thẻ nguồn biến mất; dựng lại bảng lúc này
+                    // là ghi vào một thẻ sắp bị gỡ khỏi DOM.
+                    if (res.sourceGone) {
+                        if (topicRow) (topicRow.closest('.topic-item') || topicRow).remove();
+                        Notification.success(res.message);
+                        return;
+                    }
+                    if (topicRow) {
+                        const newCount = Math.max(0, parseInt(topicRow.dataset.count, 10) - (res.deletedCount || 0));
+                        topicRow.dataset.count = newCount;
+                        topicRow.querySelector('div:first-child div:last-child').textContent = `${newCount} từ`;
+                    }
+                    loadWords(source, panel);
+                    Notification.success(res.message);
+                } catch (err) {
+                    preview.innerHTML = `<span class="uv-fd-warn">${esc(err.message || 'Không xóa được')}</span>`;
+                    confirmBtn.disabled = false;
+                    confirmBtn.innerHTML = '<i class="fas fa-trash"></i> Xóa';
                 }
-
-                // Tải lại danh sách để hàng Part và bảng khớp trạng thái mới.
-                loadWords(source, panel);
-                Notification.success(res.message);
-            } catch (err) {
-                Notification.error(err.message || 'Không xóa được Part');
-            }
+            });
         };
 
         const deleteWord = async (wordId, wordEn, source) => {

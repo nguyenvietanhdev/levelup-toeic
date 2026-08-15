@@ -497,6 +497,20 @@
         width: 100% !important;
     }
 
+    /* Cụm có THÊM ô số ("Tùy chỉnh…" + 750 + / 990) thì select KHÔNG được ăn
+       trọn 100% — còn phải chừa chỗ cho ô số và nhãn đơn vị. Cho nó co giãn
+       theo chỗ còn lại thay vì ghim 100%. */
+    .setting-inline-group--with-number {
+        width: 100%;
+        flex-wrap: wrap;
+    }
+
+    .setting-inline-group--with-number select {
+        width: auto !important;
+        flex: 1 1 140px;
+        min-width: 0;
+    }
+
     /* ── Popup Vòng quay ──────────────────────────────────────────────────
        `width: 660px` cố định + hai cột (bánh xe trái · bảng thưởng phải). Trên
        màn 360px cột phải bị bóp tới mức chữ xếp dọc từng chữ, và cả hộp tràn

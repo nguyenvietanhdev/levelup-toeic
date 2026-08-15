@@ -510,7 +510,7 @@ function _renderUploads(data) {
     countEl.textContent = `${data.length} / ${_uploadsData.length} bản ghi`;
 
   if (!data.length) {
-    tbody.innerHTML = `<tr><td colspan="6" style="padding:40px;text-align:center;color:var(--text-secondary)"><i class="fas fa-inbox" style="font-size:32px;opacity:.3;display:block;margin-bottom:10px"></i>Không có kết quả</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="7" style="padding:40px;text-align:center;color:var(--text-secondary)"><i class="fas fa-inbox" style="font-size:32px;opacity:.3;display:block;margin-bottom:10px"></i>Không có kết quả</td></tr>`;
     return;
   }
 
@@ -533,6 +533,13 @@ function _renderUploads(data) {
             <td style="padding:12px;text-align:right;font-family:monospace;font-weight:600">${u.wordCount}</td>
             <td style="padding:12px;text-align:center"><span style="display:inline-block;padding:4px 10px;border-radius:12px;font-size:11px;font-weight:600;background:${statusBg};color:${statusColor}">${statusLabel}</span></td>
             <td style="padding:12px;text-align:center;font-size:12px;color:var(--text-secondary)">${new Date(u.createdAt).toLocaleString("vi-VN", { dateStyle: "short", timeStyle: "short" })}</td>
+            <td style="padding:12px;text-align:center">
+              <button type="button" class="upload-del-btn btn btn-danger btn-sm"
+                      data-email="${esc(u.email)}" data-source="${esc(u.source)}" data-n="${u.wordCount}"
+                      title="Xóa trọn nguồn này của người dùng">
+                <i class="fas fa-trash"></i>
+              </button>
+            </td>
         </tr>`;
     })
     .join("");
@@ -561,6 +568,53 @@ function _applyUploadsFilter() {
   _renderUploads(data);
 }
 
+/**
+ * Xóa trọn một nguồn của người dùng (admin).
+ *
+ * Uỷ quyền ở TBODY chứ không gắn từng nút: hàng được dựng lại mỗi lần lọc, gắn
+ * trực tiếp thì listener cũ trỏ vào nút đã bị gỡ. Cũng KHÔNG dùng `onclick=`
+ * inline — CSP đặt `script-src-attr 'none'` nên thuộc tính sự kiện inline bị
+ * chặn thẳng, nút sẽ không bao giờ chạy.
+ */
+function _setupUploadDelete() {
+  const tbody = document.getElementById("upload-monitoring-tbody");
+  if (!tbody || tbody.dataset.delBound) return;
+  tbody.dataset.delBound = "1";
+
+  tbody.addEventListener("click", async (e) => {
+    const btn = e.target.closest(".upload-del-btn");
+    if (!btn || btn.disabled) return;
+
+    const { email, source, n } = btn.dataset;
+    // Xóa dữ liệu của NGƯỜI KHÁC và không hoàn tác được — nói rõ xóa của ai,
+    // bao nhiêu từ, trước khi làm.
+    if (!confirm(`Xóa toàn bộ ${n} từ trong "${source}"\ncủa ${email}?\n\nKhông thể hoàn tác.`)) return;
+
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+    try {
+      const res = await fetch(
+        `/api/upload/admin/user-source/${encodeURIComponent(email)}/${encodeURIComponent(source)}`,
+        { method: "DELETE", headers: { Authorization: `Bearer ${authToken}` } },
+      );
+      const data = await res.json();
+      if (!data.success) throw new Error(data.message);
+
+      showToast(`✅ ${data.message}`, "success");
+      // Bỏ khỏi danh sách đang giữ rồi vẽ lại — không gọi lại API cho một thay
+      // đổi đã biết chắc kết quả.
+      _uploadsData = _uploadsData.filter(
+        (u) => !(u.email === email && u.source === source),
+      );
+      _applyUploadsFilter();
+    } catch (err) {
+      showToast(`❌ Lỗi: ${err.message}`, "error");
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fas fa-trash"></i>';
+    }
+  });
+}
+
 function _setupUploadsFilters() {
   const search = document.getElementById("upload-search");
   if (!search || search.dataset.bound) return;
@@ -577,7 +631,7 @@ function _setupUploadsFilters() {
 async function loadUploadMonitoring() {
   const tbody = document.getElementById("upload-monitoring-tbody");
   if (!tbody) return;
-  tbody.innerHTML = `<tr><td colspan="6" style="padding:30px;text-align:center;color:var(--text-secondary)"><i class="fas fa-spinner fa-spin"></i> Đang tải dữ liệu...</td></tr>`;
+  tbody.innerHTML = `<tr><td colspan="7" style="padding:30px;text-align:center;color:var(--text-secondary)"><i class="fas fa-spinner fa-spin"></i> Đang tải dữ liệu...</td></tr>`;
 
   try {
     const res = await fetch("/api/upload/admin/monitoring", {
@@ -588,9 +642,10 @@ async function loadUploadMonitoring() {
 
     _uploadsData = result.data || [];
     _setupUploadsFilters();
+    _setupUploadDelete();
     _applyUploadsFilter();
   } catch (err) {
-    tbody.innerHTML = `<tr><td colspan="6" style="padding:20px;text-align:center;color:#ef4444">Lỗi tải dữ liệu: ${esc(err.message)}</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="7" style="padding:20px;text-align:center;color:#ef4444">Lỗi tải dữ liệu: ${esc(err.message)}</td></tr>`;
   }
 }
 

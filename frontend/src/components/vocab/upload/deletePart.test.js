@@ -1,16 +1,17 @@
 /**
- * Nút "Xóa trọn một Part" trong bảng quản lý từ vựng riêng.
+ * "Xóa chọn lọc" trong bảng quản lý từ vựng riêng.
  *
- * Lấp khoảng giữa hai mức đã có: xoá TỪNG TỪ (nút ×) và xoá CẢ NGUỒN ("Xóa
- * tất"). Trước đây muốn bỏ một buổi nhập nhầm thì phải bấm × mấy chục lần.
+ * Thay cho hàng nút-mỗi-Part của bản trước: nút-mỗi-Part chỉ lọc được đúng MỘT
+ * tiêu chí, muốn bỏ "mọi danh từ mức HSK1 trong BUỔI 3" thì lại phải bấm × từng
+ * dòng. Popup này lọc theo nhiều điều kiện AND, cùng kiểu "Xóa chọn lọc" bên
+ * admin.
  *
- * Ba chỗ dễ hỏng im lặng:
- *   1. Tên Part do người dùng đặt — có dấu cách ("BUOI 3"), có thể có `/`.
- *      Không `encodeURIComponent` thì `/` cắt URL thành đoạn khác, route không
- *      khớp.
- *   2. Xoá Part cuối cùng → nguồn biến mất. Vẫn gọi `loadWords` sau đó là dựng
- *      bảng vào một thẻ vừa bị gỡ khỏi DOM.
- *   3. Tên Part đi thẳng vào innerHTML → phải escape.
+ * Bốn chỗ dễ hỏng im lặng:
+ *   1. Ô giá trị là <select> đổ từ dữ liệu THẬT, không phải ô gõ tự do — gõ tay
+ *      sai một chữ ("buoi 3" vs "BUỔI 3") là khớp 0 từ mà vẫn báo thành công.
+ *   2. Không điều kiện nào → `deleteMany({})` quét sạch cả nguồn.
+ *   3. Xóa hết sạch → nguồn biến mất; dựng lại bảng là ghi vào thẻ đã bị gỡ.
+ *   4. `part`/`level` lưu CHỮ HOA lúc nhập, phải chuẩn hoá trước khi so khớp.
  */
 import { describe, test, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
@@ -21,113 +22,140 @@ const api = readFileSync(
     join(__dirname, '..', '..', '..', 'api', 'uploadVocab.js'), 'utf8');
 const css = readFileSync(
     join(__dirname, '..', '..', '..', 'assets', 'styles', 'components.css'), 'utf8');
+const controller = readFileSync(
+    join(__dirname, '..', '..', '..', '..', '..', 'backend', 'controllers', 'uploadController.js'), 'utf8');
 
-/** Thân hàm deletePart. */
-function deletePartBody() {
-    const i = src.indexOf('const deletePart =');
+/** Thân hàm dựng popup. */
+function modalBody() {
+    const i = src.indexOf('const showFilterDeleteModal');
     expect(i).toBeGreaterThan(-1);
     const j = src.indexOf('const deleteWord =', i);
-    return src.slice(i, j > -1 ? j : i + 2500);
+    return src.slice(i, j > -1 ? j : i + 8000);
 }
 
 describe('API client', () => {
-    test('có hàm gọi endpoint xoá Part', () => {
-        expect(api).toMatch(/deleteSourcePart\(source, part\)/);
-        expect(api).toMatch(/method:\s*'DELETE'/);
+    test('có hàm gọi endpoint lọc-xóa', () => {
+        expect(api).toMatch(/filterDeleteSource\(source, filters\)/);
+        expect(api).toMatch(/method:\s*'POST'/);
     });
 
-    test('mã hoá CẢ source lẫn part', () => {
-        // Tên Part có dấu cách/`/` — không mã hoá là URL vỡ, route không khớp.
-        const i = api.indexOf('deleteSourcePart');
-        const block = api.slice(i, i + 400);
-        const encodes = block.match(/encodeURIComponent/g) || [];
-        expect(encodes.length).toBeGreaterThanOrEqual(2);
-    });
-
-    test('gửi kèm token', () => {
-        const i = api.indexOf('deleteSourcePart');
-        expect(api.slice(i, i + 400)).toMatch(/authHeaders\(\)/);
+    test('mã hoá tên nguồn trong URL', () => {
+        const i = api.indexOf('filterDeleteSource');
+        expect(api.slice(i, i + 400)).toMatch(/encodeURIComponent\(source\)/);
     });
 });
 
-describe('hàng nút Part', () => {
-    test('chỉ hiện khi có TỪ HAI Part trở lên', () => {
-        // Một Part duy nhất thì "xoá Part" trùng đúng với "Xóa tất" đã có.
-        expect(src).toMatch(/parts\.length > 1/);
+describe('popup lọc', () => {
+    const body = modalBody();
+
+    test('giá trị là <select> đổ từ dữ liệu thật, không phải ô gõ tay', () => {
+        // Gõ tay sai một chữ là khớp 0 từ — báo thành công mà chẳng xóa gì.
+        expect(body).toMatch(/const valuesOf = \(field\)/);
+        expect(body).toMatch(/uv-fd-value/);
+        expect(body).not.toMatch(/class="uv-fd-value"[^>]*type="text"/);
     });
 
-    test('đếm số từ mỗi Part để hiện lên nút', () => {
-        expect(src).toMatch(/partCount\.set\(p,/);
-        expect(src).toMatch(/data-n="\$\{n\}"/);
+    test('hiện SỐ TỪ của mỗi giá trị để biết sắp xóa bao nhiêu', () => {
+        expect(body).toMatch(/\$\{esc\(v\)\} \(\$\{n\}\)/);
     });
 
-    test('escape tên Part trước khi vào innerHTML', () => {
-        // Tên Part là dữ liệu người dùng nhập.
-        expect(src).toMatch(/data-part="\$\{esc\(p\)\}"/);
+    test('đếm trước ở client — không phải gọi server để xem', () => {
+        expect(body).toMatch(/const updatePreview/);
+        expect(body).toMatch(/filters\.every\(/);
     });
-});
 
-describe('luồng xoá', () => {
-    const body = deletePartBody();
+    test('chưa chọn trường thì ô giá trị bị khoá', () => {
+        expect(body).toMatch(/valSel\.disabled = true/);
+    });
 
-    test('hỏi xác nhận kèm SỐ TỪ sẽ mất', () => {
-        // Thao tác hàng loạt, không hoàn tác được — khác hẳn nút × một từ.
+    test('chặn khi không có điều kiện nào', () => {
+        // Không chặn thì server nhận mảng rỗng → nguy cơ quét sạch nguồn.
+        expect(body).toMatch(/if \(!filters\.length\)/);
+    });
+
+    test('hỏi xác nhận, nói rõ không hoàn tác được', () => {
         expect(body).toMatch(/confirm\(/);
-        expect(body).toMatch(/\$\{n\}/);
         expect(body).toMatch(/Không thể hoàn tác/);
     });
 
-    test('Part cuối cùng → gỡ thẻ nguồn, KHÔNG dựng lại bảng', () => {
-        // `loadWords` sau khi nguồn đã bị gỡ là ghi vào DOM không còn tồn tại.
+    test('bấm nền ngoài mới đóng, bấm trong hộp thì không', () => {
+        expect(body).toMatch(/if \(e\.target === modal\) close\(\)/);
+    });
+});
+
+describe('sau khi xóa', () => {
+    const body = modalBody();
+
+    test('xóa sạch nguồn → gỡ thẻ, KHÔNG dựng lại bảng', () => {
         expect(body).toMatch(/if \(res\.sourceGone\)/);
         const i = body.indexOf('res.sourceGone');
-        const branch = body.slice(i, body.indexOf('}', body.indexOf('return', i)));
+        const branch = body.slice(i, body.indexOf('return;', i));
         expect(branch).not.toMatch(/loadWords/);
         expect(branch).toMatch(/remove\(\)/);
     });
 
-    test('còn Part khác → cập nhật số từ trên thẻ nguồn', () => {
-        // Không cập nhật thì thẻ vẫn hiện con số cũ tới lần mở lại popup.
+    test('còn từ → cập nhật số đếm trên thẻ nguồn', () => {
         expect(body).toMatch(/topicRow\.dataset\.count = newCount/);
-        expect(body).toMatch(/res\.deletedCount/);
-    });
-
-    test('số từ không tụt xuống âm', () => {
         expect(body).toMatch(/Math\.max\(0,/);
     });
 
-    test('tải lại bảng để hàng Part khớp trạng thái mới', () => {
+    test('tải lại bảng cho khớp trạng thái mới', () => {
         expect(body).toMatch(/loadWords\(source, panel\)/);
     });
+});
 
-    test('lỗi thì báo bằng Notification, không nuốt', () => {
-        expect(body).toMatch(/Notification\.error/);
+describe('backend', () => {
+    test('chỉ cho lọc theo các trường trong danh sách trắng', () => {
+        // Không giới hạn thì lọc được cả `ownerEmail` — chạm sang dữ liệu người khác.
+        expect(controller).toMatch(/FILTER_DELETE_FIELDS/);
+        expect(controller).toMatch(/không được phép lọc/);
+    });
+
+    test('ghim ownerEmail + source, không cho vượt ra ngoài', () => {
+        const i = controller.indexOf('exports.filterDeleteMySource');
+        const body = controller.slice(i, i + 3000);
+        expect(body).toMatch(/ownerEmail: email, source/);
+    });
+
+    test('từ chối khi không có điều kiện nào', () => {
+        const i = controller.indexOf('exports.filterDeleteMySource');
+        const body = controller.slice(i, i + 3000);
+        expect(body).toMatch(/Object\.keys\(conditions\)\.length === 0/);
+        expect(body).toMatch(/status\(400\)/);
+    });
+
+    test('chuẩn hoá CHỮ HOA cho part và level', () => {
+        // Hai trường này được `upper()` lúc nhập; không chuẩn hoá là khớp 0 từ.
+        const i = controller.indexOf('exports.filterDeleteMySource');
+        const body = controller.slice(i, i + 3000);
+        expect(body).toMatch(/field === 'part' \|\| field === 'level'/);
+        expect(body).toMatch(/upper\(v\)/);
+    });
+
+    test('báo `sourceGone` khi xóa hết sạch', () => {
+        const i = controller.indexOf('exports.filterDeleteMySource');
+        const body = controller.slice(i, i + 3000);
+        expect(body).toMatch(/sourceGone/);
     });
 });
 
 describe('kiểu hiển thị', () => {
-    test('nút Part có style riêng', () => {
-        expect(css).toMatch(/\.uv-part-del\s*\{/);
-        expect(css).toMatch(/\.uv-part-bar\s*\{/);
+    test('nút mở popup và popup đều có style', () => {
+        expect(css).toMatch(/\.uv-filter-del-btn\s*\{/);
+        expect(css).toMatch(/\.uv-fd-overlay\s*\{/);
+        expect(css).toMatch(/\.uv-fd-box\s*\{/);
     });
 
-    test('chỉ đỏ khi rê chuột — không đỏ thường trực', () => {
-        // Đỏ sẵn thì cả hàng trông như đang báo lỗi.
-        const base = css.match(/\.uv-part-del\s*\{([^}]*)\}/)[1];
-        expect(base).not.toMatch(/#dc2626/);
-        expect(css).toMatch(/\.uv-part-del:hover\s*\{[^}]*#dc2626/);
+    test('không để lại CSS mồ côi của hàng nút Part cũ', () => {
+        expect(css).not.toMatch(/\.uv-part-del\s*\{/);
+        expect(css).not.toMatch(/\.uv-part-bar-label\s*\{/);
     });
 
-    test('vẫn thấy được ở khổ điện thoại', () => {
-        // Cột Part trong bảng bị ẩn ở khổ này, nên hàng nút là chỗ DUY NHẤT còn
-        // thấy bộ Part của nguồn.
-        //
-        // Neo từ `.uv-part-del:hover` trở đi: components.css có NHIỀU khối
-        // `max-width: 560px`, lấy cái đầu tiên là cắt trúng khối khác và test đỏ
-        // dù CSS đúng.
-        const from = css.indexOf('.uv-part-del:hover');
-        const i = css.indexOf('@media (max-width: 560px)', from);
+    test('mobile: hai cột thành một', () => {
+        // Trên màn 360px, "Trường" và "Giá trị" cạnh nhau thì mỗi select ~140px,
+        // tên Part dài bị cắt.
+        const i = css.indexOf('@media (max-width: 560px)', css.indexOf('.uv-filter-del-btn'));
         expect(i).toBeGreaterThan(-1);
-        expect(css.slice(i, i + 700)).toMatch(/\.uv-part-del/);
+        expect(css.slice(i, i + 800)).toMatch(/\.uv-fd-row\s*\{[^}]*grid-template-columns:\s*1fr/);
     });
 });

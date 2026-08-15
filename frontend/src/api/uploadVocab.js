@@ -166,4 +166,19 @@ export const UploadVocabAPI = {
             { method: 'DELETE', headers: authHeaders() },
         ).then(r => r.json());
     },
+
+    /**
+     * Xóa hàng loạt trong một nguồn theo nhiều điều kiện AND.
+     *
+     * @param {string} source
+     * @param {Array<{field: string, value: string}>} filters
+     * @returns parsed JSON — kèm `sourceGone` nếu xóa hết sạch nguồn.
+     */
+    async filterDeleteSource(source, filters) {
+        return fetch(`/api/upload/my-source/${encodeURIComponent(source)}/filter-delete`, {
+            method: 'POST',
+            headers: { ...JSON_HEADERS, ...authHeaders() },
+            body: JSON.stringify({ filters }),
+        }).then(r => r.json());
+    },
 };

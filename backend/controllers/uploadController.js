@@ -12,6 +12,8 @@ const UserStats = require('../models/UserStats');
 const { logTxn } = require('../utils/economyLog');
 const { getGameConfig } = require('../services/gameConfig');
 const { levelSumStage, LEVEL_STATS_PROJECT } = require('../utils/levelStats');
+const { normalizeWordType } = require('../utils/wordType');
+const activityLogger = require('../utils/activityLogger');
 
 // Private uploads: user picks retention at upload time.
 const ALLOWED_RETENTION_DAYS = [3, 7, 14, 30];
@@ -30,6 +32,25 @@ function resolveRetentionDays(raw) {
 }
 
 const lower = (s) => (s == null ? '' : String(s).trim().toLowerCase());
+
+/** Có chữ Hán trong chuỗi không (khối CJK Unified Ideographs). */
+const hasHan = (s) => /[一-鿿]/.test(String(s || ''));
+
+/**
+ * Ngôn ngữ THẬT của một từ.
+ *
+ * Ưu tiên NỘI DUNG hơn nhãn client gửi lên: từ chứa chữ Hán thì luôn là 'zh',
+ * bất kể client (hay AI sinh JSON) khai gì. Chỉ khi không có chữ Hán mới dùng
+ * nhãn, và cũng chỉ nhận đúng hai giá trị — giá trị lạ lọt vào là TTS đọc bằng
+ * giọng không tồn tại.
+ *
+ * KHÔNG suy ngược: chuỗi không có chữ Hán vẫn có thể là tiếng Trung viết bằng
+ * pinyin, nên `lang: 'zh'` do client khai vẫn được tôn trọng.
+ */
+const resolveLang = (lang, word) => {
+    if (hasHan(word)) return 'zh';
+    return lang === 'zh' ? 'zh' : 'en';
+};
 const upper = (s) => (s == null ? '' : String(s).trim().toUpperCase());
 const capFirst = (s) => {
   if (!s) return '';
@@ -92,15 +113,23 @@ exports.uploadVocabulary = async (req, res, next) => {
       filter,
       {
         $set: {
-          // Chỉ nhận đúng hai giá trị — client gửi gì khác thì coi như 'en',
-          // không để giá trị lạ lọt vào rồi TTS đọc bằng giọng không tồn tại.
-          lang: lang === 'zh' ? 'zh' : 'en',
+          // Ngôn ngữ suy từ CHÍNH NỘI DUNG, không tin hoàn toàn vào client.
+          //
+          // Prompt AI có dặn ghi đúng `lang`, nhưng AI vẫn ghi nhầm — kho hiện
+          // có 19 từ chữ Hán mang `lang: 'en'` (bộ `hocgiaotiep`). Hậu quả im
+          // lặng: TTS đọc chữ Hán bằng giọng tiếng Anh, và bộ đó không hiện ra
+          // khi người dùng học tiếng Trung.
+          lang: resolveLang(lang, enL),
           en: enL,
           vn: lower(vn),
           phonetic: lower(phonetic),
           part: upper(part),
           synonyms: lower(synonyms),
-          type: lower(type),
+          // KHÔNG dùng `lower()`: với tiếng Trung nó chẳng làm gì (chữ Hán
+          // không có hoa/thường) nên "动词 / 名词" vẫn lọt vào nguyên dạng, và
+          // dữ liệu mới lại lệch với dữ liệu vừa dọn. `normalizeWordType` bỏ
+          // khoảng trắng quanh "/" + sắp lại thứ tự cho cả hai ngôn ngữ.
+          type: normalizeWordType(type, lang === 'zh' ? 'zh' : 'en'),
           image: lower(image),
           example: capFirst(example),
           level: upper(level),
@@ -359,6 +388,77 @@ exports.deleteMySource = async (req, res, next) => {
   }
 };
 
+/** Trường được phép lọc khi xóa hàng loạt — KHÔNG cho lọc theo trường khác. */
+const FILTER_DELETE_FIELDS = ['part', 'type', 'level', 'lang', 'en', 'vn', 'source'];
+
+// POST /api/upload/my-source/:source/filter-delete
+//
+// Xóa hàng loạt từ trong MỘT nguồn theo nhiều điều kiện AND — cùng kiểu với
+// "Xóa chọn lọc" bên admin. Trước đây chỉ có ba mức: xóa từng từ, xóa trọn một
+// Part, hoặc xóa sạch cả nguồn; muốn bỏ "mọi danh từ mức HSK1 trong BUỔI 3" thì
+// không có cách nào ngoài bấm × từng dòng.
+//
+// Body: { filters: [{ field, value }, ...] }
+exports.filterDeleteMySource = async (req, res, next) => {
+  try {
+    const email = req.user.email;
+    const { source } = req.params;
+    const pairs = Array.isArray(req.body?.filters) ? req.body.filters : [];
+
+    const conditions = {};
+    for (const { field, value } of pairs) {
+      // Dòng trống bị bỏ qua — người dùng để trống vài dòng là chuyện thường.
+      if (!field || value === undefined || String(value).trim() === '') continue;
+      if (!FILTER_DELETE_FIELDS.includes(field)) {
+        return res.status(400).json({
+          success: false,
+          message: `Trường "${field}" không được phép lọc.`,
+        });
+      }
+      const v = String(value).trim();
+      // `part` và `level` được lưu CHỮ HOA lúc nhập (xem `upper()` ở
+      // uploadVocabulary) — không chuẩn hoá ở đây thì "buoi 3" không khớp
+      // "BUOI 3", xóa 0 từ nhưng vẫn báo thành công.
+      conditions[field] = (field === 'part' || field === 'level') ? upper(v) : v;
+    }
+
+    // KHÔNG cho xóa khi không có điều kiện nào: `deleteMany` với filter rỗng sẽ
+    // quét sạch cả nguồn — đúng thứ nút "Xóa tất" làm, nhưng ở đây là ngoài ý.
+    if (Object.keys(conditions).length === 0) {
+      return res.status(400).json({ success: false, message: 'Cần ít nhất một điều kiện.' });
+    }
+
+    // `ownerEmail` + `source` luôn được ghim: người dùng chỉ động được vào dữ
+    // liệu của chính mình, trong đúng nguồn đang mở.
+    const filter = { ownerEmail: email, source, ...conditions };
+
+    const [matched, inSource] = await Promise.all([
+      UserUpload.countDocuments(filter),
+      UserUpload.countDocuments({ ownerEmail: email, source }),
+    ]);
+
+    if (!matched) {
+      return res.status(404).json({ success: false, message: 'Không có từ nào khớp điều kiện.' });
+    }
+
+    const result = await UserUpload.deleteMany(filter);
+    // Xóa hết sạch thì nguồn cũng biến mất (nguồn chỉ tồn tại chừng nào còn từ).
+    const sourceGone = matched >= inSource;
+
+    res.json({
+      success: true,
+      deletedCount: result.deletedCount,
+      sourceGone,
+      message: sourceGone
+        ? `Đã xóa ${result.deletedCount} từ — "${source}" không còn từ nào nên cũng bị xóa`
+        : `Đã xóa ${result.deletedCount} từ khớp điều kiện`,
+    });
+  } catch (err) {
+    console.error('filterDeleteMySource error:', err);
+    next(err);
+  }
+};
+
 // DELETE /api/upload/my-source/:source/part/:part
 //
 // Xóa TRỌN một Part trong một nguồn. Trước đây chỉ có hai mức: xóa từng từ, hoặc
@@ -410,6 +510,48 @@ exports.deleteMySourcePart = async (req, res, next) => {
     });
   } catch (err) {
     console.error('deleteMySourcePart error:', err);
+    next(err);
+  }
+};
+
+// DELETE /api/upload/admin/user-source/:email/:source
+//
+// Admin xóa TRỌN một nguồn của một người dùng. Trang "Nội dung người dùng" trước
+// đây chỉ XEM được — thấy nội dung vi phạm cũng không xử lý được gì.
+exports.adminDeleteUserSource = async (req, res, next) => {
+  try {
+    const { email, source } = req.params;
+    const ownerEmail = String(email || '').trim().toLowerCase();
+    if (!ownerEmail || !source) {
+      return res.status(400).json({ success: false, message: 'Thiếu email hoặc nguồn' });
+    }
+
+    const filter = { ownerEmail, source };
+    const matched = await UserUpload.countDocuments(filter);
+    if (!matched) {
+      return res.status(404).json({ success: false, message: 'Không tìm thấy nguồn này' });
+    }
+
+    const result = await UserUpload.deleteMany(filter);
+
+    // Ghi nhật ký: đây là admin xóa dữ liệu của NGƯỜI KHÁC — phải truy được ai
+    // làm, lúc nào, xóa của ai.
+    try {
+      await activityLogger.logActivity(
+        'upload',
+        'admin-delete-user-source',
+        { ownerEmail, source, deleted: result.deletedCount },
+        activityLogger.actorOf(req),
+      );
+    } catch { /* log hỏng thì thôi, không chặn thao tác đã xong */ }
+
+    res.json({
+      success: true,
+      deletedCount: result.deletedCount,
+      message: `Đã xóa ${result.deletedCount} từ trong "${source}" của ${ownerEmail}`,
+    });
+  } catch (err) {
+    console.error('adminDeleteUserSource error:', err);
     next(err);
   }
 };

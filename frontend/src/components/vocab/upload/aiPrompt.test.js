@@ -36,6 +36,52 @@ describe('prompt theo ngôn ngữ', () => {
     test('level theo hệ HSK khi học tiếng Trung', () => {
         // A1/B2 là khung châu Âu, không dùng cho tiếng Trung.
         expect(src).toMatch(/HSK1 \/ HSK2/);
+        // Kho zh có cả mức cao nhất — thiếu thì AI không biết dùng gì cho từ khó.
+        expect(src).toMatch(/HSK7-9/);
+    });
+
+    test('dặn RÕ không được rơi về A1/B2 cho tiếng Trung', () => {
+        // AI thường mặc định trả CEFR cho MỌI ngôn ngữ nếu không cấm thẳng.
+        expect(src).toMatch(/KHÔNG dùng A1\/B2\/C1/);
+    });
+
+    test('có bảng quy đổi CEFR → HSK để AI tự chuyển', () => {
+        // AI có thể chỉ biết mức theo khung châu Âu; cho bảng quy đổi thì nó
+        // chuyển được thay vì ghi bừa hoặc bỏ trống.
+        expect(src).toMatch(/A1→HSK1/);
+        expect(src).toMatch(/C2→HSK7-9/);
+    });
+
+    test('tiếng Anh vẫn dùng CEFR', () => {
+        // Chỉ tiếng Trung đổi sang HSK; kho en giữ nguyên khung châu Âu.
+        expect(src).toMatch(/Dùng khung CEFR/);
+    });
+
+    test('TỪ LOẠI theo ngôn ngữ — zh dùng chữ Hán', () => {
+        // Kho zh lưu `名词`/`动词` (11.783/12.266 từ). Để AI trả `noun` thì từ
+        // mới nằm riêng một mục, lọc `名词` bỏ sót.
+        expect(src).toMatch(/const typeLabel = isZh/);
+        expect(src).toMatch(/名词 \/ 动词 \/ 形容词/);
+        expect(src).toMatch(/viết BẰNG CHỮ HÁN \(名词, 动词, 形容词…\), KHÔNG dùng noun\/verb/);
+    });
+
+    test('dặn cách nối từ loại ghép — tránh sinh lại biến thể', () => {
+        // Kho từng có `动词/名词` lẫn `动词 / 名词` là hai mục cho cùng một loại.
+        expect(src).toMatch(/nối bằng "\/" không có khoảng trắng: 名词\/动词/);
+    });
+
+    test('ĐỒNG NGHĨA phải cùng ngôn ngữ với từ', () => {
+        // 74% từ người dùng tải lên đang thiếu `synonyms` — prompt cũ chỉ ghi
+        // "viết thường", vô nghĩa với chữ Hán và không nói viết bằng gì.
+        expect(src).toMatch(/const synonymsLabel = isZh/);
+        expect(src).toMatch(/từ đồng nghĩa BẰNG CHỮ HÁN/);
+        expect(src).toMatch(/KHÔNG dùng pinyin hay tiếng Việt/);
+    });
+
+    test('KHÔNG còn gộp type/synonyms vào quy tắc "viết thường" chung', () => {
+        // Bản cũ: `"vn", "synonyms", "type", "source" → viết thường` — áp cho cả
+        // hai ngôn ngữ, mà chữ Hán không có hoa/thường.
+        expect(src).not.toMatch(/"vn", "synonyms", "type", "source" → viết thường/);
     });
 
     test('prompt có trường `lang` và ghim đúng giá trị', () => {

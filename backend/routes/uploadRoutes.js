@@ -19,8 +19,10 @@ const {
   rejectShare,
   deleteMySource,
   deleteMySourcePart,
+  filterDeleteMySource,
   extendMySource,
   getMonitoring,
+  adminDeleteUserSource,
   getStats,
 } = require('../controllers/uploadController');
 const { protect, authorize } = require('../middleware/auth');
@@ -64,11 +66,16 @@ router.post('/extend/:source', protect, extendMySource);
 // nên `/my-source/abc/part/BUOI 3` không khớp nó — thứ tự ở đây không bắt buộc
 // về mặt kỹ thuật. Vẫn đặt trước để đọc từ hẹp tới rộng, và để nếu sau này ai
 // đổi `:source` thành `:source*` (khớp nhiều đoạn) thì không nuốt mất route này.
+// Xóa hàng loạt theo điều kiện (AND) — POST vì mang body `filters`.
+router.post('/my-source/:source/filter-delete', protect, filterDeleteMySource);
 router.delete('/my-source/:source/part/:part', protect, deleteMySourcePart);
 router.delete('/my-source/:source', protect, deleteMySource);
 
 // Admin routes
 router.get('/admin/monitoring', protect, authorize('admin'), getMonitoring);
+// Xóa trọn một nguồn của NGƯỜI KHÁC — chỉ admin. `authorize('admin')` là thứ
+// duy nhất ngăn người dùng thường gọi thẳng endpoint này để xóa dữ liệu của nhau.
+router.delete('/admin/user-source/:email/:source', protect, authorize('admin'), adminDeleteUserSource);
 router.get('/admin/stats', protect, authorize('admin'), getStats);
 
 module.exports = router;
