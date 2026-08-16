@@ -811,6 +811,7 @@
        (32×32 do width = height), nên `50%` ra hình TRÒN. Input cao 34px rộng
        40px, bo 50% ở đó chỉ cho bầu dục. */
     .search-bar > .fa-search,
+    .search-bar > .fa-microphone,
     .search-bar > .fa-lock {
         left: 0;
         right: 0;
@@ -883,7 +884,8 @@
     /* ĐANG GHI ÂM lúc ô còn thu: tô chính nút kính lúp thành đỏ + vòng nhấp
        nháy. Không có dấu hiệu này thì người dùng giữ tay mà chẳng thấy gì đổi,
        không biết máy đã nghe chưa — đúng vấn đề đã sửa cho popup Dịch nhanh. */
-    .top-nav:not(.search-active) .search-bar.is-recording > .fa-search {
+    .top-nav:not(.search-active) .search-bar.is-recording > .fa-search,
+    .top-nav:not(.search-active) .search-bar.is-recording > .fa-microphone {
         background: var(--primary-color);
         color: #fff;
         border-color: var(--primary-color);
@@ -928,40 +930,20 @@
         box-shadow: 0 -6px 20px rgba(0, 0, 0, 0.35);
     }
 
-    /* Ô tìm ĐANG BUNG: mic và sáng/tối hiện ra CÙNG nó.
-       Đây là lúc chúng có ích — nói để tìm, và đọc kết quả nên cần chỉnh nền. */
-    /* Mic hiện lại cùng ô tìm, nhưng là NÚT TRÒN TO nổi phía trên ô — không
-       phải icon nhỏ nhét trong ô nữa.
-       Nó là đích chạm phải giữ vài giây (nhấn giữ để nói), nên 56px và tách hẳn
-       ra: icon 26px trong ô thì ngón tay che mất chính nó, và giữ lâu trên một
-       đích nhỏ rất dễ trượt ra ngoài — mà trượt ra là `pointerleave` dừng thu
-       giữa câu. */
-    .top-nav.search-active .mic-btn {
-        display: flex;
-        position: absolute;
-        /* ĐÚNG TẠI CHỖ nút kính lúp — nó mọc lên ngay chỗ ngón tay vừa chạm,
-           không bay lên lơ lửng ở đâu khác.
-           Căn giữa `.nav-center` cả hai trục: ô tìm khi bung đã `absolute` bay
-           lên lớp trên, nên chỗ này bỏ trống đúng bằng vị trí nút kính lúp cũ.
-           `inset: 0` + `margin: auto` căn giữa được cả khi kích thước đổi, khỏi
-           phải tính bù `translate` theo nửa chiều cao. */
-        inset: 0;
-        margin: auto;
-        /* 44px chứ không 56px: hàng nav chỉ cao ~40px, nút to hơn thế sẽ trồi ra
-           khỏi thanh. Vẫn đủ lớn để giữ ngón tay mà không trượt. */
-        width: 44px;
-        height: 44px;
-        font-size: 18px;
-        border-radius: 50%;
-        background: var(--primary-color);
-        color: #fff;
-        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
-        z-index: 101;
-    }
+    /* Ô tìm ĐANG BUNG: mic KHÔNG hiện lại nữa.
 
-    /* Đang nghe: vòng sáng nhấp nháy quanh nút để biết micro CÒN chạy. */
-    .top-nav.search-active .mic-btn.is-listening {
-        animation: micPulse 1.2s ease-out infinite;
+       Trên điện thoại chỉ còn MỘT lối: chạm nút kính lúp để mở ô, GIỮ nút đó
+       để nói. Nút mic riêng là đích chạm thứ hai cho cùng một việc, mà hàng nav
+       vốn đã chật — bỏ đi cho gọn.
+
+       Desktop VẪN có nút mic (xem layout.css): ở đó không có cử chỉ giữ bằng
+       chuột nào tiện như trên cảm ứng, bỏ nút là mất hẳn lối ghi âm bằng nhấp,
+       chỉ còn phím Shift.
+
+       Nút sáng/tối thì KHÁC: nó ở lại nav vì đổi nền là thứ hay dùng ngay tại
+       chỗ khi đang đọc kết quả. */
+    .top-nav.search-active .mic-btn {
+        display: none;
     }
 
     /* Nav giữ NGUYÊN khi ô tìm mở — ô đã bay lên lớp trên nên không che gì,
@@ -984,6 +966,7 @@
 
     /* Bung ra: icon trở lại dạng ký hiệu thường trong ô, BỎ viền tròn. */
     .top-nav.search-active .search-bar > .fa-search,
+    .top-nav.search-active .search-bar > .fa-microphone,
     .top-nav.search-active .search-bar > .fa-lock {
         left: 18px;
         right: auto;

@@ -676,7 +676,13 @@ export default function TopNav() {
                     kính lúp (xem responsive.css). Không có dấu hiệu thì người
                     dùng giữ tay mà chẳng thấy gì đổi, không biết máy nghe chưa. */}
                 <div className={`search-bar ${isInPractice ? 'disabled' : ''}${speechOn && !searchFocused ? ' is-recording' : ''}`}>
-                    <i className={`fas ${isInPractice ? 'fa-lock' : 'fa-search'}`}></i>
+                    {/* Icon ĐỔI HÌNH theo trạng thái, không chỉ đổi màu:
+                        khoá → kính lúp → micro (đang nghe).
+                        Chỉ đổi màu thì người dùng phải nhớ "đỏ nghĩa là gì";
+                        đổi hẳn sang hình micro thì nhìn là biết máy đang thu. */}
+                    <i className={`fas ${isInPractice
+                        ? 'fa-lock'
+                        : speechOn ? 'fa-microphone' : 'fa-search'}`}></i>
                     <input
                         type="text"
                         id="search-input"

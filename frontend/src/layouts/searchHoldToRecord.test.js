@@ -165,8 +165,38 @@ describe('có dấu hiệu đang ghi âm', () => {
         expect(src).toMatch(/speechOn && !searchFocused \? ' is-recording' : ''/);
     });
 
+    test('icon ĐỔI HÌNH: kính lúp → micro', () => {
+        // Chỉ đổi màu thì người dùng phải nhớ "đỏ nghĩa là gì". Đổi hẳn sang
+        // hình micro thì nhìn là biết máy đang thu.
+        expect(src).toMatch(/speechOn \? 'fa-microphone' : 'fa-search'/);
+    });
+
+    test('đang luyện tập vẫn ưu tiên ổ khoá', () => {
+        // Lúc đó ô tìm bị khoá hẳn — hiện micro là hứa một thứ không bấm được.
+        expect(src).toMatch(/isInPractice\s*\?\s*'fa-lock'/);
+    });
+
+    test('CSS nhận cả .fa-microphone, không chỉ .fa-search', () => {
+        // Icon đổi hình rồi thì quy tắc ghim theo `.fa-search` không khớp nữa:
+        // vòng tròn nền biến mất và icon nhảy khỏi chỗ giữa nút.
+        for (const rule of [
+            /\.search-bar > \.fa-microphone/,
+            /\.is-recording > \.fa-microphone/,
+            /\.top-nav\.search-active \.search-bar > \.fa-microphone/,
+        ]) {
+            expect(css, `thiếu quy tắc ${rule}`).toMatch(rule);
+        }
+    });
+
+    test('desktop cũng ghim vị trí cho icon micro', () => {
+        // Thiếu thì lúc thu icon mất `position: absolute` và nhảy khỏi chỗ.
+        const layout = readFileSync(
+            join(__dirname, '..', 'assets', 'styles', 'layout.css'), 'utf8');
+        expect(layout).toMatch(/\.search-bar > \.fa-microphone/);
+    });
+
     test('CSS tô đỏ + nhấp nháy chính nút kính lúp', () => {
-        const r = css.match(/\.top-nav:not\(\.search-active\) \.search-bar\.is-recording > \.fa-search\s*\{([^}]*)\}/);
+        const r = css.match(/\.is-recording > \.fa-microphone\s*\{([^}]*)\}/);
         expect(r, 'thiếu quy tắc báo đang ghi').toBeTruthy();
         expect(r[1]).toMatch(/animation:\s*micPulse/);
         expect(r[1]).toMatch(/background:\s*var\(--primary-color\)/);
@@ -179,12 +209,30 @@ describe('có dấu hiệu đang ghi âm', () => {
     });
 });
 
-describe('nút mic riêng biến mất khi ô thu', () => {
-    test('vẫn display:none ở khổ điện thoại', () => {
+describe('điện thoại: KHÔNG có nút mic riêng, dù ô thu hay bung', () => {
+    test('ô THU: mic ẩn', () => {
         // Gộp vào nút kính lúp rồi thì để lại là hai đích chạm cho một việc.
         // Khớp bằng regex, không phải chuỗi cứng — thụt lề thay đổi là test đỏ
         // oan trong khi CSS vẫn đúng.
         expect(css).toMatch(/\.mic-btn\s*\{\s*display:\s*none;\s*\}/);
+    });
+
+    test('ô BUNG: mic vẫn ẩn, không mọc lại thành nút tròn', () => {
+        // Bản trước cho nó hiện lại thành nút tròn to nổi trên ô. Bỏ hẳn: chạm
+        // kính lúp mở ô, GIỮ kính lúp là nói — một chỗ, hai ý định.
+        const r = css.match(
+            /\.top-nav\.search-active \.mic-btn\s*\{([^}]*)\}/);
+        expect(r, 'thiếu quy tắc ẩn mic khi ô bung').toBeTruthy();
+        expect(r[1]).toMatch(/display:\s*none/);
+    });
+
+    test('desktop VẪN giữ nút mic', () => {
+        // Trên desktop không có cử chỉ giữ bằng chuột nào tiện như cảm ứng — bỏ
+        // nút là mất hẳn lối ghi âm bằng nhấp, chỉ còn phím Shift.
+        const layout = readFileSync(
+            join(__dirname, '..', 'assets', 'styles', 'layout.css'), 'utf8');
+        expect(layout).toMatch(/^\.mic-btn\s*\{/m);
+        expect(layout).not.toMatch(/^\.mic-btn\s*\{[^}]*display:\s*none/m);
     });
 });
 

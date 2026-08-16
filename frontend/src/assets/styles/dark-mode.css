@@ -55,8 +55,16 @@
     background-color: var(--bg-color);
 }
 
+/* Nav ĐEN TUYỀN, KHÔNG trong suốt.
+ *
+ * Trước đây là `rgba(30, 41, 59, 0.95)` — 5% trong suốt cho nội dung cuộn phía
+ * dưới lờ mờ hiện qua. Nhìn rối, nhất là khi cuộn qua ảnh hoặc thẻ nhiều màu.
+ *
+ * `#000` đặc thay vì `#1e293b`: nav tách hẳn khỏi nền trang (#0f172a) thành một
+ * dải đen rõ ràng, đúng ý "đen hoàn toàn". Dùng mã màu đặc chứ không phải
+ * `rgba(...,1)` để không ai tưởng alpha ở đây còn chỉnh được. */
 [data-theme="dark"] .top-nav {
-    background: rgba(30, 41, 59, 0.95);
+    background: #000;
     border-bottom-color: var(--border-color);
 }
 

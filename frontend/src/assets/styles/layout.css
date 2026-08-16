@@ -1592,7 +1592,10 @@
     height: 0;
 }
 
+/* `.fa-microphone` nằm cùng nhóm: icon ĐỔI HÌNH khi đang ghi âm (xem TopNav),
+   thiếu nó ở đây là lúc thu icon mất `position: absolute` và nhảy khỏi chỗ. */
 .search-bar > .fa-search,
+.search-bar > .fa-microphone,
 .search-bar > .fa-lock {
     position: absolute;
     left: 12px;
