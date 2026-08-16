@@ -303,16 +303,19 @@ export default function TopNav() {
         toggleSpeech();
     }, [speechSupported, warnNoSpeech, toggleSpeech]);
 
-    // ── Ô tìm thu lại (điện thoại): CHẠM mở ô, CHẠM ĐÚP thì ghi âm ──────────
+    // ── Ô tìm thu lại (điện thoại): CHẠM mở ô · GIỮ hoặc CHẠM ĐÚP thì ghi âm ─
     //
     // Trước đây nút kính lúp và nút mic là hai đích chạm nằm cạnh nhau trên một
-    // thanh nav vốn đã chật. Gộp lại: một chỗ chạm, hai ý định.
+    // thanh nav vốn đã chật. Gộp lại: một chỗ chạm, ba ý định.
     //
-    // Bản trước dùng cử chỉ GIỮ. Đổi sang chạm đúp vì giữ có hai điểm dở trên
-    // điện thoại: phải giữ tay suốt lúc nói (dài một câu là mỏi), và giữ lâu
-    // trên input dễ bị hệ điều hành hiểu thành "bôi đen / dán".
+    // HAI lối ghi âm, cố ý để cả hai:
+    //   · GIỮ rồi nhả — nói nhanh một hai từ, nhả tay là xong.
+    //   · CHẠM ĐÚP (bật/tắt) — nói câu dài khỏi phải giữ tay mỏi.
     //
-    // Chạm đúp là BẬT/TẮT: chạm đúp lần nữa để dừng, không phải giữ tay.
+    // Cử chỉ GIỮ từng hỏng trên điện thoại: hệ điều hành hiểu thành "bôi đen /
+    // dán", ô nhập giật rồi tự đóng. KHÔNG phải lỗi của cử chỉ mà là thiếu chặn
+    // hành vi mặc định — xem `.search-bar input` trong responsive.css
+    // (user-select/touch-callout/touch-action) và `onContextMenu` bên dưới.
     //
     // Vẫn để nó là INPUT thật (không đổi thành <button>) vì trên iOS gọi
     // `focus()` ngoài cử chỉ chạm trực tiếp thì bàn phím KHÔNG mở — chạm vào
@@ -320,6 +323,21 @@ export default function TopNav() {
     const lastTapRef = useRef(0);
     /** Khoảng cách tối đa giữa hai lần chạm để tính là chạm đúp (ms). */
     const DOUBLE_TAP_MS = 300;
+
+    const searchHoldRef = useRef(null);
+    if (!searchHoldRef.current) {
+        searchHoldRef.current = createHoldGesture({
+            thresholdMs: 350,
+            onStart: () => {
+                // Giữ = ghi âm, KHÔNG phải mở ô nhập. Bỏ tiêu điểm để bàn phím
+                // ảo không bật lên che mất nửa màn hình trong lúc đang nói.
+                document.getElementById('search-input')?.blur();
+                autoTranslateRef.current = false;
+                startSpeech();
+            },
+            onStop: () => stopSpeech(),
+        });
+    }
 
     const handleSearchPointerDown = useCallback((e) => {
         // Chỉ áp dụng khi ô ĐANG THU (khổ điện thoại). Ô đã bung thì người dùng
@@ -330,22 +348,40 @@ export default function TopNav() {
         const now = Date.now();
         const isDoubleTap = now - lastTapRef.current < DOUBLE_TAP_MS;
         lastTapRef.current = now;
-        if (!isDoubleTap) return;       // chạm đơn: để yên cho ô bung ra như thường
 
-        // Chạm đúp = ghi âm, KHÔNG phải mở ô nhập.
-        //
-        // `preventDefault` để `pointerdown` không kéo theo focus — bàn phím ảo
-        // bật lên là che mất nửa màn hình trong lúc đang nói. Phải chặn ở
-        // `pointerdown` (không phải `click`) vì focus đến từ chính sự kiện này.
-        e.preventDefault();
-        document.getElementById('search-input')?.blur();
-        // Đặt lại mốc: không thì chạm lần thứ ba lại tính là một cặp mới với
-        // lần thứ hai, bật/tắt liên tục chỉ bằng chạm đơn.
-        lastTapRef.current = 0;
-        autoTranslateRef.current = false;
-        // Bật/tắt: đang ghi thì chạm đúp lần nữa là dừng.
-        toggleSpeech();
+        if (isDoubleTap) {
+            // ĐANG ghi (vừa vào bằng chạm đúp trước đó) → chạm đúp lần nữa là
+            // dừng. `preventDefault` để `pointerdown` không kéo theo focus —
+            // bàn phím ảo bật lên là che mất nửa màn hình lúc đang nói. Phải
+            // chặn ở `pointerdown`, không phải `click`: focus đến từ chính sự
+            // kiện này.
+            e.preventDefault();
+            document.getElementById('search-input')?.blur();
+            // Đặt lại mốc: không thì chạm lần thứ ba lại ghép cặp với lần thứ
+            // hai, bật/tắt liên tục chỉ bằng chạm đơn.
+            lastTapRef.current = 0;
+            autoTranslateRef.current = false;
+            // Cử chỉ GIỮ có thể đã hẹn giờ ở lần chạm đầu của cặp này — huỷ đi,
+            // không thì 350ms sau nó bật micro đè lên đúng cái ta vừa tắt.
+            searchHoldRef.current.keyUp();
+            toggleSpeech();
+            return;
+        }
+
+        // Chạm đơn: bắt đầu đếm cho cử chỉ GIỮ. Chưa đủ 350ms mà nhả tay thì
+        // `keyUp` bên dưới không kích hoạt gì, ô bung ra như thường.
+        searchHoldRef.current.keyDown({ target: e.currentTarget });
     }, [isInPractice, searchFocused, speechSupported, toggleSpeech]);
+
+    const handleSearchPointerUp = useCallback((e) => {
+        if (!searchHoldRef.current) return;
+        const wasHeld = searchHoldRef.current.isActive();
+        searchHoldRef.current.keyUp();
+        // Đã là cử chỉ GIỮ thì chặn luôn việc ô bung ra: `pointerup` trên input
+        // kéo theo focus, mà lúc này người dùng vừa nói xong chứ không định gõ.
+        // Chạm nhanh thì không chặn gì — input tự nhận focus như thường.
+        if (wasHeld) e.preventDefault();
+    }, []);
 
     /**
      * Đóng ô tìm: xoá chữ, dọn kết quả, và THU ô lại.
@@ -659,11 +695,19 @@ export default function TopNav() {
                         onFocus={() => { setSearchReadOnly(false); setSearchFocused(true); }}
                         onMouseDown={() => setSearchReadOnly(false)}
                         onBlur={() => setSearchFocused(false)}
-                        // Chạm mở ô · chạm đúp thì ghi âm (chỉ khi ô đang thu).
-                        // Không cần `onPointerUp`/`Leave`/`Cancel` nữa: chạm đúp
-                        // là bật/tắt, xong ngay trong `pointerdown`, không có
-                        // trạng thái "đang giữ" nào phải dọn khi nhả tay.
+                        // Chạm mở ô · GIỮ hoặc CHẠM ĐÚP thì ghi âm (khi ô đang thu).
                         onPointerDown={handleSearchPointerDown}
+                        onPointerUp={handleSearchPointerUp}
+                        // Kéo ngón ra ngoài rồi nhả: `pointerup` bắn ở chỗ khác,
+                        // không có dòng này là micro chạy mãi.
+                        onPointerLeave={handleSearchPointerUp}
+                        onPointerCancel={handleSearchPointerUp}
+                        // Chặn menu "Bôi đen / Dán" của hệ điều hành khi GIỮ lâu.
+                        // Đây là thứ làm cử chỉ giữ hỏng trên điện thoại: menu
+                        // bật lên cướp cử chỉ, ô nhập giật rồi tự đóng. Chỉ chặn
+                        // khi ô ĐANG THU — ô đã bung thì người dùng đang gõ, cướp
+                        // mất menu dán là rất khó chịu.
+                        onContextMenu={(e) => { if (!searchFocused) e.preventDefault(); }}
                         onKeyDown={(e) => {
                             // Esc → xoá ô tìm kiếm và bỏ focus. Đặt TRƯỚC nhánh Enter
                             // vì đây là lối thoát, phải luôn chạy được.

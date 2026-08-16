@@ -862,6 +862,24 @@
         display: none;
     }
 
+    /* Ô tìm ĐANG THU: chặn hệ điều hành cướp cử chỉ GIỮ.
+
+       Giữ lâu trên một <input> thì iOS/Android hiểu là "bôi đen / dán": menu
+       bật lên, ô nhập giật rồi tự đóng — cử chỉ giữ để nói coi như hỏng.
+       `onContextMenu` trong JSX một mình KHÔNG đủ trên iOS, phải có cả ba dòng
+       dưới đây.
+
+       Chỉ áp khi ô còn THU (`:not(.search-active)`). Ô đã bung là người dùng
+       đang gõ — cướp mất quyền bôi đen/dán ở đó thì không sửa được chữ nữa. */
+    .top-nav:not(.search-active) .search-bar input {
+        -webkit-user-select: none;
+        user-select: none;
+        -webkit-touch-callout: none;
+        /* Chặn luôn thao tác chạm đúp-để-phóng của trình duyệt, vì chạm đúp ở
+           đây là cử chỉ ghi âm. */
+        touch-action: manipulation;
+    }
+
     /* ĐANG GHI ÂM lúc ô còn thu: tô chính nút kính lúp thành đỏ + vòng nhấp
        nháy. Không có dấu hiệu này thì người dùng giữ tay mà chẳng thấy gì đổi,
        không biết máy đã nghe chưa — đúng vấn đề đã sửa cho popup Dịch nhanh. */

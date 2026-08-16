@@ -4,18 +4,24 @@
  * Trước đây đó là hai đích chạm nằm cạnh nhau (kính lúp + mic) trên một hàng
  * nav vốn đã chật. Gộp lại còn một chỗ, hai ý định.
  *
- * Bản đầu dùng cử chỉ GIỮ, đổi sang chạm đúp vì giữ có hai điểm dở trên điện
- * thoại: phải giữ tay suốt lúc nói (dài một câu là mỏi), và giữ lâu trên input
- * dễ bị hệ điều hành hiểu thành "bôi đen / dán". Chạm đúp là BẬT/TẮT.
+ * HAI lối ghi âm, cố ý để cả hai:
+ *   · GIỮ rồi nhả — nói nhanh một hai từ, nhả tay là xong.
+ *   · CHẠM ĐÚP (bật/tắt) — nói câu dài khỏi phải giữ tay mỏi.
  *
- * Bốn chỗ dễ hỏng:
+ * Cử chỉ GIỮ từng hỏng trên điện thoại: hệ điều hành hiểu thành "bôi đen /
+ * dán", ô nhập giật rồi tự đóng. Không phải lỗi của cử chỉ mà là thiếu chặn
+ * hành vi mặc định — nên sửa bằng `onContextMenu` + CSS, chứ không bỏ cử chỉ.
+ *
+ * Năm chỗ dễ hỏng:
  *   1. Đổi input thu-lại thành <button> cho gọn → trên iOS gọi `focus()` ngoài
  *      cử chỉ chạm trực tiếp thì BÀN PHÍM KHÔNG MỞ. Phải giữ nguyên là input.
- *   2. Không chặn `pointerdown` khi chạm đúp → ô bung ra và bàn phím bật lên
- *      ngay lúc người dùng bắt đầu nói.
- *   3. Bắt cả khi ô ĐÃ BUNG → chạm đúp trên chữ để chọn từ bị cướp mất.
+ *   2. Không chặn `pointerup` sau cử chỉ giữ → ô bung ra và bàn phím bật lên
+ *      ngay khi người dùng vừa nói xong.
+ *   3. Bắt cả khi ô ĐÃ BUNG → giữ lâu trên chữ để bôi đen bị cướp mất.
  *   4. Không có dấu hiệu đang ghi → chạm xong chẳng thấy gì đổi, không biết
  *      máy đã nghe chưa (đúng vấn đề đã sửa cho popup Dịch nhanh).
+ *   5. Chạm đúp không huỷ bộ đếm GIỮ đang chờ → 350ms sau micro bật lại đè
+ *      lên đúng cái vừa tắt.
  */
 import { describe, test, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
@@ -36,44 +42,88 @@ describe('giữ nguyên input, không đổi thành button', () => {
     });
 });
 
-describe('cử chỉ CHẠM ĐÚP trên ô tìm', () => {
-    test('chỉ cần onPointerDown', () => {
-        // Chạm đúp xong ngay trong `pointerdown` — không có trạng thái "đang
-        // giữ" nào phải dọn khi nhả tay, nên KHÔNG cần up/leave/cancel.
-        const i = src.indexOf('id="search-input"');
-        const block = src.slice(i, i + 2200);
-        expect(block).toMatch(/onPointerDown=\{handleSearchPointerDown\}/);
-    });
-
-    test('bỏ hẳn handler của cử chỉ giữ', () => {
-        // Để lại hàm rỗng thì lần sau đọc mã tưởng còn dùng.
-        expect(src).not.toMatch(/handleSearchPointerUp/);
-        expect(src).not.toMatch(/searchHoldRef/);
-    });
-
-    test('đo bằng mốc thời gian giữa hai lần chạm', () => {
-        expect(src).toMatch(/const DOUBLE_TAP_MS = \d+/);
-        expect(src).toMatch(/now - lastTapRef\.current < DOUBLE_TAP_MS/);
-    });
-
-    test('chạm ĐƠN không ghi âm — để ô bung ra như thường', () => {
-        expect(src).toMatch(/if \(!isDoubleTap\) return;/);
-    });
-
-    test('BẬT/TẮT: chạm đúp lần nữa là dừng', () => {
-        // Người dùng chọn kiểu bật/tắt để không phải giữ tay suốt lúc nói.
+describe('HAI lối ghi âm: giữ và chạm đúp', () => {
+    /** Thân `handleSearchPointerDown`. */
+    const downBody = (() => {
         const i = src.indexOf('const handleSearchPointerDown');
-        const body = src.slice(i, src.indexOf('}, [isInPractice', i));
-        expect(body).toMatch(/toggleSpeech\(\)/);
-        expect(body).not.toMatch(/startSpeech\(\)/);
+        expect(i).toBeGreaterThan(-1);
+        const j = src.indexOf('}, [isInPractice', i);
+        expect(j).toBeGreaterThan(i);
+        return src.slice(i, j);
+    })();
+
+    test('nối đủ 4 sự kiện pointer cho cử chỉ GIỮ', () => {
+        const i = src.indexOf('id="search-input"');
+        const block = src.slice(i, i + 2600);
+        for (const ev of ['onPointerDown', 'onPointerUp', 'onPointerLeave', 'onPointerCancel']) {
+            expect(block, `thiếu ${ev}`).toMatch(new RegExp(`${ev}=\\{handleSearch`));
+        }
+    });
+
+    test('kéo ngón ra ngoài rồi nhả vẫn dừng micro', () => {
+        // `pointerup` bắn ở chỗ khác — thiếu `onPointerLeave` là micro chạy mãi.
+        expect(src).toMatch(/onPointerLeave=\{handleSearchPointerUp\}/);
+    });
+
+    test('GIỮ dùng lại createHoldGesture, không tự đếm giờ', () => {
+        expect(src).toMatch(/searchHoldRef\.current = createHoldGesture\(\{/);
+        expect(src).toMatch(/thresholdMs: 350/);
+    });
+
+    test('CHẠM ĐÚP đo bằng mốc thời gian giữa hai lần chạm', () => {
+        expect(src).toMatch(/const DOUBLE_TAP_MS = \d+/);
+        expect(downBody).toMatch(/now - lastTapRef\.current < DOUBLE_TAP_MS/);
+    });
+
+    test('chạm ĐƠN khởi động bộ đếm GIỮ, không ghi âm ngay', () => {
+        expect(downBody).toMatch(/searchHoldRef\.current\.keyDown\(/);
+    });
+
+    test('chạm đúp là BẬT/TẮT', () => {
+        expect(downBody).toMatch(/toggleSpeech\(\)/);
+    });
+
+    test('chạm đúp HUỶ bộ đếm giữ đang chờ', () => {
+        // Lần chạm đầu của cặp đã hẹn giờ giữ; không huỷ thì 350ms sau nó bật
+        // micro đè lên đúng cái vừa tắt.
+        const i = downBody.indexOf('if (isDoubleTap)');
+        const body = downBody.slice(i);
+        expect(body).toMatch(/searchHoldRef\.current\.keyUp\(\)/);
     });
 
     test('đặt lại mốc sau khi kích hoạt', () => {
         // Không đặt lại thì chạm lần thứ BA lại ghép cặp với lần thứ hai —
         // bật/tắt liên tục chỉ bằng chạm đơn.
-        const i = src.indexOf('const handleSearchPointerDown');
-        const body = src.slice(i, src.indexOf('}, [isInPractice', i));
-        expect(body).toMatch(/lastTapRef\.current = 0;/);
+        expect(downBody).toMatch(/lastTapRef\.current = 0;/);
+    });
+});
+
+/**
+ * Cử chỉ GIỮ từng HỎNG trên điện thoại: giữ lâu trên <input> thì iOS/Android
+ * hiểu là "bôi đen / dán" — menu bật lên cướp cử chỉ, ô nhập giật rồi tự đóng.
+ *
+ * Không phải lỗi của cử chỉ mà là thiếu chặn hành vi mặc định. `onContextMenu`
+ * một mình KHÔNG đủ trên iOS, phải có cả ba thuộc tính CSS.
+ */
+describe('không để hệ điều hành cướp cử chỉ giữ', () => {
+    test('chặn menu ngữ cảnh khi ô đang THU', () => {
+        expect(src).toMatch(/onContextMenu=\{\(e\) => \{ if \(!searchFocused\) e\.preventDefault\(\); \}\}/);
+    });
+
+    test('CSS chặn bôi đen + callout + chạm đúp phóng to', () => {
+        const r = css.match(
+            /\.top-nav:not\(\.search-active\) \.search-bar input\s*\{([^}]*)\}/);
+        expect(r, 'thiếu quy tắc chặn thao tác chạm').toBeTruthy();
+        expect(r[1]).toMatch(/user-select:\s*none/);
+        expect(r[1]).toMatch(/-webkit-touch-callout:\s*none/);
+        expect(r[1]).toMatch(/touch-action:\s*manipulation/);
+    });
+
+    test('CHỈ chặn khi ô còn thu, không chặn lúc đang gõ', () => {
+        // Ô đã bung là người dùng đang gõ — cướp mất quyền bôi đen/dán ở đó thì
+        // không sửa được chữ nữa.
+        expect(css).toMatch(/\.top-nav:not\(\.search-active\) \.search-bar input/);
+        expect(css).not.toMatch(/^\s*\.search-bar input\s*\{[^}]*user-select:\s*none/m);
     });
 });
 
@@ -88,8 +138,15 @@ describe('chỉ bắt khi ô đang THU', () => {
     });
 });
 
-describe('chạm đúp KHÔNG bung ô ra', () => {
-    test('chặn hành vi mặc định ngay ở pointerdown', () => {
+describe('ghi âm xong KHÔNG bung ô ra', () => {
+    test('GIỮ: chặn ở pointerup', () => {
+        // Không chặn thì `pointerup` kéo theo focus → bàn phím bật lên ngay khi
+        // người dùng vừa nói xong.
+        expect(src).toMatch(/const wasHeld = searchHoldRef\.current\.isActive\(\)/);
+        expect(src).toMatch(/if \(wasHeld\) e\.preventDefault\(\)/);
+    });
+
+    test('CHẠM ĐÚP: chặn ngay ở pointerdown', () => {
         // Focus đến từ chính `pointerdown`, nên phải chặn ở đó — chặn ở `click`
         // là muộn, bàn phím ảo đã bật lên che mất nửa màn hình lúc đang nói.
         const i = src.indexOf('const handleSearchPointerDown');
