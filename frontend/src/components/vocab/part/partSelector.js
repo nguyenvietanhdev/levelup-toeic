@@ -413,14 +413,13 @@ export const PartSelector = {
     },
 
     updatePartBadge() {
-        const badge = document.getElementById('part-badge');
-        const badgeText = document.getElementById('part-badge-text');
-        if (this.selectedPart) {
-            if (badge) badge.style.display = 'flex';
-            if (badgeText) badgeText.textContent = this.selectedPart;
-        } else {
-            if (badge) badge.style.display = 'none';
-        }
+        // KHÔNG sờ vào DOM nữa. Thẻ badge do StatusBar (React) render; đặt tay
+        // `style.display` lên nó thì lần render sau React ghi đè về giá trị
+        // trong JSX và badge biến mất bất chợt. Lúc khởi động còn tệ hơn: hàm
+        // này chạy trước khi StatusBar kịp gắn vào cây nên ghi vào hư không.
+        //
+        // `updateSessionBadge()` đồng bộ `settings.selectedPart` rồi phát sự
+        // kiện — React tự đọc và hiện đúng.
         this.updateSessionBadge();
     },
 

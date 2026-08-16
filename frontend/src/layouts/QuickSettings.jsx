@@ -53,10 +53,19 @@ export default function QuickSettings({ variant = 'bar' }) {
             const s = GameState.state?.settings || {};
             setQuestionsPerSession(s.questionsPerSession ?? 'auto');
             setDifficulty(s.difficulty || 'adaptive');
+            // `vocabLang` cũng phải đọc lại. `useState` chỉ chạy lúc gắn vào
+            // cây, mà lúc đó GameState thường CHƯA nạp xong hồ sơ server → chốt
+            // 'en' rồi giữ mãi. Người dùng đang luyện tiếng Trung mà ô trên nav
+            // vẫn hiện "Tiếng Anh", bấm vào là đổi nhầm sang tiếng Anh thật.
+            if (s.vocabLang === 'en' || s.vocabLang === 'zh') setVocabLang(s.vocabLang);
         };
         sync();
         const unsub = EventBus.on(GameEvents.SESSION_BADGE_UPDATED, sync);
-        return () => unsub?.();
+        // Hồ sơ server nạp XONG mới có `vocabLang` thật. `sync()` ở trên chạy
+        // lúc gắn vào cây, thường là TRƯỚC khi init() xong nên đọc phải giá trị
+        // rỗng — không nghe sự kiện này thì ô ngôn ngữ đứng nguyên ở 'en'.
+        const unsubInit = EventBus.on(GameEvents.GAME_INITIALIZED, sync);
+        return () => { unsub?.(); unsubInit?.(); };
     }, []);
 
     // Mốc mở khoá — nạp 1 lần, làm mới khi lên cấp.

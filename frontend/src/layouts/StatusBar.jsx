@@ -19,9 +19,28 @@ function computeSessionLabel() {
 export default function StatusBar() {
     const { user, resources } = useGame();
     const [sessionLabel, setSessionLabel] = useState(computeSessionLabel);
+    // Part đang chọn — do REACT giữ, không để vanilla JS sờ vào DOM.
+    //
+    // Trước đây `PartSelector.updatePartBadge()` tự đặt `style.display` lên thẻ
+    // này. Nhưng React render lại là ghi đè về `display:none` (giá trị trong
+    // JSX), nên badge biến mất bất chợt — và lúc khởi động thì
+    // `loadSelectedPart()` còn chạy TRƯỚC khi StatusBar kịp gắn vào cây, ghi
+    // vào một thẻ chưa tồn tại rồi thôi.
+    const [selectedPart, setSelectedPart] = useState(
+        () => GameState.state?.settings?.selectedPart || null);
     const hidden = useHideOnScrollDown();
 
-    const refreshSessionLabel = useCallback(() => setSessionLabel(computeSessionLabel()), []);
+    const refreshSessionLabel = useCallback(() => {
+        setSessionLabel(computeSessionLabel());
+        setSelectedPart(GameState.state?.settings?.selectedPart || null);
+    }, []);
+
+    // Nạp động: `partSelector` kéo theo cả cụm chọn đề, import thẳng ở đây là
+    // buộc nó vào chunk khởi động (và dễ thành vòng import qua GameState).
+    const handleClearPart = useCallback(async () => {
+        const { PartSelector } = await import('@components/vocab/part/partSelector.js');
+        await PartSelector.clearPart();
+    }, []);
 
     useEffect(() => {
         refreshSessionLabel();
@@ -54,14 +73,20 @@ export default function StatusBar() {
             inert={hidden}
         >
             <div className="status-bar-left">
-                {/* Always rendered so vanilla JS can show/hide via style.display */}
-                <div id="part-badge" className="part-badge" style={{ display: 'none' }}>
-                    <i className="fas fa-layer-group"></i>
-                    <span id="part-badge-text"></span>
-                    <button className="part-badge-close" id="clear-part-btn" title="Xóa Part">
-                        <i className="fas fa-times"></i>
-                    </button>
-                </div>
+                {selectedPart && (
+                    <div id="part-badge" className="part-badge">
+                        <i className="fas fa-layer-group"></i>
+                        <span id="part-badge-text">{selectedPart}</span>
+                        <button
+                            className="part-badge-close"
+                            id="clear-part-btn"
+                            title="Xóa Part"
+                            onClick={handleClearPart}
+                        >
+                            <i className="fas fa-times"></i>
+                        </button>
+                    </div>
+                )}
                 <div className="status-bar-divider"></div>
                 <div className="resource energy-display" title={energyTitle}>
                     <i className="fas fa-bolt"></i>
