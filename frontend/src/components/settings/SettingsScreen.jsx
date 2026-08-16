@@ -559,6 +559,7 @@ export default function SettingsScreen({ active }) {
                                         showPwd={showPwd}
                                         setShowPwd={setShowPwd}
                                         handleChangePassword={handleChangePassword}
+                                        isGoogleAccount={!!GameState.state?.user?.isGoogleAccount}
                                         s={s}
                                         updateSetting={updateSetting}
                                         handleBackup={handleBackup}

@@ -15,6 +15,7 @@ export default function AccountPanel({
     showPwd,
     setShowPwd,
     handleChangePassword,
+    isGoogleAccount,
     s,
     updateSetting,
     handleBackup,
@@ -26,6 +27,18 @@ export default function AccountPanel({
         <>
             <div className="settings-section">
                 <h3>Đổi mật khẩu</h3>
+                {/* Tài khoản Google KHÔNG có mật khẩu. Hiện form ra là mời người
+                    dùng gõ vào một ô không bao giờ đúng — họ không có "mật khẩu
+                    hiện tại" nào cả. Nói thẳng lý do thay vì ẩn im lặng, vì ẩn
+                    trơn thì lại tưởng app thiếu tính năng. */}
+                {isGoogleAccount ? (
+                    <p className="settings-note">
+                        <i className="fas fa-circle-info"></i>{' '}
+                        Tài khoản này đăng nhập bằng Google nên không dùng mật khẩu.
+                        Đổi mật khẩu ở phần bảo mật của tài khoản Google.
+                    </p>
+                ) : (
+                <>
                 {cpError && <div className="error-msg" style={{ marginBottom: 12 }}>{cpError}</div>}
                 {PASSWORD_FIELDS.map(({ key, placeholder, label }) => (
                     <div key={key} style={{ position: 'relative', marginBottom: 10 }}>
@@ -47,6 +60,8 @@ export default function AccountPanel({
                 <button className="btn btn-primary" style={{ width: '100%' }} onClick={handleChangePassword}>
                     <i className="fas fa-save"></i> Lưu mật khẩu mới
                 </button>
+                </>
+                )}
             </div>
 
             <div className="settings-section">

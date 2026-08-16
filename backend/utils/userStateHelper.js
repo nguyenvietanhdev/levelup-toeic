@@ -164,6 +164,13 @@ async function buildFullState(userId) {
             usernameChangedAt: profile.usernameChangedAt || null,
             email: user.email,
             role: user.role,
+            // Tài khoản đăng nhập bằng Google KHÔNG có mật khẩu. Client cần biết
+            // để ẩn form "Đổi mật khẩu" — hiện ra thì người dùng gõ mãi không
+            // được, vì không có mật khẩu hiện tại nào để mà nhập.
+            //
+            // Trả cờ boolean chứ KHÔNG trả `googleId`: client chỉ cần biết có
+            // mật khẩu hay không, không việc gì phải lộ định danh Google ra.
+            isGoogleAccount: !!user.googleId,
             avatar: profile.avatar,
             level: profile.level,
             xp: stats.xp,

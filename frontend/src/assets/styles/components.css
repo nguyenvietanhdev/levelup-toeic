@@ -4346,6 +4346,27 @@ mark {
   border: 1px solid var(--border-color);
 }
 
+/* Ghi chú giải thích vì sao một mục KHÔNG có gì để chỉnh (vd. tài khoản Google
+   không dùng mật khẩu). Ẩn trơn thì người dùng tưởng app thiếu tính năng. */
+.settings-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 0;
+  padding: 12px 14px;
+  border-radius: var(--border-radius);
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  color: var(--text-secondary);
+  font-size: 0.92em;
+  line-height: 1.5;
+}
+
+.settings-note i {
+  margin-top: 2px;
+  color: var(--primary-color);
+}
+
 .settings-section h3 {
   margin-bottom: var(--spacing-lg);
   padding-bottom: var(--spacing-sm);

@@ -268,6 +268,17 @@ const changePassword = async (req, res, next) => {
         const user = await User.findById(req.user.id).select('+password');
         if (!user) return res.status(404).json({ success: false, message: 'User not found' });
 
+        // Tài khoản Google KHÔNG có mật khẩu (schema chỉ bắt buộc khi thiếu
+        // googleId). Đi tiếp thì `bcrypt.compare(x, undefined)` NÉM LỖI → người
+        // dùng nhận 500 "lỗi máy chủ" thay vì biết là tài khoản mình không dùng
+        // mật khẩu. Chặn ở đây, báo đúng lý do.
+        if (!user.password) {
+            return res.status(400).json({
+                success: false,
+                message: 'Tài khoản đăng nhập bằng Google không dùng mật khẩu',
+            });
+        }
+
         const isMatch = await user.comparePassword(currentPassword);
         if (!isMatch) return res.status(401).json({ success: false, message: 'Current password is incorrect' });
 
