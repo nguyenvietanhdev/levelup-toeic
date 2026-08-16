@@ -850,13 +850,26 @@
         margin-left: 0;
     }
 
-    /* Mic chỉ có nghĩa khi đang gõ/nói → giấu cùng ô tìm.
+    /* Ô tìm đang THU: không có nút mic riêng — GIỮ chính nút kính lúp là ghi âm
+       (xem `handleSearchPointerDown` trong TopNav.jsx). Hai đích chạm cạnh nhau
+       trên một hàng nav vốn đã chật là rườm rà; gộp lại còn một chỗ, hai ý định:
+       chạm mở ô, giữ thì nói.
        Nút sáng/tối thì KHÁC: nó ở lại nav, chiếm chỗ nút yêu thích. Yêu thích
        vào được qua menu bên; còn đổi nền là thứ hay dùng ngay tại chỗ.
        Vị trí thứ 4 (không phải cuối hàng): mép phải là nơi Android vuốt Back,
        để nút ở đó là dễ chạm nhầm. */
     .mic-btn {
         display: none;
+    }
+
+    /* ĐANG GHI ÂM lúc ô còn thu: tô chính nút kính lúp thành đỏ + vòng nhấp
+       nháy. Không có dấu hiệu này thì người dùng giữ tay mà chẳng thấy gì đổi,
+       không biết máy đã nghe chưa — đúng vấn đề đã sửa cho popup Dịch nhanh. */
+    .top-nav:not(.search-active) .search-bar.is-recording > .fa-search {
+        background: var(--primary-color);
+        color: #fff;
+        border-color: var(--primary-color);
+        animation: micPulse 1.2s ease-out infinite;
     }
 
     #nav-favorite-btn {
@@ -941,7 +954,9 @@
     .top-nav.search-active .search-bar input {
         color: var(--text-primary);
         caret-color: var(--text-primary);
-        padding: 8px 40px 8px 35px;
+        /* Lề phải 62px chừa chỗ cho HAI nút (xoá + đóng). Để 40px như bản một
+           nút thì chữ gõ tới nơi là chui xuống dưới icon, đọc ra chữ chồng chữ. */
+        padding: 8px 62px 8px 35px;
         text-align: left;
         /* Trả lại viền + nền của ô nhập (lúc thu cả hai đều trong suốt —
            khi đó chỉ có vòng tròn quanh icon là thứ nhìn thấy). */

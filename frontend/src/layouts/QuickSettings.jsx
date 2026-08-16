@@ -142,7 +142,11 @@ export default function QuickSettings({ variant = 'bar' }) {
     const handleReverse = (next) => {
         if (next === reverseMode) return;
         setReverseMode(next);
+        // localStorage cho `gameLogic.isReversed()` (đọc đồng bộ), GameState để
+        // đồng bộ lên server — thiếu vế sau là máy khác không thấy lựa chọn này.
         localStorage.setItem('reverseMode', String(next));
+        GameState.state.settings.reverseMode = next;
+        GameState.save?.();
         Notification.success(next
             ? 'Đảo chiều: hỏi bằng Tiếng Việt → trả lời bằng từ đang học'
             : 'Chiều thường: hỏi bằng từ đang học → trả lời bằng Tiếng Việt');

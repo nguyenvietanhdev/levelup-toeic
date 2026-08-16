@@ -1631,6 +1631,31 @@
     background: var(--border-color);
 }
 
+/* HAI nút cùng dùng `.clear-search-btn` nên cùng ghim `right: 8px` — chồng khít
+   lên nhau. Đẩy nút ĐÓNG ra ngoài cùng, nút xoá lùi vào trong.
+   Đẩy nút đóng (chứ không phải nút xoá) vì nó LUÔN hiện, còn nút xoá chỉ có khi
+   có chữ: neo cái luôn-hiện vào mép thì vị trí của nó không nhảy khi chữ mất. */
+.close-search-btn {
+    right: 8px;
+}
+
+/* Có nút đóng thì nút xoá lùi vào — 30px = bề rộng nút (~26px) + khoảng thở. */
+.search-bar:has(.close-search-btn) .clear-search-btn:not(.close-search-btn) {
+    right: 30px;
+}
+
+/* Chữ trong ô không được chui xuống dưới hai nút. Không chừa chỗ thì từ dài gõ
+   tới nơi là nằm ngay dưới icon, đọc ra chữ chồng chữ. */
+.search-bar:has(.close-search-btn) input {
+    padding-right: 58px;
+}
+
+/* Nút xoá dùng màu cảnh báo khi rê chuột — nó làm mất dữ liệu đang gõ, khác với
+   nút đóng chỉ thu ô lại. */
+#clear-search-btn:hover {
+    color: var(--error-color, #ef4444);
+}
+
 /* ── Nút micro ────────────────────────────────────────────────────────────────
    Là ANH EM của ô tìm trong DOM, không phải con của nó — để trên điện thoại nó
    vẫn bấm được khi ô tìm đã thu thành nút kính lúp (xem responsive.css).

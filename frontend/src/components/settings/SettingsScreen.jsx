@@ -5,6 +5,7 @@ import { GameState } from '@game/state.js';
 import { GameLogic } from '@game/gameLogic.js';
 import { API } from '@api/http.js';
 import { Notification } from '@ui/Toaster.jsx';
+import { Storage } from '@lib/storage.js';
 import { Modal } from '@ui/Modal.jsx';
 import { PartSelector } from '@components/vocab/part/partSelector.js';
 import { ReportsAPI } from '@api/reports.js';
@@ -97,6 +98,8 @@ export default function SettingsScreen({ active }) {
     };
 
     const [voices, setVoices] = useState([]);
+    // Đang tải lại cài đặt từ server — khoá nút và quay icon.
+    const [reloading, setReloading] = useState(false);
     // Giọng EN và ZH lưu riêng — backward compat: nếu chưa có key mới thì đọc key cũ
     const [selectedVoiceEn, setSelectedVoiceEn] = useState(() =>
         localStorage.getItem('toeic_voice_en') || localStorage.getItem('toeic_voice') || '__gtts_random__'
@@ -128,8 +131,13 @@ export default function SettingsScreen({ active }) {
     const [reportImageName, setReportImageName] = useState('');
     const [reportSubmitting, setReportSubmitting] = useState(false);
 
-    useEffect(() => {
-        if (!active) return;
+    /**
+     * Đổ cài đặt từ `GameState` ra giao diện.
+     *
+     * Tách riêng để dùng ở HAI chỗ: lúc mở màn, và lúc bấm nút Tải lại. Chép tay
+     * hai bản thì sửa một chỗ là hai lối lệch nhau.
+     */
+    const syncFromGameState = useCallback(() => {
         const st = GameState.state.settings || {};
         try {
             const local = JSON.parse(localStorage.getItem('userSettings') || '{}');
@@ -158,7 +166,44 @@ export default function SettingsScreen({ active }) {
             setSpeechRate(st.speechRate);
             localStorage.setItem('toeic_speech_rate', String(st.speechRate));
         }
-    }, [active]);
+    }, []);
+
+    useEffect(() => {
+        if (!active) return;
+        syncFromGameState();
+    }, [active, syncFromGameState]);
+
+    /**
+     * Tải lại cài đặt TỪ SERVER.
+     *
+     * `syncFromGameState` chỉ đọc bản trong bộ nhớ — đổi cài đặt ở máy khác thì
+     * nó không thấy. Phải kéo hồ sơ mới về trước.
+     *
+     * Dùng `Storage.get('gameState')` chứ KHÔNG gọi `GameState.init()`: hàm đó
+     * còn hồi năng lượng, chuẩn hoá XP, kiểm tra nhiệm vụ ngày… — gọi lại chỉ để
+     * làm mới vài ô cài đặt là đụng vào những thứ không liên quan.
+     */
+    const handleReload = useCallback(async () => {
+        if (reloading) return;
+        setReloading(true);
+        try {
+            const fresh = await Storage.get('gameState');
+            // Server có thể bọc trong `{ success, data }` — cùng cách xử lý với
+            // `GameState.init()`.
+            const clean = fresh?.success && fresh?.data ? fresh.data : fresh;
+            if (clean?.settings) {
+                Object.assign(GameState.state.settings, clean.settings);
+            }
+            syncFromGameState();
+            Notification.success('Đã tải lại cài đặt');
+        } catch {
+            Notification.error('Không tải lại được — kiểm tra kết nối');
+        } finally {
+            // `finally` để cờ luôn được tắt: lỗi mạng mà nhảy qua dòng này là
+            // nút quay mãi, đúng lỗi đã gặp ở popup Chọn đề.
+            setReloading(false);
+        }
+    }, [reloading, syncFromGameState]);
 
     useEffect(() => {
         if (!active || voicesLoaded.current) return;
@@ -213,7 +258,11 @@ export default function SettingsScreen({ active }) {
 
     const handleReverseMode = (val) => {
         setReverseMode(val);
+        // Ghi CẢ HAI nơi: localStorage cho `gameLogic.isReversed()` đọc đồng bộ
+        // (nó chạy trong vòng sinh câu hỏi, không await được), và server để máy
+        // khác cũng thấy.
         localStorage.setItem('reverseMode', val);
+        updateSetting('reverseMode', val);
         Notification.success(val ? 'Chế độ VN → EN đã bật' : 'Chế độ EN → VN đã bật');
     };
 
@@ -368,6 +417,19 @@ export default function SettingsScreen({ active }) {
                     <i className="fas fa-arrow-left"></i>
                 </button>
                 <h2><i className="fas fa-cog"></i> Cài đặt</h2>
+                {/* Tải lại — cùng chỗ, cùng icon với nút Tải lại ở các popup
+                    khác. Cần khi đổi cài đặt ở máy/tab khác: màn này đọc từ
+                    `GameState` trong bộ nhớ nên không tự thấy thay đổi đó. */}
+                <button
+                    className="icon-btn settings-reload-btn"
+                    type="button"
+                    title="Tải lại cài đặt từ máy chủ"
+                    aria-label="Tải lại cài đặt từ máy chủ"
+                    disabled={reloading}
+                    onClick={handleReload}
+                >
+                    <i className={`fas fa-rotate-right${reloading ? ' fa-spin' : ''}`}></i>
+                </button>
             </div>
 
             {/* Tìm nhanh — 7 nhóm, mỗi nhóm nhiều tuỳ chọn; nhớ cái nào nằm đâu

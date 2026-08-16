@@ -143,3 +143,82 @@ describe('lối thoát khi không khớp gì', () => {
         expect(src).toMatch(/onClick=\{\(\) => setNavQuery\(''\)\}/);
     });
 });
+
+/**
+ * Nút Tải lại ở màn Cài đặt.
+ *
+ * Màn này đọc cài đặt từ `GameState` trong BỘ NHỚ, nên đổi ở máy/tab khác thì
+ * nó không tự thấy — phải F5 cả trang mới có.
+ *
+ * Ba chỗ dễ hỏng:
+ *   1. Chỉ gọi lại hàm đồng bộ là vô nghĩa — nó đọc đúng bản cũ trong bộ nhớ.
+ *      Phải kéo hồ sơ MỚI từ server trước.
+ *   2. Gọi `GameState.init()` cho tiện: hàm đó còn hồi năng lượng, chuẩn hoá
+ *      XP, kiểm nhiệm vụ ngày… — đụng vào những thứ không liên quan.
+ *   3. Không tắt cờ trong `finally` → lỗi mạng là nút quay mãi (đúng lỗi đã gặp
+ *      ở popup Chọn đề).
+ */
+describe('nút Tải lại cài đặt', () => {
+    const screen = readFileSync(join(__dirname, 'SettingsScreen.jsx'), 'utf8');
+
+    test('có nút ở hàng tiêu đề', () => {
+        expect(screen).toMatch(/className="icon-btn settings-reload-btn"/);
+        expect(screen).toMatch(/fa-rotate-right/);
+    });
+
+    test('kéo hồ sơ MỚI từ server, không chỉ đọc lại bộ nhớ', () => {
+        expect(screen).toMatch(/await Storage\.get\('gameState'\)/);
+    });
+
+    test('KHÔNG gọi GameState.init()', () => {
+        // Hàm đó hồi năng lượng, chuẩn hoá XP, kiểm nhiệm vụ ngày — quá tay cho
+        // một nút làm mới vài ô cài đặt.
+        // Bỏ COMMENT trước khi dò: lời chú thích trong hàm có nhắc tới
+        // `GameState.init()` để giải thích vì sao KHÔNG dùng nó — dò thẳng là
+        // đọc trúng chính lời văn của mình và test đỏ oan.
+        const i = screen.indexOf('const handleReload');
+        const j = screen.indexOf('}, [reloading, syncFromGameState]);', i);
+        expect(j).toBeGreaterThan(i);
+        const body = screen.slice(i, j)
+            .replace(/\/\*[\s\S]*?\*\//g, '')
+            .split('\n')
+            .filter((l) => !/^\s*\/\//.test(l))
+            .join('\n');
+        expect(body).not.toMatch(/GameState\.init\(\)/);
+    });
+
+    test('gỡ lớp bọc { success, data } của server', () => {
+        // Cùng cách xử lý với `GameState.init()`; thiếu thì `clean.settings`
+        // luôn undefined và nút không làm gì cả.
+        expect(screen).toMatch(/fresh\?\.success && fresh\?\.data \? fresh\.data : fresh/);
+    });
+
+    test('tắt cờ trong finally — không để nút quay mãi', () => {
+        const i = screen.indexOf('const handleReload');
+        const body = screen.slice(i, i + 900);
+        expect(body).toMatch(/finally \{[^}]*setReloading\(false\)/);
+    });
+
+    test('chặn bấm dồn khi đang tải', () => {
+        expect(screen).toMatch(/if \(reloading\) return;/);
+        expect(screen).toMatch(/disabled=\{reloading\}/);
+    });
+
+    test('dùng CHUNG hàm đồng bộ với lúc mở màn', () => {
+        // Chép tay hai bản thì sửa một chỗ là hai lối lệch nhau.
+        expect(screen).toMatch(/const syncFromGameState = useCallback/);
+        const hits = screen.match(/syncFromGameState\(\)/g) || [];
+        expect(hits.length).toBeGreaterThanOrEqual(2);
+    });
+
+    test('báo kết quả cho người dùng', () => {
+        const i = screen.indexOf('const handleReload');
+        const body = screen.slice(i, i + 900);
+        expect(body).toMatch(/Notification\.success/);
+        expect(body).toMatch(/Notification\.error/);
+    });
+
+    test('nút đẩy về mép phải, không dính vào tiêu đề', () => {
+        expect(css).toMatch(/\.settings-reload-btn\s*\{[^}]*margin-left:\s*auto/);
+    });
+});

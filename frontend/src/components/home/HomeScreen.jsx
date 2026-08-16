@@ -12,6 +12,7 @@ import { Utils } from '@lib/utils.js';
 import { Config } from '@game/config.js';
 import { Notification } from '@ui/Toaster.jsx';
 import { loadUnlocks, lockInfo } from '@game/featureUnlocks.js';
+import { Storage } from '@lib/storage.js';
 import { getVocabLang } from '@api/vocabulary.js';
 
 // 4 tầng ĐỘ KHÓ (màu = độ khó): 🟢 Dễ < 🔵 Trung bình < 🟣 Khó < 🔴 Thử thách.
@@ -24,6 +25,20 @@ const C_MAX  = '#ef4444, #dc2626';   // đỏ
 // Chế độ khách (chưa đăng nhập) được dùng thử — 3 chế độ cơ bản nhất. Bấm chế
 // độ khác thì mời đăng nhập. Đủ để nếm trải nghiệm mà vẫn đẩy tạo tài khoản.
 const GUEST_FREE_MODES = new Set(['flashcard', 'multiple-choice', 'matching']);
+
+/**
+ * Nhãn tiếng Việt của một chế độ — dùng cho tooltip nút "Luyện tập ngay".
+ *
+ * Nút này bấm là vào thẳng, không có bước xác nhận. Nói trước sẽ mở chế độ nào
+ * thì người dùng không bị bất ngờ khi nó không còn là Trắc nghiệm nữa.
+ */
+function modeLabelOf(mode) {
+    for (const g of gameModes) {
+        const m = g.modes.find(x => x.mode === mode);
+        if (m) return m.label;
+    }
+    return mode;
+}
 
 const gameModes = [
     { group: 'Học & Nhận diện từ', icon: 'fa-book-open', modes: [
@@ -160,6 +175,9 @@ export default function HomeScreen({ active }) {
     const [toeicStats, setToeicStats] = useState({ averageAccuracy: 0, totalAttempts: 0 });
     // Nhắc luyện tập: ẩn trong phiên nếu user tự đóng (mỗi phiên reset lại).
     const [reminderDismissed, setReminderDismissed] = useState(false);
+    // Chế độ luyện gần nhất — nút "Luyện tập ngay" mở thẳng chế độ này thay vì
+    // luôn ném vào Trắc nghiệm. `null` = chưa từng luyện, rơi về mặc định.
+    const [lastMode, setLastMode] = useState(null);
     // Tháng đang xem trên lịch streak (mặc định = tháng hiện tại).
     const [calMonth, setCalMonth] = useState(() => {
         const d = new Date();
@@ -218,6 +236,41 @@ export default function HomeScreen({ active }) {
         if (!active) return;
         loadUnlocks(true).then(() => setUnlockTick(t => t + 1));
     }, [active]);
+
+    // Đọc lại chế độ gần nhất MỖI LẦN vào Trang chủ — người dùng vừa luyện xong
+    // một chế độ khác rồi quay về thì nút phải trỏ tới chế độ đó, không phải cái
+    // đọc được lúc mount.
+    useEffect(() => {
+        if (!active) return;
+        let cancelled = false;
+        Storage.get('lastPracticeMode')
+            .then(m => { if (!cancelled && m) setLastMode(m); })
+            .catch(() => { /* không đọc được thì dùng mặc định */ });
+        return () => { cancelled = true; };
+    }, [active]);
+
+    /**
+     * Chế độ mà nút "Luyện tập ngay" sẽ mở.
+     *
+     * Ưu tiên chế độ vừa luyện, nhưng phải KIỂM LẠI trước khi dùng — nút này bấm
+     * là vào thẳng, không có bước chọn nào để người dùng sửa:
+     *  · chế độ đã bị gỡ khỏi danh sách (đổi phiên bản) → không còn tồn tại;
+     *  · khách chưa đăng nhập mà chế độ đó cần tài khoản;
+     *  · chế độ khoá theo Level (tài khoản mới trên máy cũ vẫn còn giá trị lưu).
+     *
+     * Không kiểm thì bấm nút chỉ hiện thông báo "cần đăng nhập / cần Level N" —
+     * đúng về mặt chặn, nhưng người dùng bấm "Luyện tập ngay" mà không luyện
+     * được gì.
+     */
+    const resolvePracticeMode = () => {
+        const FALLBACK = 'multiple-choice';
+        if (!lastMode || lastMode === FALLBACK) return FALLBACK;
+        const exists = gameModes.flatMap(g => g.modes).some(m => m.mode === lastMode);
+        if (!exists) return FALLBACK;
+        if (!isLoggedIn && !GUEST_FREE_MODES.has(lastMode)) return FALLBACK;
+        if (lockInfo(`mode:${lastMode}`).locked) return FALLBACK;
+        return lastMode;
+    };
 
     const handleModeClick = (mode) => {
         const modeConfig = gameModes.flatMap(g => g.modes).find(m => m.mode === mode);
@@ -351,7 +404,11 @@ export default function HomeScreen({ active }) {
                         <strong>Nhắc ôn tập</strong>
                         <span>{reminderText}{wrongWordsCount > 0 ? ` Có ${wrongWordsCount} từ sai đang chờ ôn.` : ''}</span>
                     </div>
-                    <button className="practice-reminder-cta" onClick={() => handleModeClick('multiple-choice')}>
+                    <button
+                        className="practice-reminder-cta"
+                        title={`Mở chế độ ${modeLabelOf(resolvePracticeMode())}`}
+                        onClick={() => handleModeClick(resolvePracticeMode())}
+                    >
                         <i className="fas fa-play"></i> Luyện tập ngay
                     </button>
                     <button className="practice-reminder-close" title="Đóng" onClick={() => setReminderDismissed(true)}>
@@ -369,7 +426,11 @@ export default function HomeScreen({ active }) {
                     <p className="streak-quote">
                         <i className="fas fa-quote-left"></i> {quoteOfTheDay()}
                     </p>
-                    <button className="streak-cta-btn" onClick={() => handleModeClick('multiple-choice')}>
+                    <button
+                        className="streak-cta-btn"
+                        title={`Mở chế độ ${modeLabelOf(resolvePracticeMode())}`}
+                        onClick={() => handleModeClick(resolvePracticeMode())}
+                    >
                         <i className="fas fa-play"></i> Luyện tập ngay
                     </button>
                 </div>

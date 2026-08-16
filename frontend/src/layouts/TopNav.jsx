@@ -120,6 +120,16 @@ export default function TopNav() {
         if (mode) {
             // Chọn đề xong → mở Part selector với pendingMode,
             // PartSelector.selectPart() sẽ emit PRACTICE_REQUESTED sau khi user chọn part.
+            //
+            // Hai popup dùng chung `id="modal-container"`. `TopicModal` gọi
+            // `onSelected()` (hàm này) RỒI mới `onClose()`, mà React gỡ khỏi cây
+            // là việc bất đồng bộ — nên có lúc TỒN TẠI ĐỒNG THỜI hai phần tử
+            // cùng id. Khi đó mọi truy vấn DOM của popup Part trúng cái CŨ: thẻ
+            // Part hiện ra nhưng bấm không ăn, phải đóng rồi mở lại mới chọn được.
+            //
+            // `setTimeout` cho React kịp dọn. Nhưng chỉ dựa vào thời gian là
+            // đoán mò, nên PartSelector còn tự neo truy vấn vào modal CUỐI CÙNG
+            // (xem `root()` trong partSelector.js) — hai lớp cùng chặn.
             setTimeout(() => {
                 PartSelector.pendingMode = mode;
                 PartSelector.showPartSelectionModal();
@@ -292,6 +302,105 @@ export default function TopNav() {
         if (micJustHeldRef.current) { micJustHeldRef.current = false; return; }
         toggleSpeech();
     }, [speechSupported, warnNoSpeech, toggleSpeech]);
+
+    // ── Ô tìm thu lại (điện thoại): CHẠM mở ô, GIỮ thì ghi âm ───────────────
+    //
+    // Trước đây nút kính lúp và nút mic là hai đích chạm nằm cạnh nhau trên một
+    // thanh nav vốn đã chật. Gộp lại: một chỗ chạm, hai ý định.
+    //
+    // Vẫn để nó là INPUT thật (không đổi thành <button>) vì trên iOS gọi
+    // `focus()` ngoài cử chỉ chạm trực tiếp thì bàn phím KHÔNG mở — chạm vào
+    // input là bàn phím bật ngay, đó là lý do bản hiện tại chọn input.
+    const searchHoldRef = useRef(null);
+    const searchHeldRef = useRef(false);
+
+    if (!searchHoldRef.current) {
+        searchHoldRef.current = createHoldGesture({
+            thresholdMs: 350,
+            onStart: () => {
+                searchHeldRef.current = true;
+                // Giữ = ghi âm, KHÔNG phải mở ô nhập. Bỏ tiêu điểm để bàn phím
+                // ảo không bật lên che mất nửa màn hình trong lúc đang nói.
+                document.getElementById('search-input')?.blur();
+                autoTranslateRef.current = false;
+                startSpeech();
+            },
+            onStop: () => stopSpeech(),
+        });
+    }
+
+    const handleSearchPointerDown = useCallback((e) => {
+        // Chỉ áp dụng khi ô ĐANG THU (khổ điện thoại). Ô đã bung thì người dùng
+        // đang gõ, giữ lâu trên chữ là để bôi đen — cướp mất là không sửa được.
+        if (isInPractice || searchFocused) return;
+        if (!speechSupported) return;   // không hỗ trợ thì cứ để chạm mở ô như cũ
+        searchHeldRef.current = false;
+        searchHoldRef.current.keyDown({ target: e.currentTarget });
+    }, [isInPractice, searchFocused, speechSupported]);
+
+    /**
+     * Đóng ô tìm: xoá chữ, dọn kết quả, và THU ô lại.
+     *
+     * Ba việc luôn đi cùng nhau — nút × trước đây chỉ làm việc đầu, nên xoá
+     * xong ô vẫn bung ra chiếm cả hàng nav và người dùng phải chạm ra ngoài mới
+     * đóng được. Còn khi ô rỗng thì nút × biến mất, tức là KHÔNG có cách nào
+     * đóng ngoài việc chạm ra ngoài.
+     *
+     * `blur()` là thứ thu ô lại — `.search-active` gắn theo focus (xem
+     * responsive.css), nên mất focus là ô tự co về nút kính lúp.
+     */
+    /**
+     * Chỉ XOÁ nội dung, GIỮ ô mở và giữ tiêu điểm.
+     *
+     * Khác `closeSearch`: gõ nhầm thì xoá làm lại ngay, không phải mở lại ô rồi
+     * chạm vào để gõ tiếp — nhất là trên iOS, mất tiêu điểm là bàn phím sập
+     * xuống rồi phải chạm lần nữa mới bật lại.
+     */
+    const clearSearchText = useCallback(() => {
+        setSearchQuery('');
+        window._reactClearSearch?.();
+        // KHÔNG blur: ô ở nguyên trạng thái mở, con trỏ vẫn trong ô.
+        document.getElementById('search-input')?.focus();
+    }, []);
+
+    const closeSearch = useCallback(() => {
+        setSearchQuery('');
+        window._reactClearSearch?.();
+        document.getElementById('search-input')?.blur();
+    }, []);
+
+    /**
+     * Nuốt đúng MỘT cú `click` sắp tới — chống bấm xuyên thấu.
+     *
+     * Nút × bị gỡ khỏi DOM ngay khi ô đóng (điều kiện hiện nó phụ thuộc
+     * `searchFocused`). Lúc ngón tay nhấc lên, trình duyệt bắn `click` vào phần
+     * tử đang nằm ở TOẠ ĐỘ đó — giờ là thẻ chế độ luyện tập bên dưới, nên bấm ×
+     * lại mở luôn Flashcard.
+     *
+     * Chỉ gọi từ đường CHẠM. Phím Escape cũng đóng ô nhưng không sinh `click`
+     * nào — gọi ở đó là nuốt oan cú bấm hợp lệ kế tiếp của người dùng.
+     */
+    const swallowNextClick = useCallback(() => {
+        const swallow = (ev) => {
+            ev.stopPropagation();
+            ev.preventDefault();
+        };
+        // `capture: true` để bắt TRƯỚC khi sự kiện tới đích; `once` tự gỡ sau
+        // một lần. Kèm hẹn giờ dọn cho trường hợp chạm rồi kéo ngón ra ngoài —
+        // lúc đó KHÔNG có `click` nào bắn và listener sẽ nằm lại vĩnh viễn.
+        window.addEventListener('click', swallow, { capture: true, once: true });
+        setTimeout(() => window.removeEventListener('click', swallow, { capture: true }), 400);
+    }, []);
+
+    const handleSearchPointerUp = useCallback((e) => {
+        if (!searchHoldRef.current) return;
+        const wasHeld = searchHoldRef.current.isActive();
+        searchHoldRef.current.keyUp();
+        // Đã là cử chỉ GIỮ thì chặn luôn việc ô bung ra: `pointerup` trên input
+        // sẽ kéo theo focus, mà lúc này người dùng vừa nói xong chứ không định
+        // gõ. Chạm nhanh thì không chặn gì — input tự nhận focus như thường.
+        if (wasHeld) e.preventDefault();
+    }, []);
 
     // GIỮ Shift để nói, thả ra thì dừng — và thả xong TỰ MỞ popup dịch với nội
     // dung vừa nói (xem autoTranslateRef trong onStateChange). Dùng được ở bất kỳ
@@ -525,7 +634,10 @@ export default function TopNav() {
             </div>
 
             <div className="nav-center">
-                <div className={`search-bar ${isInPractice ? 'disabled' : ''}`}>
+                {/* `is-recording`: ô còn THU mà đang ghi âm → tô đỏ chính nút
+                    kính lúp (xem responsive.css). Không có dấu hiệu thì người
+                    dùng giữ tay mà chẳng thấy gì đổi, không biết máy nghe chưa. */}
+                <div className={`search-bar ${isInPractice ? 'disabled' : ''}${speechOn && !searchFocused ? ' is-recording' : ''}`}>
                     <i className={`fas ${isInPractice ? 'fa-lock' : 'fa-search'}`}></i>
                     <input
                         type="text"
@@ -545,14 +657,22 @@ export default function TopNav() {
                         onFocus={() => { setSearchReadOnly(false); setSearchFocused(true); }}
                         onMouseDown={() => setSearchReadOnly(false)}
                         onBlur={() => setSearchFocused(false)}
+                        // Chạm mở ô · giữ thì ghi âm (chỉ khi ô đang thu).
+                        onPointerDown={handleSearchPointerDown}
+                        onPointerUp={handleSearchPointerUp}
+                        // Kéo ngón ra ngoài rồi nhả: `pointerup` bắn ở chỗ khác,
+                        // không có dòng này là micro chạy mãi.
+                        onPointerLeave={handleSearchPointerUp}
+                        onPointerCancel={handleSearchPointerUp}
                         onKeyDown={(e) => {
                             // Esc → xoá ô tìm kiếm và bỏ focus. Đặt TRƯỚC nhánh Enter
                             // vì đây là lối thoát, phải luôn chạy được.
                             if (e.key === 'Escape') {
                                 e.preventDefault();
-                                setSearchQuery('');
-                                window._reactClearSearch?.();
-                                e.currentTarget.blur();
+                                // Cùng một đường với nút × — xoá chữ, dọn kết
+                                // quả, thu ô lại. Chép tay ba dòng ở hai nơi thì
+                                // sửa một chỗ là hai lối lệch nhau.
+                                closeSearch();
                                 return;
                             }
                             // Enter → mở Dịch nhanh. Trước đây phải Shift+Enter, nhưng
@@ -567,8 +687,57 @@ export default function TopNav() {
                             }
                         }}
                     />
+                    {/* HAI nút, hai việc khác nhau — trước đây gộp làm một nên
+                        xoá chữ là ô đóng luôn, gõ nhầm phải mở lại từ đầu.
+
+                        · Cây chổi = XOÁ chữ, ô Ở NGUYÊN (gõ tiếp được ngay).
+                          Chỉ hiện khi có chữ — ô rỗng thì nó vô nghĩa.
+                        · Dấu × = ĐÓNG ô. Hiện cả khi ô rỗng, vì đó mới là lối
+                          thoát: chạm mở ô rồi đổi ý thì phải có chỗ bấm.
+
+                        `onPointerDown` + `preventDefault` chứ không phải `onClick`:
+                        chạm/bấm xuống là input mất focus NGAY, React gỡ nút khỏi
+                        DOM trước khi `click` kịp bắn — nút coi như không bấm
+                        được. Chặn hành vi mặc định thì focus ở nguyên chỗ.
+                        Dùng `pointerdown` (không phải `mousedown`) vì trên cảm
+                        ứng nó bắn TRƯỚC, còn `mousedown` chỉ là sự kiện giả lập
+                        sinh ra sau — lúc đó nút đã biến mất rồi. */}
                     {searchQuery && !isInPractice && (
-                        <button id="clear-search-btn" className="clear-search-btn" onClick={() => { setSearchQuery(''); window._reactClearSearch?.(); }}>
+                        <button
+                            id="clear-search-btn"
+                            className="clear-search-btn"
+                            type="button"
+                            title="Xoá nội dung"
+                            aria-label="Xoá nội dung"
+                            onPointerDown={(e) => {
+                                // Nút này KHÔNG bị gỡ khỏi DOM lúc bấm (ô vẫn mở,
+                                // chỉ chữ mất) nên không cần `swallowNextClick`.
+                                e.preventDefault();
+                                e.stopPropagation();
+                                clearSearchText();
+                            }}
+                        >
+                            <i className="fas fa-eraser"></i>
+                        </button>
+                    )}
+                    {/* `swallowNextClick()` là phần BẮT BUỘC đi kèm nút ĐÓNG: nút
+                        vừa bị gỡ khỏi DOM, nên khi nhấc ngón tay trình duyệt bắn
+                        `click` vào thứ đang nằm ở toạ độ đó — thẻ chế độ luyện
+                        tập bên dưới. Bấm × mà mở luôn Flashcard là lỗi này. */}
+                    {(searchQuery || searchFocused) && !isInPractice && (
+                        <button
+                            id="close-search-btn"
+                            className="clear-search-btn close-search-btn"
+                            type="button"
+                            title="Đóng ô tìm"
+                            aria-label="Đóng ô tìm"
+                            onPointerDown={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                closeSearch();
+                                swallowNextClick();
+                            }}
+                        >
                             <i className="fas fa-times"></i>
                         </button>
                     )}

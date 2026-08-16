@@ -243,3 +243,47 @@ describe('bỏ dòng giải thích thừa dưới mỗi nút', () => {
         }
     });
 });
+
+/**
+ * Bấm chọn Part phải ăn NGAY, kể cả khi popup vừa mở tự động sau khi chọn đề.
+ *
+ * Lỗi thật: chọn đề xong → popup Part tự mở → bấm một Part thì KHÔNG có gì xảy
+ * ra. Phải đóng popup rồi mở lại mới chọn được.
+ *
+ * Nguyên nhân: `TopicModal` (React) và popup Part (`Modal.show`) dùng CHUNG
+ * `id="modal-container"`. TopicModal gọi `onSelected()` rồi mới `onClose()`, mà
+ * React gỡ khỏi cây là bất đồng bộ — nên có lúc tồn tại ĐỒNG THỜI hai phần tử
+ * cùng id. `document.querySelector('#modal-container …')` trả về cái ĐẦU TIÊN,
+ * tức modal CŨ: listener gắn vào thẻ Part của modal cũ, còn thẻ đang hiển thị
+ * thì không có listener nào.
+ *
+ * Hỏng IM LẶNG: không lỗi console, giao diện vẫn dựng đủ, chỉ là bấm không ăn.
+ */
+describe('không gắn listener nhầm modal cũ', () => {
+    test('có hàm neo truy vấn vào modal ĐANG hiển thị', () => {
+        expect(src).toMatch(/const root = \(\) => \{/);
+        // Lấy cái CUỐI vì popup mới luôn được thêm vào sau.
+        expect(src).toMatch(/all\[all\.length - 1\] \|\| document/);
+    });
+
+    test('có helper q/qa dùng chung', () => {
+        expect(src).toMatch(/const q = \(sel\) => root\(\)\.querySelector\(sel\)/);
+        expect(src).toMatch(/const qa = \(sel\) => root\(\)\.querySelectorAll\(sel\)/);
+    });
+
+    test('thẻ Part và nút chế độ gắn listener qua qa()', () => {
+        // Đây là hai chỗ gây ra lỗi "bấm không ăn".
+        expect(src).toMatch(/qa\('\.topic-card\[data-part\]'\)\.forEach/);
+        expect(src).toMatch(/qa\('\.pmode-btn'\)\.forEach/);
+    });
+
+    test('KHÔNG còn truy vấn toàn cục trong thân popup', () => {
+        // Cắt đúng phần dựng popup — ngoài đó vẫn được dùng document (badge…).
+        const i = src.indexOf('const root = () => {');
+        const j = src.indexOf('async _saveSetting');
+        const body = src.slice(i, j);
+        expect(body).not.toMatch(/document\.querySelector\('#modal-container/);
+        expect(body).not.toMatch(/document\.querySelectorAll\('\.topic-card/);
+        expect(body).not.toMatch(/document\.getElementById\('part-refresh-btn'\)/);
+    });
+});

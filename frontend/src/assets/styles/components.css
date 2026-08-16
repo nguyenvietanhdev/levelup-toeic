@@ -4152,6 +4152,26 @@ mark {
   appearance: none;
 }
 
+/* Nút Tải lại ở hàng tiêu đề màn Cài đặt.
+   `margin-left: auto` đẩy nó về mép PHẢI — `.screen-header` là flex xếp trái,
+   không có dòng này thì nút dính ngay sau chữ "Cài đặt". */
+.settings-reload-btn {
+  margin-left: auto;
+  flex-shrink: 0;
+  color: var(--text-secondary);
+}
+
+.settings-reload-btn:hover:not(:disabled) {
+  color: var(--primary-color);
+}
+
+/* Đang tải: icon đã tự quay (fa-spin) nên chỉ chặn bấm tiếp và cho con trỏ nói
+   rõ là đang bận. */
+.settings-reload-btn:disabled {
+  cursor: default;
+  opacity: 0.6;
+}
+
 .settings-empty {
   padding: 16px var(--spacing-md);
   color: var(--text-secondary);

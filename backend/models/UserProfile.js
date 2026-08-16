@@ -39,6 +39,49 @@ const settingsSchema = new mongoose.Schema(
             default: 'medium',
         },
 
+        // ── Đồng bộ ĐA THIẾT BỊ ──────────────────────────────────────────────
+        //
+        // Mười trường dưới đây trước chỉ nằm ở localStorage. Mongoose chạy
+        // `strict` mặc định nên trường KHÔNG khai ở đây bị LOẠI BỎ ÂM THẦM:
+        // client gửi lên bao nhiêu lần cũng vô ích, không lỗi nào báo. Người
+        // dùng đăng nhập máy khác là mất sạch lựa chọn — mà app cho phép nhiều
+        // thiết bị cùng một tài khoản.
+        //
+        // `theme` CỐ TÌNH không có ở đây: nền sáng/tối thuộc về THIẾT BỊ, không
+        // thuộc tài khoản (máy bàn để sáng, điện thoại để tối là hợp lý).
+
+        // Ngôn ngữ đang học — nặng nhất trong nhóm: sai là máy khác mở ra học
+        // nhầm hẳn ngôn ngữ.
+        vocabLang: { type: String, enum: ['en', 'zh'], default: 'en' },
+
+        // Danh sách `level` ứng với mức độ khó đang chọn (['HSK1','HSK2']…).
+        // Đi CẶP với `difficulty`: có cái này thiếu cái kia là lọc ra 0 từ.
+        // `null` = không lọc; mảng rỗng KHÁC null nên không dùng default [].
+        levelFilter: { type: [String], default: null },
+
+        // Đảo chiều hỏi–đáp (VN→EN thay vì EN→VN) — đổi hẳn cách ra đề.
+        reverseMode: { type: Boolean, default: false },
+
+        // Giới hạn giờ mỗi câu + thời gian theo TỪNG chế độ.
+        timeLimitEnabled: { type: Boolean, default: true },
+        // `{ [modeId]: giây }` — khoá do client đặt nên phải Mixed, không thể
+        // khai cứng từng chế độ.
+        questionTime: { type: mongoose.Schema.Types.Mixed, default: () => ({}) },
+
+        // Tự chuyển câu sau khi trả lời (luyện tập).
+        autoAdvance: { type: Boolean, default: true },
+
+        // ── Cấu hình bài thi TOEIC ───────────────────────────────────────────
+        // Bốn trường này người dùng chỉnh khá kỹ; mất là phải dựng lại từ đầu.
+        toeicPerQuestionTimer: { type: Boolean, default: false },
+        toeicAutoAdvance: { type: Boolean, default: true },
+        toeicTransition: { type: Number, default: 1, min: 0, max: 10 },
+        // `{ [part]: phút }` cho Part 5·6·7 — khoá là số Part, dùng Mixed.
+        toeicCustomPartMin: {
+            type: mongoose.Schema.Types.Mixed,
+            default: () => ({ 5: 15, 6: 8, 7: 36 }),
+        },
+
         // Features
         notificationsEnabled: { type: Boolean, default: true },
         autoSync: { type: Boolean, default: true },

@@ -242,6 +242,14 @@ export const PracticeManager = {
         // tắt trong exit() vì ở đó còn modal xác nhận — bấm Hủy là vẫn đang luyện.
         startPracticeBgm(BGM_VOLUME);
 
+        // Nhớ chế độ vừa vào — nút "Luyện tập ngay" ở trang chủ dùng nó để mở
+        // thẳng chế độ quen thuộc, thay vì luôn ném vào Trắc nghiệm.
+        //
+        // Lưu Ở ĐÂY (lúc phiên BẮT ĐẦU) chứ không đợi lúc hoàn thành: người dùng
+        // bỏ dở giữa chừng vẫn là chế độ họ vừa chọn, và đó mới là thứ họ muốn
+        // quay lại. `review-mistakes` cũng lưu bình thường — nó là chế độ thật.
+        Storage.set('lastPracticeMode', mode).catch(() => { /* mất cũng chỉ là mặc định */ });
+
         this.currentSession = {
             mode: mode,
             startTime: Date.now(),

@@ -11,6 +11,7 @@ import { GameLoop, EnergySystem, DailyQuestTimer, BoostChecker, AutoSave, GameSy
 import { Energy } from '@game/energy.js';
 import { Quest } from '@components/quest/quest.js';
 import { TopicSelector } from '@components/vocab/topic/topicSelector.js';
+import { PartSelector } from '@components/vocab/part/partSelector.js';
 import { WrongWordsManager } from '@components/vocab/wrongWords/wrongWordsManager.js';
 import { SessionService } from '@components/practice/sessionService.js';
 import { PracticeManager } from '@components/practice/practiceManager.js';
@@ -63,7 +64,15 @@ export function GameProvider({ children }) {
             Quest.init();
             // Khôi phục đề đã chọn từ lần trước — nếu không gọi thì sau F5
             // currentTopic luôn null → HomeScreen luôn mở popup chọn đề.
-            TopicSelector.restoreLastTopic().catch(() => {});
+            //
+            // Khôi phục PART phải chạy SAU: `loadSelectedPart` chỉ nhận lại Part
+            // nếu nó có trong `PartSelector.parts`, mà danh sách đó chỉ được dựng
+            // sau khi đề nạp xong từ vựng. Gọi song song là `parts` còn rỗng,
+            // Part đã lưu bị bỏ, và `start()` lại bật popup chọn Part — xung đột
+            // với nút "Luyện tập ngay" (vào thẳng chế độ).
+            TopicSelector.restoreLastTopic()
+                .then(() => PartSelector.loadSelectedPart())
+                .catch(() => {});
             syncFromState();
             setInitialized(true);
         });

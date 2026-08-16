@@ -1,8 +1,28 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { useEscapeToClose } from '@lib/useEscapeToClose.js';
 import { Notification } from "@ui/Toaster.jsx";
 import { useTopics } from "./useTopics.js";
+import { TopicSelector } from "./topicSelector.js";
 import LevelBar from "./LevelBar.jsx";
+
+/**
+ * Tab chứa đề ĐANG CHỌN — để popup mở đúng chỗ thay vì luôn về "Từ vựng chung".
+ *
+ * Suy từ tiền tố của `id` (xem topicSelector.js):
+ *   `personal:` · `shared:` → tab "Từ vựng riêng" (bộ được chia sẻ nằm CHUNG
+ *                             tab này với bộ của mình, xem `isShared` ở dưới)
+ *   `wrong:`               → tab "Từ vựng sai"
+ *   không tiền tố          → đề chung
+ *
+ * Đọc thẳng `TopicSelector` chứ không qua `current` của `useTopics`: hàm này
+ * còn được gọi trong `useState` (chạy trước khi hook kia kịp trả giá trị).
+ */
+function tabOfCurrentTopic() {
+  const id = TopicSelector.getCurrentTopic()?.id || "";
+  if (id.startsWith("personal:") || id.startsWith("shared:")) return "personal";
+  if (id.startsWith("wrong:")) return "wrong";
+  return "shared";
+}
 
 export default function TopicModal({ open, onClose, onSelected }) {
     useEscapeToClose(onClose, open);
@@ -23,13 +43,31 @@ export default function TopicModal({ open, onClose, onSelected }) {
     selectPersonal,
     selectWrong,
   } = useTopics({ enabled: open });
-  const [tab, setTab] = useState("shared");
+  const [tab, setTab] = useState(tabOfCurrentTopic);
+
+  // Đồng bộ tab ĐÚNG LÚC POPUP MỞ RA, không phải mỗi lần effect chạy lại.
+  //
+  // Hai điều kiện phải cùng đúng:
+  //  · `useState` chỉ chạy hàm khởi tạo MỘT lần lúc mount, mà component này
+  //    không unmount khi đóng (`if (!open) return null` chỉ ẩn) — nên lần mở
+  //    thứ hai trở đi sẽ giữ tab của lần trước nếu không đặt lại.
+  //  · Nhưng KHÔNG được đặt lại ở effect có `loadShared`/`onClose` trong deps:
+  //    hai hàm đó đổi danh tính là effect chạy lại và ĐÁ NGƯỢC người dùng về
+  //    tab cũ giữa chừng, ngay khi họ vừa bấm sang tab khác.
+  //
+  // `wasOpenRef` chốt đúng khoảnh khắc đóng → mở.
+  const wasOpenRef = useRef(false);
+  useEffect(() => {
+    if (open && !wasOpenRef.current) setTab(tabOfCurrentTopic());
+    wasOpenRef.current = open;
+  }, [open]);
   const [query, setQuery] = useState("");
   const [searchReadOnly, setSearchReadOnly] = useState(true); // prevent autofill until user interacts
   const [busyId, setBusyId] = useState(null);
 
   useEffect(() => {
     if (!open) return;
+
     loadShared();
     const onKey = (e) => {
       if (e.key === "Escape") onClose();

@@ -5,6 +5,7 @@ import { GameLogic } from '@game/gameLogic.js';
 import { EventBus, GameEvents } from '@game/eventBus.js';
 import { Notification } from '@ui/Toaster.jsx';
 import { Modal } from '@ui/Modal.jsx';
+import { toBand } from '@lib/levelBands.js';
 
 export const PartSelector = {
     parts: [],
@@ -32,7 +33,13 @@ export const PartSelector = {
                 let s = stats[w.part];
                 if (!s) s = stats[w.part] = { count: 0, a: 0, b: 0, c: 0 };
                 s.count++;
-                const lv = (w.level || '')[0];
+                // `toBand` hiểu CẢ hai khung: CEFR (A1/B2…) và HSK (HSK1…HSK7-9).
+                //
+                // Bản cũ lấy CHỮ CÁI ĐẦU — đúng với CEFR nhưng "HSK1" ra chữ
+                // "H", không rơi vào nhóm nào. Sau khi kho tiếng Trung chuyển
+                // sang HSK thì MỌI thẻ Part mất dải phân bố độ khó, mà không có
+                // lỗi nào báo: dữ liệu vẫn đủ, chỉ là không phân loại được.
+                const lv = toBand(w.level);
                 if (lv === 'A') s.a++; else if (lv === 'B') s.b++; else if (lv === 'C') s.c++;
             }
             this.partStats = stats;
@@ -168,13 +175,36 @@ export const PartSelector = {
         // Chỉ đụng DOM khi part-modal VẪN là modal đang mở (tránh listener cũ ghi
         // đè popup khác → "đơ"). Huỷ subscription cũ trước khi đăng ký mới (chống chồng).
         this._modalOpen = true;
+
+        /**
+         * Gốc DOM của ĐÚNG popup này.
+         *
+         * Có lúc tồn tại HAI phần tử `#modal-container` cùng lúc: `TopicModal`
+         * là component React, nó chưa được gỡ khỏi cây thì popup Part (dựng
+         * bằng `Modal.show`) đã mọc lên. Đúng tình huống "chọn đề xong → popup
+         * Part tự mở".
+         *
+         * Khi đó `document.querySelector('#modal-container .modal-body')` trả về
+         * cái ĐẦU TIÊN — tức modal CŨ. Listener gắn vào thẻ Part của modal cũ,
+         * còn thẻ đang hiển thị thì không có listener nào: bấm không ăn, phải
+         * đóng popup mở lại mới chọn được Part.
+         *
+         * Lấy cái CUỐI cùng vì popup mới luôn được thêm vào sau.
+         */
+        const root = () => {
+            const all = document.querySelectorAll('#modal-container');
+            return all[all.length - 1] || document;
+        };
+        const q = (sel) => root().querySelector(sel);
+        const qa = (sel) => root().querySelectorAll(sel);
+
         // Khai báo TRƯỚC `Modal.show`: `onClose` và `onVocabLoaded` bên dưới đều
         // đụng tới nó.
         let _refreshTimer = null;
         const onVocabLoaded = () => {
             if (!this._modalOpen) return;
             this.loadParts();
-            const body = document.querySelector('#modal-container .modal-body');
+            const body = q('.modal-body');
             if (body) { body.innerHTML = renderModal(); setupHeaderSearch(); attachListeners(); }
             // Tải xong thì trả nút về trạng thái bấm được. Đặt ở đây chứ không
             // hẹn giờ trong hàm bấm: chỉ chỗ này mới biết dữ liệu đã thực sự về.
@@ -216,7 +246,7 @@ export const PartSelector = {
 
         const applyPartFilter = () => {
             const kw = searchQuery.trim().toLowerCase();
-            document.querySelectorAll('.topic-card[data-part]').forEach(card => {
+            qa('.topic-card[data-part]').forEach(card => {
                 const part = (card.dataset.part || '').toLowerCase();
                 card.style.display = (!kw || part.includes(kw)) ? '' : 'none';
             });
@@ -224,7 +254,7 @@ export const PartSelector = {
 
         /** Bật/tắt trạng thái "đang tải" của nút Tải lại. */
         const setRefreshing = (busy) => {
-            const btn = document.getElementById('part-refresh-btn');
+            const btn = q('#part-refresh-btn');
             clearTimeout(_refreshTimer);
             _refreshTimer = null;
             if (!btn) return;
@@ -252,7 +282,7 @@ export const PartSelector = {
         // sai, mỗi thứ một đường API mà file này không được biết (import ngược
         // `topicSelector` là vòng phụ thuộc). `vocab:loaded` sẽ dựng lại lưới.
         const setupHeaderRefresh = () => {
-            const header = document.querySelector('#modal-container .modal-header');
+            const header = q('.modal-header');
             if (!header || header.querySelector('#part-refresh-btn')) return;
             const closeBtn = header.querySelector('.modal-close-btn');
             const btn = document.createElement('button');
@@ -276,7 +306,7 @@ export const PartSelector = {
 
         // Inject a search box into the modal header (cạnh tiêu đề, giống popup Chọn đề)
         const setupHeaderSearch = () => {
-            const header = document.querySelector('#modal-container .modal-header');
+            const header = q('.modal-header');
             if (!header || header.querySelector('#part-search-input')) return;
             const closeBtn = header.querySelector('.modal-close-btn');
             const input = document.createElement('input');
@@ -297,7 +327,7 @@ export const PartSelector = {
         };
 
         const updateHeaderSearchVisibility = () => {
-            const input = document.getElementById('part-search-input');
+            const input = q('#part-search-input');
             if (input) input.style.display = currentMode === 'random-all' ? 'none' : '';
         };
 
@@ -305,7 +335,7 @@ export const PartSelector = {
             applyPartFilter();           // re-apply filter after body re-render
             updateHeaderSearchVisibility();
 
-            document.querySelectorAll('.pmode-btn').forEach(btn => {
+            qa('.pmode-btn').forEach(btn => {
                 btn.addEventListener('click', async () => {
                     const mode = btn.dataset.mode;
                     currentMode = mode;
@@ -319,19 +349,19 @@ export const PartSelector = {
                         this.updatePartBadge();
                         await GameState.save();
                     }
-                    const body = document.querySelector('.modal-body');
+                    const body = q('.modal-body');
                     if (body) { body.innerHTML = renderModal(); attachListeners(); }
                 });
             });
 
-            document.querySelectorAll('.topic-card[data-part]').forEach(card => {
+            qa('.topic-card[data-part]').forEach(card => {
                 card.addEventListener('click', async () => {
                     if (currentMode === 'random-all') {
                         currentMode = 'random-part';
                         this.practiceMode = 'random-part';
                         await Storage.set('practiceMode', 'random-part');
                         await this._saveSetting('randomQuestions', true);
-                        const body = document.querySelector('.modal-body');
+                        const body = q('.modal-body');
                         if (body) { body.innerHTML = renderModal(); attachListeners(); }
                         return;
                     }
@@ -340,7 +370,7 @@ export const PartSelector = {
             });
 
             // Chưa có từ vựng → nút mở popup chọn đề (giữ pendingMode để quay lại luyện tập).
-            document.getElementById('part-choose-topic')?.addEventListener('click', () => {
+            q('#part-choose-topic')?.addEventListener('click', () => {
                 const mode = this.pendingMode;
                 Modal.close();
                 EventBus.emit(GameEvents.TOPIC_MODAL_REQUESTED, { pendingMode: mode });

@@ -29,6 +29,37 @@ const CEFR_BANDS = {
 };
 
 /**
+ * Quy một giá trị `level` bất kỳ về MỘT nhóm A / B / C.
+ *
+ * Bản frontend của `toBand()` bên backend (utils/levelStats.js) — giữ hai bản
+ * khớp nhau, không thì dải màu trên thẻ Part và trên thẻ đề lệch nhau.
+ *
+ * Lấy chữ cái đầu là ĐỦ cho CEFR nhưng SAI cho HSK: "HSK1" ra chữ "H", không
+ * rơi vào nhóm nào nên cả bộ từ mất dải phân bố độ khó mà không lỗi nào báo.
+ * Đây đúng là lỗi đã gặp ở thẻ Part.
+ *
+ * @param {string} level
+ * @returns {'A'|'B'|'C'|null}
+ */
+export function toBand(level) {
+    const s = String(level == null ? '' : level).trim().toUpperCase();
+    if (!s) return null;
+
+    // HSK phải xét TRƯỚC: nếu không, "HSK1" lọt xuống nhánh chữ cái đầu.
+    // `HSK7-9` khớp chữ số đầu tiên là 7 → nhóm C, đúng như mong muốn.
+    const hsk = s.match(/^HSK\s*-?\s*(\d)/);
+    if (hsk) {
+        const n = Number(hsk[1]);
+        if (n <= 2) return 'A';
+        if (n <= 4) return 'B';
+        return 'C';          // HSK5, HSK6, HSK7-9
+    }
+
+    const first = s[0];
+    return first === 'A' || first === 'B' || first === 'C' ? first : null;
+}
+
+/**
  * Danh sách `level` ứng với một mức độ khó, theo ngôn ngữ đang học.
  *
  * @param {'easy'|'medium'|'hard'|'adaptive'} band

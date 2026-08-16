@@ -208,33 +208,44 @@ export const GameState = {
             needsSave = true;
         }
 
-        // The backend settingsSchema does not declare `practiceSoundEnabled`,
-        // so the server silently strips it and reload would reset it to the
-        // default `true`. The Settings toggle persists it to a dedicated
-        // localStorage key — restore from there so it survives reload and the
-        // practice engine respects it. (Frontend-only workaround.)
+        // Hai khoá dưới đây chỉ LẤP CHỖ TRỐNG, không ghi đè giá trị từ server.
+        //
+        // Cả hai giờ đã có trong `settingsSchema` nên server là nguồn chính. Đọc
+        // đè như trước là bản sao trên máy CŨ thắng: đổi ngôn ngữ học ở điện
+        // thoại xong, mở máy tính lại thấy ngôn ngữ cũ — mà không có dấu hiệu gì.
         try {
-            const pse = localStorage.getItem('practiceSoundEnabled');
-            if (pse === 'true' || pse === 'false') {
-                this.state.settings.practiceSoundEnabled = (pse === 'true');
+            if (this.state.settings.practiceSoundEnabled === undefined) {
+                const pse = localStorage.getItem('practiceSoundEnabled');
+                if (pse === 'true' || pse === 'false') {
+                    this.state.settings.practiceSoundEnabled = (pse === 'true');
+                }
             }
         } catch { /* localStorage unavailable — keep merged value */ }
 
         try {
-            const vocabLang = localStorage.getItem('vocabLang');
-            if (vocabLang === 'en' || vocabLang === 'zh') {
-                this.state.settings.vocabLang = vocabLang;
+            if (this.state.settings.vocabLang === undefined) {
+                const vocabLang = localStorage.getItem('vocabLang');
+                if (vocabLang === 'en' || vocabLang === 'zh') {
+                    this.state.settings.vocabLang = vocabLang;
+                }
             }
         } catch { /* localStorage unavailable - keep merged value */ }
 
-        // Các setting "critical" (timeLimitEnabled, timePerQuestion, difficulty,
-        // levelFilter, questionsPerSession) được SettingsScreen lưu riêng vào
-        // localStorage 'userSettings'. Một số bị backend settingsSchema strip
-        // → restore từ đây để GameState (nguồn mà practice engine đọc) khớp với
-        // UI Settings, tránh trường hợp tắt timer nhưng F5 lại bật.
+        // `userSettings` trong localStorage giờ chỉ là BẢN SAO DỰ PHÒNG.
+        //
+        // Trước đây khối này ghi đè vô điều kiện, với lý do "một số setting bị
+        // backend settingsSchema strip". Lý do đó KHÔNG CÒN: schema đã khai đủ
+        // (xem UserProfile.js). Giữ nguyên cách cũ thì bản sao trên máy CŨ đè
+        // lên giá trị vừa tải từ server — tức là đăng nhập máy khác đổi cài đặt
+        // xong, quay về máy này là mất, mà không có dấu hiệu gì.
+        //
+        // Chỉ lấp chỗ TRỐNG: khoá nào server chưa có (tài khoản cũ, hoặc vừa
+        // thêm trường) mới đọc từ localStorage. Server là nguồn chính.
         try {
             const userSettings = JSON.parse(localStorage.getItem('userSettings') || '{}');
-            Object.assign(this.state.settings, userSettings);
+            for (const [k, v] of Object.entries(userSettings)) {
+                if (this.state.settings[k] === undefined) this.state.settings[k] = v;
+            }
         } catch { /* localStorage unavailable - keep merged value */ }
 
         // Đổ lựa chọn GIỌNG ĐỌC từ hồ sơ server xuống localStorage.
@@ -249,6 +260,22 @@ export const GameState = {
             if (st.voiceEn) localStorage.setItem('toeic_voice_en', st.voiceEn);
             if (st.voiceZh) localStorage.setItem('toeic_voice_zh', st.voiceZh);
             if (st.speechRate) localStorage.setItem('toeic_speech_rate', String(st.speechRate));
+
+            // Cùng lý do, cho ba khoá còn lại có nơi đọc THẲNG localStorage:
+            //   · `reverseMode` — `gameLogic.isReversed()` gọi trong vòng sinh
+            //     câu hỏi nên phải đọc đồng bộ, không await GameState được;
+            //   · `vocabLang`  — nhiều chỗ đọc trước khi GameState kịp nạp;
+            //   · `practiceSoundEnabled` — `Utils.playSound` đọc trực tiếp.
+            // Không sao xuống thì máy mới đọc bản mặc định, dù server có dữ liệu.
+            if (typeof st.reverseMode === 'boolean') {
+                localStorage.setItem('reverseMode', String(st.reverseMode));
+            }
+            if (st.vocabLang === 'en' || st.vocabLang === 'zh') {
+                localStorage.setItem('vocabLang', st.vocabLang);
+            }
+            if (typeof st.practiceSoundEnabled === 'boolean') {
+                localStorage.setItem('practiceSoundEnabled', JSON.stringify(st.practiceSoundEnabled));
+            }
         } catch { /* localStorage unavailable - bộ đọc dùng mặc định */ }
 
         this.state.user.lastLoginAt = Date.now();

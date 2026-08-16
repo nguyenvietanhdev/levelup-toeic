@@ -53,7 +53,13 @@ export const TopicSelector = {
 
         this.currentTopic = topic;
 
-        PartSelector.clearSelection();
+        // KHÔI PHỤC lúc khởi động thì GIỮ Part đã chọn (`keepPart`).
+        //
+        // Xoá vô điều kiện là xung đột với nút "Luyện tập ngay": nút đó vào
+        // thẳng chế độ, nhưng `start()` thấy chưa có Part lại bật popup chọn
+        // Part — mở app lần nào cũng phải chọn lại dù đã chọn từ hôm trước.
+        // Người dùng CHỦ ĐỘNG đổi đề thì vẫn xoá: Part của đề cũ không còn nghĩa.
+        if (!options.keepPart) PartSelector.clearSelection();
 
         await GameLogic.loadVocabularyBySource(topic.source);
 
@@ -68,7 +74,7 @@ export const TopicSelector = {
         return topic;
     },
 
-    async selectPersonalTopic(source) {
+    async selectPersonalTopic(source, options = {}) {
         const data = await UploadVocabAPI.myVocabulary(source);
         if (!data.success) throw new Error(data.message);
         const words = normalizeVocabularyWords(data.data || []);
@@ -79,7 +85,7 @@ export const TopicSelector = {
         const topic = { id: `personal:${source}`, name: source, source, wordCount: words.length, icon: '📤', isPersonal: true };
         this.currentTopic = topic;
 
-        PartSelector.clearSelection();
+        if (!options.keepPart) PartSelector.clearSelection();
         await PartSelector.reloadParts();
 
         await Storage.set('selectedTopic', topic.id);
@@ -91,7 +97,7 @@ export const TopicSelector = {
     // Bộ từ NGƯỜI KHÁC chia sẻ cho mình. Cùng khuôn với selectPersonalTopic, chỉ
     // khác đường lấy dữ liệu (route riêng có kiểm quyền) và `id` mang cả email
     // chủ sở hữu — bộ được chia sẻ có thể TRÙNG TÊN với bộ của chính mình.
-    async selectSharedTopic(ownerEmail, source) {
+    async selectSharedTopic(ownerEmail, source, options = {}) {
         const data = await UploadVocabAPI.sharedVocabulary(ownerEmail, source);
         if (!data.success) throw new Error(data.message || 'Không tải được bộ từ');
         const words = normalizeVocabularyWords(data.data || []);
@@ -106,7 +112,7 @@ export const TopicSelector = {
         };
         this.currentTopic = topic;
 
-        PartSelector.clearSelection();
+        if (!options.keepPart) PartSelector.clearSelection();
         await PartSelector.reloadParts();
 
         await Storage.set('selectedTopic', topic.id);
@@ -117,7 +123,7 @@ export const TopicSelector = {
 
     // "Từ vựng sai" — nạp các từ active trong user_wrongwords thuộc một
     // source làm pool luyện tập, giống selectPersonalTopic.
-    async selectWrongWordsTopic(source = '') {
+    async selectWrongWordsTopic(source = '', options = {}) {
         const data = await WrongWordsAPI.list();
         if (!data.success) throw new Error(data.message || 'Không tải được từ sai');
         const all = data.data || [];
@@ -151,7 +157,7 @@ export const TopicSelector = {
         };
         this.currentTopic = topic;
 
-        PartSelector.clearSelection();
+        if (!options.keepPart) PartSelector.clearSelection();
         await PartSelector.reloadParts();
 
         await Storage.set('selectedTopic', topic.id);
@@ -182,7 +188,7 @@ export const TopicSelector = {
 
         try {
             if (lastTopicId.startsWith('personal:')) {
-                await this.selectPersonalTopic(lastTopicId.slice('personal:'.length));
+                await this.selectPersonalTopic(lastTopicId.slice('personal:'.length), { keepPart: true });
                 return;
             }
             if (lastTopicId.startsWith('shared:')) {
@@ -192,16 +198,16 @@ export const TopicSelector = {
                 const rest = lastTopicId.slice('shared:'.length);
                 const sep = rest.indexOf(':');
                 if (sep > 0) {
-                    await this.selectSharedTopic(rest.slice(0, sep), rest.slice(sep + 1));
+                    await this.selectSharedTopic(rest.slice(0, sep), rest.slice(sep + 1), { keepPart: true });
                     return;
                 }
             }
             if (lastTopicId.startsWith('wrong:')) {
-                await this.selectWrongWordsTopic(lastTopicId.slice('wrong:'.length));
+                await this.selectWrongWordsTopic(lastTopicId.slice('wrong:'.length), { keepPart: true });
                 return;
             }
             if (this.availableTopics.find(t => t.id === lastTopicId)) {
-                await this.selectTopic(lastTopicId, { silent: true });
+                await this.selectTopic(lastTopicId, { silent: true, keepPart: true });
                 return;
             }
         } catch {

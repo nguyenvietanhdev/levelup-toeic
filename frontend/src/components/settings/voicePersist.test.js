@@ -92,8 +92,16 @@ describe('4. máy mới phát âm ĐÚNG ngay lần đầu', () => {
     });
 
     test('localStorage hỏng không làm sập quá trình nạp hồ sơ', () => {
+        // Dò tới `catch` GẦN NHẤT sau lệnh ghi, không cắt theo số ký tự cố
+        // định: khối này còn sao xuống các khoá khác nên mỗi lần thêm một dòng
+        // là cửa sổ cắt lại hụt, test đỏ oan trong khi mã vẫn đúng.
         const i = state.indexOf("localStorage.setItem('toeic_voice_en'");
-        expect(state.slice(i, i + 400)).toMatch(/catch \{/);
+        expect(i).toBeGreaterThan(-1);
+        const j = state.indexOf('} catch', i);
+        expect(j).toBeGreaterThan(i);
+        // Giữa lệnh ghi và `catch` không được có `try` mới — nếu có thì `catch`
+        // bắt được là của khối trong, khối ngoài vẫn hở.
+        expect(state.slice(i, j)).not.toMatch(/\btry\s*\{/);
     });
 
     test('có trong DEFAULT_SETTINGS để khôi phục mặc định không mất khoá', () => {
