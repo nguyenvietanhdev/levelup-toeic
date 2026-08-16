@@ -18,6 +18,7 @@ import { Notification } from '@ui/Toaster.jsx';
 import { Modal } from '@ui/Modal.jsx';
 import { API } from '@/api/http.js';
 import { ShopCatalogAPI } from '@/api/shopCatalog.js';
+import { PurchaseConfirm } from '@game/purchaseConfirm.js';
 
 let _packsCache = null;
 
@@ -194,20 +195,38 @@ export const EnergyShop = {
                     // không có lý do gì chỗ nguy hiểm hơn lại lỏng hơn.
                     const cur = pack.currency === 'gems' ? '💎 gems' : '🪙 xu';
                     const what = pack.full ? `nạp đầy ⚡${r.maxEnergy}` : `+${pack.amount}⚡`;
-                    const agreed = await new Promise(resolve => {
+                    // Đã tick "không hỏi lại" ở popup nào đó trong phiên này thì
+                    // thôi hỏi — dùng CHUNG công tắc với popup mua gợi ý.
+                    const agreed = PurchaseConfirm.shouldSkip() || await new Promise(resolve => {
                         Modal.show({
                             title: 'Xác nhận mua',
                             content: `
                                 <div style="text-align:center">
                                     <p>Mua <strong>${pack.name}</strong> (${what})?</p>
                                     <p style="margin-top:8px">Trừ <strong>${pack.price}</strong> ${cur}</p>
+                                    <label class="purchase-skip">
+                                        <input type="checkbox" id="skip-purchase-confirm">
+                                        <span>Không hỏi lại trong lượt luyện tập này</span>
+                                    </label>
                                 </div>`,
                             // Không cho bấm nền để đóng: đóng kiểu đó thì lời hứa
                             // không ai giải, popup năng lượng treo luôn.
                             closeOnBackdrop: false,
                             buttons: [
+                                // Tick rồi bấm Hủy thì KHÔNG ghi nhận: người dùng
+                                // vừa từ chối mua, hiểu là "thôi" chứ không phải
+                                // "cứ trừ đi".
                                 { text: 'Hủy', className: 'btn-secondary', onClick: () => resolve(false) },
-                                { text: 'Mua', className: 'btn-primary', onClick: () => resolve(true) },
+                                {
+                                    text: 'Mua', className: 'btn-primary',
+                                    onClick: () => {
+                                        // Đọc ô tick TRƯỚC khi modal đóng — đóng
+                                        // rồi thì thẻ đã bị gỡ, querySelector null.
+                                        const box = document.getElementById('skip-purchase-confirm');
+                                        if (box?.checked) PurchaseConfirm.setSkip(true);
+                                        resolve(true);
+                                    },
+                                },
                             ],
                         });
                     });

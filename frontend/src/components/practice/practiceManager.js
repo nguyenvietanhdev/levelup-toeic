@@ -79,6 +79,7 @@ import { SpeedQuiz } from './modes/speedQuiz.js';
 import { ReviewMistakes } from './modes/reviewMistakes.js';
 import { HanziWriting } from './modes/hanziWriting.js';
 import { MILESTONES, getMilestoneMessage } from './milestoneMessages.js';
+import { PurchaseConfirm } from '@game/purchaseConfirm.js';
 
 // Các chế độ thực sự xử lý gợi ý (lắng nghe GameEvents.HINT_USED). Ngoài danh
 // sách này (flashcard, matching, pronunciation, dictation, speed-quiz) thì nút
@@ -250,6 +251,10 @@ export const PracticeManager = {
         // trước tiếng hoàn thành), và rời màn luyện tập (PracticeScreen). KHÔNG
         // tắt trong exit() vì ở đó còn modal xác nhận — bấm Hủy là vẫn đang luyện.
         startPracticeBgm(BGM_VOLUME);
+
+        // Phiên MỚI thì hỏi lại. Không reset ở đây thì "chỉ trong lượt này"
+        // thành "cho tới khi F5": thoát bài, vào bài khác, vẫn bị trừ thẳng.
+        PurchaseConfirm.reset();
 
         // Nhớ chế độ vừa vào — nút "Luyện tập ngay" ở trang chủ dùng nó để mở
         // thẳng chế độ quen thuộc, thay vì luôn ném vào Trắc nghiệm.
@@ -1136,45 +1141,66 @@ export const PracticeManager = {
             return true;
         }
         else if (resources.coins >= hintCost) {
+            // Tách ra hàm để lối "đã tick không hỏi lại" và lối bấm nút Mua
+            // chạy CÙNG một đoạn — chép tay hai bản thì sửa một chỗ là hai lối
+            // lệch nhau.
+            const doBuy = () => {
+                if (GameState.useCoins(hintCost)) {
+                    Notification.show({
+                        type: 'success',
+                        title: '💡 Đã mua gợi ý',
+                        message: `Đã trả ${hintCost} coins`,
+                        duration: 2000
+                    });
+
+                    EventBus.emit(GameEvents.HINT_USED);
+                    this.updateHintButton();
+                } else {
+                    Notification.show({
+                        type: 'error',
+                        title: 'Không đủ coins',
+                        message: 'Bạn cần thêm coins để mua gợi ý',
+                        duration: 2000
+                    });
+                }
+            };
+
+            // Đã tick "không hỏi lại" ở lần trước trong phiên này → mua thẳng.
+            if (PurchaseConfirm.shouldSkip()) {
+                doBuy();
+                return false;
+            }
+
             Modal.show({
                 title: '💡 Mua gợi ý?',
                 content: `
                     <div class="hint-purchase">
                         <p>Bạn không còn gợi ý miễn phí.</p>
                         <p>Mua gợi ý với <strong>${hintCost} coins</strong>?</p>
+                        <label class="purchase-skip">
+                            <input type="checkbox" id="skip-purchase-confirm">
+                            <span>Không hỏi lại trong lượt luyện tập này</span>
+                        </label>
                     </div>
                 `,
                 buttons: [
                     {
                         text: 'Hủy',
                         className: 'btn-secondary',
+                        // Tick rồi bấm Hủy thì KHÔNG ghi nhận: người dùng vừa từ
+                        // chối mua, hiểu là "thôi" chứ không phải "cứ trừ đi".
                         onClick: () => Modal.close()
                     },
                     {
                         text: 'Mua',
                         className: 'btn-primary',
                         onClick: () => {
-                            if (GameState.useCoins(hintCost)) {
-                                Modal.close();
-
-                                Notification.show({
-                                    type: 'success',
-                                    title: '💡 Đã mua gợi ý',
-                                    message: `Đã trả ${hintCost} coins`,
-                                    duration: 2000
-                                });
-
-                                EventBus.emit(GameEvents.HINT_USED);
-                                this.updateHintButton();
-                            } else {
-                                Modal.close();
-                                Notification.show({
-                                    type: 'error',
-                                    title: 'Không đủ coins',
-                                    message: 'Bạn cần thêm coins để mua gợi ý',
-                                    duration: 2000
-                                });
-                            }
+                            // Đọc ô tick TRƯỚC khi đóng — đóng rồi thì React đã
+                            // gỡ thẻ khỏi DOM, querySelector trả null.
+                            const box = document.getElementById('skip-purchase-confirm');
+                            if (box?.checked) PurchaseConfirm.setSkip(true);
+                            Modal.close();
+                            doBuy();
                         }
                     }
                 ]

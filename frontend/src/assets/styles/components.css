@@ -4346,6 +4346,30 @@ mark {
   border: 1px solid var(--border-color);
 }
 
+/* Ô tick "không hỏi lại" trong popup mua bằng xu (gợi ý, gói năng lượng).
+   Chữ nhỏ và nhạt hơn nội dung chính: đây là tuỳ chọn phụ, không được tranh
+   chú ý với câu hỏi "có mua không". */
+.purchase-skip {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 14px;
+  color: var(--text-secondary);
+  font-size: 0.88em;
+  cursor: pointer;
+  user-select: none;
+}
+
+.purchase-skip input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  cursor: pointer;
+  accent-color: var(--primary-color);
+  flex: 0 0 auto;
+}
+
 /* Ghi chú giải thích vì sao một mục KHÔNG có gì để chỉnh (vd. tài khoản Google
    không dùng mật khẩu). Ẩn trơn thì người dùng tưởng app thiếu tính năng. */
 .settings-note {
