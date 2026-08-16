@@ -57,7 +57,9 @@ describe('hook dùng chung', () => {
 describe('nav', () => {
     test('KHÔNG ẩn khi đang gõ tìm', () => {
         // Ô nhập nằm trong chính thanh này. Ẩn đi giữa chừng là mất chỗ gõ.
-        expect(nav).toMatch(/navHidden && !searchFocused \? 'nav-hidden' : ''/);
+        // `searchExpanded` cũng phải chặn: ô mở bằng cử chỉ GIỮ không có tiêu
+        // điểm, thiếu vế đó là đang nói mà nav trượt mất khỏi màn.
+        expect(nav).toMatch(/navHidden && !searchFocused && !searchExpanded \? 'nav-hidden' : ''/);
     });
 
     test('class trượt ẩn được gắn lên chính thanh nav', () => {

@@ -659,7 +659,18 @@
     .top-nav {
         position: fixed;
         top: auto;
-        bottom: 0;
+        /* ĐẨY LÊN TRÊN BÀN PHÍM ẢO.
+           `--kb` do TopNav đặt (VisualViewport API) = chiều cao phần bị bàn
+           phím che. Bàn phím đóng thì 0px, tức là bám đáy như thường.
+
+           Vì sao cần: nav `fixed` bám đáy CỬA SỔ, mà bàn phím ảo KHÔNG làm cửa
+           sổ ngắn lại — nó phủ lên trên. Nên đúng lúc gõ tìm thì cả nav lẫn ô
+           tìm nằm trong nav đều bị che, người dùng gõ mà không thấy mình gõ gì.
+
+           Dùng `bottom` chứ không `transform`: `transform` đã dành cho việc
+           trượt ẩn/hiện theo hướng cuộn (.nav-hidden), đặt chồng là hai cơ chế
+           tranh nhau cùng một thuộc tính. */
+        bottom: var(--kb, 0px);
         left: 0;
         right: 0;
         width: 100%;
@@ -671,7 +682,7 @@
         /* Vùng vuốt của iPhone nằm ngay dưới; không chừa thì hàng nút bị nó đè. */
         padding-bottom: calc(8px + env(safe-area-inset-bottom, 0px));
         /* Cho việc trượt ẩn/hiện theo hướng cuộn (.nav-hidden bên dưới). */
-        transition: transform 0.25s ease;
+        transition: transform 0.25s ease, bottom 0.2s ease;
     }
 
     /* Cuộn XUỐNG thì trượt khỏi màn, cuộn LÊN thì trở lại (class do TopNav gắn).
@@ -812,6 +823,7 @@
        40px, bo 50% ở đó chỉ cho bầu dục. */
     .search-bar > .fa-search,
     .search-bar > .fa-microphone,
+    .search-bar > .fa-microphone-lines,
     .search-bar > .fa-lock {
         left: 0;
         right: 0;
@@ -885,7 +897,8 @@
        nháy. Không có dấu hiệu này thì người dùng giữ tay mà chẳng thấy gì đổi,
        không biết máy đã nghe chưa — đúng vấn đề đã sửa cho popup Dịch nhanh. */
     .top-nav:not(.search-active) .search-bar.is-recording > .fa-search,
-    .top-nav:not(.search-active) .search-bar.is-recording > .fa-microphone {
+    .top-nav:not(.search-active) .search-bar.is-recording > .fa-microphone,
+    .top-nav:not(.search-active) .search-bar.is-recording > .fa-microphone-lines {
         background: var(--primary-color);
         color: #fff;
         border-color: var(--primary-color);
@@ -967,6 +980,7 @@
     /* Bung ra: icon trở lại dạng ký hiệu thường trong ô, BỎ viền tròn. */
     .top-nav.search-active .search-bar > .fa-search,
     .top-nav.search-active .search-bar > .fa-microphone,
+    .top-nav.search-active .search-bar > .fa-microphone-lines,
     .top-nav.search-active .search-bar > .fa-lock {
         left: 18px;
         right: auto;

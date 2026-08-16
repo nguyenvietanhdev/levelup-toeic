@@ -1596,6 +1596,7 @@
    thiếu nó ở đây là lúc thu icon mất `position: absolute` và nhảy khỏi chỗ. */
 .search-bar > .fa-search,
 .search-bar > .fa-microphone,
+.search-bar > .fa-microphone-lines,
 .search-bar > .fa-lock {
     position: absolute;
     left: 12px;

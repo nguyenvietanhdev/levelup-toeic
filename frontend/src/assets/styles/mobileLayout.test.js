@@ -92,7 +92,10 @@ describe('nav xuống đáy', () => {
     test('fixed ở đáy, không phải sticky ở đỉnh', () => {
         const r = ruleFor('.top-nav');
         expect(r).toMatch(/position:\s*fixed/);
-        expect(r).toMatch(/bottom:\s*0/);
+        // `var(--kb, 0px)` chứ không phải `0` cứng: nav phải ĐẨY LÊN khi bàn
+        // phím ảo mở, không thì gõ tìm là bị nó che mất. Bàn phím đóng thì --kb
+        // là 0px, tức vẫn bám đáy như thường.
+        expect(r).toMatch(/bottom:\s*var\(--kb,\s*0px\)/);
     });
 
     test('huỷ `top` của quy tắc gốc', () => {
@@ -237,7 +240,7 @@ describe('ô tìm kiếm thu gọn thành nút kính lúp', () => {
         // phải so với icon; còn `left: 12px` cố định là đúng khi ô rộng 400px
         // nhưng ở ô 40px thì 12px không còn là "mép" mà thành gần tâm.
         expect(ruleFor('.search-bar input')).toMatch(/padding:\s*8px 0;/);
-        const icon = ruleFor('.search-bar > .fa-search,\n    .search-bar > .fa-microphone,\n    .search-bar > .fa-lock');
+        const icon = ruleFor('.search-bar > .fa-search,\n    .search-bar > .fa-microphone,\n    .search-bar > .fa-microphone-lines,\n    .search-bar > .fa-lock');
         expect(icon).toMatch(/left:\s*0/);
         expect(icon).toMatch(/right:\s*0/);
         expect(icon).toMatch(/margin:\s*auto/);
@@ -246,7 +249,7 @@ describe('ô tìm kiếm thu gọn thành nút kính lúp', () => {
     test('VIỀN nằm trên ICON, không phải trên ô nhập', () => {
         // Đặt viền + bo 50% lên input thì ra BẦU DỤC: input cao ~34px trong ô
         // rộng 40px. Icon mới là hình vuông thật (32×32) nên `50%` ra hình tròn.
-        const icon = ruleFor('.search-bar > .fa-search,\n    .search-bar > .fa-microphone,\n    .search-bar > .fa-lock');
+        const icon = ruleFor('.search-bar > .fa-search,\n    .search-bar > .fa-microphone,\n    .search-bar > .fa-microphone-lines,\n    .search-bar > .fa-lock');
         expect(icon).toMatch(/border:\s*2px solid var\(--primary-color\)/);
         expect(icon).toMatch(/border-radius:\s*50%/);
         expect(icon).toMatch(/width:\s*32px/);
@@ -272,7 +275,7 @@ describe('ô tìm kiếm thu gọn thành nút kính lúp', () => {
 
     test('bung ra thì icon BỎ viền, trở lại ký hiệu thường', () => {
         const icon = ruleFor(
-            '.top-nav.search-active .search-bar > .fa-search,\n    .top-nav.search-active .search-bar > .fa-microphone,\n    .top-nav.search-active .search-bar > .fa-lock');
+            '.top-nav.search-active .search-bar > .fa-search,\n    .top-nav.search-active .search-bar > .fa-microphone,\n    .top-nav.search-active .search-bar > .fa-microphone-lines,\n    .top-nav.search-active .search-bar > .fa-lock');
         expect(icon).toMatch(/border:\s*none/);
         expect(icon).toMatch(/width:\s*1em/);
     });
@@ -287,7 +290,7 @@ describe('ô tìm kiếm thu gọn thành nút kính lúp', () => {
         // phải so với icon; còn `left: 12px` cố định là đúng khi ô rộng 400px
         // nhưng ở ô 40px thì 12px không còn là "mép" mà thành gần tâm.
         expect(ruleFor('.search-bar input')).toMatch(/padding:\s*8px 0;/);
-        const icon = ruleFor('.search-bar > .fa-search,\n    .search-bar > .fa-microphone,\n    .search-bar > .fa-lock');
+        const icon = ruleFor('.search-bar > .fa-search,\n    .search-bar > .fa-microphone,\n    .search-bar > .fa-microphone-lines,\n    .search-bar > .fa-lock');
         expect(icon).toMatch(/left:\s*0/);
         expect(icon).toMatch(/right:\s*0/);
         expect(icon).toMatch(/margin:\s*auto/);
@@ -297,7 +300,7 @@ describe('ô tìm kiếm thu gọn thành nút kính lúp', () => {
         // Ô đủ rộng rồi thì chữ phải bắt đầu sau icon, không căn giữa.
         expect(ruleFor('.top-nav.search-active .search-bar input'))
             .toMatch(/text-align:\s*left/);
-        expect(ruleFor('.top-nav.search-active .search-bar > .fa-search,\n    .top-nav.search-active .search-bar > .fa-microphone,\n    .top-nav.search-active .search-bar > .fa-lock'))
+        expect(ruleFor('.top-nav.search-active .search-bar > .fa-search,\n    .top-nav.search-active .search-bar > .fa-microphone,\n    .top-nav.search-active .search-bar > .fa-microphone-lines,\n    .top-nav.search-active .search-bar > .fa-lock'))
             .toMatch(/left:\s*\d+px/);
     });
 
@@ -370,7 +373,7 @@ describe('điện thoại KHÔNG có nút mic; sáng/tối ở lại nav', () =>
     test('đang nghe thì có dấu hiệu nhìn thấy được', () => {
         // Giữ tay mà không có phản hồi thì không biết micro đã bắt đầu chưa.
         // Dấu hiệu giờ nằm trên chính NÚT KÍNH LÚP (nút mic riêng đã bỏ).
-        expect(ruleFor('.top-nav:not(.search-active) .search-bar.is-recording > .fa-search,\n    .top-nav:not(.search-active) .search-bar.is-recording > .fa-microphone'))
+        expect(ruleFor('.top-nav:not(.search-active) .search-bar.is-recording > .fa-search,\n    .top-nav:not(.search-active) .search-bar.is-recording > .fa-microphone,\n    .top-nav:not(.search-active) .search-bar.is-recording > .fa-microphone-lines'))
             .toMatch(/animation:\s*micPulse/);
     });
 

@@ -127,6 +127,110 @@ describe('không để hệ điều hành cướp cử chỉ giữ', () => {
     });
 });
 
+/**
+ * GIỮ để nói thì ô phải BUNG RA, nhưng KHÔNG được bật bàn phím ảo.
+ *
+ * Hai thứ này hay bị gộp làm một vì cùng đi qua `focus()`. Nhưng bung ra là
+ * chuyện HÌNH DẠNG, còn tiêu điểm mới là thứ kéo bàn phím lên — mà bàn phím
+ * che mất nửa màn hình đúng lúc người dùng đang nói.
+ */
+describe('giữ để nói: bung ô, KHÔNG bật bàn phím', () => {
+    test('có state riêng, không dùng chung searchFocused', () => {
+        expect(src).toMatch(/const \[searchExpanded, setSearchExpanded\] = useState\(false\)/);
+    });
+
+    test('onStart bung ô VÀ bỏ tiêu điểm', () => {
+        const i = src.indexOf('onStart: () => {');
+        const body = src.slice(i, src.indexOf('},', i));
+        expect(body).toMatch(/setSearchExpanded\(true\)/);
+        // `blur()` là thứ giữ cho bàn phím không bật lên.
+        expect(body).toMatch(/blur\(\)/);
+    });
+
+    test('nav mở rộng theo CẢ HAI nguồn', () => {
+        expect(src).toMatch(/\(searchFocused \|\| searchExpanded\) \? 'search-active' : ''/);
+    });
+
+    test('đóng ô phải gỡ CẢ state này', () => {
+        // `blur()` chỉ gỡ `searchFocused`. Ô mở bằng cử chỉ giữ không hề có tiêu
+        // điểm, nên thiếu dòng này là nút × bấm mãi không đóng được.
+        const i = src.indexOf('const closeSearch');
+        const body = src.slice(i, i + 400);
+        expect(body).toMatch(/setSearchExpanded\(false\)/);
+    });
+
+    test('đang nói thì nav KHÔNG trượt ẩn theo cuộn', () => {
+        expect(src).toMatch(/navHidden && !searchFocused && !searchExpanded/);
+    });
+});
+
+/**
+ * Bàn phím ảo che mất nav — và ô tìm nằm TRONG nav.
+ *
+ * Nav là `fixed; bottom: 0` nên bám đáy CỬA SỔ, mà bàn phím ảo KHÔNG làm cửa
+ * sổ ngắn lại: nó phủ lên trên. Nên đúng lúc chạm vào ô để gõ thì cả nav lẫn ô
+ * đều bị che, người dùng gõ mà không thấy mình gõ gì.
+ *
+ * `window.innerHeight` không phát hiện được — phải dùng VisualViewport.
+ */
+describe('nav bám trên bàn phím ảo', () => {
+    const hook = readFileSync(join(__dirname, 'useKeyboardInset.js'), 'utf8');
+
+    test('dùng VisualViewport, không phải innerHeight một mình', () => {
+        expect(hook).toMatch(/window\.visualViewport/);
+        expect(hook).toMatch(/vv\.height/);
+    });
+
+    test('trừ cả offsetTop', () => {
+        // Người dùng phóng to rồi kéo thì khung nhìn trượt xuống; thiếu vế này
+        // là tính dư và nav bị đẩy lơ lửng giữa màn hình.
+        expect(hook).toMatch(/vv\.height \+ vv\.offsetTop/);
+    });
+
+    test('chặn giá trị âm', () => {
+        // Thanh địa chỉ co giãn làm phép trừ ra số âm nhỏ → nav tụt xuống dưới đáy.
+        expect(hook).toMatch(/Math\.max\(0,/);
+    });
+
+    test('có ngưỡng phân biệt bàn phím với thanh địa chỉ', () => {
+        // Thanh địa chỉ chỉ ~50px; không có ngưỡng thì nav nhấp nhô mỗi lần cuộn.
+        expect(hook).toMatch(/px > \d+/);
+    });
+
+    test('nghe cả resize lẫn scroll của khung nhìn', () => {
+        expect(hook).toMatch(/addEventListener\('resize'/);
+        expect(hook).toMatch(/addEventListener\('scroll'/);
+    });
+
+    test('dọn listener VÀ trả --kb về 0 khi tháo', () => {
+        // Để lại giá trị cũ thì màn khác vẫn thấy nav lơ lửng cách đáy.
+        const i = hook.indexOf('return () =>');
+        const body = hook.slice(i);
+        expect(body).toMatch(/removeEventListener\('resize'/);
+        expect(body).toMatch(/removeEventListener\('scroll'/);
+        expect(body).toMatch(/setProperty\('--kb', '0px'\)/);
+    });
+
+    test('không có VisualViewport thì thoát êm', () => {
+        // Firefox cũ: mất phần cải thiện, không được hỏng.
+        expect(hook).toMatch(/if \(!vv\) return;/);
+    });
+
+    test('CSS đọc --kb với mặc định 0px', () => {
+        expect(css).toMatch(/bottom:\s*var\(--kb,\s*0px\)/);
+    });
+
+    test('dùng `bottom`, KHÔNG chiếm `transform`', () => {
+        // `transform` đã dành cho việc trượt ẩn/hiện theo hướng cuộn — đặt chồng
+        // là hai cơ chế tranh nhau cùng một thuộc tính.
+        expect(css).toMatch(/transition:[^;]*bottom/);
+    });
+
+    test('TopNav có gọi hook', () => {
+        expect(src).toMatch(/useKeyboardInset\(\)/);
+    });
+});
+
 describe('chỉ bắt khi ô đang THU', () => {
     test('bỏ qua khi ô đã bung (đang gõ)', () => {
         // Giữ lâu trên chữ là để bôi đen — cướp mất là không sửa được.
@@ -165,10 +269,13 @@ describe('có dấu hiệu đang ghi âm', () => {
         expect(src).toMatch(/speechOn && !searchFocused \? ' is-recording' : ''/);
     });
 
-    test('icon ĐỔI HÌNH: kính lúp → micro', () => {
-        // Chỉ đổi màu thì người dùng phải nhớ "đỏ nghĩa là gì". Đổi hẳn sang
-        // hình micro thì nhìn là biết máy đang thu.
-        expect(src).toMatch(/speechOn \? 'fa-microphone' : 'fa-search'/);
+    test('icon ĐỔI HÌNH theo BA trạng thái', () => {
+        // Chỉ đổi màu thì người dùng phải nhớ "đỏ nghĩa là gì". Đổi hẳn hình:
+        //   · đang thu            → micro đặc
+        //   · ô mở, chưa thu      → micro gạch-sóng (nhắc: giữ vào đây là nói)
+        //   · còn lại             → kính lúp
+        expect(src).toMatch(/speechOn\s*\?\s*'fa-microphone'/);
+        expect(src).toMatch(/\(searchFocused \|\| searchExpanded\) \? 'fa-microphone-lines' : 'fa-search'/);
     });
 
     test('đang luyện tập vẫn ưu tiên ổ khoá', () => {
@@ -196,7 +303,9 @@ describe('có dấu hiệu đang ghi âm', () => {
     });
 
     test('CSS tô đỏ + nhấp nháy chính nút kính lúp', () => {
-        const r = css.match(/\.is-recording > \.fa-microphone\s*\{([^}]*)\}/);
+        // Quy tắc kết thúc bằng biến thể `-lines` (nó là selector CUỐI trong
+        // nhóm), nên `{` chỉ nằm sau dòng đó.
+        const r = css.match(/\.is-recording > \.fa-microphone-lines\s*\{([^}]*)\}/);
         expect(r, 'thiếu quy tắc báo đang ghi').toBeTruthy();
         expect(r[1]).toMatch(/animation:\s*micPulse/);
         expect(r[1]).toMatch(/background:\s*var\(--primary-color\)/);

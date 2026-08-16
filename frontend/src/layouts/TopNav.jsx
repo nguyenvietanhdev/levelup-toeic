@@ -18,6 +18,7 @@ import { isSpeechSupported, speechLangFor, createSpeechInput } from '@lib/speech
 import { createHoldGesture } from '@lib/holdGesture.js';
 import { getVocabLang } from '@api/vocabulary.js';
 import { useHideOnScrollDown } from './useHideOnScrollDown.js';
+import { useKeyboardInset } from './useKeyboardInset.js';
 
 export default function TopNav() {
     const { user, resources, setMenuOpen, showScreen, menuOpen, currentScreen } = useGame();
@@ -45,7 +46,16 @@ export default function TopNav() {
     const menuHasDot = menuRewardCount === 0 && (menuBadges.online > 0 || menuBadges.shopDiscount > 0);
     const [searchQuery, setSearchQuery] = useState('');
     const [searchFocused, setSearchFocused] = useState(false);
+    // Ô BUNG RA mà KHÔNG có tiêu điểm — chỉ dùng cho cử chỉ giữ-để-nói.
+    //
+    // Tách khỏi `searchFocused` vì hai thứ khác nhau: bung ra là chuyện HÌNH
+    // DẠNG, còn tiêu điểm là thứ kéo BÀN PHÍM ẢO lên. Giữ để nói thì cần vế
+    // đầu (thấy chữ chạy vào ô) nhưng không cần vế sau — bàn phím bật lên là
+    // che mất nửa màn hình đúng lúc đang nói.
+    const [searchExpanded, setSearchExpanded] = useState(false);
     const navHidden = useHideOnScrollDown();
+    // Đẩy nav lên trên bàn phím ảo — không thì gõ tìm là bị nó che mất.
+    useKeyboardInset();
     // Nhập bằng giọng nói. `speechOn` là trạng thái ĐANG NGHE để vẽ nút; bản thân
     // phiên nhận dạng nằm trong ref vì nó không phải dữ liệu render.
     const [speechOn, setSpeechOn] = useState(false);
@@ -329,12 +339,16 @@ export default function TopNav() {
         searchHoldRef.current = createHoldGesture({
             thresholdMs: 350,
             onStart: () => {
-                // Giữ = ghi âm, KHÔNG phải mở ô nhập. Bỏ tiêu điểm để bàn phím
-                // ảo không bật lên che mất nửa màn hình trong lúc đang nói.
+                // BUNG ô ra để thấy chữ chạy vào, nhưng KHÔNG lấy tiêu điểm:
+                // tiêu điểm là thứ kéo bàn phím ảo lên, mà bàn phím che mất
+                // nửa màn hình đúng lúc đang nói.
                 document.getElementById('search-input')?.blur();
+                setSearchExpanded(true);
                 autoTranslateRef.current = false;
                 startSpeech();
             },
+            // Nhả tay: ô ở NGUYÊN trạng thái bung để đọc lại chữ vừa nói và
+            // sửa nếu cần. Thu lại là mất luôn kết quả trước khi kịp nhìn.
             onStop: () => stopSpeech(),
         });
     }
@@ -412,6 +426,9 @@ export default function TopNav() {
         setSearchQuery('');
         window._reactClearSearch?.();
         document.getElementById('search-input')?.blur();
+        // `blur()` chỉ gỡ `searchFocused`. Ô mở bằng cử chỉ GIỮ không hề có
+        // tiêu điểm, nên thiếu dòng này là nút × bấm mãi không đóng được.
+        setSearchExpanded(false);
     }, []);
 
     /**
@@ -609,12 +626,14 @@ export default function TopNav() {
         <>
         <nav className={[
             'top-nav',
-            searchFocused ? 'search-active' : '',
+            // Bung ra vì MỘT trong hai: người dùng chạm vào để gõ (có tiêu
+            // điểm), hoặc đang giữ để nói (không tiêu điểm, không bàn phím).
+            (searchFocused || searchExpanded) ? 'search-active' : '',
             // Ẩn khi cuộn XUỐNG, hiện lại khi cuộn LÊN (chỉ có tác dụng ở khổ
             // điện thoại — xem responsive.css). Nhưng KHÔNG ẩn khi đang gõ tìm:
             // ô nhập nằm trong chính thanh này, ẩn đi là người dùng mất chỗ gõ
             // giữa chừng.
-            navHidden && !searchFocused ? 'nav-hidden' : '',
+            navHidden && !searchFocused && !searchExpanded ? 'nav-hidden' : '',
         ].filter(Boolean).join(' ')}>
             <div className="nav-left">
                 <button id="menu-btn" className="icon-btn" onClick={() => setMenuOpen(!menuOpen)} style={{ position: 'relative' }}>
@@ -677,12 +696,20 @@ export default function TopNav() {
                     dùng giữ tay mà chẳng thấy gì đổi, không biết máy nghe chưa. */}
                 <div className={`search-bar ${isInPractice ? 'disabled' : ''}${speechOn && !searchFocused ? ' is-recording' : ''}`}>
                     {/* Icon ĐỔI HÌNH theo trạng thái, không chỉ đổi màu:
-                        khoá → kính lúp → micro (đang nghe).
+
+                        · đang luyện tập      → ổ khoá
+                        · ĐANG THU            → micro đặc (kèm nhấp nháy đỏ)
+                        · ô đang mở, chưa thu → micro gạch-chân-sóng: nhắc rằng
+                          giữ vào đây là nói được
+                        · còn lại             → kính lúp
+
                         Chỉ đổi màu thì người dùng phải nhớ "đỏ nghĩa là gì";
-                        đổi hẳn sang hình micro thì nhìn là biết máy đang thu. */}
+                        đổi hẳn hình thì nhìn là biết. */}
                     <i className={`fas ${isInPractice
                         ? 'fa-lock'
-                        : speechOn ? 'fa-microphone' : 'fa-search'}`}></i>
+                        : speechOn
+                            ? 'fa-microphone'
+                            : (searchFocused || searchExpanded) ? 'fa-microphone-lines' : 'fa-search'}`}></i>
                     <input
                         type="text"
                         id="search-input"
