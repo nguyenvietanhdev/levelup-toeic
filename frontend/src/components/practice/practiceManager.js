@@ -203,7 +203,13 @@ export const PracticeManager = {
         // popup báo còn thiếu bao nhiêu. Con số thật do server quyết.
         const energyCost = Config.energyCosts[mode];
         if (!GameState.isVipActive() && !Energy.hasEnough(energyCost)) {
-            Energy.showRefillModal({ needed: energyCost });
+            // Nạp xong thì VÀO BÀI LUÔN. Không nối `onBought` thì người dùng trả
+            // tiền xong bị trả về màn cũ, phải tự bấm "Luyện tập" lần nữa —
+            // trông như mua hụt.
+            Energy.showRefillModal({
+                needed: energyCost,
+                onBought: () => { this.start(mode); },
+            });
             return false;
         }
 
@@ -229,7 +235,10 @@ export const PracticeManager = {
             // là ước lượng của client vì Error không mang theo body; đủ dùng cho
             // popup, còn quyết định thật thì server đã ra rồi.
             if (/energy|năng lượng/i.test(msg)) {
-                Energy.showRefillModal({ needed: energyCost });
+                Energy.showRefillModal({
+                    needed: energyCost,
+                    onBought: () => { this.start(mode); },
+                });
             } else {
                 logger.error('Không mở được phiên luyện tập:', msg);
             }

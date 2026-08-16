@@ -184,6 +184,41 @@ export const EnergyShop = {
                 btn.addEventListener('click', async () => {
                     const pack = packs[parseInt(btn.dataset.pack, 10)];
                     if (!pack) return;
+
+                    // HỎI LẠI trước khi trừ tiền.
+                    //
+                    // Trước đây bấm một cái là mua luôn: popup này bật ra ĐÚNG
+                    // lúc người dùng đang bấm để vào bài, nên rất dễ bấm tiếp
+                    // theo quán tính rồi mất tiền mà không kịp đọc. Màn Cửa hàng
+                    // bán đúng những vật phẩm này thì lại CÓ bước xác nhận —
+                    // không có lý do gì chỗ nguy hiểm hơn lại lỏng hơn.
+                    const cur = pack.currency === 'gems' ? '💎 gems' : '🪙 xu';
+                    const what = pack.full ? `nạp đầy ⚡${r.maxEnergy}` : `+${pack.amount}⚡`;
+                    const agreed = await new Promise(resolve => {
+                        Modal.show({
+                            title: 'Xác nhận mua',
+                            content: `
+                                <div style="text-align:center">
+                                    <p>Mua <strong>${pack.name}</strong> (${what})?</p>
+                                    <p style="margin-top:8px">Trừ <strong>${pack.price}</strong> ${cur}</p>
+                                </div>`,
+                            // Không cho bấm nền để đóng: đóng kiểu đó thì lời hứa
+                            // không ai giải, popup năng lượng treo luôn.
+                            closeOnBackdrop: false,
+                            buttons: [
+                                { text: 'Hủy', className: 'btn-secondary', onClick: () => resolve(false) },
+                                { text: 'Mua', className: 'btn-primary', onClick: () => resolve(true) },
+                            ],
+                        });
+                    });
+                    if (!agreed) {
+                        // Modal.show ở trên đã ĐÈ mất popup năng lượng, nên phải
+                        // dựng lại — không thì bấm Hủy là mất cả hai, người dùng
+                        // rơi thẳng về màn trước mà không hiểu chuyện gì.
+                        this.showModal({ needed, onBought });
+                        return;
+                    }
+
                     btn.disabled = true;
                     const ok = await this.buy(pack);
                     if (ok) {
