@@ -98,7 +98,7 @@ export default function QuickSettings({ variant = 'bar' }) {
             : `Cấp độ: ${bandLabel(val, vocabLang)} — chỉ lấy từ ${levels.join('/')}`);
     };
 
-    const handleToggleVocabLang = () => {
+    const handleToggleVocabLang = async () => {
         // Khách chưa login: đổi ngôn ngữ ghi vào settings + reload, mà khách
         // không có hồ sơ server → mời đăng nhập thay vì đổi.
         if (!isLoggedIn) {
@@ -134,7 +134,15 @@ export default function QuickSettings({ variant = 'bar' }) {
             if (s.difficulty && s.difficulty !== 'adaptive') {
                 s.levelFilter = levelsFor(s.difficulty, next);
             }
-            window.GameState.save?.();
+            // ĐỢI ghi xong mới reload. `save()` hoãn 100ms rồi trả về ngay nên
+            // reload giết trang trước khi nó kịp gửi — đổi sang tiếng Trung
+            // xong load lại thấy nhảy về tiếng Anh, vì server vẫn giữ 'en'.
+            try {
+                await window.GameState.saveNow?.();
+            } catch {
+                // Mạng hỏng: vẫn reload: localStorage đã có 'next' nên giao
+                // diện đúng ý người dùng, lần save sau sẽ đẩy lên server.
+            }
         }
         window.location.reload();
     };

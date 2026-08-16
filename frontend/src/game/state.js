@@ -384,6 +384,31 @@ export const GameState = {
         }, 100);
     },
 
+    /**
+     * Lưu NGAY, đợi ghi xong mới trả về.
+     *
+     * `save()` hoãn 100ms rồi mới ghi, và trả về ngay lập tức — `await save()`
+     * KHÔNG đợi được mạng. Chỗ nào gọi xong là `location.reload()` hoặc rời
+     * trang thì trang chết trước khi hẹn giờ kịp chạy: thay đổi mất sạch mà
+     * không báo gì. Chính là lỗi đổi ngôn ngữ học xong bị nhảy về tiếng Anh.
+     *
+     * Chỉ dùng cho những chỗ đó. Thao tác thường cứ `save()` để còn gộp lệnh.
+     */
+    async saveNow() {
+        if (this._justInitialized || Date.now() < this._initBlockUntil) {
+            logger.log('⏭️ saveNow bỏ qua (post-init guard) — giữ dữ liệu server.');
+            return false;
+        }
+        // Huỷ lệnh hoãn đang chờ: nội dung của nó nằm trong `this.state` rồi,
+        // để lại thì sau khi ghi xong nó chạy lại lần nữa vô ích.
+        if (this._saveTimeout) {
+            clearTimeout(this._saveTimeout);
+            this._saveTimeout = null;
+        }
+        await this._performSave();
+        return true;
+    },
+
     async _performSave() {
         try {
             this._isSaving = true;
@@ -425,10 +450,15 @@ export const GameState = {
         EventBus.emit(GameEvents.STATE_CHANGED);
     },
 
-    /** Restore settings (only) to their canonical defaults + persist. */
+    /**
+     * Restore settings (only) to their canonical defaults + persist.
+     *
+     * Dùng `saveNow` chứ không phải `save`: nơi gọi đều reload ngay sau đó, mà
+     * `save()` chỉ hẹn giờ rồi trả về — đợi bao lâu cũng là ăn may.
+     */
     async resetSettings() {
         this.state.settings = { ...DEFAULT_SETTINGS };
-        await this.save?.();
+        await this.saveNow?.();
     },
 
     getState() {

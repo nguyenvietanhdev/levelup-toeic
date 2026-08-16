@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import Toggle from './Toggle.jsx';
 import { QUESTION_TIME_MODES, getQuestionTimeDefault } from '@components/practice/questionTime.js';
-import { bandLabel, BANDS } from '@lib/levelBands.js';
+import { bandLabel, BANDS, levelsFor } from '@lib/levelBands.js';
 
 const SEC_OPTIONS = [10, 15, 20, 25, 30, 45, 60, 90, 120];
 
@@ -116,12 +116,25 @@ export default function PracticePanel({ s, handleQPS, updateSetting, handleDiffi
                     <h4>Ngôn ngữ từ vựng</h4>
                     <p>Chọn bộ từ vựng để luyện tập</p>
                 </div>
-                <select value={s.vocabLang || 'en'} onChange={e => {
+                <select value={s.vocabLang || 'en'} onChange={async e => {
                     const next = e.target.value;
                     updateSetting('vocabLang', next);
                     try {
                         localStorage.setItem('vocabLang', next);
                     } catch {}
+                    // Dịch bộ lọc độ khó sang khung của ngôn ngữ MỚI (en → CEFR,
+                    // zh → HSK). Bộ lọc so khớp CHÍNH XÁC từng chuỗi nên giữ
+                    // nguyên `['A1','A2']` khi sang tiếng Trung là lọc ra 0 từ.
+                    const st = window.GameState?.state?.settings;
+                    if (st?.difficulty && st.difficulty !== 'adaptive') {
+                        updateSetting('levelFilter', levelsFor(st.difficulty, next));
+                    }
+                    // ĐỢI ghi xong mới reload: `updateSetting` gọi `save()` vốn
+                    // hoãn 100ms rồi trả về ngay, reload giết trang trước khi nó
+                    // kịp gửi → server vẫn giữ ngôn ngữ cũ, load lại nhảy về.
+                    try {
+                        await window.GameState?.saveNow?.();
+                    } catch { /* mạng hỏng — localStorage đã đúng, save sau đẩy lên */ }
                     window.location.reload();
                 }}>
                     <option value="en">🇬🇧 Tiếng Anh (EN)</option>
