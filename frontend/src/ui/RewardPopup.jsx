@@ -45,10 +45,14 @@ function RewardContent({ subtitle, rewards }) {
     );
 }
 
-export function showRewardPopup({ title = '🎉 Nhận thưởng', subtitle, rewards }) {
+// `aboveOverlay`: bật khi popup được mở TỪ trong một lớp phủ khác (bảng Thông
+// báo). Lớp đó cùng z-index 1100 với modal nên nếu không nâng, popup mở ra
+// nhưng nằm DƯỚI — người dùng bấm "Nhận thưởng" mà tưởng không có gì xảy ra.
+export function showRewardPopup({ title = '🎉 Nhận thưởng', subtitle, rewards, aboveOverlay = false }) {
     Modal.show({
         title,
         contentJsx: <RewardContent subtitle={subtitle} rewards={rewards} />,
         buttons: [{ text: 'Tuyệt vời!', className: 'btn-primary' }],
+        aboveOverlay,
     });
 }

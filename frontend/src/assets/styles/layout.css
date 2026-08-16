@@ -996,6 +996,14 @@
     justify-content: center;
 }
 
+/* Modal mở TỪ trong một lớp phủ khác (vd. popup nhận thưởng bấm từ bảng Thông
+   báo). Bảng đó z-index 1100 y hệt modal, mà bằng nhau thì thứ tự DOM quyết
+   định — bảng nằm sau nên che mất popup. Chỉ nâng khi được yêu cầu, nâng toàn
+   cục dễ làm hỏng thứ tự chồng của chỗ khác. */
+#modal-container.modal-container--above-overlay {
+    z-index: var(--z-modal-over-overlay);
+}
+
 .modal-backdrop {
     position: absolute;
     top: 0;

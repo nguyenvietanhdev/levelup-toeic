@@ -58,7 +58,10 @@ export default function ModalContainer() {
     };
 
     return (
-        <div id="modal-container" className="active">
+        <div
+            id="modal-container"
+            className={`active${modal.aboveOverlay ? ' modal-container--above-overlay' : ''}`}
+        >
             <div className="modal-backdrop" onClick={modal.closeOnBackdrop !== false ? close : undefined}></div>
             <div className={`modal${modal.wide ? ' modal--wide' : ''}`}>
                 <div className="modal-header">

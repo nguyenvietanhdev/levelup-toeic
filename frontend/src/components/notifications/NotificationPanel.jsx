@@ -66,7 +66,14 @@ export default function NotificationPanel({ isLoggedIn }) {
             GameState.creditServerRewards({ coins, gems, xp });
             syncFromState();
             window.Utils?.playSound?.(window.Config?.sounds?.reward || 'assets/sounds/achieve.mp3', 0.8);
-            showRewardPopup({ subtitle: 'Quà tặng từ hệ thống', rewards: { coins, gems, xp, items } });
+            // `aboveOverlay`: popup mở TỪ trong bảng Thông báo, mà bảng đó cùng
+            // z-index 1100 với modal — không nâng thì popup nằm dưới, bấm nút
+            // xong tưởng như không có gì xảy ra.
+            showRewardPopup({
+                subtitle: 'Quà tặng từ hệ thống',
+                rewards: { coins, gems, xp, items },
+                aboveOverlay: true,
+            });
             await loadBadge();
         } else {
             Toast.error(res.message || 'Không thể nhận quà');
@@ -87,17 +94,27 @@ export default function NotificationPanel({ isLoggedIn }) {
                 unclaimed.map(n => NotificationsAPI.claimGift(n._id || n.id))
             );
             let totalCoins = 0, totalGems = 0, totalXp = 0;
+            const totalItems = [];
+            let claimed = 0;
             for (const r of results) {
                 if (r.status === 'fulfilled' && r.value?.success) {
-                    const { coins = 0, gems = 0, xp = 0 } = r.value.reward || {};
+                    const { coins = 0, gems = 0, xp = 0, items: got = [] } = r.value.reward || {};
                     totalCoins += coins; totalGems += gems; totalXp += xp;
+                    if (Array.isArray(got)) totalItems.push(...got);
+                    claimed++;
                 }
             }
-            if (totalCoins || totalGems || totalXp) {
+            if (totalCoins || totalGems || totalXp || totalItems.length) {
                 GameState.creditServerRewards({ coins: totalCoins, gems: totalGems, xp: totalXp });
                 syncFromState();
                 window.Utils?.playSound?.(window.Config?.sounds?.reward || 'assets/sounds/achieve.mp3', 0.8);
-                Toast.success(`Đã nhận tất cả: ${[totalCoins && `+${totalCoins} Coins`, totalGems && `+${totalGems} Gems`, totalXp && `+${totalXp} XP`].filter(Boolean).join(', ')}`);
+                // Cùng popup với nhận lẻ, cho nhất quán — trước đây chỗ này là
+                // toast nhỏ nên nhận cả loạt lại kém long trọng hơn nhận một cái.
+                showRewardPopup({
+                    subtitle: `Đã nhận ${claimed} quà tặng`,
+                    rewards: { coins: totalCoins, gems: totalGems, xp: totalXp, items: totalItems },
+                    aboveOverlay: true,
+                });
             }
         }
 
