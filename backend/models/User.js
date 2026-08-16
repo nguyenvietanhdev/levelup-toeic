@@ -27,6 +27,18 @@ const UserSchema = new mongoose.Schema(
             sparse: true,
             index: true,
         },
+        // Tài khoản TẠO bằng Google được gán mật khẩu NGẪU NHIÊN chỉ để qua
+        // validate — không ai biết chuỗi đó, kể cả chủ tài khoản. Vậy nên
+        // `googleId` một mình KHÔNG đủ để kết luận "không có mật khẩu":
+        //
+        //   · đăng ký email+mật khẩu TRƯỚC, sau đó đăng nhập Google → được gắn
+        //     googleId nhưng mật khẩu THẬT vẫn còn, vẫn phải đổi được;
+        //   · tạo thẳng bằng Google → mật khẩu là rác, đổi kiểu gì cũng không
+        //     qua được bước "nhập mật khẩu hiện tại".
+        //
+        // Cờ này phân biệt đúng hai trường hợp đó. Người dùng nhóm sau muốn có
+        // mật khẩu thì đi lối "Quên mật khẩu" (gửi mã qua email họ sở hữu).
+        hasUsablePassword: { type: Boolean, default: true },
         role: {
             type: String,
             enum: ['user', 'admin'],

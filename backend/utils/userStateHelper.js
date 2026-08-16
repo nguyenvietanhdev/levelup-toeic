@@ -164,12 +164,18 @@ async function buildFullState(userId) {
             usernameChangedAt: profile.usernameChangedAt || null,
             email: user.email,
             role: user.role,
-            // Tài khoản đăng nhập bằng Google KHÔNG có mật khẩu. Client cần biết
-            // để ẩn form "Đổi mật khẩu" — hiện ra thì người dùng gõ mãi không
-            // được, vì không có mật khẩu hiện tại nào để mà nhập.
+            // Client cần biết để ẩn form "Đổi mật khẩu" — hiện ra thì người dùng
+            // gõ mãi không được, vì không có mật khẩu hiện tại nào để mà nhập.
             //
-            // Trả cờ boolean chứ KHÔNG trả `googleId`: client chỉ cần biết có
-            // mật khẩu hay không, không việc gì phải lộ định danh Google ra.
+            // Điều kiện là "CHƯA có mật khẩu dùng được", KHÔNG phải "là tài khoản
+            // Google": người đăng ký email+mật khẩu trước rồi mới đăng nhập Google
+            // cũng có googleId, mà họ có mật khẩu THẬT và phải đổi được như thường.
+            //
+            // Trả boolean chứ KHÔNG trả `googleId`: client chỉ cần biết có đổi
+            // được mật khẩu hay không, không việc gì lộ định danh Google ra.
+            hasUsablePassword: user.hasUsablePassword !== false,
+            // Vẫn cần cờ này riêng để ghi chú nói đúng lý do ("đăng nhập bằng
+            // Google") thay vì một câu chung chung.
             isGoogleAccount: !!user.googleId,
             avatar: profile.avatar,
             level: profile.level,
@@ -253,9 +259,13 @@ async function buildFullState(userId) {
  */
 async function createUserWithDependents(opts) {
     const { email, passwordHash, username, role = 'user', skipPasswordHash = false,
-        googleId, displayName } = opts;
+        googleId, displayName, hasUsablePassword = true } = opts;
 
-    const user = new User({ email, password: passwordHash, role, ...(googleId ? { googleId } : {}) });
+    const user = new User({
+        email, password: passwordHash, role,
+        ...(googleId ? { googleId } : {}),
+        hasUsablePassword,
+    });
     if (skipPasswordHash) user.$skipPasswordHash = true;
     await user.save();
 

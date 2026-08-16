@@ -16,6 +16,7 @@ export default function AccountPanel({
     setShowPwd,
     handleChangePassword,
     isGoogleAccount,
+    hasUsablePassword,
     s,
     updateSetting,
     handleBackup,
@@ -27,15 +28,22 @@ export default function AccountPanel({
         <>
             <div className="settings-section">
                 <h3>Đổi mật khẩu</h3>
-                {/* Tài khoản Google KHÔNG có mật khẩu. Hiện form ra là mời người
-                    dùng gõ vào một ô không bao giờ đúng — họ không có "mật khẩu
-                    hiện tại" nào cả. Nói thẳng lý do thay vì ẩn im lặng, vì ẩn
+                {/* Điều kiện là "CHƯA có mật khẩu dùng được", KHÔNG phải "là tài
+                    khoản Google": người đăng ký email+mật khẩu TRƯỚC rồi mới
+                    đăng nhập Google cũng có googleId, mà mật khẩu THẬT của họ
+                    vẫn còn và phải đổi được như thường.
+
+                    Hiện form cho người chưa có mật khẩu là mời họ gõ vào một ô
+                    không bao giờ đúng. Nói thẳng lý do thay vì ẩn im lặng, vì ẩn
                     trơn thì lại tưởng app thiếu tính năng. */}
-                {isGoogleAccount ? (
+                {!hasUsablePassword ? (
                     <p className="settings-note">
                         <i className="fas fa-circle-info"></i>{' '}
-                        Tài khoản này đăng nhập bằng Google nên không dùng mật khẩu.
-                        Đổi mật khẩu ở phần bảo mật của tài khoản Google.
+                        {isGoogleAccount
+                            ? 'Tài khoản này đăng nhập bằng Google nên chưa có mật khẩu riêng. '
+                            : 'Tài khoản này chưa đặt mật khẩu. '}
+                        Dùng <strong>Quên mật khẩu</strong> ở màn đăng nhập để đặt
+                        mật khẩu qua email — sau đó bạn đăng nhập được bằng cả hai cách.
                     </p>
                 ) : (
                 <>

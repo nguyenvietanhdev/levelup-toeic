@@ -268,14 +268,29 @@ const changePassword = async (req, res, next) => {
         const user = await User.findById(req.user.id).select('+password');
         if (!user) return res.status(404).json({ success: false, message: 'User not found' });
 
-        // Tài khoản Google KHÔNG có mật khẩu (schema chỉ bắt buộc khi thiếu
-        // googleId). Đi tiếp thì `bcrypt.compare(x, undefined)` NÉM LỖI → người
-        // dùng nhận 500 "lỗi máy chủ" thay vì biết là tài khoản mình không dùng
-        // mật khẩu. Chặn ở đây, báo đúng lý do.
+        // Tài khoản TẠO bằng Google có mật khẩu NGẪU NHIÊN không ai biết, nên
+        // bước "nhập mật khẩu hiện tại" không đời nào qua được — chặn sớm và
+        // chỉ lối đi thật (Quên mật khẩu → mã gửi về email họ sở hữu).
+        //
+        // KHÔNG dùng `!user.password`: tài khoản tạo bằng Google VẪN có mật khẩu
+        // (chuỗi rác để qua validate), nên điều kiện đó không bao giờ đúng.
+        // Cũng KHÔNG dùng `user.googleId`: người đăng ký email+mật khẩu trước
+        // rồi mới đăng nhập Google cũng có googleId, mà họ có mật khẩu THẬT và
+        // phải đổi được như thường.
+        if (user.hasUsablePassword === false) {
+            return res.status(400).json({
+                success: false,
+                message: 'Tài khoản này đăng nhập bằng Google nên chưa có mật khẩu. '
+                    + 'Dùng "Quên mật khẩu" để đặt mật khẩu mới qua email.',
+            });
+        }
+
+        // Phòng xa: mật khẩu rỗng mà cờ trên không bắt được thì `bcrypt.compare(
+        // x, undefined)` NÉM LỖI → người dùng nhận 500 thay vì lời giải thích.
         if (!user.password) {
             return res.status(400).json({
                 success: false,
-                message: 'Tài khoản đăng nhập bằng Google không dùng mật khẩu',
+                message: 'Tài khoản này chưa đặt mật khẩu',
             });
         }
 
@@ -363,6 +378,10 @@ const resetPassword = async (req, res, next) => {
         if (isSame) return res.status(400).json({ success: false, message: 'Mật khẩu mới không được giống mật khẩu cũ' });
 
         user.password = newPassword;
+        // Đây là lối thoát cho tài khoản tạo bằng Google: mật khẩu cũ là chuỗi
+        // rác không ai biết, giờ họ tự đặt được qua mã gửi về email mình sở hữu.
+        // Đặt xong thì mật khẩu DÙNG ĐƯỢC — mở lại form đổi mật khẩu ở Cài đặt.
+        user.hasUsablePassword = true;
         await user.save();
         await otp.deleteOne();
 
@@ -651,6 +670,10 @@ const googleLogin = async (req, res, next) => {
                 passwordHash: randomPassword,
                 username,
                 googleId,
+                // Mật khẩu trên là rác ngẫu nhiên, KHÔNG ai biết — kể cả chủ tài
+                // khoản. Đánh dấu để màn Cài đặt không mời họ "đổi mật khẩu"
+                // bằng một mật khẩu hiện tại không tồn tại.
+                hasUsablePassword: false,
                 // Tên hiển thị lấy thẳng từ Google (payload.name) — có sẵn, khỏi bắt
                 // user nhập lại. Ảnh Google gắn ở dưới. locale Google không lưu vì
                 // app không có gì dùng tới (UI tiếng Việt, ngôn ngữ học chọn riêng).
