@@ -217,6 +217,9 @@ export default function TopNav() {
                 lastHeardRef.current = '';
                 if (!text || !autoTranslateRef.current) return;
                 autoTranslateRef.current = false;
+                // THU ô lại trước khi mở popup: nó đang nổi giữa màn hình, để
+                // nguyên là nằm chình ình sau lưng popup dịch.
+                setSearchExpanded(false);
                 openTranslateRef.current?.(text);
             },
             onError: (code) => {
@@ -344,11 +347,12 @@ export default function TopNav() {
                 // nửa màn hình đúng lúc đang nói.
                 document.getElementById('search-input')?.blur();
                 setSearchExpanded(true);
-                autoTranslateRef.current = false;
+                // Nói xong TỰ mở popup dịch — giống hệt cử chỉ giữ Shift trên
+                // máy tính. Giữ để nói là muốn TRA NGHĨA ngay, không phải điền
+                // chữ vào ô rồi còn phải bấm thêm một lần nữa.
+                autoTranslateRef.current = true;
                 startSpeech();
             },
-            // Nhả tay: ô ở NGUYÊN trạng thái bung để đọc lại chữ vừa nói và
-            // sửa nếu cần. Thu lại là mất luôn kết quả trước khi kịp nhìn.
             onStop: () => stopSpeech(),
         });
     }
@@ -691,6 +695,25 @@ export default function TopNav() {
             </div>
 
             <div className="nav-center">
+                {/* NÚT MỎ NEO — chỉ hiện ở khổ điện thoại khi ô tìm đã bay ra
+                    giữa màn (xem responsive.css).
+
+                    Vì sao cần: ô tìm khi bung là `position: fixed` và rời khỏi
+                    nav, kéo theo cả icon của nó. Chỗ nút kính lúp vừa bấm bỏ
+                    trống một lỗ 40px — người dùng mất luôn mốc thị giác "chỗ
+                    tôi vừa chạm". Nút này giữ nguyên vị trí đó, chỉ ĐỔI ICON
+                    theo trạng thái để nói rõ đang làm gì.
+
+                    `aria-hidden`: nó thuần trang trí, mọi thao tác vẫn nằm ở ô
+                    tìm thật — đọc lên hai lần là thừa với người dùng màn đọc. */}
+                {(searchFocused || searchExpanded) && !isInPractice && (
+                    <span
+                        className={`search-anchor-icon${speechOn ? ' is-recording' : ''}`}
+                        aria-hidden="true"
+                    >
+                        <i className={`fas ${speechOn ? 'fa-microphone' : 'fa-microphone-lines'}`}></i>
+                    </span>
+                )}
                 {/* `is-recording`: ô còn THU mà đang ghi âm → tô đỏ chính nút
                     kính lúp (xem responsive.css). Không có dấu hiệu thì người
                     dùng giữ tay mà chẳng thấy gì đổi, không biết máy nghe chưa. */}

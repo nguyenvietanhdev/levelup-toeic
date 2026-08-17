@@ -229,9 +229,12 @@ describe('ô tìm kiếm thu gọn thành nút kính lúp', () => {
 
     test('có focus thì bung ra, ĐÈ lên chứ không đẩy các nút đi', () => {
         // Nav chỉ có một hàng: đẩy là các nút bị bóp về 0 rồi biến mất — đúng
-        // lỗi cũ của nút chuông. `absolute` + z-index thì không ai bị bóp.
+        // lỗi cũ của nút chuông. Rời khỏi dòng chảy thì không ai bị bóp.
+        //
+        // `fixed` chứ không `absolute`: mốc phải là KHUNG NHÌN để căn giữa được
+        // phần màn hình còn thấy. Bám nav thì ô luôn dính sát mép bàn phím.
         const r = ruleFor('.top-nav.search-active .search-bar');
-        expect(r).toMatch(/position:\s*absolute/);
+        expect(r).toMatch(/position:\s*fixed/);
         expect(r).toMatch(/z-index:\s*\d+/);
     });
 
@@ -343,10 +346,13 @@ describe('ô tìm kiếm thu gọn thành nút kính lúp', () => {
         expect(b).not.toMatch(/\.speech-btn/);
     });
 
-    test('ô bung ra NỔI LÊN TRÊN nav, không chen trong hàng nút', () => {
-        // Đặt tuyệt đối bên TRONG nav thì nhìn như ô đang đè lên thanh. Bay lên
-        // lớp riêng (`bottom: 100%`) thì đọc ra ngay là "một lớp vừa mở".
-        expect(ruleFor('.top-nav.search-active .search-bar')).toMatch(/bottom:\s*calc\(100%/);
+    test('ô bung ra nổi GIỮA khung nhìn, không dính mép bàn phím', () => {
+        // Bản cũ bay lên ngay trên nav (`bottom: calc(100% + …)`) — vẫn dính sát
+        // bàn phím, đúng chỗ chật nhất, gõ xong không thấy gợi ý/kết quả.
+        // Giờ căn giữa phần màn hình CÒN THẤY ĐƯỢC (đã trừ `--kb`).
+        const r = ruleFor('.top-nav.search-active .search-bar');
+        expect(r).toMatch(/bottom:\s*calc\(var\(--kb, 0px\) \+ \(100dvh - var\(--kb, 0px\)\) \/ 2\)/);
+        expect(r).not.toMatch(/bottom:\s*calc\(100% \+/);
     });
 
     test('lớp đó có nền + bóng của chính nó', () => {

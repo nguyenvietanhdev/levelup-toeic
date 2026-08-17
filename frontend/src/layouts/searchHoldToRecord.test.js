@@ -231,6 +231,110 @@ describe('nav bám trên bàn phím ảo', () => {
     });
 });
 
+/**
+ * Ô tìm khi bung ra phải nằm GIỮA phần màn hình còn nhìn thấy.
+ *
+ * Bản trước cho nó bay lên ngay trên nav (`bottom: calc(100% + 6px)`) — tức là
+ * vẫn dính sát mép bàn phím, đúng chỗ chật nhất. Người dùng gõ xong không thấy
+ * gợi ý/kết quả vì chúng bị đẩy khuất xuống dưới.
+ */
+describe('ô tìm nổi giữa khung nhìn', () => {
+    const rule = (() => {
+        const m = css.match(/\.top-nav\.search-active \.search-bar\s*\{([^}]*)\}/);
+        expect(m, 'thiếu quy tắc ô tìm khi bung').toBeTruthy();
+        return m[1];
+    })();
+
+    test('mốc là KHUNG NHÌN, không phải nav', () => {
+        // `absolute` thì bám nav và luôn dính sát bàn phím.
+        expect(rule).toMatch(/position:\s*fixed/);
+    });
+
+    test('căn giữa phần THẤY ĐƯỢC, đã trừ bàn phím', () => {
+        expect(rule).toMatch(/bottom:\s*calc\(var\(--kb, 0px\) \+ \(100dvh - var\(--kb, 0px\)\) \/ 2\)/);
+        // `translateY(50%)` kéo ngược lại nửa chiều cao chính nó — không có thì
+        // mép DƯỚI của ô nằm ở giữa, cả ô lệch hẳn lên trên.
+        expect(rule).toMatch(/transform:\s*translateY\(50%\)/);
+    });
+
+    test('KHÔNG còn bám đáy nav như bản cũ', () => {
+        expect(rule).not.toMatch(/bottom:\s*calc\(100% \+/);
+    });
+});
+
+/**
+ * Giữ icon = ghi âm RỒI TỰ mở popup dịch.
+ *
+ * Giữ để nói là muốn TRA NGHĨA ngay, không phải điền chữ vào ô rồi còn phải
+ * bấm thêm một lần nữa — giống hệt cử chỉ giữ Shift trên máy tính.
+ */
+describe('giữ xong tự mở popup dịch', () => {
+    test('bật autoTranslate khi bắt đầu giữ', () => {
+        const i = src.indexOf('onStart: () => {');
+        const body = src.slice(i, src.indexOf('},', i));
+        expect(body).toMatch(/autoTranslateRef\.current = true/);
+    });
+
+    test('THU ô lại trước khi mở popup', () => {
+        // Ô đang nổi giữa màn; để nguyên là nằm chình ình sau lưng popup.
+        const i = src.indexOf('if (!text || !autoTranslateRef.current) return;');
+        const body = src.slice(i, i + 400);
+        const collapse = body.indexOf('setSearchExpanded(false)');
+        const open = body.indexOf('openTranslateRef.current?.(text)');
+        expect(collapse).toBeGreaterThan(-1);
+        expect(open).toBeGreaterThan(collapse);
+    });
+});
+
+/**
+ * Nút mỏ neo: chỗ nút kính lúp vẫn còn, chỉ ĐỔI ICON.
+ *
+ * Ô tìm khi bung là `fixed` nên rời khỏi nav và mang theo icon của nó — chỗ
+ * vừa chạm bỏ trống một lỗ 40px, người dùng mất mốc thị giác "chỗ tôi vừa bấm".
+ */
+describe('nút mỏ neo giữ chỗ nút kính lúp', () => {
+    test('chỉ hiện khi ô đã bung, và không hiện lúc luyện tập', () => {
+        expect(src).toMatch(/\(searchFocused \|\| searchExpanded\) && !isInPractice && \(/);
+        expect(src).toMatch(/search-anchor-icon/);
+    });
+
+    test('đổi icon theo trạng thái thu', () => {
+        const i = src.indexOf('search-anchor-icon');
+        const body = src.slice(i, i + 400);
+        expect(body).toMatch(/speechOn \? 'fa-microphone' : 'fa-microphone-lines'/);
+    });
+
+    test('KHÔNG bắt chạm — thao tác thật ở ô tìm', () => {
+        // Bắt chạm ở đây thì bấm vào là đóng ô mà không ai hiểu vì sao.
+        const m = css.match(/\.top-nav\.search-active \.search-anchor-icon\s*\{([^}]*)\}/);
+        expect(m).toBeTruthy();
+        expect(m[1]).toMatch(/pointer-events:\s*none/);
+    });
+
+    test('cùng cỡ và cùng viền tròn với nút kính lúp lúc thu', () => {
+        const m = css.match(/\.top-nav\.search-active \.search-anchor-icon\s*\{([^}]*)\}/);
+        expect(m[1]).toMatch(/width:\s*32px/);
+        expect(m[1]).toMatch(/border-radius:\s*50%/);
+    });
+
+    test('ẩn mặc định — desktop không có nút này', () => {
+        expect(css).toMatch(/\.search-anchor-icon\s*\{\s*display:\s*none;\s*\}/);
+    });
+
+    test('đang thu thì nhấp nháy; class do JSX gắn, không dùng `~`', () => {
+        // Nút mỏ neo đứng TRƯỚC `.search-bar` trong DOM nên bộ chọn anh em `~`
+        // không với tới được — dùng nó là quy tắc chết lặng.
+        expect(css).toMatch(/\.search-anchor-icon\.is-recording\s*\{[^}]*animation:\s*micPulse/);
+        expect(css).not.toMatch(/\.search-bar\.is-recording ~ \.search-anchor-icon/);
+        expect(src).toMatch(/search-anchor-icon\$\{speechOn \? ' is-recording' : ''\}/);
+    });
+
+    test('aria-hidden — không đọc lên hai lần', () => {
+        const i = src.indexOf('search-anchor-icon');
+        expect(src.slice(i, i + 300)).toMatch(/aria-hidden="true"/);
+    });
+});
+
 describe('chỉ bắt khi ô đang THU', () => {
     test('bỏ qua khi ô đã bung (đang gõ)', () => {
         // Giữ lâu trên chữ là để bôi đen — cướp mất là không sửa được.

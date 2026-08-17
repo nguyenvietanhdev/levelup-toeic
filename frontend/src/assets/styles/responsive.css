@@ -917,6 +917,40 @@
         position: static;
     }
 
+    /* Nút mỏ neo: ĐÚNG chỗ nút kính lúp vừa bấm, chỉ đổi icon.
+       Ô tìm bung ra là `fixed` nên rời khỏi nav và mang theo icon của nó — chỗ
+       vừa chạm bỏ trống một lỗ, người dùng mất mốc thị giác. Nút này lấp đúng
+       chỗ đó với cùng cỡ và cùng viền tròn như nút kính lúp lúc thu. */
+    .search-anchor-icon {
+        display: none;
+    }
+
+    .top-nav.search-active .search-anchor-icon {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        /* Trùng khít nút kính lúp lúc thu (xem `.search-bar > .fa-search`). */
+        width: 32px;
+        height: 32px;
+        margin: auto;
+        border: 2px solid var(--primary-color);
+        border-radius: 50%;
+        color: var(--primary-color);
+        font-size: 14px;
+        /* Không bắt chạm: thao tác thật nằm ở ô tìm đang nổi giữa màn. Bắt
+           chạm ở đây thì bấm vào là đóng ô mà không ai hiểu vì sao. */
+        pointer-events: none;
+    }
+
+    /* Đang thu: tô đặc + nhấp nháy, giống hệt lúc ô còn thu.
+       Class do JSX gắn, KHÔNG dùng bộ chọn anh em `~`: nút mỏ neo đứng TRƯỚC
+       `.search-bar` trong DOM nên `~` không với tới được. */
+    .top-nav.search-active .search-anchor-icon.is-recording {
+        background: var(--primary-color);
+        color: #fff;
+        animation: micPulse 1.2s ease-out infinite;
+    }
+
     /* Bung ra chiếm cả hàng, và nhóm nút phải ẨN HẲN trong lúc đó.
        Trước đây ô phủ lên trên còn nhóm nút vẫn ở đó, bị che một nửa: nhìn
        như giao diện vỡ, mà bấm vào phần thò ra thì trúng ô tìm. Chừa chỗ cho
@@ -929,10 +963,21 @@
        trên nav (`bottom: 100%`) với nền + viền + bóng của chính nó, nên đọc ra
        ngay là "một lớp vừa mở", còn nav nguyên vẹn bên dưới và vẫn bấm được. */
     .top-nav.search-active .search-bar {
-        position: absolute;
+        /* `fixed` chứ không `absolute`: mốc phải là KHUNG NHÌN, không phải nav.
+           Bám nav thì ô luôn dính sát mép bàn phím — đúng chỗ chật nhất. */
+        position: fixed;
         left: 8px;
         right: 8px;
-        bottom: calc(100% + 6px);
+        /* CĂN GIỮA phần màn hình CÒN NHÌN THẤY (trừ đi bàn phím).
+           `--kb` do TopNav đặt qua VisualViewport = chiều cao bị bàn phím che.
+           Vùng thấy được cao `100% - --kb`, nên giữa nó là `--kb + nửa phần
+           còn lại`. Bàn phím đóng thì --kb = 0 và ô về đúng giữa màn.
+
+           Vì sao giữa: gõ xong người dùng cần thấy CẢ ô nhập lẫn nội dung vừa
+           gõ. Ô nằm sát bàn phím thì phần gợi ý/kết quả bị đẩy khuất, còn ô
+           trên cùng thì xa tầm mắt đang nhìn bàn phím. */
+        bottom: calc(var(--kb, 0px) + (100dvh - var(--kb, 0px)) / 2);
+        transform: translateY(50%);
         width: auto;
         min-width: 0;
         z-index: 100;
@@ -940,7 +985,9 @@
         border-radius: 12px;
         background: var(--bg-primary);
         border: 1px solid var(--border-color);
-        box-shadow: 0 -6px 20px rgba(0, 0, 0, 0.35);
+        /* Bóng toả đều: ô giờ nổi giữa màn, không còn dựa vào nav bên dưới. */
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.45);
+        transition: bottom 0.2s ease;
     }
 
     /* Ô tìm ĐANG BUNG: mic KHÔNG hiện lại nữa.
