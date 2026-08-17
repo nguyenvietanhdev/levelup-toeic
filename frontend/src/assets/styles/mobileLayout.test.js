@@ -171,14 +171,31 @@ describe('hàng tiêu đề: nút không đè, không rớt dòng', () => {
 });
 
 describe('nút mic nằm CHÍNH GIỮA màn hình', () => {
+    const micRule = () => ruleFor(
+        '.top-nav .nav-center .mic-btn,\n    .top-nav .nav-center:has(.clear-search-btn) .mic-btn');
+
     test('neo tuyệt đối vào .top-nav, không vào .nav-center', () => {
         // Hai nhóm nút hai bên KHÔNG bằng nhau (trái 3 nút + avatar, phải 2
         // nút). Căn giữa theo dòng chảy flex thì chỉ căn giữa phần CÒN THỪA —
         // nút lệch đúng bằng nửa phần chênh, dính vào nút chuông bên trái.
-        const r = ruleFor('.top-nav .mic-btn');
+        const r = micRule();
         expect(r).toMatch(/position:\s*absolute/);
         expect(r).toMatch(/left:\s*50%/);
         expect(r).toMatch(/transform:\s*translate\(-50%, -50%\)/);
+    });
+
+    test('thắng được quy tắc :has kéo nút sang trái khi CÓ CHỮ', () => {
+        // layout.css có `.nav-center:has(.clear-search-btn) .mic-btn` đặt
+        // `margin-left: -60px` để né nút xoá của bản desktop. Nó chỉ kích hoạt
+        // khi có chữ — nên ghi âm xong, chữ vừa điền vào là nút TRÔI sang đè
+        // lên nút chuông. Ở khổ điện thoại ô tìm đã ra khỏi nav, không còn nút
+        // nào để né.
+        const layout = readFileSync(join(__dirname, 'layout.css'), 'utf8');
+        expect(layout, 'quy tắc gốc đã đổi — xem lại vế :has ở responsive')
+            .toMatch(/\.nav-center:has\(\.clear-search-btn\) \.mic-btn/);
+        // Phải phủ CẢ hai trạng thái, và huỷ margin ngay trong nhóm này.
+        expect(css).toMatch(/\.top-nav \.nav-center:has\(\.clear-search-btn\) \.mic-btn/);
+        expect(micRule()).toMatch(/margin:\s*0/);
     });
 
     test('.nav-center KHÔNG chặn mốc định vị', () => {

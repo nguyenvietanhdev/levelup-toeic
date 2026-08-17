@@ -837,11 +837,23 @@
        Hai nhóm nút hai bên KHÔNG bằng nhau (trái 3 nút + avatar, phải 2 nút),
        nên `margin: auto` chỉ căn giữa phần còn thừa — lệch đúng bằng nửa phần
        chênh. Neo theo chính `.top-nav` thì vị trí không phụ thuộc hai bên có
-       bao nhiêu nút. */
-    .top-nav .mic-btn {
+       bao nhiêu nút.
+
+       Selector phải ĐỦ MẠNH để thắng `.nav-center:has(.clear-search-btn)
+       .mic-btn` ở layout.css (0-3-0). Quy tắc đó kéo nút sang trái 60px để né
+       nút xoá của bản desktop, và nó chỉ kích hoạt KHI CÓ CHỮ — nên ghi âm
+       xong, chữ vừa điền vào là nút trôi sang đè lên nút chuông. Ở khổ điện
+       thoại ô tìm đã ra khỏi nav nên không còn nút nào để né. */
+    .top-nav .nav-center .mic-btn,
+    .top-nav .nav-center:has(.clear-search-btn) .mic-btn {
         position: absolute;
         left: 50%;
         top: 50%;
+        /* `margin` phải về 0 ở ĐÂY nữa: quy tắc `:has` kia đặt `margin-left`,
+           mà nó cùng độ mạnh với vế thứ hai — thắng nhau bằng thứ tự file, và
+           responsive.css nạp sau nên vế này thắng. Nhưng vế THỨ NHẤT (0-3-0)
+           thì không, nên phải huỷ margin ngay trong nhóm này. */
+        margin: 0;
         transform: translate(-50%, -50%);
     }
 
