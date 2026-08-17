@@ -99,6 +99,18 @@ describe('dùng đúng API sẵn có của app', () => {
         expect(src).not.toMatch(/onResult:/);
     });
 
+    test('lấy `.source` (CHUỖI) từ currentTopic, không gửi cả OBJECT', () => {
+        // `currentTopic` là object `{ id, name, source, wordCount, … }`. Gửi cả
+        // object vào `source` thì Mongoose cast thất bại → CastError →
+        // `errorHandler` dịch thành "Resource not found", nên lỗi hiện ra là 404
+        // chứ không phải "sai kiểu dữ liệu" — rất khó lần.
+        //
+        // Đúng lỗi đã gặp: đề FREFIX-C hiện trên thanh trạng thái, năng lượng đủ,
+        // mà bấm Bắt đầu vẫn ra "Resource not found".
+        expect(src).toMatch(/topic\?\.source/);
+        expect(src).not.toMatch(/const source = TopicSelector\.currentTopic \|\| ''/);
+    });
+
     test('lấy đề đang chọn từ TopicSelector, không phải settings', () => {
         // `settings.selectedSource` KHÔNG tồn tại; settings chỉ giữ
         // `selectedPart`. Đọc trường không có thì source luôn rỗng và màn luôn

@@ -130,8 +130,20 @@ async function chargeEnergy(userId) {
 exports.start = async (req, res, next) => {
     try {
         const { source, part = '', lang = 'en', topic = '' } = req.body;
-        if (!source) {
-            return res.status(400).json({ success: false, message: 'Thiếu source' });
+        // Bắt buộc là CHUỖI, không chỉ "có giá trị".
+        //
+        // Client từng gửi cả object đề (`{ id, name, source }`) vào đây. Mongoose
+        // cast thất bại → CastError → `errorHandler` dịch thành
+        // "Resource not found / 404", nên lỗi hiện ra là 404 chứ không phải
+        // "sai kiểu" — mất rất nhiều công mới lần ra. Chặn sớm và nói đúng bệnh.
+        if (typeof source !== 'string' || !source.trim()) {
+            return res.status(400).json({
+                success: false,
+                message: 'Thiếu source, hoặc source không phải chuỗi',
+            });
+        }
+        if (part && typeof part !== 'string') {
+            return res.status(400).json({ success: false, message: 'part phải là chuỗi' });
         }
         if (lang !== 'en' && lang !== 'zh') {
             return res.status(400).json({ success: false, message: 'lang phải là en hoặc zh' });

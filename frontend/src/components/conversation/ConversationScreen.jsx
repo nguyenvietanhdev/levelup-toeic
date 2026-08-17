@@ -57,7 +57,13 @@ export default function ConversationScreen({ active }) {
         if (starting) return;
         // Đề đang chọn nằm ở `TopicSelector.currentTopic` (module vanilla), KHÔNG
         // ở `settings` — settings chỉ giữ `selectedPart`.
-        const source = TopicSelector.currentTopic || '';
+        //
+        // `currentTopic` là OBJECT `{ id, name, source, wordCount, … }`, không
+        // phải chuỗi. Gửi cả object vào `source` thì Mongoose cast thất bại →
+        // CastError → `errorHandler` dịch thành "Resource not found", nên lỗi
+        // hiện ra là 404 chứ không phải "sai kiểu dữ liệu" — rất khó lần.
+        const topic = TopicSelector.currentTopic;
+        const source = (typeof topic === 'string' ? topic : topic?.source) || '';
         const part = GameState.state?.settings?.selectedPart || '';
 
         if (!source) {

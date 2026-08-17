@@ -221,6 +221,20 @@ describe('lấy từ vựng', () => {
         expect(paths).not.toContain('word');
     });
 
+    test('source phải là CHUỖI — object thì báo 400, không để thành 404', () => {
+        // Client từng gửi cả object đề `{ id, name, source }` vào đây. Mongoose
+        // cast thất bại → CastError → `errorHandler` dịch thành
+        // "Resource not found / 404", nên lỗi hiện ra là 404 chứ không phải
+        // "sai kiểu" — mất rất nhiều công mới lần ra.
+        const b = body('start');
+        expect(b).toMatch(/typeof source !== 'string'/);
+        expect(b).toMatch(/không phải chuỗi/);
+    });
+
+    test('part cũng phải là chuỗi', () => {
+        expect(body('start')).toMatch(/typeof part !== 'string'/);
+    });
+
     test('bộ từ quá ít thì báo rõ, không mở phiên rỗng', () => {
         const b = body('start');
         expect(b).toMatch(/words\.length < 4/);
