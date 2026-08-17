@@ -56,8 +56,35 @@ describe('lớp API', () => {
         expect(api).not.toMatch(/usedWords:|xp:|coins:|reward:/);
     });
 
-    test('gỡ lớp bọc `.data` của Http', () => {
-        expect(api).toMatch(/res\?\.data \?\? res/);
+    test('NÉM LỖI khi request thất bại, không để object lỗi lọt qua', () => {
+        // `Http.request` KHÔNG luôn ném: gặp 401/423 nó trả
+        // `{ success: false, error }`. Viết `res?.data ?? res` thì object lỗi đó
+        // lọt qua như dữ liệu thật — màn hội thoại nhận nó, `targetWords` là
+        // undefined, và người dùng thấy phiên rỗng "Từ cần dùng · 0/0" thay vì
+        // lời báo lỗi.
+        //
+        // Đúng lỗi đã gặp: hết năng lượng, server trả 400 "Không đủ năng lượng"
+        // mà giao diện vẫn mở phiên trống — tệ nhất, vì năng lượng đã trừ mà
+        // người dùng tưởng tính năng chạy.
+        expect(api).toMatch(/function unwrap/);
+        expect(api).toMatch(/res\.success === false/);
+        expect(api).toMatch(/throw new Error/);
+    });
+
+    test('CẢ BA lượt gọi đều đi qua unwrap', () => {
+        // Sót một chỗ là chỗ đó vẫn để lỗi lọt qua im lặng.
+        // Đếm `return unwrap(res)` chứ không đếm `unwrap(res)` trần — chuỗi sau
+        // khớp cả bên trong định nghĩa hàm và cho ra 4.
+        expect((api.match(/return unwrap\(res\);/g) || []).length).toBe(3);
+        // Và trong ConversationAPI không còn chỗ nào trả THẲNG `res?.data ?? res`
+        // — lối cũ để object lỗi lọt qua. (Bản thân `unwrap` vẫn dùng nó ở dòng
+        // cuối, đó là chỗ hợp lệ duy nhất, nên chỉ dò phần sau `export const`.)
+        const apiBody = api.slice(api.indexOf('export const ConversationAPI'));
+        expect(apiBody).not.toMatch(/res\?\.data \?\? res/);
+    });
+
+    test('màn hình còn chốt cuối: không có `id` thì không mở phiên', () => {
+        expect(src).toMatch(/if \(!data\?\.id\)/);
     });
 });
 

@@ -69,6 +69,15 @@ export default function ConversationScreen({ active }) {
         setResult(null);
         try {
             const data = await ConversationAPI.start({ source, part, lang });
+            // Chốt cuối: không có `id` thì KHÔNG phải phiên hợp lệ.
+            //
+            // `unwrap` đã ném lỗi cho mọi thất bại đã biết, nhưng nếu server đổi
+            // hình dạng phản hồi thì chỗ này là thứ chặn "phiên rỗng 0/0" —
+            // trạng thái tệ nhất, vì người dùng tưởng tính năng chạy mà không
+            // gõ được gì, và năng lượng thì đã trừ rồi.
+            if (!data?.id) {
+                throw new Error('Server trả về dữ liệu không hợp lệ');
+            }
             setConvo({
                 id: data.id,
                 targetWords: data.targetWords || [],
