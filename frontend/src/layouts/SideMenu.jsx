@@ -23,6 +23,11 @@ const MENU_ITEMS = [
     // (thêm từ · dán JSON · quản lý · chia sẻ · duyệt bộ được chia sẻ) — đó là
     // một nơi để ĐẾN, không phải hộp thoại làm nhanh rồi đóng.
     { label: 'Từ vựng riêng',  icon: 'fa-cloud-upload-alt', screen: 'vocab-screen',        feature: 'feature:upload-vocab' },
+    // Đặt ở MENU BÊN chứ không lẫn vào danh sách 12 chế độ luyện tập: nó không
+    // phải một chế độ hỏi–đáp mà là một nơi để ĐẾN và ở lại một lúc, giống
+    // "Từ vựng riêng". Và nó tốn năng lượng + gọi AI có phí, nên không nên nằm
+    // ngay cạnh những chế độ bấm-là-chơi.
+    { label: 'Hội thoại',      icon: 'fa-comments',         screen: 'conversation-screen', feature: 'feature:conversation' },
     { label: 'Cài đặt',        icon: 'fa-cog',              screen: 'settings-screen' },
 ];
 

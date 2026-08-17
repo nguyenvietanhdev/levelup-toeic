@@ -41,6 +41,31 @@ describe('route được gắn và có bảo vệ', () => {
         expect(routes).toMatch(/router\.use\(protect\)/);
     });
 
+    test('khoá theo Level ở SERVER, không chỉ ẩn mục menu', () => {
+        // Menu bên đã khoá mục này, nhưng đó chỉ là giao diện — gọi thẳng API là
+        // lách được, và "lách được" ở đây nghĩa là người chưa đủ Level vẫn tiêu
+        // token của ta.
+        expect(routes).toMatch(/requireLevel\('feature:conversation'\)/);
+    });
+
+    test('CHỈ khoá `start`, không khoá reply/finish', () => {
+        // `reply`/`finish` là phiên ĐANG chạy. Chặn cả hai thì người vừa tụt
+        // Level (admin sửa, hoặc mốc bị nâng) mắc kẹt giữa hội thoại — đã trừ
+        // năng lượng mà không chốt được để nhận thưởng.
+        const reply = routes.match(/router\.post\('\/:id\/reply'[^\n]*/)[0];
+        const finish = routes.match(/router\.post\('\/:id\/finish'[^\n]*/)[0];
+        expect(reply).not.toMatch(/requireLevel/);
+        expect(finish).not.toMatch(/requireLevel/);
+    });
+
+    test('mốc Level đã khai trong seed', () => {
+        const seed = fs.readFileSync(
+            path.join(__dirname, '..', 'scripts', 'seedFeatureUnlocks.js'), 'utf8');
+        const m = seed.match(/key: 'feature:conversation'[^\n]*requiredLevel: (\d+)/);
+        if (!m) throw new Error('thiếu mốc mở khoá cho Hội thoại trong seed');
+        expect(Number(m[1])).toBeGreaterThan(0);
+    });
+
     test('có đủ ba endpoint', () => {
         expect(routes).toMatch(/router\.post\('\/start'/);
         expect(routes).toMatch(/router\.post\('\/:id\/reply'/);

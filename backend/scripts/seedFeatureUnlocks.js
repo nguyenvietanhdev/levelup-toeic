@@ -22,6 +22,10 @@ const UNLOCKS = [
     { key: 'feature:upload-vocab', label: 'Từ vựng riêng',   requiredLevel: 12, icon: '📤', order: 70 },
     { key: 'feature:wrong-words',  label: 'Ôn từ sai',       requiredLevel: 12, icon: '❌', order: 71 },
     { key: 'feature:leaderboard',  label: 'Bảng xếp hạng',   requiredLevel: 15, icon: '🥇', order: 80 },
+    // Mốc CAO hơn hẳn các tính năng khác vì mỗi phiên là nhiều lượt gọi AI có
+    // phí thật. Người mới chưa có bộ từ nào đủ dày để luyện hội thoại, mà mở
+    // sớm thì họ mở ra thử rồi bỏ — ta trả tiền token cho một lượt dùng vô ích.
+    { key: 'feature:conversation', label: 'Hội thoại',       requiredLevel: 18, icon: '💬', order: 85 },
     { key: 'feature:toeic',        label: 'Thi TOEIC',       requiredLevel: 20, icon: '📝', order: 90 },
 
     // ── Chế độ luyện tập (theo 4 tầng độ khó) ──
