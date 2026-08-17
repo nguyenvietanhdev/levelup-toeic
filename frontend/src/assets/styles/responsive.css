@@ -815,11 +815,34 @@
        ResizeObserver (useStatusBarHeight.js). Không ghim số cứng được: thanh đó
        xuống dòng nên cao 1 hay 2 dòng tuỳ nội dung. */
     .nav-center {
-        /* Chỉ còn chứa nút ghi âm — ô tìm đã bay ra khỏi nav. */
-        flex: 0 0 auto !important;
-        position: relative;
-        width: 40px;
+        /* Chỉ còn chứa nút ghi âm — ô tìm đã bay ra khỏi nav.
+
+           `flex: 1 1 auto` chứ KHÔNG phải `0 0 auto`: nhóm này phải NUỐT hết
+           chỗ trống giữa hai nhóm nút, rồi `margin: auto` của nút mic mới căn
+           nó vào giữa được.
+
+           Ghim `width: 40px` + `flex: 0 0 auto` (bản trước) thì nhóm chỉ rộng
+           đúng bằng nút, nằm sát ngay sau nhóm trái — nút mic dính vào nút
+           chuông, còn chỗ trống dồn hết sang phải. Đúng hiện tượng đã gặp. */
+        flex: 1 1 auto !important;
+        min-width: 40px;
         height: 40px;
+        /* KHÔNG `position: relative`: nút mic bên trong neo `absolute` vào
+           `.top-nav` (nó là `fixed`, tự làm mốc) để nằm giữa MÀN HÌNH. Đặt
+           relative ở đây là nó neo nhầm vào nhóm này và lệch trở lại. */
+        position: static;
+    }
+
+    /* Nút mic nằm CHÍNH GIỮA MÀN HÌNH, không phải giữa khoảng trống.
+       Hai nhóm nút hai bên KHÔNG bằng nhau (trái 3 nút + avatar, phải 2 nút),
+       nên `margin: auto` chỉ căn giữa phần còn thừa — lệch đúng bằng nửa phần
+       chênh. Neo theo chính `.top-nav` thì vị trí không phụ thuộc hai bên có
+       bao nhiêu nút. */
+    .top-nav .mic-btn {
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        transform: translate(-50%, -50%);
     }
 
     .search-bar {
@@ -871,15 +894,15 @@
        không có viền thì icon trần trôi lơ lửng giữa hàng, nhìn không ra là một
        NÚT bấm được — mà đây lại là đích chạm phải giữ vài giây.
 
-       `margin: auto` + `flex` căn giữa cả hai trục trong ô 40px của
-       `.nav-center`. Bỏ margin âm của bản desktop: nó kéo nút chồng vào trong ô
-       tìm, mà ở đây không còn ô nào để chồng lên — giữ lại là icon lệch hẳn
-       sang trái đúng bằng bề rộng đó. */
+       Vị trí do quy tắc `.top-nav .mic-btn` ở trên lo (neo tuyệt đối vào giữa
+       màn). Ở đây chỉ còn hình dáng. `margin: 0` để HUỶ margin âm của bản
+       desktop — nó vốn kéo nút chồng vào trong ô tìm, mà ở đây không còn ô nào
+       để chồng lên nên chỉ làm nút lệch sang trái. */
     .mic-btn {
         display: flex;
         align-items: center;
         justify-content: center;
-        margin: auto;
+        margin: 0;
         width: 32px;
         height: 32px;
         font-size: 14px;

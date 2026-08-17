@@ -170,19 +170,27 @@ describe('hàng tiêu đề: nút không đè, không rớt dòng', () => {
     });
 });
 
-describe('.nav-center làm mốc cho ô tìm khi bung', () => {
-    test('bám vào .nav-center, không phải giữa màn hình', () => {
-        // Thiếu `position: relative` ở `.nav-center` thì con `absolute` bám lên
-        // `.top-nav` và nhảy về giữa MÀN HÌNH thay vì giữa ô tìm.
-        expect(ruleFor('.nav-center')).toMatch(/position:\s*relative/);
+describe('nút mic nằm CHÍNH GIỮA màn hình', () => {
+    test('neo tuyệt đối vào .top-nav, không vào .nav-center', () => {
+        // Hai nhóm nút hai bên KHÔNG bằng nhau (trái 3 nút + avatar, phải 2
+        // nút). Căn giữa theo dòng chảy flex thì chỉ căn giữa phần CÒN THỪA —
+        // nút lệch đúng bằng nửa phần chênh, dính vào nút chuông bên trái.
+        const r = ruleFor('.top-nav .mic-btn');
+        expect(r).toMatch(/position:\s*absolute/);
+        expect(r).toMatch(/left:\s*50%/);
+        expect(r).toMatch(/transform:\s*translate\(-50%, -50%\)/);
     });
 
-    test('.nav-center GIỮ CHỖ khi ô tìm bay đi', () => {
-        // Ô tìm bung ra thành `absolute` và rời dòng chảy; không ghim kích thước
-        // thì `.nav-center` co về 0, kéo theo hai nhóm nút hai bên xô vào giữa.
-        const r = ruleFor('.nav-center');
-        expect(r).toMatch(/width:\s*40px/);
-        expect(r).toMatch(/height:\s*40px/);
+    test('.nav-center KHÔNG chặn mốc định vị', () => {
+        // `.top-nav` là `fixed` nên tự làm mốc. Đặt `position: relative` ở
+        // `.nav-center` là nút neo nhầm vào nhóm này và lệch trở lại.
+        expect(ruleFor('.nav-center')).toMatch(/position:\s*static/);
+    });
+
+    test('.nav-center NUỐT hết chỗ trống giữa hai nhóm', () => {
+        // `flex: 0 0 auto` + `width: 40px` (bản trước) thì nhóm chỉ rộng bằng
+        // nút và nằm sát ngay sau nhóm trái.
+        expect(ruleFor('.nav-center')).toMatch(/flex:\s*1 1 auto/);
     });
 });
 
@@ -273,10 +281,11 @@ describe('nút GHI ÂM ở giữa nav', () => {
         expect(ruleFor('.mic-btn')).toMatch(/display:\s*flex/);
     });
 
-    test('bỏ margin âm của bản desktop, căn giữa ô 40px', () => {
-        // Margin âm kéo nút chồng vào trong ô tìm; ở đây không còn ô nào để
-        // chồng — giữ lại là icon lệch hẳn sang trái đúng bằng bề rộng đó.
-        expect(ruleFor('.mic-btn')).toMatch(/margin:\s*auto/);
+    test('HUỶ margin âm của bản desktop', () => {
+        // Bản desktop dùng `margin-left: calc(-34px - gap)` để kéo nút chồng
+        // vào trong ô tìm. Ở đây không còn ô nào để chồng — giữ lại là nút lệch
+        // hẳn sang trái đúng bằng bề rộng đó.
+        expect(ruleFor('.mic-btn')).toMatch(/margin:\s*0/);
     });
 
     test('có VÒNG TRÒN bao quanh — nhìn ra là một nút', () => {
