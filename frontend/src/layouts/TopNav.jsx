@@ -220,6 +220,10 @@ export default function TopNav() {
                 // THU ô lại trước khi mở popup: nó đang nổi giữa màn hình, để
                 // nguyên là nằm chình ình sau lưng popup dịch.
                 setSearchExpanded(false);
+                // Về lại chế độ TÌM KIẾM. Tìm kiếm là việc hay dùng nhất nên
+                // để làm mặc định; giữ nguyên chế độ ghi âm thì lần sau chạm
+                // vào người dùng không hiểu vì sao nút không mở ô nhập.
+                setMicMode(false);
                 openTranslateRef.current?.(text);
             },
             onError: (code) => {
@@ -333,73 +337,81 @@ export default function TopNav() {
     // Vẫn để nó là INPUT thật (không đổi thành <button>) vì trên iOS gọi
     // `focus()` ngoài cử chỉ chạm trực tiếp thì bàn phím KHÔNG mở — chạm vào
     // input là bàn phím bật ngay, đó là lý do bản hiện tại chọn input.
-    const lastTapRef = useRef(0);
-    /** Khoảng cách tối đa giữa hai lần chạm để tính là chạm đúp (ms). */
-    const DOUBLE_TAP_MS = 300;
+    // Nút kính lúp là CÔNG TẮC HAI CHẾ ĐỘ, kiểu như ô chuyển Anh ↔ Trung:
+    //
+    //   · chạm  → đổi qua lại giữa TÌM KIẾM và GHI ÂM
+    //   · giữ   → làm việc của chế độ ĐANG chọn
+    //         tìm kiếm → bung ô nhập (bật bàn phím để gõ)
+    //         ghi âm   → thu tiếng, nói xong vào thẳng popup dịch
+    //
+    // Thay cho cơ chế chạm-đúp cũ. Chạm đúp có hai chỗ dở: không nhìn thấy được
+    // (người dùng phải ĐOÁN là có cử chỉ đó), và dễ nhầm với chạm đơn nếu tay
+    // chậm. Công tắc thì icon tự nói nó đang ở chế độ nào.
+    const [micMode, setMicMode] = useState(false);
+    // Đọc trong callback của cử chỉ giữ — callback đó tạo MỘT lần nên closure
+    // của nó giữ mãi giá trị `micMode` của lần render đầu (luôn là false).
+    const micModeRef = useRef(false);
+    micModeRef.current = micMode;
 
     const searchHoldRef = useRef(null);
     if (!searchHoldRef.current) {
         searchHoldRef.current = createHoldGesture({
             thresholdMs: 350,
             onStart: () => {
-                // BUNG ô ra để thấy chữ chạy vào, nhưng KHÔNG lấy tiêu điểm:
-                // tiêu điểm là thứ kéo bàn phím ảo lên, mà bàn phím che mất
-                // nửa màn hình đúng lúc đang nói.
-                document.getElementById('search-input')?.blur();
-                setSearchExpanded(true);
-                // Nói xong TỰ mở popup dịch — giống hệt cử chỉ giữ Shift trên
-                // máy tính. Giữ để nói là muốn TRA NGHĨA ngay, không phải điền
-                // chữ vào ô rồi còn phải bấm thêm một lần nữa.
-                autoTranslateRef.current = true;
-                startSpeech();
+                if (micModeRef.current) {
+                    // BUNG ô ra để thấy chữ chạy vào, nhưng KHÔNG lấy tiêu
+                    // điểm: tiêu điểm là thứ kéo bàn phím ảo lên, mà bàn phím
+                    // che mất nửa màn hình đúng lúc đang nói.
+                    document.getElementById('search-input')?.blur();
+                    setSearchExpanded(true);
+                    // Nói xong TỰ mở popup dịch — giống cử chỉ giữ Shift trên
+                    // máy tính. Giữ để nói là muốn TRA NGHĨA ngay.
+                    autoTranslateRef.current = true;
+                    startSpeech();
+                } else {
+                    // Chế độ tìm kiếm: giữ = mở ô để GÕ, nên phải lấy tiêu điểm
+                    // (đó mới là thứ bật bàn phím ảo lên).
+                    setSearchExpanded(true);
+                    document.getElementById('search-input')?.focus();
+                }
             },
-            onStop: () => stopSpeech(),
+            // Chỉ dừng thu khi ĐANG thu. Ở chế độ tìm kiếm thì nhả tay không
+            // được đụng gì — gọi `stopSpeech` bừa là huỷ oan phiên của chỗ khác.
+            onStop: () => { if (micModeRef.current) stopSpeech(); },
         });
     }
 
     const handleSearchPointerDown = useCallback((e) => {
         // Chỉ áp dụng khi ô ĐANG THU (khổ điện thoại). Ô đã bung thì người dùng
-        // đang gõ, chạm đúp trên chữ là để chọn từ — cướp mất là không sửa được.
+        // đang gõ, giữ lâu trên chữ là để bôi đen — cướp mất là không sửa được.
         if (isInPractice || searchFocused) return;
-        if (!speechSupported) return;   // không hỗ trợ thì cứ để chạm mở ô như cũ
-
-        const now = Date.now();
-        const isDoubleTap = now - lastTapRef.current < DOUBLE_TAP_MS;
-        lastTapRef.current = now;
-
-        if (isDoubleTap) {
-            // ĐANG ghi (vừa vào bằng chạm đúp trước đó) → chạm đúp lần nữa là
-            // dừng. `preventDefault` để `pointerdown` không kéo theo focus —
-            // bàn phím ảo bật lên là che mất nửa màn hình lúc đang nói. Phải
-            // chặn ở `pointerdown`, không phải `click`: focus đến từ chính sự
-            // kiện này.
-            e.preventDefault();
-            document.getElementById('search-input')?.blur();
-            // Đặt lại mốc: không thì chạm lần thứ ba lại ghép cặp với lần thứ
-            // hai, bật/tắt liên tục chỉ bằng chạm đơn.
-            lastTapRef.current = 0;
-            autoTranslateRef.current = false;
-            // Cử chỉ GIỮ có thể đã hẹn giờ ở lần chạm đầu của cặp này — huỷ đi,
-            // không thì 350ms sau nó bật micro đè lên đúng cái ta vừa tắt.
-            searchHoldRef.current.keyUp();
-            toggleSpeech();
-            return;
-        }
-
-        // Chạm đơn: bắt đầu đếm cho cử chỉ GIỮ. Chưa đủ 350ms mà nhả tay thì
-        // `keyUp` bên dưới không kích hoạt gì, ô bung ra như thường.
+        // Bắt đầu đếm cho cử chỉ GIỮ. Chưa đủ 350ms mà nhả tay thì đó là CHẠM,
+        // và `handleSearchPointerUp` sẽ đổi chế độ thay vì làm việc.
         searchHoldRef.current.keyDown({ target: e.currentTarget });
-    }, [isInPractice, searchFocused, speechSupported, toggleSpeech]);
+    }, [isInPractice, searchFocused]);
 
     const handleSearchPointerUp = useCallback((e) => {
         if (!searchHoldRef.current) return;
         const wasHeld = searchHoldRef.current.isActive();
         searchHoldRef.current.keyUp();
-        // Đã là cử chỉ GIỮ thì chặn luôn việc ô bung ra: `pointerup` trên input
-        // kéo theo focus, mà lúc này người dùng vừa nói xong chứ không định gõ.
-        // Chạm nhanh thì không chặn gì — input tự nhận focus như thường.
-        if (wasHeld) e.preventDefault();
-    }, []);
+
+        // GIỮ: việc đã làm xong trong `onStart`. Chặn hành vi mặc định để
+        // `pointerup` không kéo thêm tiêu điểm — ở chế độ ghi âm thì người dùng
+        // vừa nói xong chứ không định gõ.
+        if (wasHeld) {
+            e.preventDefault();
+            return;
+        }
+
+        // CHẠM (chưa đủ 350ms): ĐỔI CHẾ ĐỘ, không làm việc gì cả.
+        //
+        // `preventDefault` để chạm không kéo theo tiêu điểm — bung ô ra ở đây
+        // là sai ý: người dùng mới chỉ đang chọn chế độ.
+        e.preventDefault();
+        if (isInPractice || searchFocused) return;
+        if (!speechSupported) return;   // không hỗ trợ thì không có gì để đổi
+        setMicMode(v => !v);
+    }, [isInPractice, searchFocused, speechSupported]);
 
     /**
      * Đóng ô tìm: xoá chữ, dọn kết quả, và THU ô lại.
@@ -433,6 +445,8 @@ export default function TopNav() {
         // `blur()` chỉ gỡ `searchFocused`. Ô mở bằng cử chỉ GIỮ không hề có
         // tiêu điểm, nên thiếu dòng này là nút × bấm mãi không đóng được.
         setSearchExpanded(false);
+        // Về mặc định TÌM KIẾM — xem lý do ở chỗ mở popup dịch.
+        setMicMode(false);
     }, []);
 
     /**
@@ -711,20 +725,22 @@ export default function TopNav() {
                         className={`search-anchor-icon${speechOn ? ' is-recording' : ''}`}
                         aria-hidden="true"
                     >
-                        <i className={`fas ${speechOn ? 'fa-microphone' : 'fa-microphone-lines'}`}></i>
+                        <i className={`fas ${speechOn
+                            ? 'fa-microphone'
+                            : micMode ? 'fa-microphone-lines' : 'fa-search'}`}></i>
                     </span>
                 )}
                 {/* `is-recording`: ô còn THU mà đang ghi âm → tô đỏ chính nút
                     kính lúp (xem responsive.css). Không có dấu hiệu thì người
                     dùng giữ tay mà chẳng thấy gì đổi, không biết máy nghe chưa. */}
                 <div className={`search-bar ${isInPractice ? 'disabled' : ''}${speechOn && !searchFocused ? ' is-recording' : ''}`}>
-                    {/* Icon ĐỔI HÌNH theo trạng thái, không chỉ đổi màu:
+                    {/* Icon nói rõ CHẾ ĐỘ đang chọn — nó là công tắc, không chỉ
+                        là trang trí:
 
-                        · đang luyện tập      → ổ khoá
-                        · ĐANG THU            → micro đặc (kèm nhấp nháy đỏ)
-                        · ô đang mở, chưa thu → micro gạch-chân-sóng: nhắc rằng
-                          giữ vào đây là nói được
-                        · còn lại             → kính lúp
+                        · đang luyện tập → ổ khoá
+                        · ĐANG THU       → micro đặc (kèm nhấp nháy đỏ)
+                        · chế độ ghi âm  → micro gạch-chân-sóng: giữ vào là nói
+                        · chế độ tìm     → kính lúp: giữ vào là mở ô gõ
 
                         Chỉ đổi màu thì người dùng phải nhớ "đỏ nghĩa là gì";
                         đổi hẳn hình thì nhìn là biết. */}
@@ -732,7 +748,7 @@ export default function TopNav() {
                         ? 'fa-lock'
                         : speechOn
                             ? 'fa-microphone'
-                            : (searchFocused || searchExpanded) ? 'fa-microphone-lines' : 'fa-search'}`}></i>
+                            : micMode ? 'fa-microphone-lines' : 'fa-search'}`}></i>
                     <input
                         type="text"
                         id="search-input"

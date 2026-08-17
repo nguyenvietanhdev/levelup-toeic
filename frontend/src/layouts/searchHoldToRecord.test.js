@@ -1,16 +1,19 @@
 /**
- * Nút kính lúp trên nav điện thoại: CHẠM mở ô tìm, CHẠM ĐÚP thì ghi âm.
+ * Nút kính lúp trên nav điện thoại là CÔNG TẮC HAI CHẾ ĐỘ.
  *
- * Trước đây đó là hai đích chạm nằm cạnh nhau (kính lúp + mic) trên một hàng
- * nav vốn đã chật. Gộp lại còn một chỗ, hai ý định.
+ * Kiểu như ô chuyển Anh ↔ Trung ngay cạnh nó:
+ *   · chạm → đổi qua lại TÌM KIẾM ↔ GHI ÂM (icon tự nói đang ở chế độ nào)
+ *   · giữ  → làm việc của chế độ ĐANG chọn
+ *         tìm kiếm → bung ô nhập, lấy tiêu điểm để bật bàn phím
+ *         ghi âm   → thu tiếng, nói xong vào thẳng popup dịch
  *
- * HAI lối ghi âm, cố ý để cả hai:
- *   · GIỮ rồi nhả — nói nhanh một hai từ, nhả tay là xong.
- *   · CHẠM ĐÚP (bật/tắt) — nói câu dài khỏi phải giữ tay mỏi.
+ * Trước đó nút này gộp kính lúp + mic thành một đích chạm, rồi thử cơ chế chạm
+ * đúp. Chạm đúp có hai chỗ dở: KHÔNG NHÌN THẤY ĐƯỢC (người dùng phải đoán là có
+ * cử chỉ đó), và dễ nhầm với chạm đơn nếu tay chậm.
  *
  * Cử chỉ GIỮ từng hỏng trên điện thoại: hệ điều hành hiểu thành "bôi đen /
  * dán", ô nhập giật rồi tự đóng. Không phải lỗi của cử chỉ mà là thiếu chặn
- * hành vi mặc định — nên sửa bằng `onContextMenu` + CSS, chứ không bỏ cử chỉ.
+ * hành vi mặc định — sửa bằng `onContextMenu` + CSS, chứ không bỏ cử chỉ.
  *
  * Năm chỗ dễ hỏng:
  *   1. Đổi input thu-lại thành <button> cho gọn → trên iOS gọi `focus()` ngoài
@@ -20,8 +23,9 @@
  *   3. Bắt cả khi ô ĐÃ BUNG → giữ lâu trên chữ để bôi đen bị cướp mất.
  *   4. Không có dấu hiệu đang ghi → chạm xong chẳng thấy gì đổi, không biết
  *      máy đã nghe chưa (đúng vấn đề đã sửa cho popup Dịch nhanh).
- *   5. Chạm đúp không huỷ bộ đếm GIỮ đang chờ → 350ms sau micro bật lại đè
- *      lên đúng cái vừa tắt.
+ *   5. Đọc `micMode` thẳng từ state trong callback của cử chỉ giữ → callback
+ *      tạo MỘT lần nên closure giữ mãi giá trị lần render đầu (luôn false),
+ *      chế độ ghi âm không bao giờ chạy. Phải qua ref.
  */
 import { describe, test, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
@@ -42,10 +46,29 @@ describe('giữ nguyên input, không đổi thành button', () => {
     });
 });
 
-describe('HAI lối ghi âm: giữ và chạm đúp', () => {
+/**
+ * Nút kính lúp là CÔNG TẮC HAI CHẾ ĐỘ, kiểu như ô chuyển Anh ↔ Trung:
+ *
+ *   · chạm → đổi qua lại TÌM KIẾM ↔ GHI ÂM
+ *   · giữ  → làm việc của chế độ ĐANG chọn
+ *
+ * Thay cho cơ chế chạm-đúp cũ. Chạm đúp có hai chỗ dở: KHÔNG NHÌN THẤY ĐƯỢC
+ * (người dùng phải đoán là có cử chỉ đó), và dễ nhầm với chạm đơn nếu tay chậm.
+ * Công tắc thì icon tự nói nó đang ở chế độ nào.
+ */
+describe('công tắc hai chế độ: chạm đổi, giữ làm việc', () => {
     /** Thân `handleSearchPointerDown`. */
     const downBody = (() => {
         const i = src.indexOf('const handleSearchPointerDown');
+        expect(i).toBeGreaterThan(-1);
+        const j = src.indexOf('}, [isInPractice', i);
+        expect(j).toBeGreaterThan(i);
+        return src.slice(i, j);
+    })();
+
+    /** Thân `handleSearchPointerUp`. */
+    const upBody = (() => {
+        const i = src.indexOf('const handleSearchPointerUp');
         expect(i).toBeGreaterThan(-1);
         const j = src.indexOf('}, [isInPractice', i);
         expect(j).toBeGreaterThan(i);
@@ -70,31 +93,90 @@ describe('HAI lối ghi âm: giữ và chạm đúp', () => {
         expect(src).toMatch(/thresholdMs: 350/);
     });
 
-    test('CHẠM ĐÚP đo bằng mốc thời gian giữa hai lần chạm', () => {
-        expect(src).toMatch(/const DOUBLE_TAP_MS = \d+/);
-        expect(downBody).toMatch(/now - lastTapRef\.current < DOUBLE_TAP_MS/);
+    test('BỎ HẲN cơ chế chạm đúp', () => {
+        // Để lại là hai cơ chế cùng bám một nút, tranh nhau cùng cú chạm.
+        expect(src).not.toMatch(/DOUBLE_TAP_MS/);
+        expect(src).not.toMatch(/isDoubleTap/);
+        expect(src).not.toMatch(/lastTapRef/);
     });
 
-    test('chạm ĐƠN khởi động bộ đếm GIỮ, không ghi âm ngay', () => {
+    test('pointerdown chỉ khởi động bộ đếm, KHÔNG làm việc', () => {
         expect(downBody).toMatch(/searchHoldRef\.current\.keyDown\(/);
+        expect(downBody).not.toMatch(/startSpeech\(\)/);
+        expect(downBody).not.toMatch(/toggleSpeech\(\)/);
     });
 
-    test('chạm đúp là BẬT/TẮT', () => {
-        expect(downBody).toMatch(/toggleSpeech\(\)/);
+    test('CHẠM (chưa đủ 350ms) thì ĐỔI CHẾ ĐỘ', () => {
+        expect(upBody).toMatch(/setMicMode\(v => !v\)/);
     });
 
-    test('chạm đúp HUỶ bộ đếm giữ đang chờ', () => {
-        // Lần chạm đầu của cặp đã hẹn giờ giữ; không huỷ thì 350ms sau nó bật
-        // micro đè lên đúng cái vừa tắt.
-        const i = downBody.indexOf('if (isDoubleTap)');
-        const body = downBody.slice(i);
-        expect(body).toMatch(/searchHoldRef\.current\.keyUp\(\)/);
+    test('GIỮ thì KHÔNG đổi chế độ — việc đã làm trong onStart', () => {
+        // Đổi luôn ở đây thì nói xong nút nhảy về kính lúp giữa chừng.
+        const i = upBody.indexOf('if (wasHeld)');
+        const body = upBody.slice(i, upBody.indexOf('setMicMode', i));
+        expect(body).toMatch(/return;/);
     });
 
-    test('đặt lại mốc sau khi kích hoạt', () => {
-        // Không đặt lại thì chạm lần thứ BA lại ghép cặp với lần thứ hai —
-        // bật/tắt liên tục chỉ bằng chạm đơn.
-        expect(downBody).toMatch(/lastTapRef\.current = 0;/);
+    test('chạm KHÔNG kéo theo tiêu điểm', () => {
+        // Bung ô ra khi mới chỉ đang CHỌN chế độ là sai ý người dùng.
+        expect(upBody).toMatch(/e\.preventDefault\(\)/);
+    });
+});
+
+describe('giữ làm việc theo CHẾ ĐỘ đang chọn', () => {
+    const onStart = (() => {
+        const i = src.indexOf('onStart: () => {');
+        expect(i).toBeGreaterThan(-1);
+        return src.slice(i, src.indexOf('onStop:', i));
+    })();
+
+    test('chế độ GHI ÂM: thu tiếng + tự mở popup dịch', () => {
+        expect(onStart).toMatch(/if \(micModeRef\.current\)/);
+        expect(onStart).toMatch(/autoTranslateRef\.current = true/);
+        expect(onStart).toMatch(/startSpeech\(\)/);
+    });
+
+    test('chế độ TÌM KIẾM: mở ô và LẤY tiêu điểm để bật bàn phím', () => {
+        const i = onStart.indexOf('} else {');
+        const body = onStart.slice(i);
+        expect(body).toMatch(/setSearchExpanded\(true\)/);
+        expect(body).toMatch(/\.focus\(\)/);
+    });
+
+    test('ghi âm thì BỎ tiêu điểm — ngược với tìm kiếm', () => {
+        // Bàn phím ảo che mất nửa màn hình đúng lúc đang nói.
+        const i = onStart.indexOf('if (micModeRef.current)');
+        const body = onStart.slice(i, onStart.indexOf('} else {'));
+        expect(body).toMatch(/\.blur\(\)/);
+    });
+
+    test('đọc chế độ qua REF, không phải state', () => {
+        // Callback của cử chỉ giữ tạo MỘT lần; closure của nó giữ mãi giá trị
+        // `micMode` của lần render đầu (luôn false) nếu đọc thẳng state.
+        expect(src).toMatch(/const micModeRef = useRef\(false\)/);
+        expect(src).toMatch(/micModeRef\.current = micMode/);
+    });
+
+    test('onStop chỉ dừng thu khi ĐANG thu', () => {
+        // Gọi `stopSpeech` bừa ở chế độ tìm kiếm là huỷ oan phiên của chỗ khác.
+        const i = src.indexOf('onStop:');
+        const body = src.slice(i, i + 200);
+        expect(body).toMatch(/if \(micModeRef\.current\) stopSpeech\(\)/);
+    });
+});
+
+describe('dùng xong về lại chế độ TÌM KIẾM', () => {
+    test('sau khi mở popup dịch', () => {
+        // Tìm kiếm là việc hay dùng nhất nên để làm mặc định; giữ nguyên chế độ
+        // ghi âm thì lần sau chạm vào người dùng không hiểu vì sao nút không mở
+        // ô nhập.
+        const i = src.indexOf('if (!text || !autoTranslateRef.current) return;');
+        expect(src.slice(i, i + 600)).toMatch(/setMicMode\(false\)/);
+    });
+
+    test('sau khi đóng ô tìm', () => {
+        const i = src.indexOf('const closeSearch');
+        expect(src.slice(i, i + 500)).toMatch(/setMicMode\(false\)/);
     });
 });
 
@@ -278,7 +360,7 @@ describe('giữ xong tự mở popup dịch', () => {
     test('THU ô lại trước khi mở popup', () => {
         // Ô đang nổi giữa màn; để nguyên là nằm chình ình sau lưng popup.
         const i = src.indexOf('if (!text || !autoTranslateRef.current) return;');
-        const body = src.slice(i, i + 400);
+        const body = src.slice(i, i + 700);
         const collapse = body.indexOf('setSearchExpanded(false)');
         const open = body.indexOf('openTranslateRef.current?.(text)');
         expect(collapse).toBeGreaterThan(-1);
@@ -298,10 +380,10 @@ describe('nút mỏ neo giữ chỗ nút kính lúp', () => {
         expect(src).toMatch(/search-anchor-icon/);
     });
 
-    test('đổi icon theo trạng thái thu', () => {
-        const i = src.indexOf('search-anchor-icon');
+    test('đổi icon theo chế độ VÀ trạng thái thu', () => {
+        const i = src.indexOf('search-anchor-icon${speechOn');
         const body = src.slice(i, i + 400);
-        expect(body).toMatch(/speechOn \? 'fa-microphone' : 'fa-microphone-lines'/);
+        expect(body).toMatch(/micMode \? 'fa-microphone-lines' : 'fa-search'/);
     });
 
     test('KHÔNG bắt chạm — thao tác thật ở ô tìm', () => {
@@ -347,19 +429,12 @@ describe('chỉ bắt khi ô đang THU', () => {
 });
 
 describe('ghi âm xong KHÔNG bung ô ra', () => {
-    test('GIỮ: chặn ở pointerup', () => {
+    test('GIỮ: chặn hành vi mặc định ở pointerup', () => {
         // Không chặn thì `pointerup` kéo theo focus → bàn phím bật lên ngay khi
         // người dùng vừa nói xong.
         expect(src).toMatch(/const wasHeld = searchHoldRef\.current\.isActive\(\)/);
-        expect(src).toMatch(/if \(wasHeld\) e\.preventDefault\(\)/);
-    });
-
-    test('CHẠM ĐÚP: chặn ngay ở pointerdown', () => {
-        // Focus đến từ chính `pointerdown`, nên phải chặn ở đó — chặn ở `click`
-        // là muộn, bàn phím ảo đã bật lên che mất nửa màn hình lúc đang nói.
-        const i = src.indexOf('const handleSearchPointerDown');
-        const body = src.slice(i, src.indexOf('}, [isInPractice', i));
-        expect(body).toMatch(/e\.preventDefault\(\)/);
+        const i = src.indexOf('if (wasHeld)');
+        expect(src.slice(i, i + 120)).toMatch(/e\.preventDefault\(\)/);
     });
 
     test('bỏ tiêu điểm khi bắt đầu ghi', () => {
@@ -373,13 +448,13 @@ describe('có dấu hiệu đang ghi âm', () => {
         expect(src).toMatch(/speechOn && !searchFocused \? ' is-recording' : ''/);
     });
 
-    test('icon ĐỔI HÌNH theo BA trạng thái', () => {
-        // Chỉ đổi màu thì người dùng phải nhớ "đỏ nghĩa là gì". Đổi hẳn hình:
-        //   · đang thu            → micro đặc
-        //   · ô mở, chưa thu      → micro gạch-sóng (nhắc: giữ vào đây là nói)
-        //   · còn lại             → kính lúp
+    test('icon nói rõ CHẾ ĐỘ đang chọn', () => {
+        // Icon là công tắc, không chỉ trang trí:
+        //   · đang thu        → micro đặc
+        //   · chế độ ghi âm   → micro gạch-sóng (giữ vào là nói)
+        //   · chế độ tìm      → kính lúp (giữ vào là mở ô gõ)
         expect(src).toMatch(/speechOn\s*\?\s*'fa-microphone'/);
-        expect(src).toMatch(/\(searchFocused \|\| searchExpanded\) \? 'fa-microphone-lines' : 'fa-search'/);
+        expect(src).toMatch(/micMode \? 'fa-microphone-lines' : 'fa-search'/);
     });
 
     test('đang luyện tập vẫn ưu tiên ổ khoá', () => {
