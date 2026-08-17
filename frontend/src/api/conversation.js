@@ -28,10 +28,16 @@ function unwrap(res) {
 export const ConversationAPI = {
     /**
      * Mở phiên mới.
-     * @param {{source:string, part?:string, lang?:string, topic?:string}} o
+     *
+     * KHÔNG cần tham số: server tự đọc đề · part · ngôn ngữ từ hồ sơ người dùng.
+     * Trước đây client phải gửi ba thứ đó lên, và cả ba đều từng sai kiểu hoặc
+     * rỗng — bỏ hết là bỏ hết cơ hội đoán sai ở ranh giới.
+     *
+     * `topic` (bối cảnh hội thoại) vẫn cho truyền: nó là lựa chọn của người
+     * dùng cho PHIÊN NÀY, không phải dữ liệu đã lưu ở đâu đó.
      */
-    async start({ source, part = '', lang = 'en', topic = '' }) {
-        const res = await Http.post('/conversation/start', { source, part, lang, topic });
+    async start({ topic = '' } = {}) {
+        const res = await Http.post('/conversation/start', { topic });
         return unwrap(res);
     },
 

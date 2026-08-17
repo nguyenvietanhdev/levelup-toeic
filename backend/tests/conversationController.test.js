@@ -221,18 +221,45 @@ describe('lấy từ vựng', () => {
         expect(paths).not.toContain('word');
     });
 
-    test('source phải là CHUỖI — object thì báo 400, không để thành 404', () => {
-        // Client từng gửi cả object đề `{ id, name, source }` vào đây. Mongoose
-        // cast thất bại → CastError → `errorHandler` dịch thành
-        // "Resource not found / 404", nên lỗi hiện ra là 404 chứ không phải
-        // "sai kiểu" — mất rất nhiều công mới lần ra.
+    test('SERVER tự đọc đề/part từ hồ sơ, KHÔNG bắt client gửi', () => {
+        // Đây là thay đổi thiết kế quan trọng nhất của tính năng này.
+        //
+        // Bản trước client phải gom `source` + `part` + `lang` rồi gửi lên, và
+        // CẢ BA đều từng sai: `source` là OBJECT (→ CastError → lỗi 404 chẳng
+        // liên quan bệnh), `selectedPart` bị Mongoose strip nên luôn rỗng, `lang`
+        // client tự suy từ localStorage.
+        //
+        // Bỏ hết tham số là bỏ hết cơ hội đoán sai hình dạng dữ liệu ở ranh
+        // giới — đó là GỐC của cả chuỗi lỗi, không phải logic hội thoại.
         const b = body('start');
-        expect(b).toMatch(/typeof source !== 'string'/);
-        expect(b).toMatch(/không phải chuỗi/);
+        expect(b).toMatch(/UserProfile\.findOne\(\{ userId: req\.user\.id \}\)/);
+        expect(b).toMatch(/st\.selectedSource/);
+        expect(b).toMatch(/st\.selectedPart/);
+        expect(b).toMatch(/st\.vocabLang/);
     });
 
-    test('part cũng phải là chuỗi', () => {
-        expect(body('start')).toMatch(/typeof part !== 'string'/);
+    test('ép về CHUỖI, object không lọt xuống Mongoose', () => {
+        // `asString` trả '' cho mọi thứ không phải chuỗi — object gửi lên thành
+        // rỗng và rơi vào nhánh "chưa chọn đề", thay vì thành CastError → 404.
+        const b = body('start');
+        expect(b).toMatch(/typeof v === 'string' \? v\.trim\(\) : ''/);
+    });
+
+    test('chưa chọn đề thì nói PHẢI LÀM GÌ', () => {
+        // "Thiếu source" là vô nghĩa với người dùng — họ không biết "source" là
+        // gì, chỉ biết mình đã chọn đề hay chưa.
+        const b = body('start');
+        expect(b).toMatch(/Chưa chọn đề từ vựng/);
+        expect(b).toMatch(/needTopic: true/);
+    });
+
+    test('settings LƯU được selectedSource/selectedPart', () => {
+        // Không khai trong schema thì Mongoose strip ÂM THẦM, và server mãi
+        // không biết người dùng đang học bộ nào — đúng lỗi đã gặp.
+        const model = fs.readFileSync(
+            path.join(__dirname, '..', 'models', 'UserProfile.js'), 'utf8');
+        expect(model).toMatch(/^\s*selectedSource: \{/m);
+        expect(model).toMatch(/^\s*selectedPart: \{/m);
     });
 
     test('bộ từ quá ít thì báo rõ, không mở phiên rỗng', () => {

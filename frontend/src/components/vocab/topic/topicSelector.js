@@ -1,6 +1,7 @@
 import { Storage } from '@lib/storage.js';
 import { EventBus } from '@game/eventBus.js';
 import { GameLogic } from '@game/gameLogic.js';
+import { GameState } from '@game/state.js';
 import { PartSelector } from '@components/vocab/part/partSelector.js';
 import { Notification } from '@ui/Toaster.jsx';
 import { TopicsAPI } from '@api/topics.js';
@@ -12,10 +13,36 @@ export const TopicSelector = {
     availableTopics: [],
     currentTopic: null,
 
+    /**
+     * Đặt đề đang chọn, VÀ ghi `source` của nó vào settings để SERVER biết.
+     *
+     * Trước đây đề đang chọn chỉ tồn tại trong biến của module này — server
+     * hoàn toàn không biết người dùng đang học bộ nào. Mọi tính năng cần thông
+     * tin đó phải bắt client gửi lên, mà `currentTopic` là OBJECT nên gửi sai
+     * kiểu rất dễ (đã xảy ra với chế độ Hội thoại: gửi cả object → CastError →
+     * lỗi 404 chẳng liên quan bệnh thật).
+     *
+     * Ghi vào settings thì server tự đọc được, bớt hẳn một ranh giới để đoán sai.
+     * Dùng hàm này thay cho `this.currentTopic = x` ở MỌI chỗ — gán tay là quên
+     * đồng bộ, và quên thì không lỗi nào báo.
+     */
+    setCurrentTopic(topic) {
+        this.currentTopic = topic;
+        try {
+            const s = GameState.state?.settings;
+            if (s) {
+                s.selectedSource = (topic && typeof topic.source === 'string')
+                    ? topic.source
+                    : '';
+                GameState.save?.();
+            }
+        } catch { /* không lưu được thì thôi — chọn đề vẫn hoạt động */ }
+    },
+
     async init() {
         await this.loadAvailableTopics();
         if (!this.currentTopic && this.availableTopics.length > 0) {
-            this.currentTopic = this.availableTopics[0];
+            this.setCurrentTopic(this.availableTopics[0]);
         }
     },
 
@@ -51,7 +78,7 @@ export const TopicSelector = {
         const topic = this.availableTopics.find(t => t.id === topicId);
         if (!topic) throw new Error(`Topic ${topicId} not found`);
 
-        this.currentTopic = topic;
+        this.setCurrentTopic(topic);
 
         // KHÔI PHỤC lúc khởi động thì GIỮ Part đã chọn (`keepPart`).
         //
@@ -83,7 +110,7 @@ export const TopicSelector = {
         GameLogic.vocabularyData = words;
         GameLogic.currentSource = source;
         const topic = { id: `personal:${source}`, name: source, source, wordCount: words.length, icon: '📤', isPersonal: true };
-        this.currentTopic = topic;
+        this.setCurrentTopic(topic);
 
         if (!options.keepPart) PartSelector.clearSelection();
         await PartSelector.reloadParts();
@@ -110,7 +137,7 @@ export const TopicSelector = {
             name: source, source, ownerEmail,
             wordCount: words.length, icon: '🤝', isShared: true,
         };
-        this.currentTopic = topic;
+        this.setCurrentTopic(topic);
 
         if (!options.keepPart) PartSelector.clearSelection();
         await PartSelector.reloadParts();
@@ -155,7 +182,7 @@ export const TopicSelector = {
             icon: '❌',
             isWrong: true,
         };
-        this.currentTopic = topic;
+        this.setCurrentTopic(topic);
 
         if (!options.keepPart) PartSelector.clearSelection();
         await PartSelector.reloadParts();

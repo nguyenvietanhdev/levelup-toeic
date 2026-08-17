@@ -129,25 +129,47 @@ async function chargeEnergy(userId) {
  */
 exports.start = async (req, res, next) => {
     try {
-        const { source, part = '', lang = 'en', topic = '' } = req.body;
-        // Bắt buộc là CHUỖI, không chỉ "có giá trị".
-        //
-        // Client từng gửi cả object đề (`{ id, name, source }`) vào đây. Mongoose
-        // cast thất bại → CastError → `errorHandler` dịch thành
-        // "Resource not found / 404", nên lỗi hiện ra là 404 chứ không phải
-        // "sai kiểu" — mất rất nhiều công mới lần ra. Chặn sớm và nói đúng bệnh.
-        if (typeof source !== 'string' || !source.trim()) {
+        const { topic = '' } = req.body;
+
+        /**
+         * Đề · Part · ngôn ngữ do SERVER tự đọc từ hồ sơ, KHÔNG nhận từ client.
+         *
+         * Trước đây client phải gom ba thứ này rồi gửi lên. Mỗi thứ là một chỗ
+         * để đoán sai hình dạng dữ liệu, và cả ba đều đã sai thật:
+         *   · `source` — client gửi cả OBJECT đề `{id,name,source}` → CastError
+         *     → errorHandler dịch thành 404, lỗi hiện ra chẳng liên quan bệnh;
+         *   · `part`   — đọc từ `settings.selectedPart`, mà trường đó bị Mongoose
+         *     strip nên luôn rỗng;
+         *   · `lang`   — client tự suy từ localStorage.
+         *
+         * Server đọc thẳng hồ sơ thì không còn ranh giới nào để đoán sai. Client
+         * chỉ việc bấm nút.
+         *
+         * Vẫn CHO client ghi đè (`req.body.source`) — nhưng phải là chuỗi. Cần
+         * cho việc thử nghiệm và cho lối "luyện bộ khác bộ đang chọn" về sau.
+         */
+        const profile = await UserProfile.findOne({ userId: req.user.id })
+            .select('settings').lean();
+        const st = profile?.settings || {};
+
+        const asString = (v) => (typeof v === 'string' ? v.trim() : '');
+        const source = asString(req.body.source) || asString(st.selectedSource);
+        const part = asString(req.body.part) || asString(st.selectedPart);
+        const lang = req.body.lang === 'zh' || req.body.lang === 'en'
+            ? req.body.lang
+            : (st.vocabLang === 'zh' ? 'zh' : 'en');
+
+        if (!source) {
+            // Nói rõ PHẢI LÀM GÌ, không chỉ "thiếu source": người dùng không
+            // biết "source" là gì, họ chỉ biết mình đã chọn đề hay chưa.
             return res.status(400).json({
                 success: false,
-                message: 'Thiếu source, hoặc source không phải chuỗi',
+                message: 'Chưa chọn đề từ vựng. Hãy chọn đề rồi thử lại.',
+                needTopic: true,
             });
         }
-        if (part && typeof part !== 'string') {
-            return res.status(400).json({ success: false, message: 'part phải là chuỗi' });
-        }
-        if (lang !== 'en' && lang !== 'zh') {
-            return res.status(400).json({ success: false, message: 'lang phải là en hoặc zh' });
-        }
+        // (Không cần kiểm `lang` nữa — phép chuẩn hoá ở trên đã đảm bảo nó chỉ
+        // có thể là 'en' hoặc 'zh'.)
 
         const words = await fetchWords({ userId: req.user.id, source, part, lang });
         if (words.length < 4) {

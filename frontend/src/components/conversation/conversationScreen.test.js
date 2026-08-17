@@ -99,24 +99,43 @@ describe('dùng đúng API sẵn có của app', () => {
         expect(src).not.toMatch(/onResult:/);
     });
 
-    test('lấy `.source` (CHUỖI) từ currentTopic, không gửi cả OBJECT', () => {
-        // `currentTopic` là object `{ id, name, source, wordCount, … }`. Gửi cả
-        // object vào `source` thì Mongoose cast thất bại → CastError →
-        // `errorHandler` dịch thành "Resource not found", nên lỗi hiện ra là 404
-        // chứ không phải "sai kiểu dữ liệu" — rất khó lần.
+    test('KHÔNG gửi đề/part/ngôn ngữ lên — server tự đọc', () => {
+        // Thay đổi thiết kế quan trọng nhất. Client từng phải gom ba thứ này rồi
+        // gửi, và CẢ BA đều từng sai:
+        //   · `currentTopic` là OBJECT chứ không phải chuỗi → CastError →
+        //     errorHandler dịch thành 404, lỗi hiện ra chẳng liên quan bệnh;
+        //   · `settings.selectedPart` bị Mongoose strip nên luôn rỗng;
+        //   · `lang` client tự suy từ localStorage.
         //
-        // Đúng lỗi đã gặp: đề FREFIX-C hiện trên thanh trạng thái, năng lượng đủ,
-        // mà bấm Bắt đầu vẫn ra "Resource not found".
-        expect(src).toMatch(/topic\?\.source/);
-        expect(src).not.toMatch(/const source = TopicSelector\.currentTopic \|\| ''/);
+        // Bỏ hết tham số là bỏ hết cơ hội đoán sai ở ranh giới — đó là GỐC của
+        // cả chuỗi lỗi, không phải logic hội thoại.
+        expect(src).toMatch(/ConversationAPI\.start\(\)/);
+        expect(src).not.toMatch(/TopicSelector\.currentTopic/);
+        expect(api).toMatch(/async start\(\{ topic = '' \} = \{\}\)/);
     });
 
-    test('lấy đề đang chọn từ TopicSelector, không phải settings', () => {
-        // `settings.selectedSource` KHÔNG tồn tại; settings chỉ giữ
-        // `selectedPart`. Đọc trường không có thì source luôn rỗng và màn luôn
-        // báo "hãy chọn đề" dù đã chọn.
-        expect(src).toMatch(/TopicSelector\.currentTopic/);
-        expect(src).not.toMatch(/settings\?\.selectedSource/);
+    test('TopicSelector GHI selectedSource vào settings', () => {
+        // Đây là vế còn lại: server chỉ đọc được nếu có ai ghi vào.
+        const ts = readFileSync(
+            join(__dirname, '..', 'vocab', 'topic', 'topicSelector.js'), 'utf8');
+        expect(ts).toMatch(/setCurrentTopic\(topic\) \{/);
+        expect(ts).toMatch(/s\.selectedSource =/);
+    });
+
+    test('MỌI chỗ đổi đề đều qua setCurrentTopic', () => {
+        // Gán tay `this.currentTopic = x` là quên đồng bộ settings, và quên thì
+        // KHÔNG lỗi nào báo — server lặng lẽ dùng đề cũ.
+        // Bỏ COMMENT trước khi đếm: chú thích của `setCurrentTopic` có nhắc
+        // `this.currentTopic = x` để giải thích vì sao KHÔNG gán tay — đếm cả
+        // lời văn của mình thì ra 2 và test đỏ oan.
+        const ts = readFileSync(
+            join(__dirname, '..', 'vocab', 'topic', 'topicSelector.js'), 'utf8')
+            .replace(/\/\*[\s\S]*?\*\//g, '')
+            .split('\n')
+            .filter((l) => !/^\s*(\/\/|\*)/.test(l))
+            .join('\n');
+        // Chỉ được còn ĐÚNG MỘT chỗ gán tay: bên trong chính setter.
+        expect((ts.match(/this\.currentTopic = /g) || []).length).toBe(1);
     });
 
     test('dùng TTS sẵn có để đọc câu NPC', () => {

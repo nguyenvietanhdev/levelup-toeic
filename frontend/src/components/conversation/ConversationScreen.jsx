@@ -55,26 +55,20 @@ export default function ConversationScreen({ active }) {
 
     const handleStart = useCallback(async () => {
         if (starting) return;
-        // Đề đang chọn nằm ở `TopicSelector.currentTopic` (module vanilla), KHÔNG
-        // ở `settings` — settings chỉ giữ `selectedPart`.
+
+        // KHÔNG gửi đề/part/ngôn ngữ lên — SERVER tự đọc từ hồ sơ người dùng.
         //
-        // `currentTopic` là OBJECT `{ id, name, source, wordCount, … }`, không
-        // phải chuỗi. Gửi cả object vào `source` thì Mongoose cast thất bại →
-        // CastError → `errorHandler` dịch thành "Resource not found", nên lỗi
-        // hiện ra là 404 chứ không phải "sai kiểu dữ liệu" — rất khó lần.
-        const topic = TopicSelector.currentTopic;
-        const source = (typeof topic === 'string' ? topic : topic?.source) || '';
-        const part = GameState.state?.settings?.selectedPart || '';
-
-        if (!source) {
-            Notification.error('Hãy chọn đề từ vựng trước khi luyện hội thoại');
-            return;
-        }
-
+        // Bản trước client phải gom ba thứ đó rồi gửi, và cả ba đều từng sai:
+        // `currentTopic` là OBJECT chứ không phải chuỗi (gửi lên thành CastError
+        // → lỗi 404 chẳng liên quan bệnh), `settings.selectedPart` thì bị
+        // Mongoose strip nên luôn rỗng, còn `lang` client tự suy từ localStorage.
+        //
+        // Bỏ hết tham số là bỏ hết cơ hội đoán sai hình dạng dữ liệu ở ranh giới
+        // — đó là gốc của cả chuỗi lỗi trước đó, không phải logic hội thoại.
         setStarting(true);
         setResult(null);
         try {
-            const data = await ConversationAPI.start({ source, part, lang });
+            const data = await ConversationAPI.start();
             // Chốt cuối: không có `id` thì KHÔNG phải phiên hợp lệ.
             //
             // `unwrap` đã ném lỗi cho mọi thất bại đã biết, nhưng nếu server đổi

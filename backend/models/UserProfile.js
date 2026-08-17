@@ -62,6 +62,20 @@ const settingsSchema = new mongoose.Schema(
         // Đảo chiều hỏi–đáp (VN→EN thay vì EN→VN) — đổi hẳn cách ra đề.
         reverseMode: { type: Boolean, default: false },
 
+        // ── ĐỀ và PART đang chọn ─────────────────────────────────────────────
+        //
+        // Hai trường này trước bị Mongoose LOẠI BỎ ÂM THẦM (không khai ở đây thì
+        // `strict` mặc định strip sạch), nên client là nơi DUY NHẤT biết người
+        // dùng đang học bộ nào. Hệ quả: mọi tính năng cần thông tin đó đều phải
+        // bắt client gửi lên — mà client thì lấy từ một module vanilla trả về
+        // OBJECT, gửi sai kiểu là ra lỗi 404 không liên quan gì tới bệnh thật.
+        // Đó chính là chuỗi lỗi của chế độ Hội thoại.
+        //
+        // Lưu ở server thì server tự biết, không phải hỏi client — bớt hẳn một
+        // ranh giới để đoán sai.
+        selectedSource: { type: String, default: '' },
+        selectedPart: { type: String, default: '' },
+
         // Giới hạn giờ mỗi câu + thời gian theo TỪNG chế độ.
         timeLimitEnabled: { type: Boolean, default: true },
         // `{ [modeId]: giây }` — khoá do client đặt nên phải Mixed, không thể
