@@ -56,10 +56,10 @@ describe('hook dùng chung', () => {
 
 describe('nav', () => {
     test('KHÔNG ẩn khi đang gõ tìm', () => {
-        // Ô nhập nằm trong chính thanh này. Ẩn đi giữa chừng là mất chỗ gõ.
-        // `searchExpanded` cũng phải chặn: ô mở bằng cử chỉ GIỮ không có tiêu
-        // điểm, thiếu vế đó là đang nói mà nav trượt mất khỏi màn.
-        expect(nav).toMatch(/navHidden && !searchFocused && !searchExpanded \? 'nav-hidden' : ''/);
+        // Ở desktop ô nhập nằm trong chính thanh này — ẩn đi giữa chừng là mất
+        // chỗ gõ. (Ở khổ điện thoại ô tìm đã dời lên thành dòng cố định ở đỉnh,
+        // nhưng nav vẫn giữ nút mic nên chặn ở đây vẫn đúng.)
+        expect(nav).toMatch(/navHidden && !searchFocused \? 'nav-hidden' : ''/);
     });
 
     test('class trượt ẩn được gắn lên chính thanh nav', () => {

@@ -19,6 +19,7 @@ import { createHoldGesture } from '@lib/holdGesture.js';
 import { getVocabLang } from '@api/vocabulary.js';
 import { useHideOnScrollDown } from './useHideOnScrollDown.js';
 import { useKeyboardInset } from './useKeyboardInset.js';
+import { useStatusBarHeight } from './useStatusBarHeight.js';
 
 export default function TopNav() {
     const { user, resources, setMenuOpen, showScreen, menuOpen, currentScreen } = useGame();
@@ -46,16 +47,11 @@ export default function TopNav() {
     const menuHasDot = menuRewardCount === 0 && (menuBadges.online > 0 || menuBadges.shopDiscount > 0);
     const [searchQuery, setSearchQuery] = useState('');
     const [searchFocused, setSearchFocused] = useState(false);
-    // Ô BUNG RA mà KHÔNG có tiêu điểm — chỉ dùng cho cử chỉ giữ-để-nói.
-    //
-    // Tách khỏi `searchFocused` vì hai thứ khác nhau: bung ra là chuyện HÌNH
-    // DẠNG, còn tiêu điểm là thứ kéo BÀN PHÍM ẢO lên. Giữ để nói thì cần vế
-    // đầu (thấy chữ chạy vào ô) nhưng không cần vế sau — bàn phím bật lên là
-    // che mất nửa màn hình đúng lúc đang nói.
-    const [searchExpanded, setSearchExpanded] = useState(false);
     const navHidden = useHideOnScrollDown();
     // Đẩy nav lên trên bàn phím ảo — không thì gõ tìm là bị nó che mất.
     useKeyboardInset();
+    // Đo thanh trạng thái để ô tìm bám ngay dưới nó (khổ điện thoại).
+    useStatusBarHeight();
     // Nhập bằng giọng nói. `speechOn` là trạng thái ĐANG NGHE để vẽ nút; bản thân
     // phiên nhận dạng nằm trong ref vì nó không phải dữ liệu render.
     const [speechOn, setSpeechOn] = useState(false);
@@ -217,13 +213,6 @@ export default function TopNav() {
                 lastHeardRef.current = '';
                 if (!text || !autoTranslateRef.current) return;
                 autoTranslateRef.current = false;
-                // THU ô lại trước khi mở popup: nó đang nổi giữa màn hình, để
-                // nguyên là nằm chình ình sau lưng popup dịch.
-                setSearchExpanded(false);
-                // Về lại chế độ TÌM KIẾM. Tìm kiếm là việc hay dùng nhất nên
-                // để làm mặc định; giữ nguyên chế độ ghi âm thì lần sau chạm
-                // vào người dùng không hiểu vì sao nút không mở ô nhập.
-                setMicMode(false);
                 openTranslateRef.current?.(text);
             },
             onError: (code) => {
@@ -300,7 +289,12 @@ export default function TopNav() {
         e.preventDefault();
         if (speechRef.current?.isListening()) return;
         micHeldRef.current = true;
-        autoTranslateRef.current = false;
+        // GIỮ = nói xong vào thẳng popup dịch, giống hệt cử chỉ giữ Shift.
+        // Giữ để nói là muốn TRA NGHĨA ngay, không phải điền chữ vào ô rồi còn
+        // phải bấm thêm một lần nữa. (Chạm nhanh thì `handleMicClick` tắt cờ
+        // này — bấm nút là muốn điền vào ô tìm, tự nhảy popup lên là cướp
+        // thao tác.)
+        autoTranslateRef.current = true;
         startSpeech();
     }, [speechSupported, warnNoSpeech, startSpeech]);
 
@@ -317,112 +311,22 @@ export default function TopNav() {
     const handleMicClick = useCallback(() => {
         if (!speechSupported) return warnNoSpeech();
         if (micJustHeldRef.current) { micJustHeldRef.current = false; return; }
+        // Chạm nhanh = điền vào ô tìm, KHÔNG tự nhảy popup. `handleMicDown` đã
+        // bật cờ trước đó (mọi cú chạm đều đi qua `pointerdown`), phải tắt lại
+        // ở đây — không thì chạm nhanh cũng bị kéo vào popup dịch.
+        autoTranslateRef.current = false;
         toggleSpeech();
     }, [speechSupported, warnNoSpeech, toggleSpeech]);
-
-    // ── Ô tìm thu lại (điện thoại): CHẠM mở ô · GIỮ hoặc CHẠM ĐÚP thì ghi âm ─
-    //
-    // Trước đây nút kính lúp và nút mic là hai đích chạm nằm cạnh nhau trên một
-    // thanh nav vốn đã chật. Gộp lại: một chỗ chạm, ba ý định.
-    //
-    // HAI lối ghi âm, cố ý để cả hai:
-    //   · GIỮ rồi nhả — nói nhanh một hai từ, nhả tay là xong.
-    //   · CHẠM ĐÚP (bật/tắt) — nói câu dài khỏi phải giữ tay mỏi.
-    //
-    // Cử chỉ GIỮ từng hỏng trên điện thoại: hệ điều hành hiểu thành "bôi đen /
-    // dán", ô nhập giật rồi tự đóng. KHÔNG phải lỗi của cử chỉ mà là thiếu chặn
-    // hành vi mặc định — xem `.search-bar input` trong responsive.css
-    // (user-select/touch-callout/touch-action) và `onContextMenu` bên dưới.
-    //
-    // Vẫn để nó là INPUT thật (không đổi thành <button>) vì trên iOS gọi
-    // `focus()` ngoài cử chỉ chạm trực tiếp thì bàn phím KHÔNG mở — chạm vào
-    // input là bàn phím bật ngay, đó là lý do bản hiện tại chọn input.
-    // Nút kính lúp là CÔNG TẮC HAI CHẾ ĐỘ, kiểu như ô chuyển Anh ↔ Trung:
-    //
-    //   · chạm  → đổi qua lại giữa TÌM KIẾM và GHI ÂM
-    //   · giữ   → làm việc của chế độ ĐANG chọn
-    //         tìm kiếm → bung ô nhập (bật bàn phím để gõ)
-    //         ghi âm   → thu tiếng, nói xong vào thẳng popup dịch
-    //
-    // Thay cho cơ chế chạm-đúp cũ. Chạm đúp có hai chỗ dở: không nhìn thấy được
-    // (người dùng phải ĐOÁN là có cử chỉ đó), và dễ nhầm với chạm đơn nếu tay
-    // chậm. Công tắc thì icon tự nói nó đang ở chế độ nào.
-    const [micMode, setMicMode] = useState(false);
-    // Đọc trong callback của cử chỉ giữ — callback đó tạo MỘT lần nên closure
-    // của nó giữ mãi giá trị `micMode` của lần render đầu (luôn là false).
-    const micModeRef = useRef(false);
-    micModeRef.current = micMode;
-
-    const searchHoldRef = useRef(null);
-    if (!searchHoldRef.current) {
-        searchHoldRef.current = createHoldGesture({
-            thresholdMs: 350,
-            onStart: () => {
-                if (micModeRef.current) {
-                    // BUNG ô ra để thấy chữ chạy vào, nhưng KHÔNG lấy tiêu
-                    // điểm: tiêu điểm là thứ kéo bàn phím ảo lên, mà bàn phím
-                    // che mất nửa màn hình đúng lúc đang nói.
-                    document.getElementById('search-input')?.blur();
-                    setSearchExpanded(true);
-                    // Nói xong TỰ mở popup dịch — giống cử chỉ giữ Shift trên
-                    // máy tính. Giữ để nói là muốn TRA NGHĨA ngay.
-                    autoTranslateRef.current = true;
-                    startSpeech();
-                } else {
-                    // Chế độ tìm kiếm: giữ = mở ô để GÕ, nên phải lấy tiêu điểm
-                    // (đó mới là thứ bật bàn phím ảo lên).
-                    setSearchExpanded(true);
-                    document.getElementById('search-input')?.focus();
-                }
-            },
-            // Chỉ dừng thu khi ĐANG thu. Ở chế độ tìm kiếm thì nhả tay không
-            // được đụng gì — gọi `stopSpeech` bừa là huỷ oan phiên của chỗ khác.
-            onStop: () => { if (micModeRef.current) stopSpeech(); },
-        });
-    }
-
-    const handleSearchPointerDown = useCallback((e) => {
-        // Chỉ áp dụng khi ô ĐANG THU (khổ điện thoại). Ô đã bung thì người dùng
-        // đang gõ, giữ lâu trên chữ là để bôi đen — cướp mất là không sửa được.
-        if (isInPractice || searchFocused) return;
-        // Bắt đầu đếm cho cử chỉ GIỮ. Chưa đủ 350ms mà nhả tay thì đó là CHẠM,
-        // và `handleSearchPointerUp` sẽ đổi chế độ thay vì làm việc.
-        searchHoldRef.current.keyDown({ target: e.currentTarget });
-    }, [isInPractice, searchFocused]);
-
-    const handleSearchPointerUp = useCallback((e) => {
-        if (!searchHoldRef.current) return;
-        const wasHeld = searchHoldRef.current.isActive();
-        searchHoldRef.current.keyUp();
-
-        // GIỮ: việc đã làm xong trong `onStart`. Chặn hành vi mặc định để
-        // `pointerup` không kéo thêm tiêu điểm — ở chế độ ghi âm thì người dùng
-        // vừa nói xong chứ không định gõ.
-        if (wasHeld) {
-            e.preventDefault();
-            return;
-        }
-
-        // CHẠM (chưa đủ 350ms): ĐỔI CHẾ ĐỘ, không làm việc gì cả.
-        //
-        // `preventDefault` để chạm không kéo theo tiêu điểm — bung ô ra ở đây
-        // là sai ý: người dùng mới chỉ đang chọn chế độ.
-        e.preventDefault();
-        if (isInPractice || searchFocused) return;
-        if (!speechSupported) return;   // không hỗ trợ thì không có gì để đổi
-        setMicMode(v => !v);
-    }, [isInPractice, searchFocused, speechSupported]);
 
     /**
      * Đóng ô tìm: xoá chữ, dọn kết quả, và THU ô lại.
      *
      * Ba việc luôn đi cùng nhau — nút × trước đây chỉ làm việc đầu, nên xoá
-     * xong ô vẫn bung ra chiếm cả hàng nav và người dùng phải chạm ra ngoài mới
-     * đóng được. Còn khi ô rỗng thì nút × biến mất, tức là KHÔNG có cách nào
-     * đóng ngoài việc chạm ra ngoài.
+     * xong bàn phím vẫn ở đó và người dùng phải chạm ra ngoài mới đóng được.
      *
-     * `blur()` là thứ thu ô lại — `.search-active` gắn theo focus (xem
-     * responsive.css), nên mất focus là ô tự co về nút kính lúp.
+     * Ở khổ điện thoại ô tìm giờ là DÒNG CỐ ĐỊNH luôn hiện, nên `blur()` không
+     * còn thu ô nữa — nó chỉ đóng bàn phím ảo, đúng thứ người dùng muốn khi
+     * bấm ×. Ô vẫn nằm đó chờ lần gõ sau.
      */
     /**
      * Chỉ XOÁ nội dung, GIỮ ô mở và giữ tiêu điểm.
@@ -442,11 +346,6 @@ export default function TopNav() {
         setSearchQuery('');
         window._reactClearSearch?.();
         document.getElementById('search-input')?.blur();
-        // `blur()` chỉ gỡ `searchFocused`. Ô mở bằng cử chỉ GIỮ không hề có
-        // tiêu điểm, nên thiếu dòng này là nút × bấm mãi không đóng được.
-        setSearchExpanded(false);
-        // Về mặc định TÌM KIẾM — xem lý do ở chỗ mở popup dịch.
-        setMicMode(false);
     }, []);
 
     /**
@@ -644,14 +543,11 @@ export default function TopNav() {
         <>
         <nav className={[
             'top-nav',
-            // Bung ra vì MỘT trong hai: người dùng chạm vào để gõ (có tiêu
-            // điểm), hoặc đang giữ để nói (không tiêu điểm, không bàn phím).
-            (searchFocused || searchExpanded) ? 'search-active' : '',
             // Ẩn khi cuộn XUỐNG, hiện lại khi cuộn LÊN (chỉ có tác dụng ở khổ
             // điện thoại — xem responsive.css). Nhưng KHÔNG ẩn khi đang gõ tìm:
             // ô nhập nằm trong chính thanh này, ẩn đi là người dùng mất chỗ gõ
             // giữa chừng.
-            navHidden && !searchFocused && !searchExpanded ? 'nav-hidden' : '',
+            navHidden && !searchFocused ? 'nav-hidden' : '',
         ].filter(Boolean).join(' ')}>
             <div className="nav-left">
                 <button id="menu-btn" className="icon-btn" onClick={() => setMenuOpen(!menuOpen)} style={{ position: 'relative' }}>
@@ -709,27 +605,14 @@ export default function TopNav() {
             </div>
 
             <div className="nav-center">
-                {/* NÚT MỎ NEO — chỉ hiện ở khổ điện thoại khi ô tìm đã bay ra
-                    giữa màn (xem responsive.css).
+                {/* NÚT GHI ÂM trên nav — chỉ hiện ở khổ điện thoại.
+                    Ô tìm ở đó đã dời xuống thành dòng riêng dưới thanh trạng
+                    thái (xem responsive.css), nên chỗ này chỉ còn việc ghi âm:
+                    NHẤN GIỮ để nói, nói xong vào thẳng popup dịch.
 
-                    Vì sao cần: ô tìm khi bung là `position: fixed` và rời khỏi
-                    nav, kéo theo cả icon của nó. Chỗ nút kính lúp vừa bấm bỏ
-                    trống một lỗ 40px — người dùng mất luôn mốc thị giác "chỗ
-                    tôi vừa chạm". Nút này giữ nguyên vị trí đó, chỉ ĐỔI ICON
-                    theo trạng thái để nói rõ đang làm gì.
-
-                    `aria-hidden`: nó thuần trang trí, mọi thao tác vẫn nằm ở ô
-                    tìm thật — đọc lên hai lần là thừa với người dùng màn đọc. */}
-                {(searchFocused || searchExpanded) && !isInPractice && (
-                    <span
-                        className={`search-anchor-icon${speechOn ? ' is-recording' : ''}`}
-                        aria-hidden="true"
-                    >
-                        <i className={`fas ${speechOn
-                            ? 'fa-microphone'
-                            : micMode ? 'fa-microphone-lines' : 'fa-search'}`}></i>
-                    </span>
-                )}
+                    Vẫn là `<i>` bên trong `.search-bar` chứ không phải nút
+                    riêng: cử chỉ giữ đã gắn trên chính ô tìm, tách ra là phải
+                    nhân đôi toàn bộ logic pointer. */}
                 {/* `is-recording`: ô còn THU mà đang ghi âm → tô đỏ chính nút
                     kính lúp (xem responsive.css). Không có dấu hiệu thì người
                     dùng giữ tay mà chẳng thấy gì đổi, không biết máy nghe chưa. */}
@@ -748,7 +631,7 @@ export default function TopNav() {
                         ? 'fa-lock'
                         : speechOn
                             ? 'fa-microphone'
-                            : micMode ? 'fa-microphone-lines' : 'fa-search'}`}></i>
+                            : 'fa-microphone-lines'}`}></i>
                     <input
                         type="text"
                         id="search-input"
@@ -767,19 +650,10 @@ export default function TopNav() {
                         onFocus={() => { setSearchReadOnly(false); setSearchFocused(true); }}
                         onMouseDown={() => setSearchReadOnly(false)}
                         onBlur={() => setSearchFocused(false)}
-                        // Chạm mở ô · GIỮ hoặc CHẠM ĐÚP thì ghi âm (khi ô đang thu).
-                        onPointerDown={handleSearchPointerDown}
-                        onPointerUp={handleSearchPointerUp}
-                        // Kéo ngón ra ngoài rồi nhả: `pointerup` bắn ở chỗ khác,
-                        // không có dòng này là micro chạy mãi.
-                        onPointerLeave={handleSearchPointerUp}
-                        onPointerCancel={handleSearchPointerUp}
-                        // Chặn menu "Bôi đen / Dán" của hệ điều hành khi GIỮ lâu.
-                        // Đây là thứ làm cử chỉ giữ hỏng trên điện thoại: menu
-                        // bật lên cướp cử chỉ, ô nhập giật rồi tự đóng. Chỉ chặn
-                        // khi ô ĐANG THU — ô đã bung thì người dùng đang gõ, cướp
-                        // mất menu dán là rất khó chịu.
-                        onContextMenu={(e) => { if (!searchFocused) e.preventDefault(); }}
+                        // KHÔNG gắn cử chỉ giữ ở đây nữa. Ô tìm giờ là dòng cố
+                        // định luôn hiện, người dùng chạm vào là để GÕ — giữ lâu
+                        // trên chữ là để bôi đen, cướp mất là không sửa được.
+                        // Việc ghi âm đã chuyển hẳn sang nút mic trên nav.
                         onKeyDown={(e) => {
                             // Esc → xoá ô tìm kiếm và bỏ focus. Đặt TRƯỚC nhánh Enter
                             // vì đây là lối thoát, phải luôn chạy được.

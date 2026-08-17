@@ -220,166 +220,80 @@ describe('thanh kinh nghiệm xuống dòng riêng', () => {
     });
 });
 
-describe('ô tìm kiếm thu gọn thành nút kính lúp', () => {
-    test('mặc định thu về cỡ một nút', () => {
+describe('ô tìm kiếm: DÒNG CỐ ĐỊNH dưới thanh trạng thái', () => {
+    // Bản trước ô tìm nằm trong nav (đáy màn), thu thành nút kính lúp rồi bung
+    // ra khi chạm. Ba chỗ dở: nav vốn đã chật phải gánh thêm nó; ô bung ra nằm
+    // sát bàn phím nên gõ xong không thấy gợi ý; và phải BẤM mới gõ được.
+    //
+    // Giờ là một dòng ngang cố định, luôn hiện, ngay dưới hàng xu/XP.
+    test('bám đỉnh màn, ngay dưới thanh trạng thái', () => {
         const r = ruleFor('.search-bar');
-        expect(r).toMatch(/width:\s*40px/);
-        expect(r).toMatch(/min-width:\s*40px/);
-    });
-
-    test('có focus thì bung ra, ĐÈ lên chứ không đẩy các nút đi', () => {
-        // Nav chỉ có một hàng: đẩy là các nút bị bóp về 0 rồi biến mất — đúng
-        // lỗi cũ của nút chuông. Rời khỏi dòng chảy thì không ai bị bóp.
-        //
-        // `fixed` chứ không `absolute`: mốc phải là KHUNG NHÌN để căn giữa được
-        // phần màn hình còn thấy. Bám nav thì ô luôn dính sát mép bàn phím.
-        const r = ruleFor('.top-nav.search-active .search-bar');
         expect(r).toMatch(/position:\s*fixed/);
-        expect(r).toMatch(/z-index:\s*\d+/);
+        // `--sb` = chiều cao THẬT của thanh trạng thái, đo bằng ResizeObserver.
+        // Ghim số cứng thì hoặc đè lên thanh, hoặc chừa một khoảng hở lơ lửng —
+        // thanh đó cao 1 hay 2 dòng tuỳ nội dung.
+        expect(r).toMatch(/top:\s*var\(--sb, 0px\)/);
     });
 
-    test('lúc THU: lề đối xứng và icon căn GIỮA — không lệch tâm', () => {
-        // `padding: 8px 0 8px 34px` trong ô rộng 40px đẩy vùng nền lệch hẳn sang
-        // phải so với icon; còn `left: 12px` cố định là đúng khi ô rộng 400px
-        // nhưng ở ô 40px thì 12px không còn là "mép" mà thành gần tâm.
-        expect(ruleFor('.search-bar input')).toMatch(/padding:\s*8px 0;/);
-        const icon = ruleFor('.search-bar > .fa-search,\n    .search-bar > .fa-microphone,\n    .search-bar > .fa-microphone-lines,\n    .search-bar > .fa-lock');
-        expect(icon).toMatch(/left:\s*0/);
-        expect(icon).toMatch(/right:\s*0/);
-        expect(icon).toMatch(/margin:\s*auto/);
+    test('chiếm nguyên một dòng ngang', () => {
+        const r = ruleFor('.search-bar');
+        expect(r).toMatch(/left:\s*0/);
+        expect(r).toMatch(/right:\s*0/);
     });
 
-    test('VIỀN nằm trên ICON, không phải trên ô nhập', () => {
-        // Đặt viền + bo 50% lên input thì ra BẦU DỤC: input cao ~34px trong ô
-        // rộng 40px. Icon mới là hình vuông thật (32×32) nên `50%` ra hình tròn.
-        const icon = ruleFor('.search-bar > .fa-search,\n    .search-bar > .fa-microphone,\n    .search-bar > .fa-microphone-lines,\n    .search-bar > .fa-lock');
-        expect(icon).toMatch(/border:\s*2px solid var\(--primary-color\)/);
-        expect(icon).toMatch(/border-radius:\s*50%/);
-        expect(icon).toMatch(/width:\s*32px/);
-        expect(icon).toMatch(/height:\s*32px/);
-        expect(icon).toMatch(/box-sizing:\s*border-box/);
+    test('nằm DƯỚI thanh trạng thái, trên nội dung trang', () => {
+        // Cùng mức với thanh trạng thái là nó đè lên chính thứ nó đang bám.
+        const r = ruleFor('.search-bar');
+        expect(r).toMatch(/z-index:\s*calc\(var\(--z-sticky\) - 2\)/);
     });
 
-    test('ô nhập KHÔNG mang viền LẪN NỀN lúc thu', () => {
-        // Viền: hai vòng lồng nhau (ô + icon) là hai vòng đồng tâm, rối mắt.
-        // Nền: `background: var(--card-bg)` của quy tắc gốc phủ nguyên hình
-        // 40×34, còn icon tròn chỉ 32px — phần nền thừa hai bên lộ ra thành
-        // VỆT DỌC xám cạnh vòng tròn.
+    test('KHÔNG còn cơ chế thu/bung', () => {
+        // Ô luôn hiện thì `.search-active` là mã chết — để lại là bẫy cho lần
+        // đọc sau.
+        expect(css).not.toMatch(/\.search-active/);
+    });
+
+    test('chữ và icon hiện bình thường, không trong suốt', () => {
+        // Lúc thu, ô cũ ẩn chữ đi (`color: transparent`); giờ nó là ô gõ thật.
         const r = ruleFor('.search-bar input');
-        expect(r).toMatch(/border-color:\s*transparent/);
-        expect(r).toMatch(/background:\s*transparent/);
+        expect(r).toMatch(/color:\s*var\(--text-primary\)/);
+        expect(r).toMatch(/width:\s*100%/);
     });
 
-    test('bung ra thì ô nhập lấy lại NỀN của nó', () => {
-        // Không trả lại là ô nhập trong suốt, chữ nổi thẳng trên nền nav.
-        expect(ruleFor('.top-nav.search-active .search-bar input'))
-            .toMatch(/background:\s*var\(--card-bg/);
-    });
-
-    test('bung ra thì icon BỎ viền, trở lại ký hiệu thường', () => {
-        const icon = ruleFor(
-            '.top-nav.search-active .search-bar > .fa-search,\n    .top-nav.search-active .search-bar > .fa-microphone,\n    .top-nav.search-active .search-bar > .fa-microphone-lines,\n    .top-nav.search-active .search-bar > .fa-lock');
-        expect(icon).toMatch(/border:\s*none/);
-        expect(icon).toMatch(/width:\s*1em/);
-    });
-
-    test('bung ra thì ô nhập lấy lại viền của nó', () => {
-        expect(ruleFor('.top-nav.search-active .search-bar input'))
-            .toMatch(/border-color:\s*var\(--border-color\)/);
-    });
-
-    test('lúc THU: lề đối xứng và icon căn GIỮA — không lệch tâm', () => {
-        // `padding: 8px 0 8px 34px` trong ô rộng 40px đẩy vùng nền lệch hẳn sang
-        // phải so với icon; còn `left: 12px` cố định là đúng khi ô rộng 400px
-        // nhưng ở ô 40px thì 12px không còn là "mép" mà thành gần tâm.
-        expect(ruleFor('.search-bar input')).toMatch(/padding:\s*8px 0;/);
-        const icon = ruleFor('.search-bar > .fa-search,\n    .search-bar > .fa-microphone,\n    .search-bar > .fa-microphone-lines,\n    .search-bar > .fa-lock');
-        expect(icon).toMatch(/left:\s*0/);
-        expect(icon).toMatch(/right:\s*0/);
-        expect(icon).toMatch(/margin:\s*auto/);
-    });
-
-    test('lúc BUNG: trả lại lề lệch trái, icon về mép', () => {
-        // Ô đủ rộng rồi thì chữ phải bắt đầu sau icon, không căn giữa.
-        expect(ruleFor('.top-nav.search-active .search-bar input'))
-            .toMatch(/text-align:\s*left/);
-        expect(ruleFor('.top-nav.search-active .search-bar > .fa-search,\n    .top-nav.search-active .search-bar > .fa-microphone,\n    .top-nav.search-active .search-bar > .fa-microphone-lines,\n    .top-nav.search-active .search-bar > .fa-lock'))
-            .toMatch(/left:\s*\d+px/);
-    });
-
-    test('lúc thu thì chữ và placeholder trong suốt, lúc bung thì trả lại màu', () => {
-        // Ẩn bằng `color: transparent` chứ không `display: none`: ô thu lại vẫn
-        // phải là CHÍNH cái input để một cú chạm là focus + mở bàn phím. Nút giả
-        // thì phải tự gọi focus, mà iOS không mở bàn phím khi focus được gọi
-        // ngoài cử chỉ chạm trực tiếp.
-        expect(ruleFor('.search-bar input')).toMatch(/color:\s*transparent/);
-        expect(ruleFor('.top-nav.search-active .search-bar input')).toMatch(/color:\s*var\(--text-primary\)/);
-    });
-
-    test('nút xoá ẩn lúc thu, hiện lại lúc bung', () => {
-        expect(ruleFor('.search-bar .clear-search-btn')).toMatch(/display:\s*none/);
-        // Và phải trả về ĐÚNG `flex` như bản gốc — `inline-flex` là icon lệch tâm.
-        const back = ruleFor('.top-nav.search-active .search-bar .clear-search-btn');
-        expect(back).toMatch(/display:\s*flex/);
-        expect(back).not.toMatch(/inline-flex/);
-    });
-
-    test('nút MIC KHÔNG bị ẩn — nó là nút riêng, không phải icon trong ô', () => {
-        // Bản trước mic là CON của ô: ô thu lại thì mic `display: none`, bấm vào
-        // chỗ đó là trúng input → nút ghi âm coi như không tồn tại trên điện
-        // thoại. Giờ nó là anh em của ô (TopNav.jsx) nên phải luôn bấm được.
-        const b = mobileBlock();
-        expect(b).not.toMatch(/\.search-bar \.mic-btn\s*\{[^}]*display:\s*none/);
-    });
-
-    test('mic KHÔNG kéo chồng lên ô nữa ở khổ điện thoại', () => {
-        // Trên máy tính margin âm kéo nó vào trong ô cho đẹp; ở đây nó đứng
-        // riêng nên margin âm sẽ làm hai thứ đè nhau.
-        expect(mobileBlock()).toMatch(/\.mic-btn\s*\{[^}]*margin-left:\s*0/);
-    });
-
-    test('dùng đúng tên class của nút mic', () => {
-        // Nút là `.mic-btn` (TopNav.jsx). Viết nhầm `.speech-btn` thì quy tắc
-        // không khớp gì cả — CSS vẫn hợp lệ, không có gì báo.
-        const b = mobileBlock();
-        expect(b).toMatch(/\.mic-btn/);
-        expect(b).not.toMatch(/\.speech-btn/);
-    });
-
-    test('ô bung ra nổi GIỮA khung nhìn, không dính mép bàn phím', () => {
-        // Bản cũ bay lên ngay trên nav (`bottom: calc(100% + …)`) — vẫn dính sát
-        // bàn phím, đúng chỗ chật nhất, gõ xong không thấy gợi ý/kết quả.
-        // Giờ căn giữa phần màn hình CÒN THẤY ĐƯỢC (đã trừ `--kb`).
-        const r = ruleFor('.top-nav.search-active .search-bar');
-        expect(r).toMatch(/bottom:\s*calc\(var\(--kb, 0px\) \+ \(100dvh - var\(--kb, 0px\)\) \/ 2\)/);
-        expect(r).not.toMatch(/bottom:\s*calc\(100% \+/);
-    });
-
-    test('lớp đó có nền + bóng của chính nó', () => {
-        // Trong suốt thì vẫn trông như dính vào nav — nền mới là thứ tách nó ra.
-        const r = ruleFor('.top-nav.search-active .search-bar');
-        expect(r).toMatch(/background:\s*var\(--bg-primary\)/);
-        expect(r).toMatch(/box-shadow:/);
+    test('nội dung trang chừa chỗ cho dòng này', () => {
+        // Không chừa thì nó đè lên đầu trang — đúng lỗi mà nav ở đáy từng gây
+        // ra ở cuối trang.
+        expect(ruleFor('.main-content')).toMatch(/padding-top:\s*\d+px/);
     });
 });
 
-describe('điện thoại KHÔNG có nút mic; sáng/tối ở lại nav', () => {
-    test('ô đang thu: mic ẩn', () => {
-        // Ghi âm gộp vào chính nút kính lúp — giữ nút đó là nói.
-        expect(ruleFor('.mic-btn')).toMatch(/display:\s*none/);
+describe('nút GHI ÂM ở giữa nav', () => {
+    test('HIỆN trên điện thoại — nó là thứ duy nhất còn ở giữa nav', () => {
+        // Ô tìm đã dời lên đỉnh, chỗ này rảnh hẳn cho nút mic.
+        expect(ruleFor('.mic-btn')).toMatch(/display:\s*flex/);
     });
 
-    test('ô đang bung: mic VẪN ẩn', () => {
-        // Bỏ hẳn nút mic riêng trên điện thoại: chạm kính lúp mở ô, GIỮ kính lúp
-        // là nói — một chỗ, hai ý định. Bản trước cho nó mọc lại thành nút tròn
-        // to nổi trên ô, tức là hai đích chạm cho cùng một việc.
-        expect(ruleFor('.top-nav.search-active .mic-btn')).toMatch(/display:\s*none/);
+    test('bỏ margin âm của bản desktop', () => {
+        // Margin âm kéo nút chồng vào trong ô tìm; ở đây không còn ô nào để chồng.
+        expect(ruleFor('.mic-btn')).toMatch(/margin-left:\s*0/);
     });
 
+    test('đủ lớn để giữ ngón tay', () => {
+        // Phải giữ vài giây (nhấn giữ để nói): đích nhỏ thì rất dễ trượt ra
+        // ngoài, mà trượt ra là `pointerleave` dừng thu giữa câu.
+        const r = ruleFor('.mic-btn');
+        const w = Number(r.match(/width:\s*(\d+)px/)?.[1] || 0);
+        expect(w).toBeGreaterThanOrEqual(40);
+    });
+});
+
+
+describe('nút mic ở lại nav; sáng/tối cũng vậy', () => {
     test('đang nghe thì có dấu hiệu nhìn thấy được', () => {
         // Giữ tay mà không có phản hồi thì không biết micro đã bắt đầu chưa.
-        // Dấu hiệu giờ nằm trên chính NÚT KÍNH LÚP (nút mic riêng đã bỏ).
-        expect(ruleFor('.top-nav:not(.search-active) .search-bar.is-recording > .fa-search,\n    .top-nav:not(.search-active) .search-bar.is-recording > .fa-microphone,\n    .top-nav:not(.search-active) .search-bar.is-recording > .fa-microphone-lines'))
+        // Dấu hiệu nằm trên icon trong `.search-bar`, dùng chung cho cả ba biến
+        // thể icon (kính lúp / micro / micro-sóng).
+        expect(ruleFor('.search-bar.is-recording > .fa-search,\n    .search-bar.is-recording > .fa-microphone,\n    .search-bar.is-recording > .fa-microphone-lines'))
             .toMatch(/animation:\s*micPulse/);
     });
 
