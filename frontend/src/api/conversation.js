@@ -18,9 +18,24 @@ import { Http } from './http.js';
  * "Từ cần dùng · 0/0" thay vì lời báo lỗi. Đúng lỗi đã gặp khi hết năng lượng:
  * server trả 400 "Không đủ năng lượng" mà giao diện vẫn mở phiên trống.
  */
+
+/**
+ * Lỗi có mang theo DỮ LIỆU của server, không chỉ câu chữ.
+ *
+ * `throw new Error(message)` là mất sạch `energyNeeded`, `currentEnergy`,
+ * `needTopic`… — mà đó mới là thứ để màn hình xử lý ĐÚNG: thiếu năng lượng thì
+ * mở popup nạp, chưa chọn đề thì mở popup chọn đề. Chỉ có câu chữ thì mọi lỗi
+ * đều thành một dòng đỏ giống nhau, và người dùng phải tự đoán làm gì tiếp.
+ */
+function fail(payload = {}, fallback = 'Yêu cầu thất bại') {
+    const err = new Error(payload.message || payload.error || fallback);
+    Object.assign(err, payload);
+    return err;
+}
+
 function unwrap(res) {
     if (res && res.success === false) {
-        throw new Error(res.error || res.message || 'Yêu cầu thất bại');
+        throw fail(res);
     }
 
     // HAI lớp `.data` lồng nhau — chỗ này rất dễ nhầm:
@@ -40,7 +55,7 @@ function unwrap(res) {
         // của server là `{ success: false, message }` — không có `data`. Đòi cả
         // hai thì lỗi rơi qua điều kiện và lọt xuống như dữ liệu thật.
         if (outer.success === false) {
-            throw new Error(outer.message || 'Yêu cầu thất bại');
+            throw fail(outer);
         }
         if ('data' in outer) return outer.data;
     }

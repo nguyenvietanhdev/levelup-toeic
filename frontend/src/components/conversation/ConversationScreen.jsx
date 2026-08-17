@@ -2,6 +2,7 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import { useGame } from '@game/GameContext.jsx';
 import { GameState } from '@game/state.js';
 import { GameLogic, ttsLang } from '@game/gameLogic.js';
+import { Energy } from '@game/energy.js';
 import { Notification } from '@ui/Toaster.jsx';
 import { ConversationAPI } from '@api/conversation.js';
 import { getVocabLang } from '@api/vocabulary.js';
@@ -31,6 +32,9 @@ export default function ConversationScreen({ active }) {
     const [speechOn, setSpeechOn] = useState(false);
 
     const speechRef = useRef(null);
+    // Trỏ tới `handleStart` để `onBought` của popup nạp năng lượng gọi lại được.
+    // Không thể đưa `handleStart` vào deps của chính nó.
+    const handleStartRef = useRef(null);
     const scrollRef = useRef(null);
     const lang = getVocabLang();
 
@@ -111,11 +115,31 @@ export default function ConversationScreen({ active }) {
             }
             speak(data.turns?.[0]?.content);
         } catch (err) {
+            // THIẾU NĂNG LƯỢNG → mở popup nạp, y như các chế độ luyện tập.
+            //
+            // Chỉ báo "Không đủ năng lượng" là đẩy việc sang người dùng: họ phải
+            // tự nhớ cửa hàng ở đâu, mua gói nào, rồi quay lại đây bấm lại.
+            // Popup nạp đã có sẵn và `onBought` đưa họ vào thẳng hội thoại.
+            if (err?.energyNeeded) {
+                Energy.showRefillModal({
+                    needed: err.energyNeeded,
+                    onBought: () => { handleStartRef.current?.(); },
+                });
+                return;
+            }
+            // CHƯA CHỌN ĐỀ → mở popup chọn đề. Server cũng chặn (client đã kiểm
+            // trước, nhưng đề có thể bị xoá giữa chừng ở thiết bị khác).
+            if (err?.needTopic) {
+                EventBus.emit(GameEvents.TOPIC_MODAL_REQUESTED, {});
+                return;
+            }
             Notification.error(String(err?.message || 'Không mở được hội thoại'));
         } finally {
             setStarting(false);
         }
     }, [starting, lang, speak, syncFromState]);
+
+    handleStartRef.current = handleStart;
 
     const handleSend = useCallback(async () => {
         const text = draft.trim();

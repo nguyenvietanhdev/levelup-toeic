@@ -72,6 +72,39 @@ describe('lỗi phải NÉM, không được lọt qua', () => {
     });
 });
 
+describe('lỗi mang theo DỮ LIỆU, không chỉ câu chữ', () => {
+    test('thiếu năng lượng → giữ energyNeeded/currentEnergy', () => {
+        // Không có số này thì màn hình chỉ hiện một dòng đỏ, không mở được popup
+        // nạp — người dùng phải tự nhớ cửa hàng ở đâu và mua gói nào.
+        post.mockResolvedValue({
+            success: true,
+            data: {
+                success: false, message: 'Không đủ năng lượng',
+                energyNeeded: 15, currentEnergy: 4,
+            },
+        });
+        return ConversationAPI.start().then(
+            () => { throw new Error('phải ném lỗi'); },
+            (e) => {
+                expect(e.message).toBe('Không đủ năng lượng');
+                expect(e.energyNeeded).toBe(15);
+                expect(e.currentEnergy).toBe(4);
+            }
+        );
+    });
+
+    test('chưa chọn đề → giữ cờ needTopic', () => {
+        post.mockResolvedValue({
+            success: true,
+            data: { success: false, message: 'Chưa chọn đề từ vựng', needTopic: true },
+        });
+        return ConversationAPI.start().then(
+            () => { throw new Error('phải ném lỗi'); },
+            (e) => { expect(e.needTopic).toBe(true); }
+        );
+    });
+});
+
 describe('cả ba lượt gọi dùng cùng một luật', () => {
     const shaped = {
         success: true,

@@ -245,6 +245,35 @@ describe('ô nhập và bảng từ LUÔN thấy được', () => {
     });
 });
 
+describe('lỗi mở đúng POPUP, không chỉ báo một dòng đỏ', () => {
+    test('thiếu năng lượng → mở popup nạp', () => {
+        // Chỉ báo "Không đủ năng lượng" là đẩy việc sang người dùng: họ phải tự
+        // nhớ cửa hàng ở đâu, mua gói nào, rồi quay lại đây bấm lại.
+        expect(src).toMatch(/if \(err\?\.energyNeeded\)/);
+        expect(src).toMatch(/Energy\.showRefillModal\(/);
+    });
+
+    test('mua xong VÀO THẲNG hội thoại', () => {
+        // Không nối `onBought` thì trả tiền xong bị trả về màn cũ, phải tự bấm
+        // "Bắt đầu" lần nữa — trông như mua hụt.
+        const i = src.indexOf('err?.energyNeeded');
+        const body = src.slice(i, i + 400);
+        expect(body).toMatch(/onBought: \(\) => \{ handleStartRef\.current\?\.\(\); \}/);
+    });
+
+    test('dùng REF để gọi lại chính handleStart', () => {
+        // `useCallback` không tham chiếu được chính nó trong deps — gọi thẳng
+        // `handleStart` là vòng phụ thuộc.
+        expect(src).toMatch(/const handleStartRef = useRef\(null\)/);
+        expect(src).toMatch(/handleStartRef\.current = handleStart/);
+    });
+
+    test('server báo chưa chọn đề → mở popup chọn đề', () => {
+        // Client đã kiểm trước, nhưng đề có thể bị xoá giữa chừng ở thiết bị khác.
+        expect(src).toMatch(/if \(err\?\.needTopic\)/);
+    });
+});
+
 describe('gửi thì DỪNG ghi âm', () => {
     test('handleSend tắt micro trước khi gửi', () => {
         // Để micro chạy tiếp có ba cái hại: ghi đè ô nhập vừa xoá bằng câu đang
