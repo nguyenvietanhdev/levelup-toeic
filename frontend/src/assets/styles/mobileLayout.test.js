@@ -365,6 +365,64 @@ describe('popup Dịch nhanh không bị bóp ngang', () => {
     });
 });
 
+/**
+ * Chế độ Hội thoại ở màn ~360px.
+ *
+ * Ba chỗ vỡ nếu để nguyên bản desktop:
+ *   1. Bảng 12 từ mục tiêu ăn 4–5 dòng, hết chỗ cho chính khung hội thoại.
+ *   2. Hàng nhập có BỐN thứ (ô · mic · gửi · Kết thúc) → ô nhập còn ~90px.
+ *   3. Màn `height: 100dvh` mà thêm padding thì VƯỢT khung nhìn, đẩy ô nhập
+ *      xuống dưới mép màn — đúng chỗ người dùng cần gõ.
+ */
+describe('Hội thoại trên điện thoại', () => {
+    test('chừa chỗ cho dòng tìm kiếm ở đỉnh và nav ở đáy', () => {
+        const r = ruleFor('#conversation-screen.active');
+        expect(r).toMatch(/padding-top:\s*var\(--sb, 0px\)/);
+        expect(r).toMatch(/padding-bottom:\s*calc\(56px \+ var\(--kb, 0px\)\)/);
+    });
+
+    test('border-box để padding KHÔNG làm màn vượt khung nhìn', () => {
+        // Quy tắc gốc đặt `height: 100dvh`. `content-box` (mặc định) thì màn cao
+        // 100dvh CỘNG padding — phần vượt đẩy ô nhập xuống dưới mép màn.
+        expect(ruleFor('#conversation-screen.active')).toMatch(/box-sizing:\s*border-box/);
+    });
+
+    test('trừ cả bàn phím ảo', () => {
+        // Bàn phím ảo KHÔNG làm khung nhìn ngắn lại, nó phủ lên trên — không trừ
+        // `--kb` thì ô nhập nằm đúng dưới bàn phím.
+        expect(ruleFor('#conversation-screen.active')).toMatch(/var\(--kb, 0px\)/);
+    });
+
+    test('bảng từ mục tiêu giới hạn cao + cuộn riêng', () => {
+        // 12 chip trên màn hẹp là 4–5 dòng, ăn hết chỗ của khung hội thoại.
+        const r = ruleFor('.convo-targets');
+        expect(r).toMatch(/max-height:\s*\d+px/);
+        expect(r).toMatch(/overflow-y:\s*auto/);
+    });
+
+    test('hàng nhập XUỐNG HAI DÒNG, ô nhập chiếm trọn dòng trên', () => {
+        // Ép một dòng thì ô nhập còn ~90px — gõ vài chữ là chữ chạy khỏi tầm nhìn.
+        expect(ruleFor('.convo-input-row')).toMatch(/flex-wrap:\s*wrap/);
+        expect(ruleFor('.convo-input')).toMatch(/flex:\s*1 0 100%/);
+    });
+
+    test('ba nút dưới đủ lớn để chạm', () => {
+        const r = ruleFor('.convo-mic,\n    .convo-input-row .btn');
+        expect(r).toMatch(/min-height:\s*38px/);
+    });
+
+    test('bong bóng rộng hơn bản desktop', () => {
+        // 78% trên màn 360px là ~280px; câu tiếng Trung dài vẫn xuống 3–4 dòng hẹp.
+        const r = ruleFor('.convo-turn');
+        const w = Number(r.match(/max-width:\s*(\d+)%/)?.[1] || 0);
+        expect(w).toBeGreaterThan(78);
+    });
+
+    test('nút ở màn kết quả xuống dòng thay vì bóp ngang', () => {
+        expect(ruleFor('.convo-actions .btn')).toMatch(/flex:\s*1 0 100%/);
+    });
+});
+
 describe('nút mic ở lại nav; sáng/tối cũng vậy', () => {
     test('dấu hiệu đang nghe nằm trên NÚT MIC, không ở ô tìm', () => {
         // Ô tìm không còn liên quan gì tới ghi âm; báo ở đó là gợi ý sai.

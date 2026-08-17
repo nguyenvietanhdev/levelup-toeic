@@ -764,6 +764,92 @@
         flex: 1 0 100%;
     }
 
+    /* ── Chế độ HỘI THOẠI ────────────────────────────────────────────────
+       Ba chỗ vỡ ở màn ~360px:
+         · bảng từ mục tiêu (12 chip) ăn gần nửa màn hình dọc;
+         · hàng nhập có BỐN thứ (ô · mic · gửi · Kết thúc) → ô nhập còn ~90px;
+         · bong bóng `max-width: 78%` vẫn để câu dài xuống nhiều dòng hẹp. */
+
+    /* Ô tìm là dòng cố định ở ĐỈNH (xem `.search-bar` bên trên), nên màn này
+       phải chừa chỗ cho nó — không thì bảng từ mục tiêu nằm dưới ô tìm.
+
+       Nav cũng bám ĐÁY ở khổ này, nên chừa cả hai đầu.
+
+       `box-sizing: border-box` để padding TÍNH VÀO `height: 100dvh` của quy tắc
+       gốc. Thiếu nó thì màn cao 100dvh CỘNG thêm padding — vượt khung nhìn đúng
+       bằng phần padding, và phần vượt đẩy ô nhập xuống dưới mép màn, đúng chỗ
+       người dùng cần gõ. */
+    #conversation-screen.active {
+        box-sizing: border-box;
+        padding-top: var(--sb, 0px);
+        /* `--kb` = chiều cao bàn phím ảo (TopNav đo qua VisualViewport).
+           Bàn phím ảo KHÔNG làm khung nhìn ngắn lại, nó phủ lên trên — nên
+           không trừ nó thì ô nhập nằm ĐÚNG dưới bàn phím, không thấy mình gõ gì.
+           56px là chỗ cho nav ở đáy; bàn phím mở thì nav đã tự đẩy lên. */
+        padding-bottom: calc(56px + var(--kb, 0px));
+    }
+
+    /* Bảng từ mục tiêu: giới hạn chiều cao và cho CUỘN RIÊNG.
+       12 chip trên màn hẹp là 4–5 dòng — ăn hết chỗ của chính khung hội thoại,
+       mà đó mới là thứ người dùng nhìn vào. */
+    .convo-targets {
+        padding: 8px 10px;
+        max-height: 88px;
+        overflow-y: auto;
+    }
+
+    .convo-chip {
+        font-size: 11px;
+        padding: 2px 8px;
+    }
+
+    /* Bong bóng rộng hơn: 78% trên màn 360px là ~280px, câu tiếng Trung dài
+       vẫn xuống 3–4 dòng rất hẹp. */
+    .convo-turn {
+        max-width: 88%;
+    }
+
+    .convo-log {
+        padding: 10px;
+        gap: 8px;
+    }
+
+    /* Hàng nhập XUỐNG HAI DÒNG: ô nhập chiếm trọn dòng trên, ba nút xuống dưới.
+       Ép một dòng thì ô nhập còn ~90px — gõ được vài chữ là chữ chạy khỏi tầm
+       nhìn, mà đây là chỗ người dùng làm việc chính. */
+    .convo-input-row {
+        flex-wrap: wrap;
+        padding: 8px 10px;
+        gap: 6px;
+    }
+
+    .convo-input {
+        flex: 1 0 100%;
+    }
+
+    /* Ba nút chia đều dòng dưới. `flex: 1` để chúng đủ rộng cho ngón tay —
+       nút 38px vừa đủ chạm, nhưng ở đây có chỗ nên nới ra. */
+    .convo-mic,
+    .convo-input-row .btn {
+        flex: 1 1 auto;
+        min-height: 38px;
+    }
+
+    /* Nút "Kết thúc" có chữ nên cần rộng hơn hai nút icon. */
+    .convo-finish {
+        flex: 2 1 auto;
+    }
+
+    .convo-intro {
+        margin: 16px auto;
+        padding: 0 16px;
+    }
+
+    /* Nút ở màn kết quả xuống dòng thay vì bóp ngang. */
+    .convo-actions .btn {
+        flex: 1 0 100%;
+    }
+
     /* Nút quay về ở màn luyện tập. Android có nút Back của hệ thống, iOS có
        vuốt mép — nút này là bản sao thứ ba của cùng một hành động, trong khi
        hàng tiêu đề đang phải chứa cả tên chế độ, nhãn Part và điểm số. */
