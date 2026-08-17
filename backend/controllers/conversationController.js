@@ -51,11 +51,31 @@ async function fetchWords({ userId, source, part, lang }) {
 
     const SharedModel = lang === 'zh' ? VocabularyZh : Vocabulary;
     const [shared, mine] = await Promise.all([
-        SharedModel.find(filter).select('en vn').lean(),
-        UserUpload.find({ ...filter, userId, lang }).select('en vn').lean(),
+        // `zh` phải nằm trong `select`: kho tiếng Trung lưu chữ Hán ở trường
+        // `zh`, còn `en` để RỖNG. Chỉ lấy `en` thì danh sách từ mục tiêu rỗng
+        // trơn — mà hội thoại vẫn mở bình thường, nên trông như AI hoạt động
+        // đúng trong khi người học không thể ăn điểm nào.
+        SharedModel.find(filter).select('en zh vn').lean(),
+        UserUpload.find({ ...filter, userId, lang }).select('en zh vn').lean(),
     ]);
 
     return [...shared, ...mine];
+}
+
+/**
+ * Mặt từ dùng để so khớp.
+ *
+ * Hai kho đặt tên khác nhau: kho tiếng Anh dùng `en`, kho tiếng Trung dùng `zh`
+ * (và bỏ trống `en`). Lấy sai trường thì không lỗi nào báo, chỉ là danh sách
+ * mục tiêu rỗng.
+ */
+function faceOf(w) {
+    if (!w) return '';
+    const zh = typeof w.zh === 'string' ? w.zh.trim() : '';
+    const en = typeof w.en === 'string' ? w.en.trim() : '';
+    // Ưu tiên `zh` khi có: bản ghi tiếng Trung nào cũng có `zh`, còn `en` có thể
+    // là chuỗi rỗng hoặc phiên âm.
+    return zh || en;
 }
 
 /**
@@ -65,13 +85,13 @@ async function fetchWords({ userId, source, part, lang }) {
  * yếu từ nào (`WrongWord`), nên hội thoại nhắm đúng chỗ đó thay vì ôn tràn lan.
  */
 async function pickTargets({ userId, words }) {
-    const all = words.map((w) => w.en).filter(Boolean);
+    const all = words.map(faceOf).filter(Boolean);
     if (all.length <= TARGET_SIZE) return all;
 
-    // So theo `en` — đó là trường WrongWord dùng để lưu mặt từ, và cũng là
-    // trường kho từ vựng dùng (kể cả kho tiếng Trung: `en` giữ chữ Hán).
-    const wrong = await WrongWord.find({ userId }).select('en').lean();
-    const wrongSet = new Set(wrong.map((w) => w.en).filter(Boolean));
+    // WrongWord cũng có thể lưu mặt từ ở `en` HOẶC `zh` tuỳ kho gốc — dùng
+    // chung `faceOf` để hai bên so khớp được với nhau.
+    const wrong = await WrongWord.find({ userId }).select('en zh').lean();
+    const wrongSet = new Set(wrong.map(faceOf).filter(Boolean));
 
     const weak = all.filter((w) => wrongSet.has(w));
     const rest = all.filter((w) => !wrongSet.has(w));

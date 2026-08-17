@@ -195,12 +195,30 @@ describe('lấy từ vựng', () => {
         expect(b).toMatch(/\[\.\.\.weak, \.\.\.rest\]/);
     });
 
-    test('dùng đúng trường `en` của WrongWord', () => {
-        // Model đó KHÔNG có trường `word` — đoán sai tên là danh sách "từ yếu"
-        // luôn rỗng, mà không lỗi nào báo.
+    test('lấy mặt từ qua faceOf — kho tiếng Trung dùng `zh`, KHÔNG phải `en`', () => {
+        // Kho tiếng Trung lưu chữ Hán ở `zh` và để `en` RỖNG. Chỉ đọc `w.en` thì
+        // `targetWords` rỗng trơn — mà hội thoại VẪN mở bình thường, nên trông
+        // như AI hoạt động đúng trong khi người học không thể ăn điểm nào.
+        // Đúng lỗi đã gặp: dùng bộ zh_word_topic / FOOD ra targetWords: [].
+        expect(src).toMatch(/function faceOf/);
+        expect(src).toMatch(/words\.map\(faceOf\)/);
+        // Phải nằm trong `select`, không thì Mongoose không trả trường đó về.
+        expect(src).toMatch(/select\('en zh vn'\)/);
+        expect(src).not.toMatch(/words\.map\(\(w\) => w\.en\)/);
+    });
+
+    test('WrongWord cũng qua faceOf để hai bên so khớp được', () => {
+        expect(src).toMatch(/select\('en zh'\)/);
+        expect(src).toMatch(/wrong\.map\(faceOf\)/);
+    });
+
+    test('WrongWord KHÔNG có trường `word` — phải dùng `en`/`zh`', () => {
+        // Đoán sai tên trường là danh sách "từ yếu" luôn rỗng, mà không lỗi nào
+        // báo. Đọc thẳng schema để test đỏ nếu model đổi.
         const WrongWord = require('../models/WrongWord');
-        expect(Object.keys(WrongWord.schema.paths)).toContain('en');
-        expect(src).toMatch(/select\('en'\)/);
+        const paths = Object.keys(WrongWord.schema.paths);
+        expect(paths).toContain('en');
+        expect(paths).not.toContain('word');
     });
 
     test('bộ từ quá ít thì báo rõ, không mở phiên rỗng', () => {
