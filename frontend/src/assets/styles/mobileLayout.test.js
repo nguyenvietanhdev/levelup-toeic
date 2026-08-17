@@ -418,6 +418,29 @@ describe('Hội thoại trên điện thoại', () => {
         expect(w).toBeGreaterThan(78);
     });
 
+    test('thứ tự nút: Kết thúc · micro · GỬI', () => {
+        // Nút GỬI ở NGOÀI CÙNG BÊN PHẢI — bấm nhiều nhất, và mép phải là chỗ
+        // ngón cái với tới dễ nhất khi cầm một tay. "Kết thúc" đẩy sang trái vì
+        // bấm nhầm là mất lượt đang chơi.
+        expect(ruleFor('.convo-input')).toMatch(/order:\s*0/);
+        expect(ruleFor('.convo-finish')).toMatch(/order:\s*1/);
+        expect(ruleFor('.convo-mic')).toMatch(/order:\s*2/);
+        expect(ruleFor('.convo-input-row .btn:not(.convo-finish)')).toMatch(/order:\s*3/);
+    });
+
+    test('đổi bằng `order`, KHÔNG đảo thứ tự trong JSX', () => {
+        // Thứ tự DOM là thứ tự TAB của bàn phím và của trình đọc màn hình —
+        // đảo nó là đảo luôn trải nghiệm trên desktop.
+        const jsx = readFileSync(
+            join(__dirname, '..', '..', 'components', 'conversation', 'ConversationScreen.jsx'),
+            'utf8');
+        const mic = jsx.indexOf('convo-mic');
+        const send = jsx.indexOf('fa-paper-plane');
+        const finish = jsx.indexOf('convo-finish');
+        expect(mic).toBeLessThan(send);
+        expect(send).toBeLessThan(finish);
+    });
+
     test('nút ở màn kết quả xuống dòng thay vì bóp ngang', () => {
         expect(ruleFor('.convo-actions .btn')).toMatch(/flex:\s*1 0 100%/);
     });

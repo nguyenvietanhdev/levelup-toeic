@@ -824,6 +824,10 @@
     }
 
     .convo-input {
+        /* `order: 0` để ô nhập luôn ở DÒNG TRÊN. Ba nút dưới dùng order 1–3,
+           mà mặc định của mọi flex item cũng là 0 — không đặt rõ thì ô nhập
+           ngang hàng với chúng và thứ tự phụ thuộc vị trí trong DOM. */
+        order: 0;
         flex: 1 0 100%;
     }
 
@@ -835,9 +839,26 @@
         min-height: 38px;
     }
 
-    /* Nút "Kết thúc" có chữ nên cần rộng hơn hai nút icon. */
+    /* THỨ TỰ trên điện thoại: Kết thúc · micro · GỬI.
+       Nút GỬI ở NGOÀI CÙNG BÊN PHẢI — đó là nút bấm nhiều nhất, và mép phải là
+       chỗ ngón cái với tới dễ nhất khi cầm một tay. "Kết thúc" đẩy sang trái vì
+       nó là hành động KẾT THÚC phiên: bấm nhầm là mất lượt đang chơi.
+
+       Đổi bằng `order` chứ không đổi thứ tự trong JSX: thứ tự DOM là thứ tự
+       TAB của bàn phím và của trình đọc màn hình, đảo nó là đảo luôn trải
+       nghiệm trên desktop. */
     .convo-finish {
+        order: 1;
         flex: 2 1 auto;
+    }
+
+    .convo-mic {
+        order: 2;
+    }
+
+    /* Nút gửi — `.btn` duy nhất còn lại sau khi `.convo-finish` đã lấy order 1. */
+    .convo-input-row .btn:not(.convo-finish) {
+        order: 3;
     }
 
     .convo-intro {

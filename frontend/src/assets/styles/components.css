@@ -9016,7 +9016,14 @@ mark {
 
 /* Bảng từ MỤC TIÊU. Đây là thứ cho người học biết phải làm gì — không có nó thì
    họ chỉ chat vu vơ và không hiểu điểm ở đâu ra. */
+/* Bảng từ mục tiêu GHIM Ở ĐỈNH — cùng lý do với hàng nhập.
+   Đây là thứ cho người học biết phải dùng từ nào; cuộn mất nó là họ không biết
+   mình còn nợ từ gì, và tiến độ "3/12" cũng biến mất khỏi tầm nhìn. */
 .convo-targets {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    flex-shrink: 0;
     padding: 10px 14px;
     background: var(--bg-secondary);
     border-bottom: 1px solid var(--border-color);
@@ -9134,12 +9141,22 @@ mark {
     font-weight: 600;
 }
 
+/* Hàng nhập GHIM Ở ĐÁY khung nhìn, luôn thấy được.
+   Không ghim thì nó nằm cuối luồng flex: hội thoại dài ra là nó trôi xuống dưới
+   mép màn, và người dùng không cuộn xuống thì KHÔNG BIẾT có chỗ nhập — họ tưởng
+   chỉ đọc được chứ không trả lời được. */
 .convo-input-row {
+    position: sticky;
+    bottom: 0;
+    z-index: 2;
+    flex-shrink: 0;
     display: flex;
     align-items: center;
     gap: 8px;
     padding: 10px 14px;
     border-top: 1px solid var(--border-color);
+    /* Nền ĐẶC là bắt buộc khi ghim: trong suốt thì chữ trong khung hội thoại
+       chạy xuyên qua hàng nhập khi cuộn. */
     background: var(--bg-primary);
 }
 

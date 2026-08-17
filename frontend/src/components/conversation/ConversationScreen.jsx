@@ -121,6 +121,14 @@ export default function ConversationScreen({ active }) {
         const text = draft.trim();
         if (!text || busy || !convo) return;
 
+        // Gửi thì DỪNG ghi âm. Để micro chạy tiếp có ba cái hại: nó ghi đè ô
+        // nhập vừa xoá bằng câu đang nghe dở, nó nghe luôn câu NPC đọc ra loa,
+        // và người dùng tưởng đã tắt trong khi micro vẫn bật — chuyện riêng tư.
+        if (speechOn) {
+            speechRef.current?.stop?.();
+            setSpeechOn(false);
+        }
+
         setBusy(true);
         // Hiện câu của mình NGAY, không chờ server: chờ round-trip mới thấy chữ
         // thì cảm giác như máy treo.
@@ -148,7 +156,9 @@ export default function ConversationScreen({ active }) {
         } finally {
             setBusy(false);
         }
-    }, [draft, busy, convo, speak]);
+        // `speechOn` PHẢI có trong deps: thiếu thì closure giữ giá trị của lần
+        // render đầu (luôn false) và micro không bao giờ được tắt.
+    }, [draft, busy, convo, speak, speechOn]);
 
     const handleFinish = useCallback(async () => {
         if (!convo || busy) return;

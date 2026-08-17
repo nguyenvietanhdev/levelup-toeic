@@ -219,6 +219,52 @@ describe('dọn dẹp và chặn bấm dồn', () => {
     });
 });
 
+describe('ô nhập và bảng từ LUÔN thấy được', () => {
+    test('hàng nhập GHIM đáy khung nhìn', () => {
+        // Không ghim thì nó nằm cuối luồng flex: hội thoại dài ra là nó trôi
+        // xuống dưới mép màn, và người dùng KHÔNG cuộn xuống thì không biết có
+        // chỗ nhập — họ tưởng chỉ đọc được chứ không trả lời được.
+        const m = css.match(/\.convo-input-row\s*\{([^}]*)\}/);
+        expect(m).toBeTruthy();
+        expect(m[1]).toMatch(/position:\s*sticky/);
+        expect(m[1]).toMatch(/bottom:\s*0/);
+        // Nền ĐẶC là bắt buộc khi ghim — trong suốt thì chữ chạy xuyên qua.
+        expect(m[1]).toMatch(/background:\s*var\(--bg-primary\)/);
+        // `flex-shrink: 0` — không có thì khung hội thoại bóp nó lại khi chật.
+        expect(m[1]).toMatch(/flex-shrink:\s*0/);
+    });
+
+    test('bảng từ mục tiêu GHIM đỉnh', () => {
+        // Cuộn mất nó là người học không biết còn nợ từ gì, và tiến độ "3/12"
+        // cũng biến mất khỏi tầm nhìn.
+        const m = css.match(/\.convo-targets\s*\{([^}]*)\}/);
+        expect(m).toBeTruthy();
+        expect(m[1]).toMatch(/position:\s*sticky/);
+        expect(m[1]).toMatch(/top:\s*0/);
+        expect(m[1]).toMatch(/flex-shrink:\s*0/);
+    });
+});
+
+describe('gửi thì DỪNG ghi âm', () => {
+    test('handleSend tắt micro trước khi gửi', () => {
+        // Để micro chạy tiếp có ba cái hại: ghi đè ô nhập vừa xoá bằng câu đang
+        // nghe dở, nghe luôn câu NPC đọc ra loa, và người dùng tưởng đã tắt
+        // trong khi micro vẫn bật.
+        const i = src.indexOf('const handleSend');
+        const body = src.slice(i, src.indexOf('setBusy(true)', i));
+        expect(body).toMatch(/if \(speechOn\)/);
+        expect(body).toMatch(/speechRef\.current\?\.stop/);
+    });
+
+    test('`speechOn` có trong deps của handleSend', () => {
+        // Thiếu thì closure giữ giá trị lần render đầu (luôn false) và micro
+        // KHÔNG BAO GIỜ được tắt — lỗi im lặng.
+        const i = src.indexOf('const handleSend');
+        const j = src.indexOf('const handleFinish', i);
+        expect(src.slice(i, j)).toMatch(/\}, \[draft, busy, convo, speak, speechOn\]\)/);
+    });
+});
+
 describe('bố cục cuộn được', () => {
     test('màn là flex column cao trọn khung nhìn', () => {
         // `.screen.active` mặc định `display: block` — để nguyên thì `flex: 1`
