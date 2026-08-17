@@ -328,20 +328,6 @@ export default function TopNav() {
      * còn thu ô nữa — nó chỉ đóng bàn phím ảo, đúng thứ người dùng muốn khi
      * bấm ×. Ô vẫn nằm đó chờ lần gõ sau.
      */
-    /**
-     * Chỉ XOÁ nội dung, GIỮ ô mở và giữ tiêu điểm.
-     *
-     * Khác `closeSearch`: gõ nhầm thì xoá làm lại ngay, không phải mở lại ô rồi
-     * chạm vào để gõ tiếp — nhất là trên iOS, mất tiêu điểm là bàn phím sập
-     * xuống rồi phải chạm lần nữa mới bật lại.
-     */
-    const clearSearchText = useCallback(() => {
-        setSearchQuery('');
-        window._reactClearSearch?.();
-        // KHÔNG blur: ô ở nguyên trạng thái mở, con trỏ vẫn trong ô.
-        document.getElementById('search-input')?.focus();
-    }, []);
-
     const closeSearch = useCallback(() => {
         setSearchQuery('');
         window._reactClearSearch?.();
@@ -605,33 +591,26 @@ export default function TopNav() {
             </div>
 
             <div className="nav-center">
-                {/* NÚT GHI ÂM trên nav — chỉ hiện ở khổ điện thoại.
-                    Ô tìm ở đó đã dời xuống thành dòng riêng dưới thanh trạng
-                    thái (xem responsive.css), nên chỗ này chỉ còn việc ghi âm:
-                    NHẤN GIỮ để nói, nói xong vào thẳng popup dịch.
+                {/* Ô tìm. Ở khổ điện thoại CSS kéo nó ra khỏi đây thành một
+                    dòng cố định ngay dưới thanh trạng thái (xem responsive.css),
+                    còn chỗ này chỉ giữ lại nút mic ở giữa nav.
 
-                    Vẫn là `<i>` bên trong `.search-bar` chứ không phải nút
-                    riêng: cử chỉ giữ đã gắn trên chính ô tìm, tách ra là phải
-                    nhân đôi toàn bộ logic pointer. */}
-                {/* `is-recording`: ô còn THU mà đang ghi âm → tô đỏ chính nút
-                    kính lúp (xem responsive.css). Không có dấu hiệu thì người
-                    dùng giữ tay mà chẳng thấy gì đổi, không biết máy nghe chưa. */}
-                <div className={`search-bar ${isInPractice ? 'disabled' : ''}${speechOn && !searchFocused ? ' is-recording' : ''}`}>
-                    {/* Icon nói rõ CHẾ ĐỘ đang chọn — nó là công tắc, không chỉ
-                        là trang trí:
+                    KHÔNG còn class `is-recording`: dấu hiệu đang thu nằm trên
+                    chính nút mic (`.mic-btn.is-listening` — đỏ + nhịp đập, kèm
+                    cả bản cho người bật "giảm chuyển động"). Nhấp nháy thêm ở
+                    ô tìm là báo cùng một việc ở hai chỗ, mà ô tìm thì không
+                    liên quan gì tới việc ghi âm nữa. */}
+                <div className={`search-bar ${isInPractice ? 'disabled' : ''}`}>
+                    {/* KÍNH LÚP — icon này nói ô dùng để làm gì, chấm hết.
 
-                        · đang luyện tập → ổ khoá
-                        · ĐANG THU       → micro đặc (kèm nhấp nháy đỏ)
-                        · chế độ ghi âm  → micro gạch-chân-sóng: giữ vào là nói
-                        · chế độ tìm     → kính lúp: giữ vào là mở ô gõ
+                        Trước đây nó là hình micro, từ hồi ô tìm còn kiêm luôn
+                        việc ghi âm (giữ vào ô là nói). Ghi âm giờ có nút riêng
+                        trên nav, nên hình micro ở đây chỉ gợi ý sai: người dùng
+                        chạm vào ô là để GÕ, không ai giữ vào đây để nói cả.
 
-                        Chỉ đổi màu thì người dùng phải nhớ "đỏ nghĩa là gì";
-                        đổi hẳn hình thì nhìn là biết. */}
-                    <i className={`fas ${isInPractice
-                        ? 'fa-lock'
-                        : speechOn
-                            ? 'fa-microphone'
-                            : 'fa-microphone-lines'}`}></i>
+                        Đang luyện tập thì đổi thành ổ khoá — ô bị vô hiệu hoá
+                        thật, hiện kính lúp là hứa một thứ không bấm được. */}
+                    <i className={`fas ${isInPractice ? 'fa-lock' : 'fa-search'}`}></i>
                     <input
                         type="text"
                         id="search-input"
@@ -692,36 +671,28 @@ export default function TopNav() {
                         Dùng `pointerdown` (không phải `mousedown`) vì trên cảm
                         ứng nó bắn TRƯỚC, còn `mousedown` chỉ là sự kiện giả lập
                         sinh ra sau — lúc đó nút đã biến mất rồi. */}
+                    {/* MỘT nút × duy nhất: xoá chữ + đóng bàn phím.
+                        Trước đây là hai nút cạnh nhau (cục tẩy "xoá chữ" và ×
+                        "đóng ô"). Ô tìm giờ LUÔN HIỆN nên không còn gì để đóng —
+                        hai nút làm gần như cùng một việc, đặt cạnh nhau chỉ tổ
+                        bấm nhầm.
+
+                        `swallowNextClick()` là phần BẮT BUỘC: nút vừa bị gỡ khỏi
+                        DOM (nó chỉ hiện khi có chữ), nên khi nhấc ngón tay trình
+                        duyệt bắn `click` vào thứ đang nằm ở toạ độ đó — thẻ chế
+                        độ luyện tập bên dưới. Bấm × mà mở luôn Flashcard là lỗi
+                        này. */}
                     {searchQuery && !isInPractice && (
-                        <button
-                            id="clear-search-btn"
-                            className="clear-search-btn"
-                            type="button"
-                            title="Xoá nội dung"
-                            aria-label="Xoá nội dung"
-                            onPointerDown={(e) => {
-                                // Nút này KHÔNG bị gỡ khỏi DOM lúc bấm (ô vẫn mở,
-                                // chỉ chữ mất) nên không cần `swallowNextClick`.
-                                e.preventDefault();
-                                e.stopPropagation();
-                                clearSearchText();
-                            }}
-                        >
-                            <i className="fas fa-eraser"></i>
-                        </button>
-                    )}
-                    {/* `swallowNextClick()` là phần BẮT BUỘC đi kèm nút ĐÓNG: nút
-                        vừa bị gỡ khỏi DOM, nên khi nhấc ngón tay trình duyệt bắn
-                        `click` vào thứ đang nằm ở toạ độ đó — thẻ chế độ luyện
-                        tập bên dưới. Bấm × mà mở luôn Flashcard là lỗi này. */}
-                    {(searchQuery || searchFocused) && !isInPractice && (
                         <button
                             id="close-search-btn"
                             className="clear-search-btn close-search-btn"
                             type="button"
-                            title="Đóng ô tìm"
-                            aria-label="Đóng ô tìm"
+                            title="Xoá nội dung"
+                            aria-label="Xoá nội dung"
                             onPointerDown={(e) => {
+                                // `pointerdown` chứ không `mousedown`: trên cảm
+                                // ứng nó bắn TRƯỚC, còn `mousedown` là sự kiện
+                                // giả lập sinh ra sau — lúc đó nút đã biến mất.
                                 e.preventDefault();
                                 e.stopPropagation();
                                 closeSearch();

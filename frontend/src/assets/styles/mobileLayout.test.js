@@ -273,28 +273,44 @@ describe('nút GHI ÂM ở giữa nav', () => {
         expect(ruleFor('.mic-btn')).toMatch(/display:\s*flex/);
     });
 
-    test('bỏ margin âm của bản desktop', () => {
-        // Margin âm kéo nút chồng vào trong ô tìm; ở đây không còn ô nào để chồng.
-        expect(ruleFor('.mic-btn')).toMatch(/margin-left:\s*0/);
+    test('bỏ margin âm của bản desktop, căn giữa ô 40px', () => {
+        // Margin âm kéo nút chồng vào trong ô tìm; ở đây không còn ô nào để
+        // chồng — giữ lại là icon lệch hẳn sang trái đúng bằng bề rộng đó.
+        expect(ruleFor('.mic-btn')).toMatch(/margin:\s*auto/);
+    });
+
+    test('có VÒNG TRÒN bao quanh — nhìn ra là một nút', () => {
+        // Icon trần trôi lơ lửng giữa hàng thì không ai biết bấm được, mà đây
+        // lại là đích chạm phải GIỮ vài giây.
+        const r = ruleFor('.mic-btn');
+        expect(r).toMatch(/border:\s*2px solid/);
+        expect(r).toMatch(/border-radius:\s*50%/);
+    });
+
+    test('viền đổi màu khi đang nghe', () => {
+        // Không đổi thì còn một vòng xám bao quanh nút đỏ — trông như viền thừa.
+        expect(ruleFor('.mic-btn.is-listening')).toMatch(/border-color:\s*#dc2626/);
     });
 
     test('đủ lớn để giữ ngón tay', () => {
         // Phải giữ vài giây (nhấn giữ để nói): đích nhỏ thì rất dễ trượt ra
         // ngoài, mà trượt ra là `pointerleave` dừng thu giữa câu.
+        // 32px là bề rộng VIỀN; vùng chạm thật là ô 40px của `.nav-center`.
         const r = ruleFor('.mic-btn');
         const w = Number(r.match(/width:\s*(\d+)px/)?.[1] || 0);
-        expect(w).toBeGreaterThanOrEqual(40);
+        expect(w).toBeGreaterThanOrEqual(32);
     });
 });
 
 
 describe('nút mic ở lại nav; sáng/tối cũng vậy', () => {
-    test('đang nghe thì có dấu hiệu nhìn thấy được', () => {
-        // Giữ tay mà không có phản hồi thì không biết micro đã bắt đầu chưa.
-        // Dấu hiệu nằm trên icon trong `.search-bar`, dùng chung cho cả ba biến
-        // thể icon (kính lúp / micro / micro-sóng).
-        expect(ruleFor('.search-bar.is-recording > .fa-search,\n    .search-bar.is-recording > .fa-microphone,\n    .search-bar.is-recording > .fa-microphone-lines'))
-            .toMatch(/animation:\s*micPulse/);
+    test('dấu hiệu đang nghe nằm trên NÚT MIC, không ở ô tìm', () => {
+        // Ô tìm không còn liên quan gì tới ghi âm; báo ở đó là gợi ý sai.
+        // Quy tắc thật nằm ở layout.css (`.mic-btn.is-listening`) vì nút mic
+        // dùng chung cho cả desktop lẫn điện thoại.
+        expect(css).not.toMatch(/\.search-bar\.is-recording/);
+        const layout = readFileSync(join(__dirname, 'layout.css'), 'utf8');
+        expect(layout).toMatch(/\.mic-btn\.is-listening\s*\{[^}]*animation:\s*mic-pulse/);
     });
 
     test('nút sáng/tối KHÔNG bị ẩn — nó ở lại nav', () => {

@@ -98,21 +98,60 @@ describe('nút mic: GIỮ để nói, CHẠM để điền', () => {
 });
 
 describe('có dấu hiệu đang ghi âm', () => {
-    test('gắn class khi đang thu', () => {
-        expect(src).toMatch(/is-recording/);
+    const layout = readFileSync(
+        join(__dirname, '..', 'assets', 'styles', 'layout.css'), 'utf8');
+
+    test('gắn class lên chính NÚT MIC', () => {
+        expect(src).toMatch(/mic-btn\$\{speechOn \? ' is-listening' : ''\}/);
     });
 
-    test('CSS nhấp nháy icon, dùng chung cho cả ba biến thể', () => {
-        // Icon đổi hình theo trạng thái nên quy tắc phải phủ cả ba, không thì
-        // đổi icon một cái là dấu hiệu biến mất.
-        for (const rule of [
-            /\.search-bar\.is-recording > \.fa-search/,
-            /\.search-bar\.is-recording > \.fa-microphone/,
-            /\.search-bar\.is-recording > \.fa-microphone-lines/,
-        ]) {
-            expect(css, `thiếu quy tắc ${rule}`).toMatch(rule);
-        }
-        expect(css).toMatch(/animation:\s*micPulse/);
+    test('KHÔNG báo trùng ở ô tìm', () => {
+        // Ô tìm không còn liên quan gì tới ghi âm — nhấp nháy ở đó là báo cùng
+        // một việc ở hai chỗ, và gợi ý sai rằng ô tìm đang thu tiếng.
+        //
+        // Bỏ COMMENT trước khi dò: chú thích trong TopNav có nhắc tên class này
+        // để giải thích vì sao KHÔNG dùng nó — dò thẳng là đọc trúng chính lời
+        // văn của mình và test đỏ oan.
+        const code = src
+            .replace(/\{\/\*[\s\S]*?\*\/\}/g, '')
+            .replace(/\/\*[\s\S]*?\*\//g, '')
+            .split('\n')
+            .filter((l) => !/^\s*\/\//.test(l))
+            .join('\n');
+        expect(code).not.toMatch(/is-recording/);
+        expect(css).not.toMatch(/\.search-bar\.is-recording/);
+    });
+
+    test('đỏ + nhịp đập — nhìn là biết', () => {
+        // Micro bật mà người dùng tưởng đã tắt là vấn đề riêng tư, không phải
+        // chuyện thẩm mỹ.
+        const m = layout.match(/\.mic-btn\.is-listening\s*\{([^}]*)\}/);
+        expect(m, 'thiếu quy tắc đang nghe').toBeTruthy();
+        expect(m[1]).toMatch(/background:\s*#dc2626/);
+        expect(m[1]).toMatch(/animation:\s*mic-pulse/);
+    });
+
+    test('người bật "giảm chuyển động" vẫn thấy được trạng thái', () => {
+        // Bỏ nhịp đập nhưng PHẢI giữ dấu hiệu — bỏ sạch là họ không biết micro
+        // còn chạy.
+        const i = layout.indexOf('prefers-reduced-motion');
+        const body = layout.slice(i, i + 400);
+        expect(body).toMatch(/\.mic-btn\.is-listening/);
+        expect(body).toMatch(/box-shadow:/);
+    });
+});
+
+describe('icon ô tìm chỉ còn kính lúp / ổ khoá', () => {
+    test('bỏ hẳn hình micro khỏi ô tìm', () => {
+        // Ghi âm có nút riêng trên nav rồi; để micro ở đây chỉ gợi ý sai rằng
+        // chạm vào ô là nói được.
+        expect(src).toMatch(/isInPractice \? 'fa-lock' : 'fa-search'/);
+        expect(css).not.toMatch(/\.search-bar > \.fa-microphone/);
+    });
+
+    test('đang luyện tập thì là ổ khoá', () => {
+        // Ô bị vô hiệu hoá thật — hiện kính lúp là hứa một thứ không bấm được.
+        expect(src).toMatch(/isInPractice \? 'fa-lock'/);
     });
 });
 

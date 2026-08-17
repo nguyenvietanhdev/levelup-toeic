@@ -808,8 +808,6 @@
     }
 
     .search-bar > .fa-search,
-    .search-bar > .fa-microphone,
-    .search-bar > .fa-microphone-lines,
     .search-bar > .fa-lock {
         left: 20px;
         right: auto;
@@ -827,30 +825,41 @@
     /* NÚT GHI ÂM — thứ duy nhất còn lại ở giữa nav.
        Ô tìm đã dời lên thành dòng cố định ở đỉnh, nên chỗ này rảnh hẳn: nút mic
        chiếm đúng ô 40px của `.nav-center`, NHẤN GIỮ để nói.
-       Bỏ margin âm của bản desktop (nó kéo nút chồng vào trong ô tìm) — ở đây
-       nút đứng độc lập, không còn ô nào để chồng lên. */
+
+       VÒNG TRÒN bao quanh, giống hệt nút kính lúp hồi ô tìm còn nằm trong nav:
+       không có viền thì icon trần trôi lơ lửng giữa hàng, nhìn không ra là một
+       NÚT bấm được — mà đây lại là đích chạm phải giữ vài giây.
+
+       `margin: auto` + `flex` căn giữa cả hai trục trong ô 40px của
+       `.nav-center`. Bỏ margin âm của bản desktop: nó kéo nút chồng vào trong ô
+       tìm, mà ở đây không còn ô nào để chồng lên — giữ lại là icon lệch hẳn
+       sang trái đúng bằng bề rộng đó. */
     .mic-btn {
         display: flex;
-        margin-left: 0;
-        width: 40px;
-        height: 40px;
-        font-size: 18px;
+        align-items: center;
+        justify-content: center;
+        margin: auto;
+        width: 32px;
+        height: 32px;
+        font-size: 14px;
+        border: 2px solid var(--border-color);
+        border-radius: 50%;
+        background: none;
+        color: var(--text-secondary);
     }
 
-    /* Ô tìm giờ luôn mở nên KHÔNG chặn bôi đen ở đây nữa: người dùng đang gõ
-       thật, cướp mất quyền bôi đen/dán là không sửa được chữ.
-
-       Cử chỉ GIỮ đã chuyển sang icon trên nav — chỗ đó mới cần chặn menu
-       ngữ cảnh của hệ điều hành (xem onContextMenu trong TopNav). */
-
-    /* ĐANG GHI ÂM: tô đỏ + nhấp nháy chính icon trên nav. Không có dấu hiệu
-       thì người dùng giữ tay mà chẳng thấy gì đổi, không biết máy nghe chưa. */
-    .search-bar.is-recording > .fa-search,
-    .search-bar.is-recording > .fa-microphone,
-    .search-bar.is-recording > .fa-microphone-lines {
-        color: var(--primary-color);
-        animation: micPulse 1.2s ease-out infinite;
+    /* Đang nghe: viền đổi theo nền đỏ của `.mic-btn.is-listening` (layout.css).
+       Không đổi thì còn một vòng xám bao quanh nút đỏ — trông như viền thừa. */
+    .mic-btn.is-listening {
+        border-color: #dc2626;
     }
+
+    /* Ô tìm giờ luôn mở nên KHÔNG chặn bôi đen ở đây: người dùng đang gõ thật,
+       cướp mất quyền bôi đen/dán là không sửa được chữ.
+
+       Cũng KHÔNG có dấu hiệu ghi âm ở đây nữa — nó nằm trên chính nút mic
+       (`.mic-btn.is-listening` trong layout.css). Ô tìm không còn liên quan gì
+       tới việc ghi âm. */
 
     #nav-favorite-btn {
         display: none;
