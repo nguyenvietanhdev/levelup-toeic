@@ -110,8 +110,43 @@ describe('dùng đúng API sẵn có của app', () => {
         // Bỏ hết tham số là bỏ hết cơ hội đoán sai ở ranh giới — đó là GỐC của
         // cả chuỗi lỗi, không phải logic hội thoại.
         expect(src).toMatch(/ConversationAPI\.start\(\)/);
-        expect(src).not.toMatch(/TopicSelector\.currentTopic/);
         expect(api).toMatch(/async start\(\{ topic = '' \} = \{\}\)/);
+        // Vẫn ĐỌC `currentTopic` để biết đã chọn đề chưa — đó là việc khác hẳn
+        // với việc GỬI nó lên server. Chỉ cấm truyền `source` vào lời gọi.
+        expect(src).not.toMatch(/ConversationAPI\.start\(\{[^}]*source/);
+    });
+
+    test('CHƯA chọn đề thì mở popup, không chỉ báo lỗi', () => {
+        // Báo "hãy chọn đề" rồi để người dùng tự đi tìm popup là đẩy việc sang
+        // họ: họ đang ở màn Hội thoại, không biết popup nằm ở nút nào. 12 chế độ
+        // luyện tập đều tự mở popup — chỗ này phải giống.
+        expect(src).toMatch(/if \(!TopicSelector\.currentTopic\)/);
+        expect(src).toMatch(/TOPIC_MODAL_REQUESTED/);
+    });
+
+    test('có đề mà chưa chọn Part thì mở popup Part', () => {
+        expect(src).toMatch(/PartSelector\.showPartSelectionModal\(\)/);
+    });
+
+    test('KHÔNG chặn khi đang ở chế độ ngẫu nhiên tất cả', () => {
+        // Lúc đó không chọn Part là CÓ Ý, và server hiểu part rỗng = toàn bộ đề.
+        expect(src).toMatch(/practiceMode !== 'random-all'/);
+    });
+
+    test('Enter gửi câu, nhưng KHÔNG cắt ngang bộ nhập tiếng Trung', () => {
+        // Người học gõ pinyin rồi Enter để chọn 汉字 — gửi ở đó là cắt giữa câu.
+        expect(src).toMatch(/isComposing/);
+        // `preventDefault` để input trong form không submit và tải lại trang.
+        // Cắt từ `onKeyDown` tới `placeholder` — trọn thân handler.
+        const i = src.indexOf('onKeyDown');
+        const j = src.indexOf('placeholder=', i);
+        expect(i).toBeGreaterThan(-1);
+        expect(j).toBeGreaterThan(i);
+        const handler = src.slice(i, j);
+        expect(handler).toMatch(/e\.preventDefault\(\)/);
+        expect(handler).toMatch(/handleSend\(\)/);
+        // Thứ tự QUAN TRỌNG: chặn IME phải nằm TRƯỚC khi gửi.
+        expect(handler.indexOf('isComposing')).toBeLessThan(handler.indexOf('handleSend()'));
     });
 
     test('TopicSelector GHI selectedSource vào settings', () => {

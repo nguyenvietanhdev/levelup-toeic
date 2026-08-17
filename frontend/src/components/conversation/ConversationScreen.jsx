@@ -5,7 +5,9 @@ import { GameLogic, ttsLang } from '@game/gameLogic.js';
 import { Notification } from '@ui/Toaster.jsx';
 import { ConversationAPI } from '@api/conversation.js';
 import { getVocabLang } from '@api/vocabulary.js';
+import { EventBus, GameEvents } from '@game/eventBus.js';
 import { TopicSelector } from '@components/vocab/topic/topicSelector.js';
+import { PartSelector } from '@components/vocab/part/partSelector.js';
 import { isSpeechSupported, speechLangFor, createSpeechInput } from '@lib/speechInput.js';
 
 /**
@@ -55,6 +57,23 @@ export default function ConversationScreen({ active }) {
 
     const handleStart = useCallback(async () => {
         if (starting) return;
+
+        // CHƯA CHỌN ĐỀ → mở popup chọn đề, y như 12 chế độ luyện tập.
+        //
+        // Báo lỗi "hãy chọn đề" rồi để người dùng tự đi tìm popup là đẩy việc
+        // sang họ: họ đang ở màn Hội thoại, không biết popup nằm ở nút nào.
+        if (!TopicSelector.currentTopic) {
+            EventBus.emit(GameEvents.TOPIC_MODAL_REQUESTED, {});
+            return;
+        }
+        // Đã có đề nhưng chưa chọn Part → mở popup Part.
+        //
+        // KHÔNG chặn khi đang ở chế độ "ngẫu nhiên tất cả": lúc đó không chọn
+        // Part là CÓ Ý, và server hiểu part rỗng = lấy toàn bộ đề.
+        if (!PartSelector.selectedPart && PartSelector.practiceMode !== 'random-all') {
+            PartSelector.showPartSelectionModal();
+            return;
+        }
 
         // KHÔNG gửi đề/part/ngôn ngữ lên — SERVER tự đọc từ hồ sơ người dùng.
         //
@@ -271,7 +290,18 @@ export default function ConversationScreen({ active }) {
                                 className="convo-input"
                                 value={draft}
                                 onChange={e => setDraft(e.target.value)}
-                                onKeyDown={e => { if (e.key === 'Enter') handleSend(); }}
+                                onKeyDown={e => {
+                                    if (e.key !== 'Enter') return;
+                                    // Đang gõ qua BỘ NHẬP (IME) thì Enter là để
+                                    // CHỌN CHỮ, không phải gửi. Người học tiếng
+                                    // Trung gõ pinyin rồi Enter chọn 汉字 —
+                                    // gửi ở đó là cắt ngang giữa câu.
+                                    if (e.nativeEvent?.isComposing) return;
+                                    // Chặn hành vi mặc định: input trong form sẽ
+                                    // submit và tải lại trang, mất cả phiên.
+                                    e.preventDefault();
+                                    handleSend();
+                                }}
                                 placeholder={speechOn ? '🎤 Đang nghe…' : 'Nhập câu trả lời…'}
                                 disabled={busy}
                             />

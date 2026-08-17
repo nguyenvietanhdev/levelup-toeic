@@ -180,9 +180,29 @@ exports.saveState = async (req, res, next) => {
         // (applyShopEffect case 'boost', server-side) và tự hết hạn (expireBoosts).
         // Nếu nhận từ client → ai cũng tự bật x2 XP/coins vĩnh viễn miễn phí.
 
-        // Settings
-        if (state.settings) {
-            Object.assign(profile.settings, state.settings);
+        // Settings — CHỈ nhận những khoá đã khai trong schema.
+        //
+        // `Object.assign(profile.settings, state.settings)` nhận BẤT KỲ khoá nào
+        // client gửi. Mongoose `strict` strip khoá lạ khi VALIDATE, nhưng
+        // `markModified('settings')` bên dưới ép ghi cả nhánh — nên rác của
+        // client vẫn vào được DB.
+        //
+        // Đã thấy hậu quả thật: `selectedSource` trong hồ sơ mang giá trị
+        // "conversations" (tên một collection Mongo), không phải mã đề nào cả.
+        // Rồi chế độ Hội thoại đọc trường đó và đi tìm bộ từ không tồn tại.
+        if (state.settings && typeof state.settings === 'object') {
+            // Lấy danh sách khoá từ MODEL, không từ instance: instance có thể
+            // chưa khởi tạo `settings` (hồ sơ cũ), lúc đó danh sách rỗng và
+            // KHÔNG khoá nào được ghi — mất sạch cài đặt mà không lỗi nào báo.
+            const allowed = Object.keys(
+                UserProfile.schema.path('settings')?.schema?.paths || {}
+            );
+            for (const k of allowed) {
+                if (k === '_id' || k === '__v') continue;
+                if (Object.prototype.hasOwnProperty.call(state.settings, k)) {
+                    profile.settings[k] = state.settings[k];
+                }
+            }
             profile.markModified('settings');
         }
 
