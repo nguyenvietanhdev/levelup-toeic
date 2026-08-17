@@ -22,7 +22,29 @@ function unwrap(res) {
     if (res && res.success === false) {
         throw new Error(res.error || res.message || 'Yêu cầu thất bại');
     }
-    return res?.data ?? res;
+
+    // HAI lớp `.data` lồng nhau — chỗ này rất dễ nhầm:
+    //
+    //   Http trả   : { success: true, data: <nguyên văn phản hồi server> }
+    //   Server trả : { success: true, data: { id, targetWords, … } }
+    //
+    // Nên `res.data` mới là `{ success, data }`, CHƯA phải `{ id, … }`. Gỡ một
+    // lớp là màn hội thoại nhận object không có `id` — đúng lỗi "Server trả về
+    // dữ liệu không hợp lệ".
+    //
+    // Gỡ theo ĐIỀU KIỆN chứ không gỡ cứng hai lần: nếu sau này `Http` thôi bọc
+    // (hoặc endpoint trả thẳng payload) thì gỡ cứng lại lột mất dữ liệu thật.
+    const outer = res?.data ?? res;
+    if (outer && typeof outer === 'object' && 'success' in outer) {
+        // Kiểm `success === false` TRƯỚC, và KHÔNG đòi có `.data`: phản hồi lỗi
+        // của server là `{ success: false, message }` — không có `data`. Đòi cả
+        // hai thì lỗi rơi qua điều kiện và lọt xuống như dữ liệu thật.
+        if (outer.success === false) {
+            throw new Error(outer.message || 'Yêu cầu thất bại');
+        }
+        if ('data' in outer) return outer.data;
+    }
+    return outer;
 }
 
 export const ConversationAPI = {
