@@ -723,6 +723,47 @@
         display: none !important;
     }
 
+    /* ── Popup DỊCH NHANH ────────────────────────────────────────────────
+       Trên màn ~360px, popup rộng chưa tới 300px mà bên trong có ba hàng đều
+       ép ngang: hai ô chọn ngôn ngữ + nút đảo, hai ô Source/Part, hai nút
+       hành động. Mỗi thứ còn ~110px nên chữ bị cắt ("Tự động phát hiện" →
+       "Tự động phát hi…") và nút đảo bị bóp méo.
+
+       Cho xuống dòng thay vì bóp: cao thêm vài chục pixel nhưng đọc được. */
+
+    /* Hai ô chọn ngôn ngữ xếp DỌC, nút đảo nằm giữa và xoay 90°. */
+    .translate-lang-selects {
+        flex-wrap: wrap;
+    }
+
+    .translate-lang-select {
+        /* `100%` để mỗi ô chiếm trọn một dòng — `flex: 1` chỉ chia đôi hàng. */
+        flex: 1 0 100%;
+    }
+
+    .translate-lang-swap {
+        /* Nút đảo giữa hai ô: xoay để mũi tên chỉ đúng chiều trên↔dưới. */
+        transform: rotate(90deg);
+        margin: 0 auto;
+    }
+
+    /* Source và Part xuống dòng riêng. Hai ô này chỉ ~110px khi chia đôi, mà
+       nội dung là tên kho ("zh_giaotiep_tuvung") — cắt còn 3 chữ đầu. */
+    .translate-source-input,
+    .translate-part-input {
+        flex: 1 0 100%;
+    }
+
+    /* Hai nút cuối cũng vậy: "Xem từ vựng riêng" và "Thêm vào từ vựng" đứng
+       cạnh nhau thì mỗi nút còn ~130px, chữ tràn ra ngoài viền. */
+    .translate-actions {
+        flex-wrap: wrap;
+    }
+
+    .translate-actions .btn {
+        flex: 1 0 100%;
+    }
+
     /* Nút quay về ở màn luyện tập. Android có nút Back của hệ thống, iOS có
        vuốt mép — nút này là bản sao thứ ba của cùng một hành động, trong khi
        hàng tiêu đề đang phải chứa cả tên chế độ, nhãn Part và điểm số. */

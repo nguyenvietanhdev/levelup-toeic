@@ -303,6 +303,42 @@ describe('nút GHI ÂM ở giữa nav', () => {
 });
 
 
+/**
+ * Popup Dịch nhanh trên màn ~360px.
+ *
+ * Popup rộng chưa tới 300px mà bên trong có ba hàng đều ép ngang: hai ô chọn
+ * ngôn ngữ + nút đảo, hai ô Source/Part, hai nút hành động. Mỗi thứ còn ~110px
+ * nên chữ bị cắt ("Tự động phát hiện" → "Tự động phát hi…") và nút đảo méo.
+ *
+ * Cho xuống dòng thay vì bóp: cao thêm vài chục pixel nhưng đọc được.
+ */
+describe('popup Dịch nhanh không bị bóp ngang', () => {
+    test('hai ô chọn ngôn ngữ xếp DỌC', () => {
+        // `flex: 1` chỉ chia đôi hàng — phải `100%` mới chiếm trọn một dòng.
+        expect(ruleFor('.translate-lang-select')).toMatch(/flex:\s*1 0 100%/);
+        expect(ruleFor('.translate-lang-selects')).toMatch(/flex-wrap:\s*wrap/);
+    });
+
+    test('nút đảo xoay 90° cho đúng chiều trên↔dưới', () => {
+        // Hai ô giờ xếp dọc; mũi tên ngang là chỉ sai hướng.
+        expect(ruleFor('.translate-lang-swap')).toMatch(/transform:\s*rotate\(90deg\)/);
+    });
+
+    test('Source và Part mỗi ô một dòng', () => {
+        // Chia đôi thì mỗi ô ~110px, mà nội dung là tên kho
+        // ("zh_giaotiep_tuvung") — cắt còn 3 chữ đầu.
+        expect(ruleFor('.translate-source-input,\n    .translate-part-input'))
+            .toMatch(/flex:\s*1 0 100%/);
+    });
+
+    test('hai nút hành động cũng xuống dòng', () => {
+        // "Xem từ vựng riêng" + "Thêm vào từ vựng" cạnh nhau thì mỗi nút ~130px,
+        // chữ tràn ra ngoài viền.
+        expect(ruleFor('.translate-actions')).toMatch(/flex-wrap:\s*wrap/);
+        expect(ruleFor('.translate-actions .btn')).toMatch(/flex:\s*1 0 100%/);
+    });
+});
+
 describe('nút mic ở lại nav; sáng/tối cũng vậy', () => {
     test('dấu hiệu đang nghe nằm trên NÚT MIC, không ở ô tìm', () => {
         // Ô tìm không còn liên quan gì tới ghi âm; báo ở đó là gợi ý sai.
