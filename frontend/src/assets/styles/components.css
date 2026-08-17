@@ -8997,3 +8997,203 @@ mark {
     font-size: 0.85em;
     color: var(--text-tertiary, #94a3b8);
 }
+
+/* ===================================================================
+   CHẾ ĐỘ HỘI THOẠI — luyện dùng lại từ vựng vừa học
+   =================================================================== */
+
+.convo-intro {
+    max-width: 520px;
+    margin: 24px auto;
+    text-align: center;
+    color: var(--text-secondary);
+    line-height: 1.6;
+}
+
+.convo-intro .btn {
+    margin-top: 16px;
+}
+
+/* Bảng từ MỤC TIÊU. Đây là thứ cho người học biết phải làm gì — không có nó thì
+   họ chỉ chat vu vơ và không hiểu điểm ở đâu ra. */
+.convo-targets {
+    padding: 10px 14px;
+    background: var(--bg-secondary);
+    border-bottom: 1px solid var(--border-color);
+}
+
+.convo-targets-head {
+    font-size: 12px;
+    color: var(--text-secondary);
+    margin-bottom: 8px;
+}
+
+.convo-target-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.convo-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 10px;
+    border-radius: 14px;
+    border: 1px solid var(--border-color);
+    background: var(--bg-primary);
+    color: var(--text-secondary);
+    font-size: 12px;
+    transition: all 0.2s;
+}
+
+/* Đã dùng được: tô xanh. Chỉ gạch ngang chữ thì trông như bị VÔ HIỆU, ngược
+   hẳn ý nghĩa — đây là thành tích, không phải việc bị loại. */
+.convo-chip.is-used {
+    background: #16a34a;
+    border-color: #16a34a;
+    color: #fff;
+    font-weight: 600;
+}
+
+/* Màn này phải là FLEX COLUMN cao trọn khung nhìn để khung hội thoại cuộn
+   RIÊNG, còn bảng từ mục tiêu và ô nhập đứng yên.
+   `.screen.active` mặc định là `display: block` (layout.css) — để nguyên thì
+   `flex: 1` bên dưới vô nghĩa và cả TRANG cuộn, kéo ô nhập trôi khỏi màn đúng
+   lúc người học cần gõ. */
+#conversation-screen.active {
+    display: flex;
+    flex-direction: column;
+    /* `dvh` co theo thanh địa chỉ trình duyệt; `vh` trên Chrome Android là
+       chiều cao lúc thanh đó ĐÃ ẨN nên luôn lớn hơn chỗ thật thấy được. */
+    height: 100dvh;
+    max-height: 100dvh;
+}
+
+/* Khung hội thoại. `min-height: 0` là BẮT BUỘC với flex item có overflow —
+   thiếu nó thì khung giãn theo nội dung và cả trang cuộn thay vì chỉ khung. */
+.convo-log {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    padding: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.convo-turn {
+    display: flex;
+    flex-direction: column;
+    max-width: 78%;
+}
+
+.convo-turn--npc  { align-self: flex-start; }
+.convo-turn--user { align-self: flex-end; align-items: flex-end; }
+
+.convo-bubble {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 9px 13px;
+    border-radius: 14px;
+    line-height: 1.5;
+    word-break: break-word;
+}
+
+.convo-turn--npc .convo-bubble {
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    border-bottom-left-radius: 4px;
+}
+
+.convo-turn--user .convo-bubble {
+    background: var(--primary-color);
+    color: #fff;
+    border-bottom-right-radius: 4px;
+}
+
+.convo-speak {
+    flex-shrink: 0;
+    width: 26px;
+    height: 26px;
+    border: none;
+    border-radius: 50%;
+    background: rgba(148, 163, 184, 0.2);
+    color: inherit;
+    cursor: pointer;
+    font-size: 12px;
+}
+
+/* Báo lượt vừa ăn điểm. Không có phản hồi ngay thì người học không biết câu nào
+   được tính, và không học được cách dùng từ cho lần sau. */
+.convo-matched {
+    margin-top: 3px;
+    font-size: 11px;
+    color: #16a34a;
+    font-weight: 600;
+}
+
+.convo-input-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 14px;
+    border-top: 1px solid var(--border-color);
+    background: var(--bg-primary);
+}
+
+.convo-input {
+    flex: 1;
+    min-width: 0;
+    padding: 9px 12px;
+    border: 1px solid var(--border-color);
+    border-radius: 20px;
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    outline: none;
+}
+
+.convo-input:focus { border-color: var(--primary-color); }
+
+.convo-mic {
+    flex-shrink: 0;
+    width: 38px;
+    height: 38px;
+    border: none;
+    border-radius: 50%;
+    background: var(--bg-secondary);
+    color: var(--text-secondary);
+    cursor: pointer;
+}
+
+/* Đang nghe: đỏ + nhịp đập. Micro bật mà người dùng tưởng đã tắt là vấn đề
+   riêng tư, không phải chuyện thẩm mỹ. Dùng lại `mic-pulse` của nút mic trên
+   nav để hai chỗ nhấp nháy giống nhau. */
+.convo-mic.is-listening {
+    background: #dc2626;
+    color: #fff;
+    animation: mic-pulse 1.4s ease-in-out infinite;
+}
+
+.convo-result {
+    padding: 20px 14px;
+    text-align: center;
+    border-top: 1px solid var(--border-color);
+}
+
+.convo-result h3 { margin: 0 0 8px; }
+
+.convo-reward {
+    color: var(--accent-color, #f59e0b);
+    font-weight: 700;
+    font-size: 1.05em;
+}
+
+.convo-actions {
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+    margin-top: 14px;
+    flex-wrap: wrap;
+}
