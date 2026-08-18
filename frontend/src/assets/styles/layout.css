@@ -503,6 +503,20 @@
 /* Đệm dọc 16px × 8 mục = 256px chỉ để làm khoảng trắng, đủ để đẩy mục cuối
    ("Cài đặt") ra khỏi màn hình thấp. Hạ xuống 10px: mỗi nút còn ~47px — vẫn
    trên ngưỡng 44px cho vùng chạm, mà cả 8 mục vừa một màn. */
+/* Nhóm menu. Tiêu đề nhỏ, chữ hoa, mờ — đủ để mắt nhận ra ranh giới nhưng
+   không tranh chấp với chính các mục bên dưới. */
+.menu-group + .menu-group { margin-top: 10px; }
+
+.menu-group-title {
+    padding: 4px 14px;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-secondary);
+    opacity: 0.65;
+}
+
 .menu-item {
     position: relative;
     display: flex;

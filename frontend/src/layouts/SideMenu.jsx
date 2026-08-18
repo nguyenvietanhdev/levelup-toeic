@@ -8,30 +8,64 @@ import { loadUnlocks, lockInfo } from '@game/featureUnlocks.js';
 import { Notification } from '@ui/Toaster.jsx';
 
 // `feature` = key trong FeatureUnlock → khoá theo Level (Hồ sơ/Cài đặt luôn mở).
-const MENU_ITEMS = [
-    { label: 'Luyện đề test TOEIC',icon: 'fa-graduation-cap', screen: 'toeic-screen',      hot: true, feature: 'feature:toeic' },
-    { label: 'Hồ sơ',          icon: 'fa-user',             screen: 'profile-screen' },
-    { label: 'Nhiệm vụ',       icon: 'fa-tasks',            screen: 'quest-screen',        badgeKey: 'quest',        feature: 'feature:quest' },
-    { label: 'Bảng xếp hạng',  icon: 'fa-trophy',           screen: 'leaderboard-screen',  badgeKey: 'online',       badgeStyle: 'info', feature: 'feature:leaderboard' },
-    { label: 'Thành tích',     icon: 'fa-medal',            screen: 'achievements-screen', badgeKey: 'achievement',  feature: 'feature:achievements' },
-    { label: 'Thống kê',       icon: 'fa-chart-bar',        screen: 'statistics-screen',   badgeKey: 'statsExport',  badgeStyle: 'dot', feature: 'feature:stats' },
-    { label: 'Cửa hàng',       icon: 'fa-shopping-cart',    screen: 'shop-screen',         badgeKey: 'shopDiscount', badgeStyle: 'sale', feature: 'feature:shop' },
-    // KHÔNG khoá theo level (không có `feature:`): nhiệm vụ và thành tích phát
-    // vật phẩm ngay từ level 1, khoá túi đồ là người mới có đồ mà không có chỗ dùng.
-    { label: 'Túi đồ',         icon: 'fa-briefcase',        screen: 'inventory-screen' },
-    // MÀN HÌNH riêng, không phải popup: nó có 5 tab và người dùng ở lại lâu
-    // (thêm từ · dán JSON · quản lý · chia sẻ · duyệt bộ được chia sẻ) — đó là
-    // một nơi để ĐẾN, không phải hộp thoại làm nhanh rồi đóng.
-    { label: 'Từ vựng riêng',  icon: 'fa-cloud-upload-alt', screen: 'vocab-screen',        feature: 'feature:upload-vocab' },
-    // Đặt ở MENU BÊN chứ không lẫn vào danh sách 12 chế độ luyện tập: nó không
-    // phải một chế độ hỏi–đáp mà là một nơi để ĐẾN và ở lại một lúc, giống
-    // "Từ vựng riêng". Và nó tốn năng lượng + gọi AI có phí, nên không nên nằm
-    // ngay cạnh những chế độ bấm-là-chơi.
-    { label: 'Hội thoại',      icon: 'fa-comments',         screen: 'conversation-screen', feature: 'feature:conversation' },
-    // Cạnh Hội thoại: cùng nhóm "luyện kỹ năng bằng AI", và cùng là nơi để ĐẾN
-    // rồi ở lại một lúc chứ không phải chế độ bấm-là-chơi.
-    { label: 'Luyện viết luận', icon: 'fa-pen-nib',         screen: 'essay-screen',        feature: 'feature:essay' },
-    { label: 'Cài đặt',        icon: 'fa-cog',              screen: 'settings-screen' },
+//
+// Menu chia NHÓM có tiêu đề, không phải danh sách phẳng. 13 mục xếp phẳng thì
+// người dùng phải đọc hết từ trên xuống mới thấy cái mình cần; tiêu đề nhóm cho
+// mắt nhảy thẳng tới đúng vùng.
+//
+// Nhóm bằng TIÊU ĐỀ chứ không bằng tab bung/thu: nhóm thu lại giấu mục đi, và
+// thứ bị giấu sau một cú bấm là thứ người ta quên mất là có. Tiêu đề chỉ tốn
+// ~22px mỗi nhóm mà mọi mục vẫn nhìn thấy và vẫn bấm một lần là tới.
+const MENU_GROUPS = [
+    {
+        title: 'Luyện tập',
+        items: [
+            { label: 'Luyện đề test TOEIC', icon: 'fa-graduation-cap', screen: 'toeic-screen', hot: true, feature: 'feature:toeic' },
+            // Ôn lại từ ĐÃ SAI, giãn cách theo SM-2. Đứng đầu nhóm "Luyện bằng AI"
+            // thì sai chỗ — nó không gọi AI và không tốn năng lượng; nó thuộc về
+            // luyện tập thường, ngay dưới đề TOEIC.
+            { label: 'Ôn từ đã sai', icon: 'fa-rotate-left', screen: 'review-screen', badgeKey: 'reviewDue', badgeStyle: 'reward' },
+        ],
+    },
+    {
+        // Hai chế độ này gọi AI có phí và tốn năng lượng, khác hẳn những chế độ
+        // bấm-là-chơi. Gom lại để thấy rõ chúng cùng một loại — và để người dùng
+        // biết trước là chúng "đắt" hơn.
+        title: 'Luyện với AI',
+        items: [
+            { label: 'Hội thoại', icon: 'fa-comments', screen: 'conversation-screen', feature: 'feature:conversation' },
+            { label: 'Luyện viết luận', icon: 'fa-pen-nib', screen: 'essay-screen', feature: 'feature:essay' },
+        ],
+    },
+    {
+        title: 'Tiến độ',
+        items: [
+            { label: 'Nhiệm vụ', icon: 'fa-tasks', screen: 'quest-screen', badgeKey: 'quest', feature: 'feature:quest' },
+            { label: 'Bảng xếp hạng', icon: 'fa-trophy', screen: 'leaderboard-screen', badgeKey: 'online', badgeStyle: 'info', feature: 'feature:leaderboard' },
+            { label: 'Thành tích', icon: 'fa-medal', screen: 'achievements-screen', badgeKey: 'achievement', feature: 'feature:achievements' },
+            { label: 'Thống kê', icon: 'fa-chart-bar', screen: 'statistics-screen', badgeKey: 'statsExport', badgeStyle: 'dot', feature: 'feature:stats' },
+        ],
+    },
+    {
+        title: 'Kho đồ',
+        items: [
+            { label: 'Cửa hàng', icon: 'fa-shopping-cart', screen: 'shop-screen', badgeKey: 'shopDiscount', badgeStyle: 'sale', feature: 'feature:shop' },
+            // KHÔNG khoá theo level (không có `feature:`): nhiệm vụ và thành tích phát
+            // vật phẩm ngay từ level 1, khoá túi đồ là người mới có đồ mà không có chỗ dùng.
+            { label: 'Túi đồ', icon: 'fa-briefcase', screen: 'inventory-screen' },
+            // MÀN HÌNH riêng, không phải popup: nó có 5 tab và người dùng ở lại lâu
+            // (thêm từ · dán JSON · quản lý · chia sẻ · duyệt bộ được chia sẻ) — đó là
+            // một nơi để ĐẾN, không phải hộp thoại làm nhanh rồi đóng.
+            { label: 'Từ vựng riêng', icon: 'fa-cloud-upload-alt', screen: 'vocab-screen', feature: 'feature:upload-vocab' },
+        ],
+    },
+    {
+        title: 'Tài khoản',
+        items: [
+            { label: 'Hồ sơ', icon: 'fa-user', screen: 'profile-screen' },
+            { label: 'Cài đặt', icon: 'fa-cog', screen: 'settings-screen' },
+        ],
+    },
 ];
 
 export default function SideMenu() {
@@ -115,43 +149,52 @@ export default function SideMenu() {
 
                 {/* Nav — matches .menu-nav in CSS */}
                 <nav className="menu-nav">
-                    {MENU_ITEMS.map(item => {
-                        const n = item.badgeKey ? badges[item.badgeKey] : 0;
-                        const guestLocked = !isLoggedIn && !item.guestOk;
-                        // Khoá theo Level (chỉ xét khi đã đăng nhập).
-                        const lv = (!guestLocked && item.feature) ? lockInfo(item.feature) : { locked: false };
-                        const levelLocked = !!lv.locked;
-                        const locked = guestLocked || levelLocked;
-                        return (
-                            <button
-                                key={item.screen}
-                                className={`menu-item${currentScreen === item.screen ? ' active' : ''}${locked ? ' is-locked' : ''}`}
-                                data-screen={item.screen}
-                                onClick={() => {
-                                    if (guestLocked) return handleLockedClick();
-                                    if (levelLocked) return handleLevelLockedClick(item, lv.requiredLevel);
-                                    handleNav(item.screen);
-                                }}
-                                title={guestLocked ? 'Đăng nhập để mở khóa'
-                                    : levelLocked ? `Mở ở Level ${lv.requiredLevel}` : undefined}
-                            >
-                                {item.hot && !locked && <span className="menu-item-hot">hot</span>}
-                                <i className={`fas ${levelLocked ? 'fa-lock' : item.icon}`}></i>
-                                <span>{item.label}</span>
-                                {levelLocked ? (
-                                    <span className="menu-item-badge level-lock">Lv.{lv.requiredLevel}</span>
-                                ) : guestLocked ? (
-                                    <i className="fas fa-lock menu-item-lock"></i>
-                                ) : (n > 0 && (
-                                    item.badgeStyle === 'dot'
-                                        ? <span className="menu-item-badge dot" title="Nên xuất báo cáo trước khi sang tháng mới" />
-                                        : <span className={`menu-item-badge ${item.badgeStyle || 'reward'}`}>
-                                            {n > 99 ? '99+' : n}
-                                          </span>
-                                ))}
-                            </button>
-                        );
-                    })}
+                    {MENU_GROUPS.map(group => (
+                        <div key={group.title} className="menu-group">
+                            {/* `aria-hidden`: tiêu đề là gợi ý THỊ GIÁC để mắt nhảy
+                                nhanh. Trình đọc màn hình đã đọc nhãn đầy đủ của
+                                từng nút rồi, chèn thêm tiêu đề vào luồng đọc chỉ
+                                làm dài thêm mà không thêm thông tin. */}
+                            <div className="menu-group-title" aria-hidden="true">{group.title}</div>
+                            {group.items.map(item => {
+                                const n = item.badgeKey ? badges[item.badgeKey] : 0;
+                                const guestLocked = !isLoggedIn && !item.guestOk;
+                                // Khoá theo Level (chỉ xét khi đã đăng nhập).
+                                const lv = (!guestLocked && item.feature) ? lockInfo(item.feature) : { locked: false };
+                                const levelLocked = !!lv.locked;
+                                const locked = guestLocked || levelLocked;
+                                return (
+                                    <button
+                                        key={item.screen}
+                                        className={`menu-item${currentScreen === item.screen ? ' active' : ''}${locked ? ' is-locked' : ''}`}
+                                        data-screen={item.screen}
+                                        onClick={() => {
+                                            if (guestLocked) return handleLockedClick();
+                                            if (levelLocked) return handleLevelLockedClick(item, lv.requiredLevel);
+                                            handleNav(item.screen);
+                                        }}
+                                        title={guestLocked ? 'Đăng nhập để mở khóa'
+                                            : levelLocked ? `Mở ở Level ${lv.requiredLevel}` : undefined}
+                                    >
+                                        {item.hot && !locked && <span className="menu-item-hot">hot</span>}
+                                        <i className={`fas ${levelLocked ? 'fa-lock' : item.icon}`}></i>
+                                        <span>{item.label}</span>
+                                        {levelLocked ? (
+                                            <span className="menu-item-badge level-lock">Lv.{lv.requiredLevel}</span>
+                                        ) : guestLocked ? (
+                                            <i className="fas fa-lock menu-item-lock"></i>
+                                        ) : (n > 0 && (
+                                            item.badgeStyle === 'dot'
+                                                ? <span className="menu-item-badge dot" title="Nên xuất báo cáo trước khi sang tháng mới" />
+                                                : <span className={`menu-item-badge ${item.badgeStyle || 'reward'}`}>
+                                                    {n > 99 ? '99+' : n}
+                                                  </span>
+                                        ))}
+                                    </button>
+                                );
+                            })}
+                        </div>
+                    ))}
                 </nav>
 
                 {/* Số câu / độ khó / ngôn ngữ — CHỈ hiện trên điện thoại

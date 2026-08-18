@@ -9406,3 +9406,164 @@ mark {
     justify-content: center;
     flex-wrap: wrap;
 }
+
+/* ===================================
+   ÔN TỪ ĐÃ SAI (lặp lại ngắt quãng)
+   =================================== */
+
+.review-body { padding: 0 16px 24px; }
+
+.review-progress {
+    display: flex;
+    justify-content: center;
+    gap: 6px;
+    font-size: 13px;
+    color: var(--text-secondary);
+    margin-bottom: 14px;
+}
+
+.review-due-total { opacity: 0.75; }
+
+/* Thẻ ôn. Căn giữa và thoáng: mỗi lúc chỉ có MỘT từ, mọi thứ khác là nhiễu. */
+.review-card {
+    position: relative;
+    background: var(--card-bg, #fff);
+    border: 1px solid var(--border-color, #e5e7eb);
+    border-radius: 16px;
+    padding: 32px 20px 24px;
+    text-align: center;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+}
+
+/* Số lần sai — nhỏ, góc trên, đủ để biết vì sao từ này ở đây. */
+.review-wrong-count {
+    position: absolute;
+    top: 10px;
+    right: 12px;
+    font-size: 11px;
+    padding: 2px 8px;
+    border-radius: 999px;
+    background: rgba(239, 68, 68, 0.12);
+    color: #dc2626;
+}
+
+.review-word {
+    font-size: 34px;
+    font-weight: 700;
+    line-height: 1.25;
+    word-break: break-word;
+}
+
+.review-phonetic {
+    margin-top: 6px;
+    font-size: 14px;
+    color: var(--text-secondary);
+}
+
+.review-reveal {
+    margin-top: 24px;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.review-meaning {
+    margin-top: 18px;
+    padding-top: 18px;
+    border-top: 1px dashed var(--border-color, #e5e7eb);
+    font-size: 22px;
+    font-weight: 600;
+    color: #2563eb;
+}
+
+.review-example {
+    margin-top: 10px;
+    font-size: 14px;
+    font-style: italic;
+    color: var(--text-secondary);
+}
+
+/* Hai nút tự chấm — cách xa nhau để không bấm nhầm khi đang lướt nhanh. */
+.review-grade {
+    display: flex;
+    gap: 12px;
+    margin-top: 22px;
+}
+
+.review-grade .btn {
+    flex: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 12px;
+}
+
+/* Phím tắt hiện ngay trên nút — cách duy nhất để người dùng biết chúng tồn tại. */
+.review-grade kbd,
+.review-reveal kbd {
+    font-size: 10px;
+    padding: 1px 5px;
+    border-radius: 4px;
+    background: rgba(0, 0, 0, 0.18);
+    border: none;
+}
+
+/* Trạng thái rỗng và kết phiên */
+.review-empty,
+.review-done {
+    text-align: center;
+    padding: 40px 24px;
+}
+
+.review-empty-icon {
+    font-size: 44px;
+    color: #16a34a;
+    margin-bottom: 12px;
+}
+
+.review-empty h3 { margin-bottom: 8px; }
+
+.review-empty p {
+    color: var(--text-secondary);
+    max-width: 380px;
+    margin: 0 auto 18px;
+    line-height: 1.55;
+}
+
+.review-done-num {
+    font-size: 46px;
+    font-weight: 800;
+    color: #2563eb;
+}
+
+.review-done-label { color: var(--text-secondary); }
+
+.review-reward {
+    margin-top: 10px;
+    font-weight: 700;
+    color: #16a34a;
+}
+
+.review-done-note {
+    margin-top: 10px;
+    color: var(--text-secondary);
+    font-size: 14px;
+}
+
+.review-done-actions {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin-top: 20px;
+}
+
+/* Điện thoại: chữ to vừa phải, hai nút chấm xếp trọn hàng ngang. */
+@media screen and (max-width: 480px) {
+    .review-body { padding: 0 10px 20px; }
+    .review-card { padding: 28px 14px 20px; }
+    .review-word { font-size: 28px; }
+    .review-meaning { font-size: 19px; }
+    .review-done-actions .btn { flex: 1 0 100%; }
+}

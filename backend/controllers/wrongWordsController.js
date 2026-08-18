@@ -164,28 +164,44 @@ exports.recordCorrect = async (req, res) => {
 };
 
 /**
- * @desc    Lấy từ cần ôn (TẤT CẢ từ active, không check nextReviewDate)
- * @route   GET /api/wrong-words/review?limit=10
+ * @desc    Lấy từ ĐẾN HẠN ôn theo lịch SM-2
+ * @route   GET /api/wrong-words/review?limit=10[&all=1]
  * @access  Private
+ *
+ * Trước đây route này lấy MỌI từ active và bỏ qua `nextReviewDate`. Làm vậy thì
+ * bốn trường SM-2 (`easinessFactor`/`interval`/`repetition`/`nextReviewDate`)
+ * chỉ là số trang trí: từ vừa trả lời đúng xong vẫn hiện lại ngay lượt sau, còn
+ * giãn cách — thứ khiến lặp lại ngắt quãng có tác dụng — thì không bao giờ xảy
+ * ra. Không có chỗ nào trong frontend/admin gọi route này nên đổi được an toàn.
+ *
+ * `all=1` bỏ lọc theo hạn, cho người dùng chủ động ôn thêm khi đã hết từ đến hạn.
  */
 exports.getWordsToReview = async (req, res) => {
     try {
         const userId = req.user.id || req.user._id;
-        const limit = parseInt(req.query.limit) || 10;
+        // Chặn trên 50: đây là một phiên ôn, không phải chỗ kéo cả kho từ về.
+        const limit = Math.min(50, Math.max(1, parseInt(req.query.limit) || 10));
+        const all = req.query.all === '1' || req.query.all === 'true';
 
-        // ✅ Lấy TẤT CẢ từ active, sắp xếp theo priority (không check nextReviewDate)
-        const words = await WrongWord.find({
-            userId,
-            status: 'active'
-        })
-        .sort({ priorityScore: -1, wrongCount: -1 })
-        .limit(limit);
+        const filter = { userId, status: 'active' };
+        if (!all) filter.nextReviewDate = { $lte: new Date() };
 
-        logger.debug(`📚 getWordsToReview: Found ${words.length} active words for user ${userId}`);
+        const words = await WrongWord.find(filter)
+            // Quá hạn lâu nhất lên trước, rồi mới đến priority: một từ trễ hai
+            // tuần cần ôn gấp hơn từ vừa đến hạn sáng nay dù priority thấp hơn.
+            .sort({ nextReviewDate: 1, priorityScore: -1 })
+            .limit(limit);
+
+        // Tổng số đến hạn (không phụ thuộc `limit`) — frontend cần con số này cho
+        // badge ở menu và để biết còn bao nhiêu sau phiên này.
+        const dueTotal = await WrongWord.countDocuments({
+            userId, status: 'active', nextReviewDate: { $lte: new Date() },
+        });
 
         res.status(200).json({
             success: true,
             count: words.length,
+            dueTotal,
             data: words
         });
     } catch (error) {
