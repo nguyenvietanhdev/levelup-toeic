@@ -64,7 +64,11 @@ describe('đồng bộ lại mỗi lần MỞ, không chỉ lúc mount', () => {
 
     test('đặt lại tab đúng khoảnh khắc đóng → mở', () => {
         // Component không unmount khi đóng — thiếu thì lần mở sau giữ tab cũ.
-        expect(src).toMatch(/if \(open && !wasOpenRef\.current\) setTab\(tabOfCurrentTopic\(\)\)/);
+        // Không khớp cả câu lệnh `setTab(...)`: thân khối giờ còn phải né tab bị
+        // khoá (xem `tabLock.test.js`), nên chỉ khoá ĐIỀU KIỆN và việc gọi setTab.
+        expect(src).toMatch(/if \(open && !wasOpenRef\.current\)/);
+        expect(src).toMatch(/setTab\(/);
+        expect(src).toMatch(/tabOfCurrentTopic\(\)/);
         expect(src).toMatch(/wasOpenRef\.current = open/);
     });
 
@@ -73,8 +77,10 @@ describe('đồng bộ lại mỗi lần MỞ, không chỉ lúc mount', () => {
         // deps thì hai hàm đó đổi danh tính là effect chạy lại và ĐÁ NGƯỢC người
         // dùng về tab cũ ngay khi họ vừa bấm sang tab khác.
         const i = src.indexOf('const wasOpenRef');
-        const block = src.slice(i, i + 300);
-        expect(block).toMatch(/\}, \[open\]\);/);
+        const block = src.slice(i, i + 700);
+        // `chiTuSai` được phép có mặt: nó suy từ prop `mode` (ổn định trong một
+        // lần mở), không phải hàm đổi danh tính mỗi render như hai cái dưới.
+        expect(block).toMatch(/\}, \[open(, chiTuSai)?\]\);/);
         expect(block).not.toMatch(/loadShared|onClose/);
     });
 

@@ -26,7 +26,11 @@ const PRACTICE_COSTS = {
     'synonym-check': 10,
     'word-type-check': 10,
     'example-fill-blank': 12,
-    'review-mistakes': 10,
+    // MIỄN PHÍ: đây là ôn lại thứ mình ĐÃ SAI, theo lịch giãn cách SM-2. Thu phí
+    // cho việc sửa lỗi của chính mình là phạt đúng người chịu khó. `0` chứ không
+    // xoá khỏi bảng: `getEnergyCost` trả `null` cho chế độ lạ và chỗ gọi coi đó
+    // là lỗi "không biết chế độ này".
+    'review-mistakes': 0,
     'sentence-builder': 15,
     'pronunciation': 15,
     'context-learning': 10,

@@ -9567,3 +9567,21 @@ mark {
     .review-meaning { font-size: 19px; }
     .review-done-actions .btn { flex: 1 0 100%; }
 }
+
+/* ===================================
+   Tab bị khoá trong popup Chọn đề
+   =================================== */
+
+/* Chế độ "Ôn lại từ sai" chỉ dùng nhóm từ sai; mọi chế độ khác thì ngược lại.
+   KHOÁ chứ không ẩn: tab biến mất khiến người dùng tưởng hỏng, còn khoá kèm
+   `title` thì họ đọc được vì sao. */
+.topic-tabs .tab-btn.is-locked {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+/* Không đổi màu khi rê chuột — hover trên thứ bấm không được là hứa hão. */
+.topic-tabs .tab-btn.is-locked:hover {
+    background: transparent;
+    color: inherit;
+}

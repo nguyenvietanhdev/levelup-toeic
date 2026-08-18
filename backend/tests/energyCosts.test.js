@@ -70,11 +70,24 @@ describe('practiceEnergyCost — giá tra từ bảng, không nhận từ ngoài
             .toEqual({ onlyServer: [], onlyClient: [], different: [] });
     });
 
-    test('mọi giá đều là số dương — một giá âm là vòi bơm năng lượng', () => {
+    test('KHÔNG giá nào âm — một giá âm là vòi bơm năng lượng', () => {
+        // Ranh giới thật là số ÂM, không phải số 0: `$inc: { energy: -cost }`
+        // với `cost` âm sẽ CỘNG năng lượng, biến endpoint tiêu thành vòi bơm.
+        // `0` thì vô hại — nó chỉ có nghĩa là chế độ miễn phí.
         for (const [mode, cost] of Object.entries(PRACTICE_COSTS)) {
             expect(Number.isFinite(cost)).toBe(true);
-            expect(cost).toBeGreaterThan(0);
+            expect(cost).toBeGreaterThanOrEqual(0);
         }
+    });
+
+    test('chỉ chế độ ÔN LẠI TỪ SAI được miễn phí', () => {
+        // Miễn phí là ngoại lệ có chủ đích, không phải mặc định: ôn lại thứ mình
+        // đã sai là việc nên khuyến khích. Ràng buộc lại để một chế độ khác vô
+        // tình tụt về 0 sẽ bị bắt.
+        const mienPhi = Object.entries(PRACTICE_COSTS)
+            .filter(([, cost]) => cost === 0)
+            .map(([mode]) => mode);
+        expect(mienPhi).toEqual(['review-mistakes']);
     });
 
     test('bỏ khoảng trắng thừa quanh tên chế độ', () => {

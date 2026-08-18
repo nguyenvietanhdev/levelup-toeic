@@ -128,6 +128,16 @@ export const PracticeManager = {
             this.cleanupMode(this.currentSession.mode);
         }
 
+        // `review-mistakes` cũng phải CHỌN NHÓM từ sai trước — nhưng chỉ khi đề
+        // đang chọn không phải nhóm từ sai. Trước đây nó bỏ qua bước này hoàn
+        // toàn và ôn lẫn lộn mọi nguồn; giờ popup mở với tab "Từ vựng sai" và
+        // hai tab kia bị khoá (xem `mode` trong TopicModal).
+        const dangLaNhomTuSai = String(TopicSelector.currentTopic?.id || '').startsWith('wrong:');
+        if (mode === 'review-mistakes' && !dangLaNhomTuSai) {
+            EventBus.emit(GameEvents.TOPIC_MODAL_REQUESTED, { pendingMode: mode });
+            return false;
+        }
+
         // Chưa chọn đề → hiện popup chọn đề trước. Sau khi chọn đề xong,
         // TopNav.handleTopicSelected sẽ mở popup Part, rồi PRACTICE_REQUESTED tự start lại.
         if (!TopicSelector.currentTopic && mode !== 'review-mistakes') {

@@ -17,6 +17,15 @@ import LevelBar from "./LevelBar.jsx";
  * Đọc thẳng `TopicSelector` chứ không qua `current` của `useTopics`: hàm này
  * còn được gọi trong `useState` (chạy trước khi hook kia kịp trả giá trị).
  */
+/**
+ * Vì sao một tab bị khoá. `disabled` mà không nói lý do thì người dùng tưởng
+ * hỏng — đây là chỗ duy nhất họ đọc được câu trả lời (qua `title`).
+ */
+const LY_DO_KHOA = {
+  wrongOnly: 'Chế độ "Ôn lại từ sai" chỉ luyện trên nhóm từ bạn đã làm sai',
+  normalOnly: 'Nhóm từ sai chỉ dùng được ở chế độ "Ôn lại từ sai"',
+};
+
 function tabOfCurrentTopic() {
   const id = TopicSelector.getCurrentTopic()?.id || "";
   if (id.startsWith("personal:") || id.startsWith("shared:")) return "personal";
@@ -24,7 +33,7 @@ function tabOfCurrentTopic() {
   return "shared";
 }
 
-export default function TopicModal({ open, onClose, onSelected }) {
+export default function TopicModal({ open, mode = null, onClose, onSelected }) {
     useEscapeToClose(onClose, open);
   const {
     shared,
@@ -43,6 +52,13 @@ export default function TopicModal({ open, onClose, onSelected }) {
     selectPersonal,
     selectWrong,
   } = useTopics({ enabled: open });
+  // Chế độ "Ôn lại từ sai" chỉ chạy trên nhóm từ đã sai, nên hai tab kia vô
+  // nghĩa với nó. Ngược lại, mọi chế độ khác không dùng được nhóm từ sai (pool
+  // của chúng là bộ từ vựng, không phải danh sách lỗi). Khoá thay vì ẩn: ẩn thì
+  // người dùng tưởng tab biến mất do lỗi, còn khoá kèm `title` nói rõ vì sao.
+  const chiTuSai = mode === 'review-mistakes';
+  const tabBiKhoa = (t) => (chiTuSai ? t !== 'wrong' : t === 'wrong');
+
   const [tab, setTab] = useState(tabOfCurrentTopic);
 
   // Đồng bộ tab ĐÚNG LÚC POPUP MỞ RA, không phải mỗi lần effect chạy lại.
@@ -58,9 +74,17 @@ export default function TopicModal({ open, onClose, onSelected }) {
   // `wasOpenRef` chốt đúng khoảnh khắc đóng → mở.
   const wasOpenRef = useRef(false);
   useEffect(() => {
-    if (open && !wasOpenRef.current) setTab(tabOfCurrentTopic());
+    if (open && !wasOpenRef.current) {
+      // Mở cho "Ôn lại từ sai" thì vào thẳng tab đó, kể cả khi đề đang chọn là
+      // bộ từ vựng thường — nếu không, popup mở ra ở một tab đã bị khoá.
+      // Ngược lại cũng phải chặn: đề đang chọn có thể LÀ nhóm từ sai (người dùng
+      // vừa ôn xong), mà chế độ thường thì tab đó bị khoá — mở vào đó là popup
+      // đứng ở tab không bấm được gì.
+      const mongMuon = chiTuSai ? "wrong" : tabOfCurrentTopic();
+      setTab(tabBiKhoa(mongMuon) ? (chiTuSai ? "wrong" : "shared") : mongMuon);
+    }
     wasOpenRef.current = open;
-  }, [open]);
+  }, [open, chiTuSai]);
   const [query, setQuery] = useState("");
   const [searchReadOnly, setSearchReadOnly] = useState(true); // prevent autofill until user interacts
   const [busyId, setBusyId] = useState(null);
@@ -243,20 +267,26 @@ export default function TopicModal({ open, onClose, onSelected }) {
           <div className="topic-selection-container">
             <div className="topic-tabs">
               <button
-                className={`tab-btn ${tab === "shared" ? "active" : ""}`}
+                className={`tab-btn ${tab === "shared" ? "active" : ""}${tabBiKhoa("shared") ? " is-locked" : ""}`}
                 onClick={() => setTab("shared")}
+                disabled={tabBiKhoa("shared")}
+                title={tabBiKhoa("shared") ? LY_DO_KHOA.wrongOnly : undefined}
               >
                 <i className="fas fa-globe"></i> Từ vựng chung
               </button>
               <button
-                className={`tab-btn ${tab === "personal" ? "active" : ""}`}
+                className={`tab-btn ${tab === "personal" ? "active" : ""}${tabBiKhoa("personal") ? " is-locked" : ""}`}
                 onClick={() => setTab("personal")}
+                disabled={tabBiKhoa("personal")}
+                title={tabBiKhoa("personal") ? LY_DO_KHOA.wrongOnly : undefined}
               >
                 <i className="fas fa-user"></i> Từ vựng riêng
               </button>
               <button
-                className={`tab-btn ${tab === "wrong" ? "active" : ""}`}
+                className={`tab-btn ${tab === "wrong" ? "active" : ""}${tabBiKhoa("wrong") ? " is-locked" : ""}`}
                 onClick={() => setTab("wrong")}
+                disabled={tabBiKhoa("wrong")}
+                title={tabBiKhoa("wrong") ? LY_DO_KHOA.normalOnly : undefined}
               >
                 <i className="fas fa-times-circle"></i> Từ vựng sai
               </button>
@@ -462,7 +492,9 @@ export default function TopicModal({ open, onClose, onSelected }) {
             ) : (
               <div className="tab-content active">
                 <p className="topic-hint">
-                  Luyện lại những từ bạn đã làm sai:
+                  {chiTuSai
+                    ? 'Chọn nhóm từ sai bạn muốn ôn lại — miễn phí năng lượng:'
+                    : 'Luyện lại những từ bạn đã làm sai:'}
                 </p>
                 <div className="topics-list">
                   {loadingWrong ? (

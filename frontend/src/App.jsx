@@ -43,7 +43,6 @@ const InventoryScreen    = lazy(() => import('@components/inventory/InventoryScr
 const VocabScreen        = lazy(() => import('@components/vocab/upload/VocabScreen.jsx'));
 const ConversationScreen = lazy(() => import('@components/conversation/ConversationScreen.jsx'));
 const EssayScreen        = lazy(() => import('@components/essay/EssayScreen.jsx'));
-const ReviewScreen       = lazy(() => import('@components/review/ReviewScreen.jsx'));
 
 // Bản đồ màn lazy → render có điều kiện (chỉ mount màn đang mở).
 const LAZY_SCREENS = {
@@ -60,7 +59,6 @@ const LAZY_SCREENS = {
     'toeic-result-screen': ToeicResultScreen,
     'conversation-screen': ConversationScreen,
     'essay-screen': EssayScreen,
-    'review-screen': ReviewScreen,
 };
 
 function ScreenFallback() {

@@ -7,6 +7,7 @@ import { PracticeManager } from '@components/practice/practiceManager.js';
 import { TopicSelector } from '@components/vocab/topic/topicSelector.js';
 import { QuestsAPI } from '@api/quests.js';
 import { ToeicAPI } from '@api/toeic.js';
+import { WrongWordsAPI } from '@api/wrongWords.js';
 import { Quest } from '@components/quest/quest.js';
 import { Utils } from '@lib/utils.js';
 import { Config } from '@game/config.js';
@@ -65,7 +66,12 @@ const gameModes = [
     ]},
     { group: 'Nâng cao & Thử thách', icon: 'fa-brain', modes: [
         { mode: 'context-learning', icon: 'fa-book-reader', label: 'Hiểu qua câu', desc: 'Đọc câu ví dụ, suy luận nghĩa tiếng Việt', cost: 10, color: C_MAX, weekendOnly: true },
-        { mode: 'review-mistakes', icon: 'fa-repeat', label: 'Ôn lại từ sai', desc: 'Luyện lại các từ đã làm sai', cost: 10, color: C_MAX, special: true, weekendOnly: true },
+        // KHÔNG `weekendOnly`, KHÔNG tốn năng lượng — khác mọi chế độ khác trong
+        // nhóm này, và có lý do: đây là chế độ ôn lại thứ mình ĐÃ SAI, theo lịch
+        // giãn cách SM-2. Lịch đó chỉ có tác dụng khi ôn đúng ngày đến hạn; khoá
+        // vào cuối tuần là phá chính cơ chế nó dựa vào. Thu phí thì lại phạt đúng
+        // người chịu khó sửa lỗi.
+        { mode: 'review-mistakes', icon: 'fa-repeat', label: 'Ôn lại từ sai', desc: 'Ôn theo lịch giãn cách các từ đã làm sai', cost: 0, color: C_MAX, special: true },
         { mode: 'sentence-builder', icon: 'fa-puzzle-piece', label: 'Xếp câu', desc: 'Sắp xếp cụm từ thành câu hoàn chỉnh', cost: 15, color: C_MAX, weekendOnly: true },
         { mode: 'speed-quiz', icon: 'fa-clock', label: 'Tốc độ', desc: 'Trả lời nhanh nhất trong giới hạn thời gian', cost: 20, color: C_MAX, weekendOnly: true },
     ]},
@@ -190,7 +196,9 @@ export default function HomeScreen({ active }) {
         // daily quest sau Phase A). Fallback GameState legacy nếu rỗng.
         const cached = Quest.getQuests?.('daily') || [];
         setQuests(cached.length ? cached : (s.quests?.daily || []));
-        setWrongWordsCount(s.progress?.wrongWords?.length || 0);
+        // KHÔNG đặt `wrongWordsCount` ở đây: hàm này chạy lại mỗi lần
+        // QUEST_UPDATED và sẽ ghi đè số ĐẾN HẠN lấy từ server bằng TỔNG số từ
+        // sai trong localStorage — con số lớn hơn thực tế và không lọc ngôn ngữ.
         setStats(GameState.getStatistics?.() || {});
     }, []);
 
@@ -209,6 +217,14 @@ export default function HomeScreen({ active }) {
                     const d = res?.data?.data || res?.data || res;
                     if (d) setToeicStats({ averageAccuracy: d.averageAccuracy || 0, totalAttempts: d.totalAttempts || 0 });
                 })
+                .catch(() => {});
+
+            // Số từ ĐẾN HẠN ôn, lấy từ SERVER. `loadLocalData` ở trên chỉ đọc
+            // localStorage và đếm TỔNG số từ sai — con số đó luôn lớn hơn thực
+            // tế cần ôn hôm nay, và không lọc theo ngôn ngữ đang học. Ô "Ôn lại
+            // từ sai" hứa "N từ cần ôn" nên N phải là số bấm vào sẽ gặp.
+            WrongWordsAPI.due({ limit: 1 })
+                .then(({ dueTotal }) => setWrongWordsCount(dueTotal))
                 .catch(() => {});
         }
     }, [active, loadLocalData]);

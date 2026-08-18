@@ -25,7 +25,7 @@ export const Config = {
         'synonym-check': 10,
         'word-type-check': 10,
         'example-fill-blank': 12,
-        'review-mistakes': 10, // Khuyến khích người dùng luyện lại từ sai
+        'review-mistakes': 0,  // MIỄN PHÍ — ôn lại lỗi của mình, phải khớp backend/utils/energyCosts.js
         'sentence-builder': 15, // Xếp câu - độ khó cao
         'pronunciation': 15, // Phát âm - độ khó cao
         'context-learning': 10, // Học từ qua câu ví dụ

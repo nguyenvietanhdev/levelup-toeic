@@ -21,10 +21,6 @@ const MENU_GROUPS = [
         title: 'Luyện tập',
         items: [
             { label: 'Luyện đề test TOEIC', icon: 'fa-graduation-cap', screen: 'toeic-screen', hot: true, feature: 'feature:toeic' },
-            // Ôn lại từ ĐÃ SAI, giãn cách theo SM-2. Đứng đầu nhóm "Luyện bằng AI"
-            // thì sai chỗ — nó không gọi AI và không tốn năng lượng; nó thuộc về
-            // luyện tập thường, ngay dưới đề TOEIC.
-            { label: 'Ôn từ đã sai', icon: 'fa-rotate-left', screen: 'review-screen', badgeKey: 'reviewDue', badgeStyle: 'reward' },
         ],
     },
     {

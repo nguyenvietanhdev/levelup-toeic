@@ -72,6 +72,10 @@ export default function TopNav() {
     const [searchReadOnly, setSearchReadOnly] = useState(true);
     const [favOpen, setFavOpen] = useState(false);
     const [topicOpen, setTopicOpen] = useState(false);
+    // Chế độ đang chờ chọn đề — STATE chứ không chỉ ref, vì popup phải render
+    // lại để khoá đúng tab: `review-mistakes` chỉ dùng được "Từ vựng sai", mọi
+    // chế độ khác thì ngược lại.
+    const [topicMode, setTopicMode] = useState(null);
     const [spinOpen, setSpinOpen] = useState(false);
     const [translateText, setTranslateText] = useState(null); // từ đang dịch (popup)
     // Bản ghi đang SỬA (null = popup dịch bình thường). Modal Từ vựng riêng dựng
@@ -99,6 +103,7 @@ export default function TopNav() {
     useEffect(() => {
         const unsub = EventBus.on(GameEvents.TOPIC_MODAL_REQUESTED, ({ pendingMode } = {}) => {
             pendingModeRef.current = pendingMode || null;
+            setTopicMode(pendingMode || null);
             setTopicOpen(true);
         });
         return unsub;
@@ -123,6 +128,20 @@ export default function TopNav() {
     const handleTopicSelected = useCallback(() => {
         const mode = pendingModeRef.current;
         pendingModeRef.current = null;
+        setTopicMode(null);
+
+        // `review-mistakes` KHÔNG qua popup chọn Part: pool của nó là các từ đã
+        // sai trong nhóm vừa chọn, không chia theo Part. Bắt chọn Part ở đây là
+        // hỏi một câu không có câu trả lời đúng.
+        if (mode === 'review-mistakes') {
+            // Vẫn phải hoãn: `onSelected()` chạy TRƯỚC `onClose()`, nên popup
+            // chọn đề còn trong cây DOM. Vào thẳng màn luyện tập lúc đó là màn
+            // mới dựng trong khi popup cũ chưa gỡ — cùng lớp lỗi với hai modal
+            // trùng `id` mô tả ở dưới.
+            setTimeout(() => EventBus.emit(GameEvents.PRACTICE_REQUESTED, { mode }), 200);
+            return;
+        }
+
         if (mode) {
             // Chọn đề xong → mở Part selector với pendingMode,
             // PartSelector.selectPart() sẽ emit PRACTICE_REQUESTED sau khi user chọn part.
@@ -146,6 +165,7 @@ export default function TopNav() {
     const handleTopicClose = useCallback(() => {
         // Đóng mà không chọn → bỏ pending, không auto-start
         pendingModeRef.current = null;
+        setTopicMode(null);
         setTopicOpen(false);
     }, []);
 
@@ -787,7 +807,7 @@ export default function TopNav() {
             </div>
         </nav>
         <FavoritesModal open={favOpen} onClose={() => setFavOpen(false)} />
-        <TopicModal open={topicOpen} onClose={handleTopicClose} onSelected={handleTopicSelected} />
+        <TopicModal open={topicOpen} mode={topicMode} onClose={handleTopicClose} onSelected={handleTopicSelected} />
         <SpinWheelModal open={spinOpen} onClose={() => setSpinOpen(false)} />
         {translateText && (
             <TranslateModal
