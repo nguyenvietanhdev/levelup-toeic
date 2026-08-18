@@ -258,24 +258,38 @@
         gap: 8px;
     }
 
+    /* MỘT hàng: [←] [tên chế độ · 1/38] [⭐ ✓ ✗] [⏱]
+       Trước đây `.practice-info` để `width: 100%` nên nó chiếm trọn hàng và đẩy
+       thanh điểm + đồng hồ xuống hàng riêng — header cao gấp đôi mà vẫn lệch,
+       vì hai nhóm bị đẩy xuống lại giữ `margin`/`padding` của luật cũ.
+       Giờ tên chế độ CO LẠI (`flex: 1 1 auto` + ellipsis) để nhường chỗ, thay vì
+       đẩy mọi thứ khác đi. */
     .practice-info {
         flex-direction: row;
         gap: 8px;
-        width: 100%;
-        justify-content: space-between;
+        flex: 1 1 auto;
+        min-width: 0;
+        justify-content: flex-start;
         align-items: center;
     }
 
     .practice-info h2 {
         font-size: 16px;
         margin: 0;
+        /* Cắt bằng `…` thay vì xuống dòng — `min-width: 0` ở trên là bắt buộc,
+           thiếu nó thì flex item không co dưới kích thước nội dung và ellipsis
+           không bao giờ kích hoạt. */
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
     }
 
+    /* Tiến độ "1 / 38" — nằm TRONG `.practice-info`, ngay sau tên chế độ. */
     .practice-meta {
         display: flex;
-        flex-wrap: wrap;
-        gap: 6px;
-        justify-content: center;
+        align-items: center;
+        gap: 8px;
+        flex-shrink: 0;
     }
 
     .difficulty-badge {
@@ -289,27 +303,47 @@
     }
 
     /* Timer on mobile */
-    .practice-timer-container {
-        position: static !important;
-        order: 0;
+    /* Đồng hồ là mục DUY NHẤT trong hàng có nền riêng, nên nó quyết định chiều
+       cao. Cho các mục kia cùng `min-height` (bên dưới) thay vì bỏ nền đồng hồ:
+       nền đó là thứ giúp liếc một cái thấy ngay thời gian còn lại. */
+    .practice-timer {
+        font-size: 13px;
+        padding: 4px 10px;
+        min-height: 28px;
+        display: flex;
+        align-items: center;
+        white-space: nowrap;
         flex-shrink: 0;
     }
 
-    .practice-timer {
-        font-size: 14px;
-        padding: 6px 12px;
-        white-space: nowrap;
+    /* Cùng chiều cao với đồng hồ → mọi thứ trong hàng thẳng trục, không cần
+       canh từng `margin` một. */
+    .practice-header .practice-meta,
+    .practice-header .practice-score-bar {
+        min-height: 28px;
     }
 
-    /* Score bar on mobile */
+    /* ── Thanh điểm ⭐✓✗ ──────────────────────────────────────────────────
+       Nó là ANH EM của `.practice-info` trong cùng hàng flex `.practice-header`,
+       không phải một thanh riêng.
+
+       Ba thứ của luật cũ làm nó lệch trục so với tên chế độ và đồng hồ bên cạnh:
+         · `margin-bottom: 12px` — đẩy nó CAO hơn các phần tử cùng hàng đúng
+           12px, vì `align-items: center` căn theo hộp ĐÃ CỘNG margin.
+         · `padding: 8px 12px` — nền trong suốt (components.css) nên phần đệm
+           này không vẽ ra gì, chỉ làm hộp cao thêm và lệch tiếp.
+         · `flex-wrap: wrap` — trên màn hẹp ba icon rớt xuống hai dòng, hàng
+           header cao gấp đôi mà vẫn không thẳng.
+       Bỏ cả ba, giữ đúng một hàng ngang căn giữa. */
     .practice-score-bar {
         flex-direction: row !important;
-        flex-wrap: wrap;
+        flex-wrap: nowrap;
         justify-content: center;
         align-items: center;
-        padding: 8px 12px;
-        gap: 8px 16px;
-        margin-bottom: 12px;
+        padding: 0;
+        margin: 0;
+        gap: 12px;
+        flex-shrink: 0;
     }
 
     .practice-score-bar .score-item {
