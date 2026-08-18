@@ -10,6 +10,7 @@
  * lại filter, nên kiểm được chính xác truy vấn mà controller dựng.
  */
 const WrongWord = require('../models/WrongWord');
+const UserProfile = require('../models/UserProfile');
 const ctrl = require('../controllers/wrongWordsController');
 
 /** Bắt chước chuỗi `.sort().limit()` của Mongoose, ghi lại từng bước. */
@@ -35,6 +36,11 @@ beforeEach(() => {
     spy = {};
     findSpy = jest.spyOn(WrongWord, 'find');
     countSpy = jest.spyOn(WrongWord, 'countDocuments').mockResolvedValue(7);
+    // Controller đọc hồ sơ để biết ngôn ngữ đang học (xem
+    // `wrongWordsLangFilter.test.js`). Không giả thì nó gọi DB thật và test treo.
+    jest.spyOn(UserProfile, 'findOne').mockReturnValue({
+        select: () => ({ lean: () => Promise.resolve({ settings: { vocabLang: 'en' } }) }),
+    });
 });
 afterEach(() => jest.restoreAllMocks());
 

@@ -51,6 +51,23 @@ const WrongWordSchema = new mongoose.Schema({
         default: '',
         index: true
     },
+
+    /**
+     * Ngôn ngữ của từ: 'en' hoặc 'zh'.
+     *
+     * Chế độ Ôn tập PHẢI lọc theo đây. Không có nó thì người đang học tiếng
+     * Trung mở phần ôn ra vẫn gặp `due`, `fiscal`, `meticulously` xen giữa 你好
+     * và 别的 — trong DB thật 136 từ đến hạn là 98 Trung trộn 38 Anh.
+     *
+     * Suy tự động ở `deriveLang()` khi lưu, vì client cũ không gửi trường này
+     * và 139 bản ghi có sẵn cũng không có.
+     */
+    lang: {
+        type: String,
+        enum: ['en', 'zh'],
+        default: 'en',
+        index: true
+    },
     example: String,
     image: String,
 

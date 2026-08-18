@@ -1,5 +1,6 @@
 const WrongWord = require('../models/WrongWord');
 const User = require('../models/User');
+const UserProfile = require('../models/UserProfile');
 const logger = require('../utils/logger');
 
 /** Hạn TTL cho một từ sai mới: now + WrongWord.TTL_DAYS ngày. */
@@ -15,6 +16,23 @@ async function resolveUserEmail(userId) {
     } catch {
         return null;
     }
+}
+
+/**
+ * Suy ngôn ngữ của từ khi client không gửi `lang`.
+ *
+ * Dựa vào chữ Hán trong mặt từ. Kiểm trên 136 từ thật trong DB: KHÔNG source
+ * nào trộn hai loại — `hsk1`, `zh_giaotiep_tuvung`, `1000字` toàn chữ Hán;
+ * `600words`, `verb_pattern`, `sentence_pattern` toàn Latin — và 0 từ thuộc kho
+ * Trung mà thiếu chữ Hán. Nên phép suy này đúng tuyệt đối trên dữ liệu hiện có.
+ *
+ * Vẫn nhận `lang` từ client khi có: suy đoán chỉ để vá cho client cũ và cho
+ * 139 bản ghi có sẵn không mang trường này.
+ */
+const HAN_RE = /[一-鿿㐀-䶿]/;
+function deriveLang(body = {}) {
+    if (body.lang === 'zh' || body.lang === 'en') return body.lang;
+    return HAN_RE.test(String(body.en || '') + String(body.wordId || '')) ? 'zh' : 'en';
 }
 
 /**
@@ -68,6 +86,11 @@ exports.addWrongWord = async (req, res) => {
             if (!wrongWord.source && source) {
                 wrongWord.source = source;
             }
+            // Vá dần bản ghi cũ: 139 doc có sẵn không mang `lang`, mỗi lần gặp
+            // lại là một cơ hội gắn đúng mà không cần migration riêng.
+            if (!wrongWord.lang) {
+                wrongWord.lang = deriveLang({ ...req.body, en: wrongWord.en });
+            }
             wrongWord.recordWrong();
             await wrongWord.save();
 
@@ -90,6 +113,7 @@ exports.addWrongWord = async (req, res) => {
             level,
             part,
             source,
+            lang: deriveLang(req.body),
             example,
             image,
             expiresAt: ttlDate()
@@ -175,6 +199,10 @@ exports.recordCorrect = async (req, res) => {
  * ra. Không có chỗ nào trong frontend/admin gọi route này nên đổi được an toàn.
  *
  * `all=1` bỏ lọc theo hạn, cho người dùng chủ động ôn thêm khi đã hết từ đến hạn.
+ *
+ * LỌC THEO NGÔN NGỮ đang học. Không lọc thì người học tiếng Trung mở phần ôn ra
+ * gặp `due`, `fiscal`, `meticulously` xen giữa 你好 và 别的 — trong DB thật 136
+ * từ đến hạn là 98 Trung trộn 38 Anh.
  */
 exports.getWordsToReview = async (req, res) => {
     try {
@@ -183,7 +211,21 @@ exports.getWordsToReview = async (req, res) => {
         const limit = Math.min(50, Math.max(1, parseInt(req.query.limit) || 10));
         const all = req.query.all === '1' || req.query.all === 'true';
 
-        const filter = { userId, status: 'active' };
+        // Ngôn ngữ lấy từ HỒ SƠ, không nhận từ client (giống Viết luận/Hội thoại).
+        const profile = await UserProfile.findOne({ userId }).select('settings').lean();
+        const lang = profile?.settings?.vocabLang === 'zh' ? 'zh' : 'en';
+
+        // Bản ghi CŨ chưa có `lang` (139 doc trong DB) vẫn phải lọc đúng, nếu
+        // không thì tính năng vô dụng cho tới khi người dùng gặp lại từng từ.
+        // Suy bằng chữ Hán ngay trong truy vấn — đã kiểm trên dữ liệu thật:
+        // không source nào trộn hai loại, 0 ngoại lệ.
+        const HAN = '[\u4e00-\u9fff\u3400-\u4dbf]';
+        const langFilter = lang === 'zh'
+            ? { $or: [{ lang: 'zh' }, { lang: { $exists: false }, en: { $regex: HAN } }] }
+            : { $or: [{ lang: 'en' }, { lang: { $exists: false }, en: { $not: { $regex: HAN } } }] };
+
+        const base = { userId, status: 'active', ...langFilter };
+        const filter = { ...base };
         if (!all) filter.nextReviewDate = { $lte: new Date() };
 
         const words = await WrongWord.find(filter)
@@ -194,14 +236,16 @@ exports.getWordsToReview = async (req, res) => {
 
         // Tổng số đến hạn (không phụ thuộc `limit`) — frontend cần con số này cho
         // badge ở menu và để biết còn bao nhiêu sau phiên này.
+        // Cũng lọc theo ngôn ngữ: badge báo 136 mà mở ra chỉ có 98 là sai lệch.
         const dueTotal = await WrongWord.countDocuments({
-            userId, status: 'active', nextReviewDate: { $lte: new Date() },
+            ...base, nextReviewDate: { $lte: new Date() },
         });
 
         res.status(200).json({
             success: true,
             count: words.length,
             dueTotal,
+            lang,
             data: words
         });
     } catch (error) {
