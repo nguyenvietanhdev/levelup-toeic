@@ -162,6 +162,30 @@ export default function TopNav() {
         }
     }, []);
 
+    /**
+     * Về trang chủ. Bấm LẦN HAI (trong 400ms) thì cuộn lên đầu.
+     *
+     * Một lần = "cho tôi ra khỏi đây", và người dùng mong thấy lại đúng chỗ đã
+     * cuộn — thoát luyện tập rồi phải cuộn tìm lại thẻ chế độ vừa bấm là mất
+     * chỗ thật sự. Hai lần = "cho tôi về đầu trang".
+     *
+     * KHÔNG dùng `onDoubleClick`: trình duyệt vẫn bắn `onClick` trước nó, nên
+     * cú bấm đầu đã điều hướng xong và cú thứ hai chỉ còn việc cuộn — đúng thứ
+     * ta cần, nhưng `onDoubleClick` lại trễ thêm ~300ms cho MỌI cú bấm đơn.
+     * Tự đo khoảng cách giữa hai lần bấm thì lần đầu phản hồi tức thì.
+     */
+    const lanBamTruocRef = useRef(0);
+    const handleHomeClick = useCallback(() => {
+        const gio = Date.now();
+        // CHỈ tính bấm kép khi đang thật sự ở trang chủ. Đang luyện tập thì cú
+        // bấm đầu mới chỉ mở hộp "Thoát luyện tập?" chứ chưa đi đâu — tính cú
+        // thứ hai là bấm kép sẽ XOÁ vị trí đã lưu, đúng thứ cần giữ lại.
+        const dangOTrangChu = currentScreen === 'home-screen';
+        const bamKep = dangOTrangChu && gio - lanBamTruocRef.current < 400;
+        lanBamTruocRef.current = gio;
+        showScreen('home-screen', { scrollTop: bamKep });
+    }, [showScreen, currentScreen]);
+
     const handleTopicClose = useCallback(() => {
         // Đóng mà không chọn → bỏ pending, không auto-start
         pendingModeRef.current = null;
@@ -565,13 +589,13 @@ export default function TopNav() {
                         : null
                     }
                 </button>
-                <button id="home-btn" className="icon-btn nav-home-btn" title="Trang chủ" onClick={() => showScreen('home-screen')}>
+                <button id="home-btn" className="icon-btn nav-home-btn" title="Trang chủ (bấm hai lần để lên đầu trang)" onClick={handleHomeClick}>
                     <i className="fas fa-home"></i>
                 </button>
 
                 <NotificationPanel isLoggedIn={isLoggedIn} />
 
-                <div className="user-info" onClick={() => showScreen('home-screen')} style={{ cursor: 'pointer' }}>
+                <div className="user-info" onClick={handleHomeClick} style={{ cursor: 'pointer' }} title="Trang chủ (bấm hai lần để lên đầu trang)">
                     <div className="avatar-small" id="user-avatar" style={avatarFrameStyle || undefined}>
                         {isAvatarImg
                             ? <img src={avatarSrc} alt="avatar" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} />

@@ -16,6 +16,7 @@ import { WrongWordsManager } from '@components/vocab/wrongWords/wrongWordsManage
 import { SessionService } from '@components/practice/sessionService.js';
 import { PracticeManager } from '@components/practice/practiceManager.js';
 import { getToeicExitGuard } from '@components/toeic/toeicRunGuard.js';
+import { luuViTri, docViTri, quenViTri, khoiPhucCuon } from '@game/screenScroll.js';
 
 const GameContext = createContext(null);
 
@@ -133,7 +134,31 @@ export function GameProvider({ children }) {
         };
     }, [syncFromState]);
 
-    const showScreen = useCallback((screenId) => {
+    /**
+     * Chuyển màn + khôi phục chỗ đã cuộn.
+     *
+     * @param {string} screenId
+     * @param {{ scrollTop?: boolean }} opts
+     *   `scrollTop: true` → BỎ vị trí đã nhớ và về đầu trang. Dùng cho cú bấm
+     *   thứ hai vào avatar/nút Trang chủ: bấm lần nữa khi đã ở trang chủ là ý
+     *   "cho tôi về đầu", không phải "giữ chỗ cũ".
+     */
+    const doiMan = useCallback((screenId, { scrollTop = false } = {}) => {
+        if (scrollTop) quenViTri(screenId);
+        setCurrentScreen((truoc) => {
+            // Ghi chỗ đang đứng của màn CŨ trước khi nó bị ẩn. Đặt trong hàm cập
+            // nhật để lấy đúng giá trị hiện tại mà không cần thêm `currentScreen`
+            // vào deps của `showScreen` — thêm vào là mọi chỗ giữ tham chiếu tới
+            // hàm này (window._reactShowScreen) trỏ vào bản cũ.
+            if (truoc && truoc !== screenId) luuViTri(truoc);
+            return screenId;
+        });
+        khoiPhucCuon(scrollTop ? 0 : docViTri(screenId));
+        setMenuOpen(false);
+        EventBus.emit(GameEvents.SCREEN_CHANGED, { screen: screenId });
+    }, []);
+
+    const showScreen = useCallback((screenId, opts = {}) => {
         // Single chokepoint: leaving an active (uncompleted) practice session
         // — via any nav (back btn, Home, avatar, side menu) — must go through
         // PracticeManager.exit() so the "Thoát luyện tập?" confirm always shows.
@@ -148,16 +173,11 @@ export function GameProvider({ children }) {
         const toeicConfirm = getToeicExitGuard();
         if (screenId !== 'toeic-screen' && toeicConfirm) {
             setMenuOpen(false);
-            toeicConfirm(() => {
-                setCurrentScreen(screenId);
-                EventBus.emit(GameEvents.SCREEN_CHANGED, { screen: screenId });
-            });
+            toeicConfirm(() => doiMan(screenId, opts));
             return;
         }
-        setCurrentScreen(screenId);
-        setMenuOpen(false);
-        EventBus.emit(GameEvents.SCREEN_CHANGED, { screen: screenId });
-    }, []);
+        doiMan(screenId, opts);
+    }, [doiMan]);
 
     // Keep window.UI in sync with React functions
     useEffect(() => {
