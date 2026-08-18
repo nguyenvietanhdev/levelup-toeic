@@ -900,6 +900,28 @@ document.addEventListener("DOMContentLoaded", () => {
   document
     .getElementById("ai-usage-days")
     ?.addEventListener("change", loadTokenStats);
+
+  // Nút Tải lại. Số liệu chỉ nạp khi MỞ tab hoặc đổi khoảng ngày, nên admin để
+  // tab mở lâu (theo dõi lúc chạy AI Fill hàng loạt) sẽ thấy con số đứng im.
+  //
+  // `addEventListener` chứ KHÔNG phải `onclick` trong HTML: CSP của trang admin
+  // đặt `script-src-attr 'none'`, nên handler nội tuyến bị chặn im lặng — nút
+  // hiện ra nhưng bấm không ăn, và không lỗi nào báo.
+  const reloadBtn = document.getElementById("btn-ai-usage-reload");
+  reloadBtn?.addEventListener("click", async () => {
+    if (reloadBtn.disabled) return; // chặn bấm dồn
+    reloadBtn.disabled = true;
+    const icon = reloadBtn.querySelector("i");
+    icon?.classList.add("fa-spin");
+    try {
+      await loadTokenStats();
+    } finally {
+      // `finally` là bắt buộc: lỗi mạng mà không tắt cờ thì nút quay mãi và
+      // không bấm lại được — đúng lỗi đã gặp ở popup Chọn đề.
+      icon?.classList.remove("fa-spin");
+      reloadBtn.disabled = false;
+    }
+  });
 });
 
 // ---- USER STATS TAB ----

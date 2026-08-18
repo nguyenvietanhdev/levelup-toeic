@@ -11,6 +11,14 @@
                     <option value="30">30 ngày</option>
                     <option value="90">90 ngày</option>
                   </select>
+                  <!-- Tải lại: số liệu token/chi phí chỉ nạp khi MỞ tab hoặc khi
+                       đổi khoảng ngày. Admin để tab mở lâu (theo dõi lúc chạy AI
+                       Fill hàng loạt) thì con số đứng im — phải đổi khoảng ngày
+                       rồi đổi lại mới thấy số mới. -->
+                  <button class="btn btn-secondary btn-sm" id="btn-ai-usage-reload"
+                          title="Tải lại số liệu" style="height:34px">
+                    <i class="fas fa-rotate-right"></i>
+                  </button>
                 </div>
               </div>
               <p style="margin:6px 0 16px;color:var(--text-secondary);font-size:13px">
