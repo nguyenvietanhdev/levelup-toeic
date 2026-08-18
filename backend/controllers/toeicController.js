@@ -98,14 +98,16 @@ exports.startAttempt = async (req, res, next) => {
                 }
             }
 
+            // NĂNG LƯỢNG KHÔNG trừ ở đây — xem `submitAnswer`. Chỉ KIỂM đủ hay
+            // chưa, để người dùng biết trước thay vì mở đề ra rồi mới bị chặn.
+            //
+            // Vàng thì vẫn trừ ngay: nó KHÔNG tự hồi và là phí MỞ đề, hoãn lại
+            // là mở đường xem đề trả phí miễn phí (bấm Bắt đầu, đọc câu hỏi,
+            // thoát trước khi trả lời).
             const energyCost = toeicEnergyCost(test.totalQuestions);
-            const paid = await UserStats.findOneAndUpdate(
-                { userId: req.user.id, energy: { $gte: energyCost } },
-                { $inc: { energy: -energyCost }, $set: { lastEnergyUpdate: new Date() } },
-                { new: true }
-            );
-            if (!paid) {
-                // Thiếu năng lượng → hoàn lại vàng đã trừ, không để user mất trắng.
+            const fresh = await UserStats.findOne({ userId: req.user.id }).select('energy').lean();
+            if ((fresh?.energy ?? 0) < energyCost) {
+                // Hoàn vàng đã trừ ở trên — không để user mất trắng vì thiếu thứ khác.
                 if (coinCost > 0) {
                     await UserStats.updateOne({ userId: req.user.id }, { $inc: { coins: coinCost } });
                 }
@@ -113,15 +115,25 @@ exports.startAttempt = async (req, res, next) => {
                     success: false,
                     message: `Không đủ năng lượng! Cần ${energyCost}⚡ cho bài ${test.totalQuestions} câu.`,
                     energyNeeded: energyCost,
-                    currentEnergy: stats?.energy ?? 0,
+                    currentEnergy: fresh?.energy ?? 0,
                 });
             }
 
-            // Bắt đầu MỚI (đã trừ năng lượng) → bỏ mọi bài dở CŨ của đề này để
-            // không tích tụ nhiều bài in-progress (bài cũ 0 câu = mất mát bằng 0;
-            // nếu có câu thì user đã chủ động chọn "Bắt đầu" thay vì "Tiếp tục").
+            // Bắt đầu MỚI → bỏ các bài dở CŨ của đề này để không tích tụ nhiều
+            // bài in-progress.
+            //
+            // CHỈ bỏ bài CHƯA trả lời câu nào (`energySpent: 0`). Bài đã trả lời
+            // là bài đã TRẢ PHÍ — vứt nó đi là người dùng mất số năng lượng đó
+            // mà không nhận lại gì. Bài như vậy để nguyên `in-progress` cho nút
+            // "Tiếp tục" dùng; nó không gây nhầm vì `getInProgressAttempt` lấy
+            // bản mới nhất.
             await ToeicAttempt.updateMany(
-                { userId: req.user.id, testId: test._id, status: 'in-progress' },
+                {
+                    userId: req.user.id,
+                    testId: test._id,
+                    status: 'in-progress',
+                    $or: [{ energySpent: 0 }, { energySpent: { $exists: false } }],
+                },
                 { $set: { status: 'abandoned' } }
             );
 
@@ -237,6 +249,46 @@ exports.submitAnswer = async (req, res, next) => {
                 success: false,
                 message: 'Question not found',
             });
+        }
+
+        // ── Trừ năng lượng ở câu trả lời ĐẦU TIÊN ────────────────────────────
+        // Không trừ lúc bấm "Bắt đầu": bấm nhầm hoặc xem thử rồi thoát thì mất
+        // 15–60⚡ mà chưa nhìn thấy câu nào. Trong DB thật, 93% năng lượng TOEIC
+        // đã đi theo cách đó.
+        //
+        // `findOneAndUpdate` với `energySpent: 0` trong FILTER là chốt chống thu
+        // hai lần: hai request nộp câu gần như đồng thời thì chỉ một cái khớp
+        // điều kiện, cái còn lại nhận `null` và bỏ qua.
+        if (!attempt.energySpent) {
+            const energyCost = toeicEnergyCost(attempt.totalQuestions);
+
+            const claimed = await ToeicAttempt.findOneAndUpdate(
+                { _id: attempt._id, $or: [{ energySpent: 0 }, { energySpent: { $exists: false } }] },
+                { $set: { energySpent: energyCost } },
+                { new: true }
+            );
+
+            if (claimed) {
+                const paid = await UserStats.findOneAndUpdate(
+                    { userId: req.user.id, energy: { $gte: energyCost } },
+                    { $inc: { energy: -energyCost }, $set: { lastEnergyUpdate: new Date() } },
+                    { new: true }
+                );
+                if (!paid) {
+                    // Không đủ năng lượng → TRẢ cờ về 0, nếu không lượt này thành
+                    // "đã trả phí" mà thực tế chưa trừ đồng nào.
+                    await ToeicAttempt.updateOne({ _id: attempt._id }, { $set: { energySpent: 0 } });
+                    const cur = await UserStats.findOne({ userId: req.user.id }).select('energy').lean();
+                    return res.status(400).json({
+                        success: false,
+                        message: `Không đủ năng lượng! Cần ${energyCost}⚡ cho bài ${attempt.totalQuestions} câu.`,
+                        energyNeeded: energyCost,
+                        currentEnergy: cur?.energy ?? 0,
+                    });
+                }
+                // Giữ bản in-memory khớp DB — `attempt.save()` bên dưới ghi cả doc.
+                attempt.energySpent = energyCost;
+            }
         }
 
         // Submit answer

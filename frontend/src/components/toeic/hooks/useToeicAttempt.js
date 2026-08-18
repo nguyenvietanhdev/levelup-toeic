@@ -4,10 +4,39 @@ import { Notification } from '@ui/Toaster.jsx';
 import { Quest } from '@components/quest/quest.js';
 import { GameState } from '@game/state.js';
 import { EventBus, GameEvents } from '@game/eventBus.js';
+import { EnergyShop } from '@game/energyShop.js';
 
 // Áp số dư SỰ THẬT từ server (sau khi bắt đầu bài) vào GameState để thanh năng
 // lượng/ví cập nhật ngay. Bài TOEIC trừ năng lượng SERVER-SIDE (không như luyện
 // tập thường trừ ở client), nên nếu không đồng bộ thì UI đứng im → tưởng không trừ.
+/**
+ * Kiểm phản hồi nộp câu — báo NGAY nếu server từ chối vì hết năng lượng.
+ *
+ * Năng lượng bài thi trừ ở câu trả lời ĐẦU TIÊN (không phải lúc bấm "Bắt đầu",
+ * xem `toeicController.submitAnswer`). Nghĩa là lỗi "không đủ năng lượng" giờ
+ * xuất hiện ở ĐÂY chứ không chỉ lúc mở bài.
+ *
+ * `Http` KHÔNG ném với HTTP 400 — nó trả `{ success: false }`. Nên khối
+ * `try/catch` quanh lời gọi không bao giờ chạy, và nếu chỉ dựa vào nó thì người
+ * dùng làm hết bài rồi mới biết không câu nào được ghi nhận.
+ *
+ * @returns {boolean} true nếu nộp được, false nếu bị từ chối.
+ */
+function checkAnswerResponse(res) {
+    const data = res?.data ?? res;
+    if (data?.success !== false) return true;
+
+    if (data?.energyNeeded) {
+        // Mở thẳng popup nạp, giống lúc bắt đầu bài (TestRunner.jsx:212) — chỉ
+        // hiện dòng lỗi là bắt người dùng tự đi tìm cửa hàng giữa lúc đang thi.
+        EnergyShop.showModal({ needed: data.energyNeeded });
+        Notification.error(data.message || 'Không đủ năng lượng để tính bài thi này');
+    } else {
+        Notification.error(data?.message || 'Không lưu được câu trả lời');
+    }
+    return false;
+}
+
 function syncResourcesFromServer(resources) {
     if (!resources) return;
     const R = GameState.state.resources;
@@ -146,18 +175,22 @@ export function useToeicAttempt() {
             return next;
         });
 
-        // Send answer to server (fire-and-forget; don't block UI)
+        // Gửi lên server. KHÔNG chặn giao diện, nhưng PHẢI đọc kết quả: câu đầu
+        // tiên là lúc năng lượng bị trừ, nên đây là chỗ lỗi "hết năng lượng"
+        // xuất hiện — nuốt nó là người dùng làm hết bài mà không câu nào được ghi.
         try {
             const questionId = state.questions[state.currentIndex]?._id;
             if (questionId) {
-                await ToeicAPI.submitAnswer(state.attemptId, {
+                const res = await ToeicAPI.submitAnswer(state.attemptId, {
                     questionId,
                     userAnswer: answer,
                     timeSpent: Date.now() - (questionStartRef.current || Date.now()),
                 });
+                checkAnswerResponse(res);
             }
         } catch (err) {
             console.error('Error submitting answer:', err);
+            Notification.error('Không lưu được câu trả lời — kiểm tra kết nối mạng');
         }
 
         if (isPartTransition && transitionInfo) {
@@ -173,14 +206,16 @@ export function useToeicAttempt() {
         try {
             const questionId = state.questions[index]?._id;
             if (questionId) {
-                await ToeicAPI.submitAnswer(state.attemptId, {
+                const res = await ToeicAPI.submitAnswer(state.attemptId, {
                     questionId,
                     userAnswer: answer,
                     timeSpent: Date.now() - (questionStartRef.current || Date.now()),
                 });
+                checkAnswerResponse(res);
             }
         } catch (err) {
             console.error('Error submitting answer:', err);
+            Notification.error('Không lưu được câu trả lời — kiểm tra kết nối mạng');
         }
     }, [state.questions, state.attemptId]);
 

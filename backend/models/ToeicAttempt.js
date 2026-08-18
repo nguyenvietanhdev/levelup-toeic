@@ -296,6 +296,25 @@ const ToeicAttemptSchema = new mongoose.Schema({
         index: true,
     },
 
+    /**
+     * Năng lượng ĐÃ trừ cho lượt này. 0 = chưa trừ.
+     *
+     * Trước đây năng lượng bị trừ ngay lúc bấm "Bắt đầu", trước khi người dùng
+     * nhìn thấy câu nào — bấm nhầm, xem thử rồi thoát, hay đổi ý đều mất 15–60⚡
+     * không lấy lại được. Trong DB thật: 101 lượt bỏ ở câu 0 đã ăn 2604⚡, tức
+     * 93% toàn bộ năng lượng TOEIC đổ vào bài không trả lời câu nào.
+     *
+     * Giờ trừ ở câu trả lời ĐẦU TIÊN. Trường này để:
+     *   · biết đã thu hay chưa (không thu hai lần khi nộp câu thứ hai),
+     *   · biết thu BAO NHIÊU để hoàn đúng số nếu cần.
+     * Lưu số thay vì cờ boolean vì giá phụ thuộc số câu của đề, mà đề có thể
+     * đổi số câu sau khi lượt thi đã tạo.
+     */
+    energySpent: {
+        type: Number,
+        default: 0,
+    },
+
     // ===================================
     // REWARDS (if applicable)
     // ===================================
