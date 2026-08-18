@@ -6,24 +6,47 @@ import { Notification } from '@ui/Toaster.jsx';
 import { EssayAPI } from '@api/essay.js';
 
 /**
- * Luyện VIẾT LUẬN — chấm theo 4 tiêu chí IELTS Writing Task 2.
+ * Luyện VIẾT LUẬN — IELTS Task 2 (tiếng Anh) hoặc HSK 书写 (tiếng Trung).
  *
- * Đếm từ chạy ở client cho phản hồi tức thì, nhưng con số quyết định (đủ 250 từ
- * hay chưa, band bao nhiêu) do SERVER tính lại — client chỉ hiển thị.
+ * Chuẩn chấm do SERVER chọn theo ngôn ngữ đang học và trả về trong `lang`;
+ * client chỉ hiển thị. Đếm chạy ở client cho phản hồi tức thì, nhưng con số
+ * quyết định (đủ ngưỡng chưa, band bao nhiêu) do server tính lại.
  */
 
-/** Bốn tiêu chí, kèm nhãn tiếng Việt. Trùng với `CRITERIA` ở server. */
-const CRITERIA = [
+/** Tiêu chí IELTS Task 2. Trùng `CRITERIA` ở server. */
+const CRITERIA_EN = [
     { key: 'taskResponse', label: 'Task Response', vi: 'Trả lời đúng đề' },
     { key: 'coherence', label: 'Coherence & Cohesion', vi: 'Mạch lạc & liên kết' },
     { key: 'lexical', label: 'Lexical Resource', vi: 'Vốn từ vựng' },
     { key: 'grammar', label: 'Grammatical Range', vi: 'Ngữ pháp' },
 ];
 
-const MIN_WORDS = 250;
+/** Tiêu chí HSK 书写. Trùng `CRITERIA_ZH` ở server. */
+const CRITERIA_ZH = [
+    { key: 'taskResponse', label: '内容完成', vi: 'Trả lời đúng đề' },
+    { key: 'coherence', label: '结构连贯', vi: 'Bố cục & mạch lạc' },
+    { key: 'characters', label: '汉字词汇', vi: 'Chữ Hán & dùng từ' },
+    { key: 'grammar', label: '语法', vi: 'Ngữ pháp' },
+];
 
-/** Đếm từ — chỉ để hiện số cho người viết, server tự đếm lại. */
-function countWords(text) {
+const criteriaFor = (lang) => (lang === 'zh' ? CRITERIA_ZH : CRITERIA_EN);
+
+/** Ngưỡng mặc định khi CHƯA có đề (server sẽ gửi số thật kèm đề). */
+const MIN_EN = 250;
+const MIN_ZH = 200;
+
+/**
+ * Đếm theo đơn vị ĐÚNG với ngôn ngữ.
+ *
+ * Tiếng Trung không đặt khoảng trắng giữa các từ, nên đếm theo khoảng trắng thì
+ * cả bài luận ra đúng 1 — người học viết 200 chữ vẫn thấy "1 / 200" và nút Chấm
+ * không bao giờ bật. Chỉ đếm chữ Hán, bỏ dấu câu để không nhồi 。，được.
+ */
+function countUnits(text, lang) {
+    if (lang === 'zh') {
+        const m = String(text || '').match(/[一-鿿㐀-䶿]/g);
+        return m ? m.length : 0;
+    }
     return String(text || '').trim().split(/\s+/).filter(Boolean).length;
 }
 
@@ -40,8 +63,20 @@ export default function EssayScreen({ active }) {
     // đưa được `handleGrade` vào deps của chính nó.
     const gradeRef = useRef(null);
 
-    const words = countWords(essay);
-    const enough = words >= MIN_WORDS;
+    // Ngôn ngữ và ngưỡng do SERVER quyết, gửi kèm đề. TRƯỚC khi có đề thì đọc
+    // tạm từ GameState để màn giới thiệu nói đúng chuẩn ngay từ đầu — người học
+    // tiếng Trung đọc "bài luận IELTS Task 2" sẽ tưởng chế độ này không dành cho
+    // mình và thoát ra luôn.
+    const langLocal = GameState.state?.settings?.vocabLang === 'zh' ? 'zh' : 'en';
+    const lang = prompt ? (prompt.lang === 'zh' ? 'zh' : 'en') : langLocal;
+    const minUnits = Number(prompt?.minWords) || (lang === 'zh' ? MIN_ZH : MIN_EN);
+    const unit = lang === 'zh' ? 'chữ' : 'từ';
+
+    const words = countUnits(essay, lang);
+    // Ngôn ngữ của BÀI ĐÃ CHẤM — không nhất thiết trùng đề hiện tại (người dùng
+    // có thể đổi ngôn ngữ học sau khi chấm xong).
+    const resultLang = result?.lang === 'zh' ? 'zh' : 'en';
+    const enough = words >= minUnits;
 
     const handleNewPrompt = useCallback(async () => {
         if (loadingPrompt) return;
@@ -66,7 +101,7 @@ export default function EssayScreen({ active }) {
         if (!enough) {
             // Chặn ở client cho nhanh — server vẫn kiểm lại, đây chỉ để đỡ một
             // vòng mạng và nói rõ còn thiếu bao nhiêu từ.
-            Notification.warning(`Cần ít nhất ${MIN_WORDS} từ — bài của bạn đang có ${words} từ`);
+            Notification.warning(`Cần ít nhất ${minUnits} ${unit} — bài của bạn đang có ${words} ${unit}`);
             return;
         }
 
@@ -103,7 +138,7 @@ export default function EssayScreen({ active }) {
         } finally {
             setGrading(false);
         }
-    }, [grading, prompt, essay, enough, words, syncFromState]);
+    }, [grading, prompt, essay, enough, words, minUnits, unit, syncFromState]);
 
     gradeRef.current = handleGrade;
 
@@ -119,9 +154,19 @@ export default function EssayScreen({ active }) {
             {!prompt ? (
                 <div className="essay-intro">
                     <p>
-                        Viết một bài luận IELTS Task 2 và được chấm theo <strong>4 tiêu chí
-                        chính thức</strong>: trả lời đúng đề, mạch lạc, vốn từ và ngữ pháp.
-                        Đề bài bám theo bộ từ bạn đang học.
+                        {lang === 'zh' ? (
+                            <>
+                                Viết một bài <strong>HSK 书写</strong> và được chấm theo{' '}
+                                <strong>4 tiêu chí</strong>: nội dung, bố cục, chữ Hán &amp; dùng
+                                từ, ngữ pháp. Đề bài bằng tiếng Trung, bám theo bộ từ bạn đang học.
+                            </>
+                        ) : (
+                            <>
+                                Viết một bài luận <strong>IELTS Task 2</strong> và được chấm theo{' '}
+                                <strong>4 tiêu chí chính thức</strong>: trả lời đúng đề, mạch lạc,
+                                vốn từ và ngữ pháp. Đề bài bám theo bộ từ bạn đang học.
+                            </>
+                        )}
                     </p>
                     <button className="btn btn-primary" onClick={handleNewPrompt} disabled={loadingPrompt}>
                         {loadingPrompt
@@ -152,7 +197,7 @@ export default function EssayScreen({ active }) {
                                 className="essay-input"
                                 value={essay}
                                 onChange={e => setEssay(e.target.value)}
-                                placeholder="Viết bài của bạn ở đây… (tối thiểu 250 từ)"
+                                placeholder={`Viết bài của bạn ở đây… (tối thiểu ${minUnits} ${unit})`}
                                 disabled={grading}
                                 spellCheck={false}
                             />
@@ -160,7 +205,7 @@ export default function EssayScreen({ active }) {
                                 {/* Số từ đổi màu theo ngưỡng — người viết cần biết còn
                                     thiếu bao nhiêu mà không phải tự đếm. */}
                                 <span className={`essay-count${enough ? ' is-ok' : ''}`}>
-                                    {words} / {MIN_WORDS} từ
+                                    {words} / {minUnits} {unit}
                                 </span>
                                 <button
                                     className="btn btn-primary"
@@ -179,19 +224,33 @@ export default function EssayScreen({ active }) {
                         <div className="essay-result">
                             <div className="essay-band">
                                 <div className="essay-band-num">{result.overall}</div>
-                                <div className="essay-band-label">Band tổng</div>
+                                {/* HSK KHÔNG có thang band — gọi 0–9 là "Band" cho bài
+                                    tiếng Trung là bịa ra một thang không tồn tại. */}
+                                <div className="essay-band-label">
+                                    {resultLang === 'zh' ? 'Điểm tổng (thang 9)' : 'Band tổng'}
+                                </div>
                             </div>
 
-                            {/* Nói rõ đây là ƯỚC LƯỢNG. Band do AI chấm lệch 0.5–1.0 so
-                                với giám khảo thật là bình thường — để người dùng tin đó
-                                là điểm thi thật thì họ vào phòng thi mới vỡ mộng. */}
+                            {/* Nói rõ đây là ƯỚC LƯỢNG. Điểm AI chấm lệch 0.5–1.0 so với
+                                giám khảo thật là bình thường — để người dùng tin đó là
+                                điểm thi thật thì họ vào phòng thi mới vỡ mộng. */}
                             <p className="essay-disclaimer">
-                                <i className="fas fa-circle-info"></i> Band do AI ước lượng,
-                                dùng để theo dõi tiến bộ. Điểm thi thật có thể chênh lệch.
+                                <i className="fas fa-circle-info"></i>{' '}
+                                {resultLang === 'zh' ? (
+                                    <>
+                                        Điểm do AI ước lượng theo thang 9 của app, <strong>không
+                                        phải cấp độ HSK</strong>. Dùng để theo dõi tiến bộ.
+                                    </>
+                                ) : (
+                                    <>
+                                        Band do AI ước lượng, dùng để theo dõi tiến bộ. Điểm thi
+                                        thật có thể chênh lệch.
+                                    </>
+                                )}
                             </p>
 
                             <div className="essay-criteria">
-                                {CRITERIA.map(c => (
+                                {criteriaFor(resultLang).map(c => (
                                     <div key={c.key} className="essay-criterion">
                                         <div className="essay-criterion-head">
                                             <strong>{result.scores[c.key]}</strong>

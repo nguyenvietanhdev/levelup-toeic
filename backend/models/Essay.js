@@ -23,7 +23,18 @@ const essaySchema = new mongoose.Schema(
         topicHint: { type: String, default: '' },
 
         essay: { type: String, required: true },
+        // Với `lang: 'zh'` đây là số CHỮ HÁN, không phải số từ — tiếng Trung
+        // không đặt khoảng trắng giữa các từ nên đếm theo từ là vô nghĩa.
         wordCount: { type: Number, default: 0 },
+
+        /**
+         * Chuẩn chấm: 'en' = IELTS Task 2, 'zh' = HSK 书写.
+         *
+         * PHẢI lưu cùng bài: hai chuẩn có bộ tiêu chí khác nhau, nên đọc lại bài
+         * cũ mà không biết nó chấm theo chuẩn nào thì không biết `scores` có
+         * `lexical` hay `characters` — và hiển thị sẽ ra ô trống.
+         */
+        lang: { type: String, enum: ['en', 'zh'], default: 'en', index: true },
 
         /**
          * Bốn band tiêu chí + band tổng.
@@ -35,7 +46,12 @@ const essaySchema = new mongoose.Schema(
         scores: {
             taskResponse: { type: Number, default: 0 },
             coherence: { type: Number, default: 0 },
+            // `lexical` cho IELTS, `characters` cho HSK — chỉ một trong hai được
+            // dùng tuỳ `lang`. Khai CẢ HAI vì Mongoose ở chế độ `strict` XOÁ ÂM
+            // THẦM mọi trường không khai: thiếu `characters` thì bài tiếng Trung
+            // lưu xong mất sạch điểm tiêu chí đó mà không có lỗi nào báo.
             lexical: { type: Number, default: 0 },
+            characters: { type: Number, default: 0 },
             grammar: { type: Number, default: 0 },
         },
         overall: { type: Number, default: 0, index: true },

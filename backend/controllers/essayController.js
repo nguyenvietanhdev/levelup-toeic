@@ -1,19 +1,22 @@
 const Essay = require('../models/Essay');
 const UserStats = require('../models/UserStats');
 const UserProfile = require('../models/UserProfile');
-const { generatePrompt, gradeEssay, countWords, MIN_WORDS, MAX_WORDS } =
+const { generatePrompt, gradeEssay, countUnits, limitsFor } =
     require('../services/essayGrader');
 const { awardXp } = require('../utils/userStateHelper');
 const { isVipActive } = require('../utils/energyCosts');
 const logger = require('../utils/logger');
 
 /**
- * Luyện VIẾT LUẬN — chấm theo tiêu chí IELTS Writing Task 2.
+ * Luyện VIẾT LUẬN — IELTS Task 2 (tiếng Anh) hoặc HSK 书写 (tiếng Trung).
  *
  * Hai endpoint: xin đề · nộp bài.
  *
- * Học từ chế độ Hội thoại: client gửi CÀNG ÍT càng tốt. Năm lỗi liên tiếp ở đó
- * đều là "đoán hình dạng dữ liệu ở ranh giới" — bỏ tham số là bỏ cơ hội đoán sai.
+ * Chuẩn chấm chọn theo `settings.vocabLang` của hồ sơ, KHÔNG theo tham số client
+ * gửi lên. Học từ chế độ Hội thoại: client gửi càng ít càng tốt — năm lỗi liên
+ * tiếp ở đó đều là "đoán hình dạng dữ liệu ở ranh giới". Ở đây còn một lý do
+ * nữa: client khai `lang: 'en'` cho bài tiếng Trung là bài bị chấm bằng tiêu chí
+ * IELTS, tức điểm hoàn toàn vô nghĩa.
  */
 
 /** Năng lượng cho một lần chấm. */
@@ -59,8 +62,14 @@ exports.prompt = async (req, res, next) => {
         const topicHint = typeof profile?.settings?.selectedSource === 'string'
             ? profile.settings.selectedSource
             : '';
+        // Ngôn ngữ lấy từ HỒ SƠ, client không gửi lên — cùng lý do với `topicHint`:
+        // mỗi tham số client tự gom là một chỗ đoán sai hình dạng dữ liệu.
+        // Người đang học tiếng Trung mà nhận đề IELTS tiếng Anh thì chế độ này
+        // vô dụng với họ.
+        const lang = profile?.settings?.vocabLang === 'zh' ? 'zh' : 'en';
+        const { min } = limitsFor(lang);
 
-        const ai = await generatePrompt({ topicHint, userId: req.user.id });
+        const ai = await generatePrompt({ topicHint, userId: req.user.id, lang });
         if (!ai.success) {
             logger.error('Essay prompt: AI failed', ai.error);
             return res.status(503).json({
@@ -71,7 +80,9 @@ exports.prompt = async (req, res, next) => {
 
         res.json({
             success: true,
-            data: { prompt: ai.prompt, type: ai.type, topicHint, minWords: MIN_WORDS },
+            // `minWords` giữ nguyên TÊN cho tương thích, nhưng với tiếng Trung
+            // nó là số CHỮ HÁN — `lang` cho client biết đơn vị nào để hiển thị.
+            data: { prompt: ai.prompt, type: ai.type, topicHint, lang, minWords: min },
         });
     } catch (error) {
         next(error);
@@ -94,24 +105,42 @@ exports.grade = async (req, res, next) => {
             return res.status(400).json({ success: false, message: 'Bài viết trống' });
         }
 
-        const wordCount = countWords(essay);
-        if (wordCount < MIN_WORDS) {
+        // Ngôn ngữ đọc từ HỒ SƠ, không nhận từ client: client khai `lang: 'en'`
+        // cho bài tiếng Trung là bài bị chấm bằng tiêu chí IELTS.
+        //
+        // Truy vấn `.lean()` riêng chứ không dùng lại `profile` ở dưới: cái đó
+        // nằm SAU khi đã trừ năng lượng và gọi AI, mà ngưỡng độ dài phải kiểm
+        // TRƯỚC — bài quá ngắn thì không được mất năng lượng.
+        const settingsOnly = await UserProfile.findOne({ userId: req.user.id })
+            .select('settings').lean();
+        const lang = settingsOnly?.settings?.vocabLang === 'zh' ? 'zh' : 'en';
+
+        // Đơn vị đếm khác nhau: tiếng Trung đếm CHỮ HÁN vì không có khoảng trắng
+        // giữa các từ — đếm theo từ thì cả bài luận ra đúng 1 và người học không
+        // bao giờ nộp được bài.
+        const { min, max } = limitsFor(lang);
+        const unit = lang === 'zh' ? 'chữ' : 'từ';
+        const wordCount = countUnits(essay, lang);
+
+        if (wordCount < min) {
             // Chặn TRƯỚC khi trừ năng lượng và gọi AI: bài dưới ngưỡng thì
             // trong kỳ thi thật đã bị trừ điểm, chấm cũng không có ý nghĩa.
             return res.status(400).json({
                 success: false,
-                message: `Task 2 cần ít nhất ${MIN_WORDS} từ. Bài của bạn có ${wordCount} từ.`,
+                message: `Bài cần ít nhất ${min} ${unit}. Bài của bạn có ${wordCount} ${unit}.`,
                 wordCount,
-                minWords: MIN_WORDS,
+                minWords: min,
+                lang,
                 tooShort: true,
             });
         }
-        if (wordCount > MAX_WORDS) {
+        if (wordCount > max) {
             return res.status(400).json({
                 success: false,
-                message: `Bài quá dài (${wordCount} từ). Tối đa ${MAX_WORDS} từ.`,
+                message: `Bài quá dài (${wordCount} ${unit}). Tối đa ${max} ${unit}.`,
                 wordCount,
-                maxWords: MAX_WORDS,
+                maxWords: max,
+                lang,
             });
         }
 
@@ -128,7 +157,7 @@ exports.grade = async (req, res, next) => {
             });
         }
 
-        const ai = await gradeEssay({ prompt, essay, userId: req.user.id });
+        const ai = await gradeEssay({ prompt, essay, userId: req.user.id, lang });
         if (!ai.success) {
             // HOÀN năng lượng — người dùng viết 250 từ mà không được chấm lại
             // còn mất năng lượng là lỗi tệ nhất ở đây.
@@ -168,6 +197,7 @@ exports.grade = async (req, res, next) => {
             topicHint: typeof req.body.topicHint === 'string' ? req.body.topicHint : '',
             essay,
             wordCount,
+            lang,
             scores: r.scores,
             overall: r.overall,
             comments: r.comments,

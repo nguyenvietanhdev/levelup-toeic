@@ -126,7 +126,7 @@ describe('start KHÔNG gửi chủ đề — server tự đọc', () => {
 // ── Màn hình ──────────────────────────────────────────────────────────────
 describe('đếm từ và ngưỡng', () => {
     test('hiện số từ so với ngưỡng, không bắt tự đếm', () => {
-        expect(src).toMatch(/\{words\} \/ \{MIN_WORDS\} từ/);
+        expect(src).toMatch(/\{words\} \/ \{minUnits\} \{unit\}/);
     });
 
     test('nút Chấm bị khoá khi chưa đủ từ', () => {
@@ -138,12 +138,12 @@ describe('đếm từ và ngưỡng', () => {
         // đôi. Đếm bằng `split(' ')` sẽ cộng thêm hàng chục "từ" rỗng, bật nút
         // Chấm khi bài chưa đủ — rồi server từ chối sau khi đã bấm.
         // Chạy THẬT hàm đếm, cắt ra từ nguồn: nó không được export.
-        const i = src.indexOf('function countWords');
-        const countWords = new Function(
-            `${src.slice(i, src.indexOf('\n}', i) + 2)}; return countWords;`)();
-        expect(countWords('  một   hai \n\n ba  ')).toBe(3);
-        expect(countWords('')).toBe(0);
-        expect(countWords('   ')).toBe(0);
+        const i = src.indexOf('function countUnits');
+        const countUnits = new Function(
+            `${src.slice(i, src.indexOf('\n}', i) + 2)}; return countUnits;`)();
+        expect(countUnits('  một   hai \n\n ba  ', 'en')).toBe(3);
+        expect(countUnits('', 'en')).toBe(0);
+        expect(countUnits('   ', 'en')).toBe(0);
     });
 
     test('số từ đổi màu khi ĐỦ', () => {
@@ -219,5 +219,98 @@ describe('cắm vào app', () => {
             join(__dirname, '..', '..', 'layouts', 'SideMenu.jsx'), 'utf8');
         expect(menu).toMatch(/screen: 'essay-screen'/);
         expect(menu).toMatch(/feature: 'feature:essay'/);
+    });
+});
+
+// ── Hỗ trợ TIẾNG TRUNG (HSK 书写) ─────────────────────────────────────────
+//
+// Chế độ này ban đầu chỉ làm cho tiếng Anh: người đang học HSK1 xin đề vẫn nhận
+// được câu hỏi IELTS tiếng Anh. Hai chuẩn khác nhau thật sự — không phải một
+// chuẩn dịch sang hai thứ tiếng — nên chỗ dễ hỏng là lẫn bộ tiêu chí và lẫn
+// ĐƠN VỊ ĐẾM.
+describe('tiếng Trung — bộ tiêu chí riêng', () => {
+    test('có CẢ HAI bộ, không phải một bộ dịch ra', () => {
+        expect(src).toMatch(/const CRITERIA_EN/);
+        expect(src).toMatch(/const CRITERIA_ZH/);
+    });
+
+    test('bộ HSK có `characters`, bộ IELTS có `lexical`', () => {
+        // Viết nhầm 的/得/地 là lỗi nặng của tiếng Trung, không có thứ tương
+        // đương trong tiêu chí IELTS.
+        const zh = src.slice(src.indexOf('const CRITERIA_ZH'), src.indexOf('const criteriaFor'));
+        expect(zh).toContain('characters');
+        expect(zh).not.toContain('lexical');
+
+        const en = src.slice(src.indexOf('const CRITERIA_EN'), src.indexOf('const CRITERIA_ZH'));
+        expect(en).toContain('lexical');
+        expect(en).not.toContain('characters');
+    });
+
+    test('hiển thị theo ngôn ngữ của BÀI ĐÃ CHẤM, không phải đề hiện tại', () => {
+        // Người dùng có thể đổi ngôn ngữ học sau khi chấm xong; đọc lại bài cũ
+        // mà lấy bộ tiêu chí của đề mới là bốn ô trống.
+        expect(src).toMatch(/const resultLang = result\?\.lang === 'zh'/);
+        expect(src).toMatch(/criteriaFor\(resultLang\)/);
+    });
+});
+
+describe('tiếng Trung — ĐƠN VỊ đếm', () => {
+    test('đếm chữ Hán, không đếm theo khoảng trắng', () => {
+        // Chạy THẬT hàm đếm cắt từ nguồn: tiếng Trung không có khoảng trắng nên
+        // đếm theo từ ra đúng 1 cho cả bài, nút Chấm không bao giờ bật.
+        const i = src.indexOf('function countUnits');
+        const countUnits = new Function(
+            `${src.slice(i, src.indexOf('\n}', i) + 2)}; return countUnits;`)();
+
+        const zh = '我认为学习外语很重要。因为语言是沟通的工具。';
+        expect(countUnits(zh, 'zh')).toBe(20);
+        expect(countUnits(zh, 'en')).toBe(1);       // đúng cái bẫy
+        expect(countUnits('one two three', 'en')).toBe(3);
+    });
+
+    test('không đếm dấu câu — nếu không thì nhồi 。，là qua ngưỡng', () => {
+        const i = src.indexOf('function countUnits');
+        const countUnits = new Function(
+            `${src.slice(i, src.indexOf('\n}', i) + 2)}; return countUnits;`)();
+        expect(countUnits('。，！？', 'zh')).toBe(0);
+    });
+
+    test('ngưỡng tiếng Trung THẤP hơn — HSK không viết 250 chữ', () => {
+        // Đọc thẳng hằng số từ nguồn. Không dùng `new RegExp` với template
+        // literal: `\d` trong template là ký tự `d`, regex im lặng không khớp.
+        const min = (k) => {
+            const line = src.split('\n').find(l => l.startsWith(`const ${k} =`));
+            return Number(line.replace(/\D+/g, ''));
+        };
+        expect(min('MIN_ZH')).toBeLessThan(min('MIN_EN'));
+    });
+
+    test('nhãn đơn vị đổi theo ngôn ngữ (chữ / từ)', () => {
+        expect(src).toMatch(/const unit = lang === 'zh' \? 'chữ' : 'từ'/);
+        expect(src).toMatch(/\{words\} \/ \{minUnits\} \{unit\}/);
+    });
+
+    test('ngưỡng ưu tiên số SERVER gửi kèm đề', () => {
+        // Server là nguồn quyết định; hằng số client chỉ để hiển thị trước khi
+        // có đề, nếu không giao diện sẽ lệch với thứ server thật sự kiểm.
+        expect(src).toMatch(/Number\(prompt\?\.minWords\) \|\|/);
+    });
+});
+
+describe('tiếng Trung — không bịa thang điểm', () => {
+    test('KHÔNG gọi điểm HSK là "Band"', () => {
+        // HSK không có thang band; gọi 0–9 là "Band" là bịa ra thang không có.
+        expect(src).toMatch(/resultLang === 'zh' \? 'Điểm tổng \(thang 9\)' : 'Band tổng'/);
+    });
+
+    test('nói rõ điểm KHÔNG phải cấp độ HSK', () => {
+        expect(src).toMatch(/không\s*\n?\s*phải cấp độ HSK|không phải cấp độ HSK/);
+    });
+
+    test('màn giới thiệu nói đúng chuẩn NGAY khi chưa có đề', () => {
+        // Người học tiếng Trung đọc "bài luận IELTS Task 2" sẽ tưởng chế độ này
+        // không dành cho mình và thoát ra luôn.
+        expect(src).toMatch(/GameState\.state\?\.settings\?\.vocabLang === 'zh'/);
+        expect(src).toMatch(/HSK 书写/);
     });
 });
