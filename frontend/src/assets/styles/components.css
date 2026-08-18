@@ -9214,3 +9214,195 @@ mark {
     margin-top: 14px;
     flex-wrap: wrap;
 }
+
+/* ===================================================================
+   LUYỆN VIẾT LUẬN — chấm theo tiêu chí IELTS Task 2
+   =================================================================== */
+
+.essay-intro {
+    max-width: 560px;
+    margin: 24px auto;
+    text-align: center;
+    color: var(--text-secondary);
+    line-height: 1.6;
+}
+
+.essay-intro .btn { margin-top: 16px; }
+
+.essay-body {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 0 14px 24px;
+}
+
+.essay-prompt {
+    padding: 14px 16px;
+    margin-bottom: 14px;
+    border-radius: 12px;
+    background: var(--bg-secondary);
+    border-left: 4px solid var(--primary-color);
+}
+
+.essay-prompt-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: .5px;
+    color: var(--text-secondary);
+    margin-bottom: 8px;
+}
+
+.essay-prompt p {
+    margin: 0;
+    line-height: 1.6;
+    font-weight: 500;
+}
+
+/* Ô viết bài. `resize: vertical` chứ không `none`: bài dài 300+ từ mà khung cố
+   định thì người viết phải cuộn trong một ô nhỏ suốt 40 phút. */
+.essay-input {
+    width: 100%;
+    box-sizing: border-box;
+    min-height: 320px;
+    resize: vertical;
+    padding: 14px;
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    font-family: inherit;
+    font-size: 15px;
+    line-height: 1.7;
+    outline: none;
+}
+
+.essay-input:focus { border-color: var(--primary-color); }
+
+.essay-actions {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin-top: 12px;
+}
+
+/* Số từ đổi màu khi ĐỦ ngưỡng — người viết cần biết còn thiếu bao nhiêu mà
+   không phải tự đếm hay bấm thử nút Chấm. */
+.essay-count {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-secondary);
+}
+
+.essay-count.is-ok { color: #16a34a; }
+
+/* ── Kết quả ─────────────────────────────────────────────────────── */
+
+.essay-band {
+    text-align: center;
+    padding: 18px;
+    border-radius: 14px;
+    background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+    color: #fff;
+}
+
+.essay-band-num { font-size: 44px; font-weight: 800; line-height: 1; }
+.essay-band-label { font-size: 12px; opacity: .9; margin-top: 4px; }
+
+/* Ghi rõ đây là ƯỚC LƯỢNG. Để người dùng tin band này là điểm thi thật thì họ
+   vào phòng thi mới vỡ mộng — nói trước là tôn trọng họ. */
+.essay-disclaimer {
+    margin: 10px 0 16px;
+    font-size: 12px;
+    color: var(--text-secondary);
+    text-align: center;
+    line-height: 1.5;
+}
+
+.essay-criteria {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 10px;
+    margin-bottom: 16px;
+}
+
+.essay-criterion {
+    padding: 12px 14px;
+    border-radius: 10px;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+}
+
+.essay-criterion-head {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    margin-bottom: 6px;
+}
+
+.essay-criterion-head strong {
+    font-size: 22px;
+    color: var(--primary-color);
+}
+
+.essay-criterion-head span {
+    font-size: 12px;
+    color: var(--text-secondary);
+}
+
+.essay-criterion p {
+    margin: 0;
+    font-size: 13px;
+    line-height: 1.55;
+    color: var(--text-secondary);
+}
+
+.essay-section { margin-bottom: 16px; }
+.essay-section h4 { margin: 0 0 8px; font-size: 14px; }
+.essay-section ul { margin: 0; padding-left: 20px; line-height: 1.6; }
+
+.essay-issue {
+    padding: 10px 12px;
+    margin-bottom: 8px;
+    border-radius: 8px;
+    background: var(--bg-secondary);
+    border-left: 3px solid #f59e0b;
+}
+
+/* Trích đoạn lỗi — chữ đơn cách để phân biệt rõ với lời nhận xét. */
+.essay-issue code {
+    display: block;
+    font-family: ui-monospace, monospace;
+    font-size: 13px;
+    color: var(--text-primary);
+    margin-bottom: 4px;
+    word-break: break-word;
+}
+
+.essay-issue-note { font-size: 13px; color: var(--text-secondary); }
+.essay-issue-fix { font-size: 13px; color: #16a34a; margin-top: 3px; }
+
+.essay-improved {
+    margin: 0;
+    padding: 12px 14px;
+    border-radius: 8px;
+    background: var(--bg-secondary);
+    border-left: 3px solid #16a34a;
+    line-height: 1.65;
+    font-size: 14px;
+}
+
+.essay-reward {
+    text-align: center;
+    font-weight: 700;
+    color: var(--accent-color, #f59e0b);
+}
+
+.essay-result-actions {
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+    flex-wrap: wrap;
+}

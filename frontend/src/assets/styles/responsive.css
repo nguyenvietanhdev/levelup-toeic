@@ -764,6 +764,32 @@
         flex: 1 0 100%;
     }
 
+    /* ── LUYỆN VIẾT LUẬN ─────────────────────────────────────────────────
+       Ô viết bài là chỗ người dùng ở lại lâu nhất (40 phút), nên nó phải chiếm
+       gần trọn màn — khung 320px như desktop thì trên điện thoại chỉ thấy được
+       vài dòng và phải cuộn liên tục trong một ô nhỏ. */
+    .essay-input {
+        min-height: 55dvh;
+        /* 16px, KHÔNG nhỏ hơn: Safari trên iOS tự PHÓNG TO cả trang khi người
+           dùng chạm vào ô nhập có chữ dưới 16px. Trang phóng to giữa lúc đang
+           viết là mất hẳn mạch, và phải tự thu lại bằng hai ngón. */
+        font-size: 16px;
+        padding: 12px;
+    }
+
+    .essay-body { padding: 0 10px 20px; }
+
+    /* Hàng "số từ + nút Chấm" chiếm trọn chiều ngang, nút đủ lớn để chạm. */
+    .essay-actions .btn { flex: 1 1 auto; }
+
+    /* Bốn tiêu chí xếp DỌC — hai cột trên màn 360px thì mỗi ô ~160px, nhận xét
+       tiếng Việt bị bóp thành 6–7 dòng rất hẹp. */
+    .essay-criteria { grid-template-columns: 1fr; }
+
+    .essay-band-num { font-size: 38px; }
+
+    .essay-result-actions .btn { flex: 1 0 100%; }
+
     /* ── Chế độ HỘI THOẠI ────────────────────────────────────────────────
        Ba chỗ vỡ ở màn ~360px:
          · bảng từ mục tiêu (12 chip) ăn gần nửa màn hình dọc;

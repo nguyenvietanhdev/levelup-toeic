@@ -28,6 +28,9 @@ const MENU_ITEMS = [
     // "Từ vựng riêng". Và nó tốn năng lượng + gọi AI có phí, nên không nên nằm
     // ngay cạnh những chế độ bấm-là-chơi.
     { label: 'Hội thoại',      icon: 'fa-comments',         screen: 'conversation-screen', feature: 'feature:conversation' },
+    // Cạnh Hội thoại: cùng nhóm "luyện kỹ năng bằng AI", và cùng là nơi để ĐẾN
+    // rồi ở lại một lúc chứ không phải chế độ bấm-là-chơi.
+    { label: 'Luyện viết luận', icon: 'fa-pen-nib',         screen: 'essay-screen',        feature: 'feature:essay' },
     { label: 'Cài đặt',        icon: 'fa-cog',              screen: 'settings-screen' },
 ];
 
