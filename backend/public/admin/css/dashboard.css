@@ -2696,3 +2696,41 @@ table tbody tr:hover td { background: var(--hover-bg); }
 /* Nút Quay lại là thứ CHỈ dành cho mobile — desktop hiện cả hai cột nên nó vô
    nghĩa. Ẩn mặc định, media query ở trên bật lại. */
 #db-back-btn { display: none; }
+
+/* ===================================
+   Dấu "đã tải lại" cho tab Token Management
+   =================================== */
+
+/* Mốc giờ / dấu xác nhận cạnh nút Tải lại. Chiều rộng tối thiểu để chữ đổi từ
+   "✓ Đã tải lại" sang "Cập nhật 20:31:05" không làm nút bên cạnh nhảy chỗ. */
+.ai-usage-updated {
+    min-width: 118px;
+    font-size: 12px;
+    color: var(--text-secondary);
+    white-space: nowrap;
+    transition: color 0.2s ease;
+}
+
+.ai-usage-updated.is-ok {
+    color: #16a34a;
+    font-weight: 600;
+}
+
+.ai-usage-updated.is-error {
+    color: #dc2626;
+    font-weight: 600;
+}
+
+/* Vòng quay của nút Tải lại: quay ĐỀU, không giật. `fa-spin` mặc định của
+   FontAwesome đã đủ, nhưng thêm easing tuyến tính để 400ms quay trọn vòng
+   trông liền mạch thay vì chậm dần ở cuối. */
+#btn-ai-usage-reload i.fa-spin {
+    animation-timing-function: linear;
+}
+
+/* Nút mờ đi khi đang tải — tín hiệu thứ hai ngoài vòng quay, cho người dùng
+   biết cú bấm đã được ghi nhận. */
+#btn-ai-usage-reload:disabled {
+    opacity: 0.6;
+    cursor: default;
+}

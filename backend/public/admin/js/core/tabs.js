@@ -895,11 +895,56 @@ async function loadTokenStats() {
   }
 }
 
+/**
+ * Dấu vết ĐỌNG LẠI sau khi tải lại số liệu AI.
+ *
+ * Vòng quay của nút biến mất ngay khi xong nên không trả lời được câu hỏi "vừa
+ * tải lại chưa?" — nhất là lúc số liệu không đổi, màn hình trông y hệt trước khi
+ * bấm. Mốc giờ thì còn đó để đối chiếu.
+ *
+ * Dấu tích xanh hiện 2 giây rồi nhường chỗ cho mốc giờ: nó xác nhận HÀNH ĐỘNG
+ * vừa xảy ra, còn mốc giờ trả lời TRẠNG THÁI hiện tại. Giữ dấu tích mãi thì lần
+ * bấm sau không phân biệt được với lần trước.
+ */
+let _aiUsageTickTimer = null;
+function markAiUsageUpdated(loi) {
+  const el = document.getElementById("ai-usage-updated");
+  if (!el) return;
+
+  clearTimeout(_aiUsageTickTimer);
+
+  if (loi) {
+    el.className = "ai-usage-updated is-error";
+    el.textContent = "✕ Tải lỗi";
+    return;
+  }
+
+  const gio = new Date().toLocaleTimeString("vi-VN", {
+    hour: "2-digit", minute: "2-digit", second: "2-digit",
+  });
+  el.className = "ai-usage-updated is-ok";
+  el.textContent = "✓ Đã tải lại";
+  _aiUsageTickTimer = setTimeout(() => {
+    el.className = "ai-usage-updated";
+    el.textContent = `Cập nhật ${gio}`;
+  }, 2000);
+}
+
 // Reload khi đổi khoảng ngày
 document.addEventListener("DOMContentLoaded", () => {
+  // Đổi khoảng ngày cũng là một lần tải — hiện cùng dấu xác nhận, nếu không thì
+  // mốc giờ đứng im trong khi số liệu đã đổi, và nó thành con số nói dối.
   document
     .getElementById("ai-usage-days")
-    ?.addEventListener("change", loadTokenStats);
+    ?.addEventListener("change", async () => {
+      try {
+        await loadTokenStats();
+        markAiUsageUpdated(null);
+      } catch (e) {
+        markAiUsageUpdated(e);
+        throw e;
+      }
+    });
 
   // Nút Tải lại. Số liệu chỉ nạp khi MỞ tab hoặc đổi khoảng ngày, nên admin để
   // tab mở lâu (theo dõi lúc chạy AI Fill hàng loạt) sẽ thấy con số đứng im.
@@ -913,14 +958,29 @@ document.addEventListener("DOMContentLoaded", () => {
     reloadBtn.disabled = true;
     const icon = reloadBtn.querySelector("i");
     icon?.classList.add("fa-spin");
+
+    const t0 = Date.now();
+    let loi = null;
     try {
       await loadTokenStats();
-    } finally {
-      // `finally` là bắt buộc: lỗi mạng mà không tắt cờ thì nút quay mãi và
-      // không bấm lại được — đúng lỗi đã gặp ở popup Chọn đề.
-      icon?.classList.remove("fa-spin");
-      reloadBtn.disabled = false;
+    } catch (e) {
+      loi = e;
     }
+
+    // Quay TỐI THIỂU 400ms. API thường trả về trong ~50ms, vòng quay chớp qua
+    // nhanh hơn mắt kịp bắt — admin bấm xong không biết đã tải hay chưa, nhất là
+    // khi số liệu không đổi. Đây là độ trễ CỐ Ý, không phải chờ mạng.
+    const con = 400 - (Date.now() - t0);
+    if (con > 0) await new Promise((r) => setTimeout(r, con));
+
+    // Tắt cờ ở đây thay vì trong `finally`: lỗi mạng mà không tắt thì nút quay
+    // mãi và không bấm lại được — đúng lỗi đã gặp ở popup Chọn đề. Vì đã bắt lỗi
+    // vào `loi` nên không nhánh nào thoát sớm bỏ qua đoạn này.
+    icon?.classList.remove("fa-spin");
+    reloadBtn.disabled = false;
+
+    markAiUsageUpdated(loi);
+    if (loi) throw loi;
   });
 });
 
