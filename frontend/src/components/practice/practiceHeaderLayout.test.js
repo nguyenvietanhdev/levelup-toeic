@@ -30,6 +30,27 @@ function luat(selector) {
     return rest.slice(0, rest.findIndex((l) => l.trim() === '}')).join('\n');
 }
 
+/**
+ * Thân luật chứa `selector`, kể cả luật GỘP nhiều selector trên nhiều dòng.
+ * `luat()` ở trên chỉ khớp selector đứng MỘT MÌNH nên không dùng được cho
+ * những luật đó.
+ */
+function luatChua(selector) {
+    const mobile = css.slice(0, css.indexOf('@media screen and (max-width: 768px)'));
+    const lines = mobile.split('\n');
+    for (let i = 0; i < lines.length; i++) {
+        if (!lines[i].includes(selector)) continue;
+        // Đi tới dòng mở `{` (có thể cách vài dòng nếu luật gộp).
+        let j = i;
+        while (j < lines.length && !lines[j].includes('{')) j++;
+        if (j >= lines.length) continue;
+        const rest = lines.slice(j + 1);
+        const end = rest.findIndex((l) => l.trim() === '}');
+        return rest.slice(0, end).join('\n');
+    }
+    expect.fail(`không tìm thấy luật chứa ${selector}`);
+}
+
 describe('tất cả nằm MỘT hàng', () => {
     test('tên chế độ CO LẠI thay vì chiếm trọn hàng', () => {
         // `width: 100%` là thứ đã đẩy mọi nhóm khác xuống hàng dưới.
@@ -114,5 +135,65 @@ describe('markup khớp với giả định của CSS', () => {
         const info = jsx.slice(i, jsx.indexOf('practice-score-bar', i));
         expect(info).toContain('practice-meta');
         expect(info).toContain('practice-progress');
+    });
+});
+
+describe('ba cặp ⭐0 ✓0 ✗0 thẳng hàng với nhau', () => {
+    test('icon và số CÙNG line-height', () => {
+        // Icon 14px và chữ 13px tự căn theo baseline riêng cho ra hai đường cơ
+        // sở lệch ~1px — đủ thấy khi ba cặp đứng cạnh nhau.
+        const item = luat('.practice-score-bar .score-item');
+        const icon = luat('.practice-score-bar .score-item i');
+        const so = luat('.practice-score-bar .score-item span');
+        for (const r of [item, icon, so]) expect(r).toMatch(/line-height:\s*1;/);
+    });
+
+    test('icon có bề rộng CỐ ĐỊNH', () => {
+        // FontAwesome vẽ ⭐ ✓ ✗ rộng khác nhau; không cố định thì khoảng cách
+        // giữa ba cặp so le.
+        const icon = luat('.practice-score-bar .score-item i');
+        expect(icon).toMatch(/width:\s*\d+px/);
+        expect(icon).toMatch(/text-align:\s*center/);
+    });
+
+    test('con số có bề rộng tối thiểu', () => {
+        // 0 → 10 là chữ số tăng từ 1 lên 2; không đặt thì cả nhóm xê dịch mỗi
+        // lần trả lời đúng/sai.
+        const so = luat('.practice-score-bar .score-item span');
+        expect(so).toMatch(/min-width:\s*\d+px/);
+        expect(so).not.toMatch(/min-width:\s*auto/);
+    });
+});
+
+describe('vùng chạm nút nav trên điện thoại', () => {
+    test('cao đủ 44px theo WCAG 2.5.5 / iOS HIG', () => {
+        // Nút 32px thì ngón tay trượt ra ngoài là cú chạm rơi xuống thứ nằm sau
+        // nav — thường là một thẻ chế độ, và người dùng bị ném vào bài luyện
+        // mình không định mở.
+        const r = luatChua('.nav-left .icon-btn::after');
+        expect(r).toMatch(/top:\s*-6px/);
+        expect(r).toMatch(/bottom:\s*-6px/);
+    });
+
+    test('KHÔNG nới cả bốn phía — hai nút cạnh nhau sẽ chồng vùng chạm', () => {
+        // gap giữa hai nút chỉ 6px; nới 6px mỗi phía là chồng nhau 6px, và bấm
+        // gần mép trúng nút bên cạnh — đổi lỗi bấm nhầm này lấy lỗi bấm nhầm khác.
+        const r = luatChua('.nav-left .icon-btn::after');
+        expect(r).not.toMatch(/inset:\s*-6px/);
+        expect(r).toMatch(/left:\s*-3px/);
+        expect(r).toMatch(/right:\s*-3px/);
+    });
+
+    test('gap hai bên đủ rộng để vùng chạm không đè nhau', () => {
+        // Vùng chạm nới 3px sang mỗi bên → gap phải ≥ 6px.
+        for (const sel of ['.nav-left', '.nav-right']) {
+            const gap = Number((luat(sel).match(/gap:\s*(\d+)px/) || [])[1]);
+            expect(gap).toBeGreaterThanOrEqual(6);
+        }
+    });
+
+    test('nút vẫn 32px về THỊ GIÁC — không đẩy nav cao lên', () => {
+        const r = luatChua('.nav-left .icon-btn {');
+        expect(r).toMatch(/height:\s*32px/);
     });
 });

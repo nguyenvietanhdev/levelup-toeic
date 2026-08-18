@@ -69,7 +69,9 @@
        giữ lại là cộng dồn hai cơ chế cho cùng một việc. */
     .nav-right {
         order: 3;
-        gap: 4px;
+        /* 6px như `.nav-left` — vùng chạm mỗi nút nới 3px sang hai bên, nên gap
+           phải ít nhất 6px để hai vùng không đè nhau. */
+        gap: 6px;
         flex: 0 0 auto;
     }
 
@@ -165,12 +167,37 @@
         display: none;
     }
 
-    /* Smaller icon buttons on mobile */
+    /* Nút nav nhỏ lại về THỊ GIÁC (32px) nhưng VÙNG CHẠM vẫn 44px — ngưỡng của
+       WCAG 2.5.5 và iOS HIG. Nút 32px thì ngón tay trượt ra ngoài là cú chạm
+       rơi xuống thứ nằm phía sau nav, thường là một thẻ chế độ luyện tập, và
+       người dùng bị ném thẳng vào bài luyện mình không định mở.
+
+       `::after` phủ vùng chạm thay vì tăng `width`/`height`: tăng kích thước
+       thật sẽ đẩy nav cao lên và làm ba nút chật chỗ trên màn hẹp. */
     .nav-right .icon-btn,
     .nav-left .icon-btn {
         width: 32px;
         height: 32px;
         font-size: 14px;
+        position: relative;
+    }
+
+    .nav-right .icon-btn::after,
+    .nav-left .icon-btn::after {
+        content: '';
+        position: absolute;
+        /* Mở rộng theo CHIỀU DỌC thôi. Nới cả bốn phía thì vùng chạm của hai nút
+           cạnh nhau chồng lên nhau (gap chỉ 4–6px), và bấm gần mép sẽ trúng nút
+           bên cạnh — đổi một lỗi bấm nhầm lấy một lỗi bấm nhầm khác.
+           Chiều dọc thì trên/dưới không có gì tranh chỗ: phía trên là mép nav,
+           phía dưới là vùng đệm an toàn. */
+        top: -6px;
+        bottom: -6px;
+        /* Ngang chỉ nới 3px = nửa khoảng cách nhỏ nhất (gap 6px ở nav-left),
+           nên hai vùng chạm chạm nhau vừa khít mà không đè nhau. */
+        left: -3px;
+        right: -3px;
+        /* KHÔNG nền, KHÔNG bo góc — đây là vùng bắt chạm vô hình. */
     }
 
     /* Main content */
@@ -346,21 +373,35 @@
         flex-shrink: 0;
     }
 
+    /* Icon và con số phải CÙNG line-height, nếu không mỗi cặp ⭐0 ✓0 ✗0 tự căn
+       theo baseline riêng: icon 14px và chữ 13px cho ra hai đường cơ sở lệch
+       nhau ~1px, đủ để nhìn thấy khi ba cặp đứng cạnh nhau. */
     .practice-score-bar .score-item {
         display: flex !important;
         flex-direction: row !important;
         align-items: center;
+        justify-content: center;
         font-size: 13px;
+        line-height: 1;
         gap: 4px;
         white-space: nowrap;
     }
 
     .practice-score-bar .score-item i {
         font-size: 14px;
+        line-height: 1;
+        /* Chiều rộng cố định cho cả ba icon. FontAwesome vẽ ⭐ ✓ ✗ rộng khác
+           nhau, nên không đặt thì khoảng cách giữa ba cặp so le. */
+        width: 15px;
+        text-align: center;
     }
 
+    /* Con số cũng cố định bề rộng: 0 → 10 là chữ số tăng từ 1 lên 2, không đặt
+       thì cả nhóm xê dịch mỗi lần trả lời đúng/sai. */
     .practice-score-bar .score-item span {
-        min-width: auto;
+        min-width: 14px;
+        text-align: left;
+        line-height: 1;
     }
 
     .practice-content {

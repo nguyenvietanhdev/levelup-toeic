@@ -119,31 +119,32 @@ describe('nối vào điều hướng', () => {
     });
 });
 
-describe('bấm hai lần → lên đầu trang', () => {
-    test('avatar và nút Trang chủ dùng CHUNG một handler', () => {
+describe('nút Trang chủ / avatar', () => {
+    test('cả hai dùng CHUNG một handler', () => {
         const n = (nav.match(/onClick=\{handleHomeClick\}/g) || []).length;
         expect(n).toBe(2);
     });
 
-    test('tự đo khoảng cách, KHÔNG dùng onDoubleClick', () => {
-        // `onDoubleClick` trễ thêm ~300ms cho MỌI cú bấm đơn.
-        // Bỏ chú thích trước khi khớp: chữ `onDoubleClick` có trong doc-block
-        // giải thích vì sao KHÔNG dùng nó — khớp thẳng là trúng comment của
-        // chính mình chứ không phải mã.
+    test('ĐANG ở trang chủ → cuộn lên đầu ngay cú bấm ĐẦU', () => {
+        // Đã ở trang chủ thì nút này không còn nghĩa "điều hướng"; thứ duy nhất
+        // nó có thể làm là đưa lên đầu trang. Bắt bấm hai lần là thêm một bước
+        // cho việc chỉ có một nghĩa.
+        expect(nav).toMatch(/scrollTop: currentScreen === 'home-screen'/);
+    });
+
+    test('KHÔNG còn cơ chế đo bấm kép', () => {
+        // Bỏ chú thích trước khi khớp, tránh trúng comment thay vì mã.
         const code = nav.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '');
         expect(code).not.toMatch(/onDoubleClick/);
-        expect(code).toMatch(/Date\.now\(\)/);
+        expect(code).not.toMatch(/lanBamTruocRef/);
     });
 
-    test('chỉ tính bấm kép khi ĐANG ở trang chủ', () => {
-        // Đang luyện tập thì cú đầu mới mở hộp "Thoát luyện tập?" chứ chưa đi
-        // đâu — tính cú thứ hai là bấm kép sẽ xoá vị trí cần giữ.
-        expect(nav).toMatch(/const dangOTrangChu = currentScreen === 'home-screen'/);
-        expect(nav).toMatch(/bamKep = dangOTrangChu &&/);
-    });
-
-    test('có nói cho người dùng biết mẹo này', () => {
-        // Tính năng ẩn mà không ai biết thì bằng không tồn tại.
-        expect(nav).toMatch(/bấm hai lần để lên đầu trang/);
+    test('ở màn KHÁC thì giữ chỗ đã cuộn, không nhảy lên đầu', () => {
+        // `scrollTop` là biểu thức so sánh, nên ở màn khác nó là `false` →
+        // `doiMan` khôi phục vị trí đã lưu.
+        const i = nav.indexOf('const handleHomeClick');
+        const body = nav.slice(i, nav.indexOf('}, [', i));
+        expect(body).not.toMatch(/scrollTop: true/);
     });
 });
+
