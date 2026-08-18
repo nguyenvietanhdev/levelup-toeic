@@ -269,6 +269,7 @@ app.use('/api/practice', require('./routes/practice'));
 app.use('/api/vocabulary', require('./routes/vocabulary'));
 app.use('/api/ai', require('./routes/ai'));
 app.use('/api/conversation', require('./routes/conversation')); // Hội thoại luyện từ vựng
+app.use('/api/essay', require('./routes/essay')); // Luyện viết luận (chấm IELTS Task 2)
 app.use('/api/shop', require('./routes/shop'));
 app.use('/api/leaderboard', require('./routes/leaderboard'));
 app.use('/api/wrong-words', require('./routes/wrongWords')); // Wrong words with spaced repetition

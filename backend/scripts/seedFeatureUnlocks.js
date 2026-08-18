@@ -26,6 +26,10 @@ const UNLOCKS = [
     // phí thật. Người mới chưa có bộ từ nào đủ dày để luyện hội thoại, mà mở
     // sớm thì họ mở ra thử rồi bỏ — ta trả tiền token cho một lượt dùng vô ích.
     { key: 'feature:conversation', label: 'Hội thoại',       requiredLevel: 18, icon: '💬', order: 85 },
+    // Cùng mốc với Hội thoại: cũng gọi AI có phí, và người mới chưa viết nổi
+    // 250 từ tiếng Anh — mở sớm thì họ mở ra rồi bỏ, ta trả tiền token cho một
+    // lượt dùng vô ích.
+    { key: 'feature:essay',        label: 'Luyện viết luận', requiredLevel: 18, icon: '✍️', order: 86 },
     { key: 'feature:toeic',        label: 'Thi TOEIC',       requiredLevel: 20, icon: '📝', order: 90 },
 
     // ── Chế độ luyện tập (theo 4 tầng độ khó) ──
