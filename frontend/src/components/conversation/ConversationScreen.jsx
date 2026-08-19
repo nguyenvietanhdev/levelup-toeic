@@ -260,8 +260,13 @@ export default function ConversationScreen({ active }) {
                             Từ cần dùng · <strong>{used.size}/{convo.targetWords.length}</strong>
                         </div>
                         <div className="convo-target-list">
-                            {convo.targetWords.map(w => (
-                                <span key={w} className={`convo-chip${used.has(w) ? ' is-used' : ''}`}>
+                            {convo.targetWords.map((w, i) => (
+                                // `key` kèm chỉ số: server đã khử trùng mặt chữ
+                                // (`pickTargets`), nhưng các phiên LƯU TỪ TRƯỚC
+                                // vẫn còn danh sách cũ có `地` hai lần — đọc lại
+                                // phiên đó mà key trùng là React cảnh báo và có
+                                // thể bỏ sót ô khi cập nhật.
+                                <span key={`${w}-${i}`} className={`convo-chip${used.has(w) ? ' is-used' : ''}`}>
                                     {used.has(w) && <i className="fas fa-check"></i>} {w}
                                 </span>
                             ))}

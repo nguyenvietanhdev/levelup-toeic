@@ -5190,6 +5190,24 @@ mark {
   flex-shrink: 0;
 }
 
+/* Phiên âm cả câu (pinyin), nằm ngay dưới câu ví dụ.
+   Nhỏ và nhạt hơn câu gốc: chữ Hán mới là thứ cần đọc, pinyin chỉ để tra khi
+   không đọc được. Cùng cỡ với câu gốc là hai dòng tranh nhau sự chú ý.
+   KHÔNG nghiêng — câu gốc đã nghiêng, để cả hai nghiêng thì không phân biệt được. */
+.word-info-example-pinyin {
+  margin-top: 4px;
+  font-size: 14px;
+  color: var(--text-secondary, #6b7280);
+  line-height: 1.5;
+  /* Trống lúc chưa tải xong thì không chiếm chỗ — tránh câu hỏi nhảy một nhịp
+     khi Google trả về. `:empty` chỉ đúng khi element THẬT SỰ rỗng. */
+  min-height: 0;
+}
+
+.word-info-example-pinyin:empty {
+  display: none;
+}
+
 @keyframes slideUp {
   from {
     opacity: 0;

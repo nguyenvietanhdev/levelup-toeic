@@ -85,7 +85,12 @@ function faceOf(w) {
  * yếu từ nào (`WrongWord`), nên hội thoại nhắm đúng chỗ đó thay vì ôn tràn lan.
  */
 async function pickTargets({ userId, words }) {
-    const all = words.map(faceOf).filter(Boolean);
+    // KHỬ TRÙNG theo mặt chữ. Kho tiếng Trung có những chữ đa âm được lưu thành
+    // NHIỀU bản ghi khác nhau — `地`, `还`, `干` trong hsk1 mỗi chữ hai bản ghi
+    // (khác pinyin, khác nghĩa). Không khử thì cùng một chữ hiện hai lần trong
+    // bảng "Từ cần dùng", React cảnh báo trùng `key`, và tệ hơn: người học dùng
+    // chữ đó một lần nhưng chỉ một ô sáng lên, tưởng mình chưa dùng.
+    const all = [...new Set(words.map(faceOf).filter(Boolean))];
     if (all.length <= TARGET_SIZE) return all;
 
     // WrongWord cũng có thể lưu mặt từ ở `en` HOẶC `zh` tuỳ kho gốc — dùng

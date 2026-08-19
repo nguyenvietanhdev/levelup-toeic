@@ -8,6 +8,7 @@ import { PartSelector } from '@components/vocab/part/partSelector.js';
 import { afterAnswer } from '@components/practice/practiceNav.js';
 import { startQuestionTimer } from '@components/practice/questionTimer.js';
 import { timeoutQuestion } from '@components/practice/questionTimeout.js';
+import { layPinyinCau, coChuHan } from '@lib/sentencePinyin.js';
 
 export const MultipleChoice = {
 
@@ -132,6 +133,9 @@ export const MultipleChoice = {
 
         this.attachListeners();
 
+        // Không `await`: câu hỏi phải hiện ngay, phiên âm điền vào sau.
+        this.fillExamplePinyin(question, this.currentIndex);
+
         if (!question.reversed && GameState.state?.settings?.autoPronunciation) {
             setTimeout(() => {
                 GameLogic.speakWord(question.word.en, 'en-US');
@@ -212,6 +216,15 @@ export const MultipleChoice = {
                 btn.addEventListener('click', () => GameLogic.speakWord(question.word.example, 'en-US'));
                 exPanel.querySelector('.word-info-example')?.appendChild(btn);
             }
+            // Giờ mới lấy phiên âm: lúc đang hỏi thì nó lộ đáp án hệt như câu gốc.
+            const idxLucGoi = this.currentIndex;
+            layPinyinCau(question.word.example).then((pinyin) => {
+                // Bỏ nếu đã sang câu khác — nếu không, phiên âm câu trước hiện
+                // dưới câu sau (người dùng bấm "Tiếp" nhanh hơn mạng trả lời).
+                if (!pinyin || this.currentIndex !== idxLucGoi) return;
+                const el = document.getElementById('mc-example-pinyin');
+                if (el) el.textContent = pinyin;
+            });
         }
 
         afterAnswer(this, 'multiple-choice');
@@ -269,7 +282,37 @@ export const MultipleChoice = {
                     <span id="mc-example-text">${text}</span>
                     ${reversed ? '' : `<button class="btn-speak-mini" id="speak-example-btn" title="Nghe phát âm câu ví dụ"><i class="fas fa-volume-up"></i></button>`}
                 </div>
+                <!-- Phiên âm cả câu. Rỗng lúc đầu, điền sau khi Google trả về —
+                     không chặn việc hiện câu hỏi chờ một request mạng. -->
+                <div class="word-info-example-pinyin" id="mc-example-pinyin"></div>
             </div>`;
+    },
+
+
+    /**
+     * Điền phiên âm cho câu ví dụ (chỉ tiếng Trung).
+     *
+     * Chạy SAU khi câu hỏi đã hiện — không để người học chờ một request mạng chỉ
+     * vì thông tin phụ trợ. Hỏng thì ô phiên âm để trống, không báo lỗi.
+     *
+     * @param {number} idx chỉ số câu lúc gọi. Người dùng có thể bấm "Tiếp" trước
+     *   khi Google trả lời; khi đó kết quả thuộc về câu CŨ và phải bỏ đi, nếu
+     *   không phiên âm của câu trước sẽ hiện dưới câu sau.
+     */
+    async fillExamplePinyin(question, idx) {
+        const cau = question?.word?.example;
+        if (!cau || !coChuHan(cau)) return;
+
+        // Ở chế độ đảo chiều câu ví dụ bị che để khỏi lộ đáp án — phiên âm cũng
+        // lộ đáp án y hệt, nên chờ tới khi người dùng trả lời xong.
+        if (question.reversed) return;
+
+        const pinyin = await layPinyinCau(cau);
+        if (!pinyin) return;
+        if (this.currentIndex !== idx) return;   // đã sang câu khác
+
+        const el = document.getElementById('mc-example-pinyin');
+        if (el) el.textContent = pinyin;
     },
 
     nextQuestion() {

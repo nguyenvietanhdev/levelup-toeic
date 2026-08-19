@@ -79,7 +79,17 @@ export function createSpeechInput({ lang = 'en-US', onText, onStateChange, onErr
 
     let rec = null;
     let wantActive = false;   // người dùng CÓ muốn nghe không (khác với máy có đang nghe không)
-    let finalText = '';       // phần đã chốt, cộng dồn qua các lần tự bật lại
+    /**
+     * Phần đã chốt của những PHIÊN TRƯỚC (mỗi lần trình duyệt tự ngắt là hết
+     * một phiên). Phần đã chốt của phiên ĐANG chạy không nằm ở đây — nó được
+     * dựng lại từ `e.results` mỗi lần `onresult`.
+     *
+     * Vì sao tách hai: khi trình duyệt tự bật lại, `e.resultIndex` quay về 0 và
+     * `e.results` là mảng của phiên MỚI. Cộng dồn thẳng vào một biến chung thì
+     * phần đã chốt bị cộng lần thứ hai — gõ "你好" ra "你好你好", đúng lỗi người
+     * dùng gặp khi bật/tắt micro.
+     */
+    let doneText = '';
     let destroyed = false;
 
     function build() {
@@ -89,13 +99,27 @@ export function createSpeechInput({ lang = 'en-US', onText, onStateChange, onErr
         r.interimResults = true;
 
         r.onresult = (e) => {
+            // DỰNG LẠI từ đầu `e.results` chứ không cộng dồn: mảng này luôn chứa
+            // TOÀN BỘ kết quả của phiên hiện tại, nên đọc lại từ 0 là chính xác
+            // dù `onresult` bắn bao nhiêu lần. Cộng dồn theo `resultIndex` thì
+            // mỗi lần trình duyệt gửi lại một đoạn đã chốt là nhân đôi đoạn đó.
+            let phienNay = '';
             let interim = '';
-            for (let i = e.resultIndex; i < e.results.length; i++) {
+            for (let i = 0; i < e.results.length; i++) {
                 const chunk = e.results[i][0].transcript;
-                if (e.results[i].isFinal) finalText += chunk;
+                if (e.results[i].isFinal) phienNay += chunk;
                 else interim += chunk;
             }
-            const full = (finalText + interim).trim();
+            // Chốt chặn cuối: một số bản Chrome trả lại NGUYÊN kết quả đã chốt
+            // của phiên trước trong phiên mới. Lúc đó `doneText` và `phienNay`
+            // bắt đầu bằng cùng một đoạn — ghép thẳng là nhân đôi. Bỏ phần
+            // chồng lấn thay vì tin phiên mới luôn rỗng.
+            if (doneText && phienNay.startsWith(doneText)) {
+                phienNay = phienNay.slice(doneText.length);
+            }
+
+            r._daChot = phienNay;   // để `onend` gộp vào `doneText` khi phiên kết thúc
+            const full = (doneText + phienNay + interim).trim();
             onText?.(full, interim === '');
         };
 
@@ -109,6 +133,11 @@ export function createSpeechInput({ lang = 'en-US', onText, onStateChange, onErr
         };
 
         r.onend = () => {
+            // Chốt phần của phiên vừa kết thúc vào `doneText` TRƯỚC khi bật lại:
+            // phiên mới sẽ có `e.results` riêng, không còn nội dung này nữa.
+            doneText += r._daChot || '';
+            r._daChot = '';
+
             // Tự bật lại nếu người dùng vẫn đang muốn nghe (xem ghi chú 1 ở đầu file).
             if (wantActive && !destroyed) {
                 try { r.start(); return; } catch { /* đang chạy rồi thì thôi */ }
@@ -123,7 +152,8 @@ export function createSpeechInput({ lang = 'en-US', onText, onStateChange, onErr
         start() {
             if (destroyed || wantActive) return;
             wantActive = true;
-            finalText = '';
+            doneText = '';
+            if (rec) rec._daChot = '';
             rec = rec || build();
             try {
                 rec.start();
