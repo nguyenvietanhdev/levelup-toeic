@@ -4,6 +4,7 @@ import { Config } from '@game/config.js';
 import { Utils } from '@lib/utils.js';
 import { Notification } from '@ui/Toaster.jsx';
 import { PartSelector } from '@components/vocab/part/partSelector.js';
+import { afterAnswer, isAutoAdvance } from '@components/practice/practiceNav.js';
 
 export const Dictation = {
 
@@ -359,9 +360,24 @@ export const Dictation = {
         this._translateExample(word.example);
     },
 
+    /**
+     * Chuyển câu SAU khi đã đọc xong bản dịch.
+     *
+     * Đi qua `afterAnswer` chứ không `nextQuestion()` thẳng: chế độ này trước
+     * đây LUÔN tự chuyển, bỏ qua cài đặt `autoAdvance` — tắt tự động chuyển câu
+     * ở Cài đặt thì mọi chế độ khác hiện nút ← Trước / Tiếp →, riêng Chép chính
+     * tả vẫn nhảy sang câu sau. `afterAnswer` tự chọn: bật thì hẹn giờ chuyển,
+     * tắt thì vẽ thanh điều hướng.
+     */
+    _advance(readDelay = 0) {
+        if (!isAutoAdvance()) { afterAnswer(this, 'dictation'); return; }
+        if (readDelay > 0) setTimeout(() => this.nextQuestion(), readDelay);
+        else this.nextQuestion();
+    },
+
     async _translateExample(sentence, readDelay = 2500) {
         const el = document.getElementById('dictation-translation');
-        if (!el) { setTimeout(() => this.nextQuestion(), readDelay); return; }
+        if (!el) { this._advance(readDelay); return; }
 
         let done = false;
 
@@ -369,12 +385,12 @@ export const Dictation = {
             if (done) return;
             done = true;
             if (el.isConnected) el.remove();
-            this.nextQuestion();
+            this._advance();
         }, 5000);
 
         const finish = () => {
             clearTimeout(fallback);
-            setTimeout(() => this.nextQuestion(), readDelay);
+            this._advance(readDelay);
         };
 
         if (this._translateCache[sentence]) {

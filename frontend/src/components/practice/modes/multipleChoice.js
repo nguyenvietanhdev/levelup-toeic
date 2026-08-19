@@ -111,7 +111,6 @@ export const MultipleChoice = {
                             <div class="synonyms-list">${question.word.synonyms}</div>
                             ${question.word.synonyms_vn ? `<div class="synonyms-list-vn">${question.word.synonyms_vn}</div>` : ''}
                         ` : ''}
-                        ${this.exampleHtml(question)}
                     </div>
                     ${question.word.image ? `
                         <div class="question-image-col">
@@ -128,13 +127,17 @@ export const MultipleChoice = {
                         </button>
                     `).join('')}
                 </div>
+
+                <!-- Câu ví dụ nằm DƯỚI 4 ô đáp án và chỉ hiện SAU khi trả lời.
+                     Câu ví dụ chứa chính từ đang hỏi ("多少钱?" lộ thẳng đáp án
+                     多少), nên hiện sẵn là cho không đáp án. Hiện sau thì nó
+                     thành phần GIẢI THÍCH: xem lại từ vừa chọn dùng thế nào
+                     trong câu thật. Cùng quy ước với Từ đồng nghĩa và Loại từ. -->
+                <div id="mc-example-slot"></div>
             </div>
         `;
 
         this.attachListeners();
-
-        // Không `await`: câu hỏi phải hiện ngay, phiên âm điền vào sau.
-        this.fillExamplePinyin(question, this.currentIndex);
 
         if (!question.reversed && GameState.state?.settings?.autoPronunciation) {
             setTimeout(() => {
@@ -212,53 +215,21 @@ export const MultipleChoice = {
             }
         }
 
-        // Câu ví dụ đã hiển thị sẵn từ đầu (xem exampleHtml). Ở chế độ đảo chiều
-        // (VN→EN) nó bị che để khỏi lộ đáp án — trả lời xong thì hiện đủ.
-        if (question.reversed && question.word.example) {
-            const exEl = document.getElementById('mc-example-text');
-            if (exEl) exEl.textContent = question.word.example;
-            const exPanel = document.getElementById('mc-example-panel');
-            if (exPanel && !document.getElementById('speak-example-btn')) {
-                const btn = document.createElement('button');
-                btn.className = 'btn-speak-mini';
-                btn.id = 'speak-example-btn';
-                btn.title = 'Nghe phát âm câu ví dụ';
-                btn.innerHTML = '<i class="fas fa-volume-up"></i>';
-                btn.addEventListener('click', () => GameLogic.speakWord(question.word.example, 'en-US'));
-
-                // Nút dịch đứng TRƯỚC nút loa — chèn cả hai cùng lúc để thứ tự
-                // khớp với chế độ thường (xem `exampleHtml`).
-                const trBtn = document.createElement('button');
-                trBtn.className = 'btn-speak-mini';
-                trBtn.id = 'translate-example-btn';
-                trBtn.title = 'Dịch cả câu';
-                trBtn.innerHTML = '<i class="fas fa-language"></i>';
-                trBtn.addEventListener('click', () => {
-                    EventBus.emit(GameEvents.TRANSLATE_REQUESTED, { text: question.word.example });
-                });
-
-                const row = exPanel.querySelector('.word-info-example');
-                row?.appendChild(trBtn);
-                row?.appendChild(btn);
-            }
-            // Giờ mới lấy phiên âm: lúc đang hỏi thì nó lộ đáp án hệt như câu gốc.
-            const idxLucGoi = this.currentIndex;
-            layPinyinCau(question.word.example).then((pinyin) => {
-                // Bỏ nếu đã sang câu khác — nếu không, phiên âm câu trước hiện
-                // dưới câu sau (người dùng bấm "Tiếp" nhanh hơn mạng trả lời).
-                if (!pinyin || this.currentIndex !== idxLucGoi) return;
-                const el = document.getElementById('mc-example-pinyin');
-                if (el) el.textContent = pinyin;
-            });
-        }
+        // Lộ câu ví dụ SAU khi trả lời — cho MỌI câu, không riêng chế độ đảo
+        // chiều. Câu ví dụ chứa chính từ đang hỏi nên hiện sẵn là cho không đáp
+        // án; hiện ở đây thì nó thành phần giải thích.
+        this.revealExample(question);
 
         afterAnswer(this, 'multiple-choice');
     },
 
-    // Che từ khoá trong câu ví dụ (chế độ đảo chiều để khỏi lộ đáp án).
-    // THÔNG MINH: che được cả dạng biến đổi (chia thì/số nhiều, phrasal verb)
-    // và tiếng Trung. Câu nào KHÔNG che nổi (bất quy tắc / không tìm thấy từ)
-    // → trả về CẢ CÂU (chấp nhận, hơn là hiện ô trống sai/nửa vời).
+    // Che từ khoá trong câu ví dụ bằng `______`.
+    //
+    // HIỆN KHÔNG CÒN AI GỌI: câu ví dụ giờ chỉ hiện SAU khi trả lời, nên không
+    // còn gì để che. Giữ lại vì nó là logic khó viết lại — che được cả dạng biến
+    // đổi (chia thì / số nhiều / -e, -y) lẫn chuỗi con tiếng Trung — và sẽ cần
+    // ngay nếu chuyển sang hướng "hiện sẵn nhưng che từ khoá".
+    // Câu nào KHÔNG che nổi (bất quy tắc / không tìm thấy từ) → trả về CẢ CÂU.
     maskTarget(sentence, target) {
         if (!sentence || !target) return sentence || '';
         const BLANK = '______';
@@ -295,52 +266,50 @@ export const MultipleChoice = {
     // Câu ví dụ hiển thị NGAY từ đầu câu hỏi (không đợi chọn xong). Chế độ
     // thường (EN→VN) hiện đủ + nút nghe; chế độ đảo chiều che từ đáp án, ẩn
     // nút nghe (đọc sẽ lộ từ) — sẽ mở đủ sau khi trả lời.
-    exampleHtml(question) {
-        const word = question.word;
-        if (!word.example) return '';
-        const reversed = question.reversed;
-        const text = reversed ? this.maskTarget(word.example, word.en) : word.example;
-        return `
+    /**
+     * Lộ câu ví dụ SAU khi người dùng trả lời, ngay dưới 4 ô đáp án.
+     *
+     * Không hiện sẵn từ đầu: câu ví dụ chứa chính từ đang hỏi — "多少钱?" lộ
+     * thẳng đáp án 多少. Hiện ở đây thì nó thành phần GIẢI THÍCH: xem lại từ vừa
+     * chọn được dùng thế nào trong câu thật. Cùng quy ước với Từ đồng nghĩa và
+     * Loại từ (`showWordInfo` của hai chế độ đó).
+     */
+    revealExample(question) {
+        const cau = question?.word?.example;
+        const slot = document.getElementById('mc-example-slot');
+        if (!cau || !slot || slot.childElementCount) return;   // đã lộ rồi thì thôi
+
+        slot.innerHTML = `
             <div class="word-info-panel" id="mc-example-panel">
                 <div class="word-info-example">
                     <i class="fas fa-quote-left" style="color: var(--primary-color); margin-right: 6px;"></i>
-                    <span id="mc-example-text">${text}</span>
-                    ${reversed ? '' : `
-                        <button class="btn-speak-mini" id="translate-example-btn" title="Dịch cả câu"><i class="fas fa-language"></i></button>
-                        <button class="btn-speak-mini" id="speak-example-btn" title="Nghe phát âm câu ví dụ"><i class="fas fa-volume-up"></i></button>
-                    `}
+                    <span id="mc-example-text">${cau}</span>
+                    <button class="btn-speak-mini" id="translate-example-btn" title="Dịch cả câu"><i class="fas fa-language"></i></button>
+                    <button class="btn-speak-mini" id="speak-example-btn" title="Nghe phát âm câu ví dụ"><i class="fas fa-volume-up"></i></button>
                 </div>
-                <!-- Phiên âm cả câu. Rỗng lúc đầu, điền sau khi Google trả về —
-                     không chặn việc hiện câu hỏi chờ một request mạng. -->
                 <div class="word-info-example-pinyin" id="mc-example-pinyin"></div>
             </div>`;
-    },
 
+        // Nút dịch đứng TRƯỚC nút loa — đọc hiểu rồi mới nghe.
+        slot.querySelector('#translate-example-btn')?.addEventListener('click', () => {
+            EventBus.emit(GameEvents.TRANSLATE_REQUESTED, { text: cau });
+        });
+        slot.querySelector('#speak-example-btn')?.addEventListener('click', () => {
+            // Không truyền ngôn ngữ: `speakWord` tự phát hiện chữ Hán và đổi
+            // sang zh-CN (gameLogic.js:304). Truyền cứng 'en-US' như các chế độ
+            // khác là đọc câu tiếng Trung bằng giọng tiếng Anh.
+            GameLogic.speakWord(cau);
+        });
 
-    /**
-     * Điền phiên âm cho câu ví dụ (chỉ tiếng Trung).
-     *
-     * Chạy SAU khi câu hỏi đã hiện — không để người học chờ một request mạng chỉ
-     * vì thông tin phụ trợ. Hỏng thì ô phiên âm để trống, không báo lỗi.
-     *
-     * @param {number} idx chỉ số câu lúc gọi. Người dùng có thể bấm "Tiếp" trước
-     *   khi Google trả lời; khi đó kết quả thuộc về câu CŨ và phải bỏ đi, nếu
-     *   không phiên âm của câu trước sẽ hiện dưới câu sau.
-     */
-    async fillExamplePinyin(question, idx) {
-        const cau = question?.word?.example;
-        if (!cau || !coChuHan(cau)) return;
-
-        // Ở chế độ đảo chiều câu ví dụ bị che để khỏi lộ đáp án — phiên âm cũng
-        // lộ đáp án y hệt, nên chờ tới khi người dùng trả lời xong.
-        if (question.reversed) return;
-
-        const pinyin = await layPinyinCau(cau);
-        if (!pinyin) return;
-        if (this.currentIndex !== idx) return;   // đã sang câu khác
-
-        const el = document.getElementById('mc-example-pinyin');
-        if (el) el.textContent = pinyin;
+        // Phiên âm cả câu (chỉ tiếng Trung) — không `await`, điền vào sau.
+        const idxLucGoi = this.currentIndex;
+        layPinyinCau(cau).then((pinyin) => {
+            // Bỏ nếu đã sang câu khác: người dùng bấm "Tiếp" nhanh hơn mạng thì
+            // phiên âm câu trước sẽ hiện dưới câu sau.
+            if (!pinyin || this.currentIndex !== idxLucGoi) return;
+            const el = document.getElementById('mc-example-pinyin');
+            if (el) el.textContent = pinyin;
+        });
     },
 
     nextQuestion() {

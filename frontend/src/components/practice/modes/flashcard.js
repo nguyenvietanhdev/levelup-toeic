@@ -109,14 +109,24 @@ export const Flashcard = {
                                 ${word.example ? `
                                     <div class="card-example">
                                         <strong>Ví dụ:</strong>
-                                        <p>${word.example}</p>
+                                        <div class="card-extra-row">
+                                            <p>${word.example}</p>
+                                            <button class="btn-speak-mini card-speak" data-speak="example" title="Nghe câu ví dụ">
+                                                <i class="fas fa-volume-up"></i>
+                                            </button>
+                                        </div>
                                     </div>
                                 ` : ''}
 
                                 ${word.synonyms ? `
                                     <div class="card-synonyms">
                                         <strong>Từ đồng nghĩa:</strong>
-                                        <p>${word.synonyms}</p>
+                                        <div class="card-extra-row">
+                                            <p>${word.synonyms}</p>
+                                            <button class="btn-speak-mini card-speak" data-speak="synonyms" title="Nghe từ đồng nghĩa">
+                                                <i class="fas fa-volume-up"></i>
+                                            </button>
+                                        </div>
                                     </div>
                                 ` : ''}`;
 
@@ -230,6 +240,19 @@ export const Flashcard = {
             this.pronounce(word.en);
         });
 
+        // Nút loa cho câu ví dụ và từ đồng nghĩa.
+        // `stopPropagation` là BẮT BUỘC: cả thẻ đã có listener lật thẻ
+        // (`flashcard?.addEventListener` ở trên), không chặn thì mỗi lần nghe là
+        // thẻ lật một cái.
+        // Không truyền ngôn ngữ — `speakWord` tự nhận chữ Hán và đổi sang zh-CN.
+        document.querySelectorAll('.card-speak').forEach((btn) => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const text = btn.dataset.speak === 'example' ? word.example : word.synonyms;
+                if (text) this.pronounceText(text);
+            });
+        });
+
         const knownBtn = document.getElementById('known-btn');
         knownBtn?.addEventListener('click', () => {
             this.markAsKnown(word);
@@ -302,6 +325,21 @@ export const Flashcard = {
         setTimeout(() => {
             this.nextCard();
         }, 500);
+    },
+
+    /**
+     * Đọc một đoạn bất kỳ trên thẻ (câu ví dụ, từ đồng nghĩa).
+     *
+     * Tách khỏi `pronounce`: hàm kia gắn cứng hiệu ứng vào nút `#pronounce-btn`
+     * của mặt trước, dùng lại thì bấm nghe câu ví dụ lại làm nút kia nhấp nháy.
+     *
+     * KHÔNG truyền ngôn ngữ: `speakWord` tự phát hiện chữ Hán và chuyển sang
+     * zh-CN (gameLogic.js:304). Truyền cứng 'en-US' là đọc câu tiếng Trung bằng
+     * giọng tiếng Anh.
+     */
+    pronounceText(text) {
+        if (!text) return;
+        GameLogic.speakWord(text);
     },
 
     pronounce(text) {

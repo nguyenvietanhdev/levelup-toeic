@@ -83,11 +83,13 @@ describe('nút dịch cả câu ở màn luyện tập', () => {
         expect(iTr).toBeLessThan(iLoa);
     });
 
-    test('chế độ ĐẢO CHIỀU cũng có nút, cũng đứng trước', () => {
-        const i = mc.indexOf("trBtn.id = 'translate-example-btn'");
-        expect(i).toBeGreaterThan(-1);
-        const body = mc.slice(i, i + 600);
-        expect(body.indexOf('appendChild(trBtn)')).toBeLessThan(body.indexOf('appendChild(btn)'));
+    test('chế độ ĐẢO CHIỀU dùng CHUNG một đường, không nhánh riêng', () => {
+        // Trước đây có hai lối: chế độ thường nhúng nút vào markup lúc render,
+        // chế độ đảo chiều dựng nút bằng `createElement` sau khi trả lời. Giờ
+        // câu ví dụ chỉ hiện sau khi trả lời ở CẢ HAI, nên chỉ còn `revealExample`
+        // — hai lối cho một việc là hai chỗ phải sửa mỗi lần đổi.
+        expect(mc).not.toMatch(/trBtn\.id = 'translate-example-btn'/);
+        expect((mc.match(/id="translate-example-btn"/g) || []).length).toBe(1);
     });
 
     test('phát sự kiện thay vì gọi thẳng React', () => {

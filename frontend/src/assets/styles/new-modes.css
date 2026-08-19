@@ -499,10 +499,50 @@
 .phonetic-quiz-container {
   display: flex;
   flex-direction: column;
+  align-items: stretch;
+  gap: var(--spacing-lg);
+  /* Rộng hơn 620px cũ: bố cục hai cột cần chỗ cho cả câu hỏi lẫn phần giải
+     thích. Vẫn có trần để trên màn siêu rộng chữ không kéo dài cả mét. */
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+/* HAI CỘT: trái = câu hỏi + 4 đáp án, phải = giải thích sau khi trả lời.
+   Xếp dọc thì phần giải thích nằm dưới đáp án và phải CUỘN mới đọc được —
+   đúng lúc cần đọc nhất (vừa trả lời sai xong).
+
+   `1fr 380px`: cột giải thích rộng cố định vì nội dung nó ổn định (từ, phiên
+   âm, loại từ, câu ví dụ); cột trái co giãn theo chỗ còn lại. */
+.pq-cols {
+  display: grid;
+  grid-template-columns: 1fr 380px;
+  gap: var(--spacing-lg);
+  align-items: start;
+  width: 100%;
+}
+
+.pq-col-main {
+  display: flex;
+  flex-direction: column;
   align-items: center;
   gap: var(--spacing-lg);
-  max-width: 620px;
-  margin: 0 auto;
+  /* `min-width: 0` — thiếu thì grid item không co dưới kích thước nội dung và
+     ô đáp án chữ dài sẽ đẩy vỡ cả lưới. */
+  min-width: 0;
+}
+
+.pq-col-side {
+  min-width: 0;
+  /* Cột phải TRỐNG cho tới khi trả lời. Không đặt chiều cao tối thiểu: để nó
+     tự nở khi có nội dung, không thì màn hình có một khoảng trắng lớn vô cớ. */
+}
+
+/* Màn hẹp: về một cột. Hai cột trên màn dưới 1000px thì cột nào cũng chật, và
+   ô đáp án tiếng Trung bị bóp xuống hai dòng. */
+@media (max-width: 1000px) {
+  .pq-cols {
+    grid-template-columns: 1fr;
+  }
 }
 
 /* IPA display box (new mode: show IPA → pick word) */

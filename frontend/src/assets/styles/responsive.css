@@ -1325,19 +1325,30 @@
         text-align: center;
     }
 
-    /* Cột mic thành HÀNG NGANG: mic bên trái, trạng thái + số lần thử bên phải.
-       Xếp dọc thì mic + chữ + chấm + nút "Nghe lại" + chú thích chiếm gần hết
-       màn hình, đẩy phần kết quả nhận dạng xuống dưới cùng. */
+    /* Cột mic thành HÀNG NGANG. Xếp dọc thì mic + chữ + chấm + nút "Nghe lại"
+       + chú thích chiếm gần hết màn hình, đẩy phần kết quả nhận dạng xuống dưới.
+
+       Thứ tự trên điện thoại:  [trạng thái] [chấm] [MIC]
+       Mic nằm BÊN PHẢI vì phần lớn người dùng cầm máy tay phải — ngón cái với
+       tới mép phải dễ nhất, mà mic là nút bấm nhiều nhất ở màn này. Trạng thái
+       và chấm chỉ để ĐỌC nên đẩy sang trái, xa vùng ngón cái.
+
+       Dùng `order` chứ không đổi thứ tự trong HTML: trên máy tính cột dọc vẫn
+       muốn mic đứng đầu, và trình đọc màn hình đọc theo thứ tự DOM nên giữ
+       nguyên DOM là giữ nguyên trải nghiệm cho họ. */
     .pronunciation-mic-col {
         flex-direction: row !important;
         flex-wrap: wrap;
         justify-content: center;
+        align-items: center;
         gap: 10px !important;
     }
 
-    /* Nút mic là đích chạm chính — giữ nguyên cỡ, không cho co. */
+    /* Nút mic là đích chạm chính — giữ nguyên cỡ, không cho co, đẩy về cuối hàng. */
     .pronunciation-mic-col .mic-button {
         flex-shrink: 0;
+        order: 3;
+        margin-left: auto;
     }
 
     .pronunciation-mic-col .mic-status {
@@ -1345,6 +1356,32 @@
         flex: 1 1 auto;
         min-width: 0;
         text-align: left !important;
+        order: 1;
+    }
+
+    .pronunciation-mic-col #attempts-dots {
+        order: 2;
+        flex-shrink: 0;
+    }
+
+    /* "Nghe lại" xuống hàng riêng, chiếm trọn chiều ngang.
+       Trước đây nó lọt vào hàng với mic và bị bóp còn một mẩu — mà đây là nút
+       người học bấm nhiều thứ hai (nghe mẫu rồi mới nhại lại được). */
+    .pronunciation-mic-col #replay-btn {
+        order: 4;
+        flex: 1 0 100%;
+        margin-top: 0 !important;
+        /* 40px: đủ cho ngón tay mà không cao bằng mic (72px) — mic vẫn phải là
+           thứ nổi bật nhất. */
+        min-height: 40px;
+    }
+
+    /* Chú thích "Phát âm tiếng Trung · tối đa 3 lần thử" xuống cuối cùng: nó là
+       thông tin đọc một lần, không phải thứ tra đi tra lại. */
+    .pronunciation-mic-col > span:last-child {
+        order: 5;
+        flex: 1 0 100%;
+        max-width: none !important;
     }
 
     /* ── Chế độ viết chữ Hán ──────────────────────────────────────────────

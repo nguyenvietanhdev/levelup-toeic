@@ -128,6 +128,13 @@ export const PhoneticQuiz = {
 
         container.innerHTML = `
             <div class="phonetic-quiz-container">
+              <!-- HAI CỘT trên màn rộng: trái = câu hỏi + đáp án, phải = giải
+                   thích. Xếp dọc thì phần giải thích nằm dưới 4 ô đáp án và
+                   người học phải CUỘN mới đọc được — mà đó đúng là lúc cần đọc
+                   nhất (vừa trả lời sai xong). Trên điện thoại vẫn xếp dọc:
+                   hai cột trên màn hẹp thì cột nào cũng chật. -->
+              <div class="pq-cols">
+                <div class="pq-col-main">
                 <div class="pq-ipa-display">
                     ${isIpaMode
                         ? `<div class="pq-ipa-big">/${question.word.phonetic}/</div>
@@ -162,7 +169,12 @@ export const PhoneticQuiz = {
                     `).join('')}
                 </div>
 
-                <div class="pq-result" id="pq-result" style="display:none;"></div>
+                </div>
+
+                <div class="pq-col-side">
+                    <div class="pq-result" id="pq-result" style="display:none;"></div>
+                </div>
+              </div>
             </div>
         `;
 

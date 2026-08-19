@@ -5139,6 +5139,42 @@ mark {
   text-align: left;
 }
 
+/* Hàng chữ + nút loa trên thẻ. Nút bám mép phải, chữ co giãn phần còn lại. */
+.card-extra-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.card-extra-row p {
+  flex: 1;
+  /* `min-width: 0` để câu dài xuống dòng thay vì đẩy nút loa ra ngoài thẻ. */
+  min-width: 0;
+  margin: 0;
+}
+
+/* Nút loa trên thẻ: nền thẻ đã có màu nên nút phải trong suốt, không lại thành
+   một khối trắng đè lên. Vùng chạm giữ 32px cho ngón tay. */
+.card-extra-row .card-speak {
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  background: rgba(255, 255, 255, 0.25);
+  border: none;
+  border-radius: 50%;
+  color: inherit;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s ease;
+}
+
+.card-extra-row .card-speak:hover {
+  background: rgba(255, 255, 255, 0.45);
+}
+
 /* Word info panel - shown after answering in practice modes */
 .word-info-panel {
   margin-top: 12px;
