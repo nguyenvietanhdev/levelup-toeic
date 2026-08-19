@@ -95,7 +95,7 @@ export default function TranslateModal({ text, onClose, editWord = null, onSaved
     const [targetLang, setTargetLang] = useState(studyTargetLang);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
-    const [result, setResult] = useState(null); // { translated, sourceLang, part, synonyms, phonetic }
+    const [result, setResult] = useState(null); // { translated, sourceLang, part, synonyms, phonetic, phoneticOut }
     const [savedVocab, setSavedVocab] = useState(false);
     const [srcDraft, setSrcDraft] = useState(text);   // ô GỐC sửa được
     const [editedVn, setEditedVn] = useState('');      // ô bản dịch sửa được
@@ -266,12 +266,18 @@ export default function TranslateModal({ text, onClose, editWord = null, onSaved
                 }
 
                 const translated = (data[0] || []).map(seg => seg[0]).filter(Boolean).join('');
+                // Google trả HAI phiên âm ở hai vị trí khác nhau trong mỗi đoạn:
+                //   seg[3] = phiên âm câu GỐC   (dịch 你好 → vi cho "Nǐ hǎo")
+                //   seg[2] = phiên âm BẢN DỊCH  (dịch hello → zh cho "Nǐ hǎo")
+                // Trước đây chỉ lấy seg[3], nên dịch SANG tiếng Trung thì không
+                // có pinyin — đúng chiều người học cần nhất khi tra từ mới.
                 const phonetic = (data[0] || []).map(seg => seg[3]).filter(Boolean).join(' ');
+                const phoneticOut = (data[0] || []).map(seg => seg[2]).filter(Boolean).join(' ');
                 const dict = Array.isArray(data[1]) ? data[1] : [];
                 const part = dict[0]?.[0] || '';
                 const synonyms = dict.flatMap(d => d[1] || []).slice(0, 6).join(', ');
 
-                setResult({ translated, sourceLang, part, synonyms, phonetic });
+                setResult({ translated, sourceLang, part, synonyms, phonetic, phoneticOut });
             } catch {
                 if (!cancelled) setError('Không kết nối được dịch vụ dịch. Hãy mở Google Dịch đầy đủ.');
             } finally {
@@ -544,6 +550,17 @@ export default function TranslateModal({ text, onClose, editWord = null, onSaved
                                 <i className="fas fa-volume-up"></i>
                             </button>
                         </div>
+                        {/* Phiên âm của câu GỐC — dòng riêng, không nhét vào ô nhập.
+                            Google đã trả sẵn qua `dt=rm` (xem URL ở trên), chỉ là
+                            trước giờ lấy về rồi bỏ đó không hiện.
+                            Với tiếng Trung đây là thứ quyết định đọc được hay
+                            không: chữ Hán không cho biết cách đọc. Tiếng Anh thì
+                            Google chỉ trả phiên âm khi chữ viết khác cách đọc, nên
+                            phần lớn câu tiếng Anh sẽ không có dòng này — đúng, vì
+                            thêm vào cũng không giúp gì. */}
+                        {result?.phonetic && (
+                            <div className="translate-phonetic">{result.phonetic}</div>
+                        )}
                     </div>
 
                     <div className="translate-arrow">
@@ -630,6 +647,12 @@ export default function TranslateModal({ text, onClose, editWord = null, onSaved
                                     <i className="fas fa-volume-up"></i>
                                 </button>
                             </div>
+                        )}
+                        {/* Phiên âm của BẢN DỊCH. Chỉ có khi dịch SANG ngôn ngữ
+                            không đọc theo chữ viết (tiếng Trung) — dịch sang
+                            tiếng Việt thì Google trả rỗng và dòng này tự ẩn. */}
+                        {!loading && result?.phoneticOut && (
+                            <div className="translate-phonetic">{result.phoneticOut}</div>
                         )}
                         {!loading && result?.synonyms && (
                             <div className="translate-syn">Nghĩa khác: {result.synonyms}</div>

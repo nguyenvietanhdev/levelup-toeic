@@ -142,6 +142,10 @@ export const GameEvents = {
     // Practice events
     PRACTICE_REQUESTED: 'practice:requested',
     TOPIC_MODAL_REQUESTED: 'topic:modalRequested',
+    // Mở popup Dịch nhanh với sẵn một đoạn văn bản. Cần vì các chế độ luyện tập
+    // dựng HTML thuần (không phải React) nên không gọi được `setTranslateText`
+    // của TopNav; TopNav lắng nghe sự kiện này và mở hộ.
+    TRANSLATE_REQUESTED: 'translate:requested',
     SESSION_BADGE_UPDATED: 'session:badgeUpdated',
     PRACTICE_STARTED: 'practice:started',
     PRACTICE_QUESTION_ANSWERED: 'practice:questionAnswered',

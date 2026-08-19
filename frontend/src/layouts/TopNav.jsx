@@ -283,6 +283,21 @@ export default function TopNav() {
         setTranslateText(text);
     };
 
+    // Chế độ luyện tập dựng HTML thuần nên không gọi thẳng được `setTranslateText`.
+    // Nó phát sự kiện, TopNav mở hộ — và đi qua `openTranslateRef` nên vẫn chịu
+    // cùng một khoá theo Level như mọi lối vào khác.
+    useEffect(() => {
+        const unsub = EventBus.on(GameEvents.TRANSLATE_REQUESTED, ({ text } = {}) => {
+            // Chặn khi đang THI, không chặn lúc luyện tập — cùng luật với phím
+            // tắt Shift+Z ở dưới: tra nghĩa giữa bài luyện là HỌC, còn giữa bài
+            // thi thì tra chính là xem đáp án.
+            if (isInExam) return;
+            const t = String(text || '').trim();
+            if (t) openTranslateRef.current?.(t);
+        });
+        return unsub;
+    }, [isInExam]);
+
     const stopSpeech = useCallback(() => speechRef.current?.stop(), []);
     const startSpeech = useCallback(() => {
         if (isInPractice) return;   // đang luyện tập thì ô tìm kiếm khoá

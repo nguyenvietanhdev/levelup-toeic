@@ -8075,6 +8075,19 @@ mark {
    vựng riêng". Nới ra và cho xuống hàng khi modal hẹp, thay vì để chữ bị cắt. */
 .translate-arrow .translate-save-btn { flex: 1 1 auto; justify-content: center; max-width: 230px; min-width: 150px; white-space: nowrap; }
 .translate-syn { margin-top: 8px; font-size: 13px; color: var(--text-secondary); }
+
+/* Phiên âm (pinyin / IPA) của câu gốc và bản dịch.
+   Nghiêng + nhạt để tách khỏi chữ chính: người đọc được chữ thì bỏ qua dòng
+   này, người không đọc được thì tìm thấy ngay dưới. */
+.translate-phonetic {
+  margin-top: 6px;
+  padding-left: 2px;
+  font-size: 13px;
+  font-style: italic;
+  color: var(--text-secondary);
+  /* Câu dài không tràn ra ngoài popup. */
+  word-break: break-word;
+}
 .translate-actions { display: flex; gap: 8px; margin-top: 16px; }
 .translate-actions .btn { flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
 

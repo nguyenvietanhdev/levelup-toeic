@@ -160,6 +160,17 @@ export const MultipleChoice = {
             });
         }
 
+        // Nút dịch cả câu — mở popup Dịch nhanh với câu ví dụ điền sẵn. Đứng
+        // TRƯỚC nút loa: đọc hiểu rồi mới nghe là thứ tự tự nhiên hơn.
+        const trExBtn = document.getElementById('translate-example-btn');
+        if (trExBtn) {
+            trExBtn.addEventListener('click', () => {
+                const q = this.questions[this.currentIndex];
+                const cau = q?.word?.example;
+                if (cau) EventBus.emit(GameEvents.TRANSLATE_REQUESTED, { text: cau });
+            });
+        }
+
         const speakExBtn = document.getElementById('speak-example-btn');
         if (speakExBtn) {
             speakExBtn.addEventListener('click', () => {
@@ -214,7 +225,21 @@ export const MultipleChoice = {
                 btn.title = 'Nghe phát âm câu ví dụ';
                 btn.innerHTML = '<i class="fas fa-volume-up"></i>';
                 btn.addEventListener('click', () => GameLogic.speakWord(question.word.example, 'en-US'));
-                exPanel.querySelector('.word-info-example')?.appendChild(btn);
+
+                // Nút dịch đứng TRƯỚC nút loa — chèn cả hai cùng lúc để thứ tự
+                // khớp với chế độ thường (xem `exampleHtml`).
+                const trBtn = document.createElement('button');
+                trBtn.className = 'btn-speak-mini';
+                trBtn.id = 'translate-example-btn';
+                trBtn.title = 'Dịch cả câu';
+                trBtn.innerHTML = '<i class="fas fa-language"></i>';
+                trBtn.addEventListener('click', () => {
+                    EventBus.emit(GameEvents.TRANSLATE_REQUESTED, { text: question.word.example });
+                });
+
+                const row = exPanel.querySelector('.word-info-example');
+                row?.appendChild(trBtn);
+                row?.appendChild(btn);
             }
             // Giờ mới lấy phiên âm: lúc đang hỏi thì nó lộ đáp án hệt như câu gốc.
             const idxLucGoi = this.currentIndex;
@@ -280,7 +305,10 @@ export const MultipleChoice = {
                 <div class="word-info-example">
                     <i class="fas fa-quote-left" style="color: var(--primary-color); margin-right: 6px;"></i>
                     <span id="mc-example-text">${text}</span>
-                    ${reversed ? '' : `<button class="btn-speak-mini" id="speak-example-btn" title="Nghe phát âm câu ví dụ"><i class="fas fa-volume-up"></i></button>`}
+                    ${reversed ? '' : `
+                        <button class="btn-speak-mini" id="translate-example-btn" title="Dịch cả câu"><i class="fas fa-language"></i></button>
+                        <button class="btn-speak-mini" id="speak-example-btn" title="Nghe phát âm câu ví dụ"><i class="fas fa-volume-up"></i></button>
+                    `}
                 </div>
                 <!-- Phiên âm cả câu. Rỗng lúc đầu, điền sau khi Google trả về —
                      không chặn việc hiện câu hỏi chờ một request mạng. -->
