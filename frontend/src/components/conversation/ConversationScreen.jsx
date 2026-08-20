@@ -53,9 +53,17 @@ export default function ConversationScreen({ active }) {
         setSpeechOn(false);
     }, [active]);
 
-    /** Đọc câu của NPC. Dùng đúng bộ TTS sẵn có của app. */
+    /**
+     * Đọc câu của NPC. Dùng đúng bộ TTS sẵn có của app.
+     *
+     * DỪNG ghi âm trước khi đọc: người dùng không đeo tai nghe thì mic thu được
+     * chính tiếng loa, và câu của NPC bị ghi vào ô nhập như thể họ vừa nói ra.
+     * Cùng lỗi với chế độ Phát âm (xem `PronunciationMode.speakSample`).
+     */
     const speak = useCallback((text) => {
         if (!text) return;
+        speechRef.current?.stop?.();
+        setSpeechOn(false);
         try { GameLogic.speakWord(text, ttsLang()); } catch { /* không đọc được thì thôi */ }
     }, []);
 

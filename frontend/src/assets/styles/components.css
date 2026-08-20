@@ -6478,6 +6478,25 @@ mark {
     transform: scale(1);
 }
 
+/* Khoá TẠM THỜI vì đang phát mẫu ra loa.
+   Không đeo tai nghe thì mic thu được chính tiếng loa và bộ nhận dạng chấm
+   giọng TTS là giọng người học. Nhịp thở nhẹ để thấy đây là trạng thái CHỜ
+   (sắp bấm được), khác hẳn nút hỏng — nút hỏng thì đứng im. */
+.mic-button.is-muted-by-audio {
+    animation: mic-waiting 1.2s ease-in-out infinite;
+}
+
+@keyframes mic-waiting {
+    0%, 100% { opacity: 0.4; }
+    50%      { opacity: 0.65; }
+}
+
+/* Người tắt hiệu ứng chuyển động vẫn phải thấy nút đang bị khoá — chữ trạng
+   thái "Đang phát mẫu…" là thứ nói rõ, còn nhịp thở chỉ là bổ trợ. */
+@media (prefers-reduced-motion: reduce) {
+    .mic-button.is-muted-by-audio { animation: none; }
+}
+
 /* Listening State */
 .mic-button.listening {
     background: linear-gradient(135deg, var(--danger-color), #dc2626);

@@ -8,6 +8,15 @@ import { scoreAttempt, feedbackMessage } from './pronunciationScoring.js';
 
 export const PronunciationMode = {
 
+    /**
+     * Đệm sau khi mẫu phát âm kết thúc, trước khi cho ghi âm lại.
+     *
+     * Loa ngoài còn vang một chút sau khi file audio kết thúc, và bộ nhận dạng
+     * bắt được cả phần đuôi đó. 400ms đủ để tiếng tắt hẳn mà người dùng gần như
+     * không thấy phải chờ.
+     */
+    ECHO_GUARD_MS: 400,
+
     config: null,
     questions: [],
     currentIndex: 0,
@@ -16,6 +25,16 @@ export const PronunciationMode = {
     isListening: false,
     currentWord: null,
     wordCompleted: false,
+
+    /**
+     * Đang phát mẫu phát âm ra loa hay không.
+     *
+     * Khi `true` thì KHÔNG cho ghi âm: người dùng không đeo tai nghe thì mic thu
+     * được chính tiếng loa, bộ nhận dạng nghe giọng TTS đọc "gate" và chấm là
+     * người học nói đúng — được điểm mà chưa hề mở miệng.
+     */
+    _speaking: false,
+    _speakFallback: null,
 
     _isZh() {
         return vocabLang() === 'zh';
@@ -196,7 +215,7 @@ export const PronunciationMode = {
         this.render(question);
 
         setTimeout(() => {
-            GameLogic.speakWord(question.wordPk, ttsLang());
+            this.speakSample(question.wordPk);
         }, 500);
     },
 
@@ -271,14 +290,83 @@ export const PronunciationMode = {
         micBtn?.addEventListener('click', () => this.toggleListening());
         replayBtn?.addEventListener('click', () => this.replayWord());
         document.getElementById('word-text-speak')?.addEventListener('click', () => {
-            GameLogic.speakWord(this.currentWord, ttsLang());
+            this.speakSample(this.currentWord);
         });
 
         // Toolbar skip-btn → dùng PronunciationMode.skipQuestion thay vì PracticeManager.skipQuestion
         if (toolbarSkipBtn) toolbarSkipBtn.onclick = () => this.skipQuestion();
     },
 
+    /**
+     * Phát mẫu phát âm, có KHOÁ MIC trong lúc phát.
+     *
+     * Vì sao cần: người dùng không đeo tai nghe thì mic thu được chính tiếng loa.
+     * Bộ nhận dạng nghe thấy giọng TTS đọc "gate" và chấm là người học nói đúng
+     * — được điểm mà chưa hề mở miệng. Không có cách nào phân biệt giọng máy với
+     * giọng người ở phía nhận dạng, nên phải chặn ở phía phát: đang phát thì
+     * không cho ghi âm, và ai bấm phát giữa lúc đang ghi thì dừng ghi trước.
+     *
+     * Không dùng khử tiếng vọng của trình duyệt (`echoCancellation`): nó chỉ khử
+     * được âm do CHÍNH trang này phát qua WebRTC, còn Web Speech API không cho
+     * ta chạm vào luồng âm thanh của nó.
+     */
+    speakSample(text) {
+        if (!text) return;
+
+        // Đang ghi âm mà bấm phát → dừng ghi trước, nếu không hai việc chồng
+        // nhau đúng vào tình huống đang muốn tránh.
+        if (this.isListening) {
+            try { this.recognition?.stop(); } catch (_) {}
+        }
+
+        this._speaking = true;
+        this._syncMicDisabled();
+
+        // `onEnd` bắn ở CẢ hai đường phát (Google TTS và giọng hệ điều hành),
+        // xem `gameLogic.speakWord`. Cộng thêm một khoảng đệm nhỏ: loa ngoài còn
+        // vang một chút sau khi file kết thúc.
+        GameLogic.speakWord(text, ttsLang(), () => {
+            setTimeout(() => {
+                this._speaking = false;
+                this._syncMicDisabled();
+            }, PronunciationMode.ECHO_GUARD_MS);
+        });
+
+        // Chốt chặn cuối: nếu `onEnd` không bao giờ bắn (lỗi mạng, thẻ audio bị
+        // treo) thì mic sẽ khoá vĩnh viễn. Mở lại sau một khoảng đủ dài.
+        clearTimeout(this._speakFallback);
+        this._speakFallback = setTimeout(() => {
+            this._speaking = false;
+            this._syncMicDisabled();
+        }, 15000);
+    },
+
+    /** Bật/tắt nút mic theo trạng thái đang phát mẫu. */
+    _syncMicDisabled() {
+        const micBtn = document.getElementById('mic-btn');
+        const micStatus = document.getElementById('mic-status');
+        if (!micBtn) return;
+
+        micBtn.disabled = !!this._speaking;
+        micBtn.classList.toggle('is-muted-by-audio', !!this._speaking);
+
+        // Nói RÕ vì sao nút không bấm được. Nút mờ đi mà không giải thích thì
+        // người dùng tưởng hỏng.
+        if (this._speaking) {
+            if (micStatus) {
+                micStatus.textContent = 'Đang phát mẫu… chờ một chút';
+                micStatus.className = 'mic-status';
+            }
+        } else if (micStatus && micStatus.textContent === 'Đang phát mẫu… chờ một chút') {
+            micStatus.textContent = 'Click mic để bắt đầu';
+        }
+    },
+
     toggleListening() {
+        // Chặn cả ở đây, không chỉ dựa vào `disabled` của nút: còn phím tắt và
+        // các lối gọi khác, mà `disabled` chỉ chặn được cú bấm chuột.
+        if (this._speaking) return;
+
         if (this.isListening) {
             try { this.recognition?.stop(); } catch (_) {}
         } else {
@@ -448,7 +536,7 @@ export const PronunciationMode = {
             });
 
             setTimeout(() => {
-                GameLogic.speakWord(this.currentWord, ttsLang());
+                this.speakSample(this.currentWord);
             }, 500);
 
             setTimeout(() => {
@@ -472,7 +560,7 @@ export const PronunciationMode = {
     },
 
     replayWord() {
-        GameLogic.speakWord(this.currentWord, ttsLang());
+        this.speakSample(this.currentWord);
 
         Notification.show({
             type: 'info',
@@ -495,7 +583,7 @@ export const PronunciationMode = {
         });
 
         setTimeout(() => {
-            GameLogic.speakWord(this.currentWord, ttsLang());
+            this.speakSample(this.currentWord);
         }, 500);
 
         setTimeout(() => {
@@ -525,6 +613,12 @@ export const PronunciationMode = {
             this.recognition.onerror = null;
             this.recognition = null;
         }
+
+        // Dọn cờ và timer khoá mic: rời chế độ giữa lúc đang phát mẫu thì
+        // `_speaking` còn true, và lần vào sau mic bị khoá ngay từ đầu.
+        clearTimeout(this._speakFallback);
+        this._speakFallback = null;
+        this._speaking = false;
 
         this.questions = [];
         this.currentIndex = 0;
