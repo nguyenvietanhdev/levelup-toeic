@@ -672,7 +672,10 @@ export default function TopNav() {
                                 : translateLock.locked
                                     ? `Tìm từ vựng... (Dịch nhanh mở ở Level ${translateLock.requiredLevel})`
                                     : 'Tìm từ vựng... (Enter: dịch · giữ Shift: nói · bôi đen + Shift+Z: tra nghĩa)'}
-                        autoComplete="off"
+                        /* "off" bị Chrome/Edge bỏ qua cho ô trông giống ô đăng
+                           nhập; token vô nghĩa thì chúng không biết điền gì.
+                           `readOnly` bên dưới là lớp chắc chắn, đây là lớp hai. */
+                        autoComplete="nope-vocab-search"
                         readOnly={searchReadOnly || isInPractice}
                         disabled={isInPractice}
                         value={searchQuery}

@@ -76,6 +76,20 @@ export default function SettingsScreen({ active }) {
     const { isLoggedIn, logout } = useAuth();
     const [activeSection, setActiveSection] = useState('general');
     const [navQuery, setNavQuery] = useState('');
+    /**
+     * `readOnly` cho tới khi người dùng thật sự chạm vào ô.
+     *
+     * Sáu thuộc tính chống autofill ở dưới (`autoComplete="off"`, `name` lạ,
+     * `data-form-type`, `data-1p-ignore`, `data-lpignore`…) đều KHÔNG chặn được
+     * Chrome/Edge điền lúc TẢI TRANG — chúng chỉ là gợi ý mà trình duyệt được
+     * phép bỏ qua. Trình duyệt không điền vào ô `readOnly`, nên khoá lúc đầu
+     * rồi mở ngay khi người dùng chạm là cách duy nhất chắc chắn.
+     *
+     * Cùng mẹo với ô tìm kiếm trên thanh nav (`TopNav.jsx:72`) — chỗ đó đã có,
+     * nên không ai báo lỗi; ô này thiếu nên bị điền "admin" vào và cả danh sách
+     * cài đặt biến mất vì không mục nào khớp.
+     */
+    const [searchReadOnly, setSearchReadOnly] = useState(true);
     const [s, setS] = useState({});
 
     // Khớp theo nhãn HOẶC từ khoá, đều bỏ dấu — người dùng gõ thứ họ muốn đổi
@@ -452,13 +466,21 @@ export default function SettingsScreen({ active }) {
                     placeholder="Tìm cài đặt… (giao diện, âm thanh, mật khẩu…)"
                     value={navQuery}
                     onChange={(e) => handleNavQuery(e.target.value)}
-                    autoComplete="off"
+                    /* KHÔNG dùng "new-password": nó làm trình quản lý mật khẩu
+                       gợi ý TẠO mật khẩu mới ngay trên ô tìm kiếm. Một token
+                       không có trong đặc tả thì trình duyệt không biết điền gì,
+                       mà cũng không kích hoạt luồng mật khẩu nào. */
+                    autoComplete="nope-settings-filter"
                     autoCorrect="off"
                     autoCapitalize="off"
                     spellCheck="false"
                     data-form-type="other"
                     data-1p-ignore="true"
                     data-lpignore="true"
+                    readOnly={searchReadOnly}
+                    onFocus={() => setSearchReadOnly(false)}
+                    onMouseDown={() => setSearchReadOnly(false)}
+                    onTouchStart={() => setSearchReadOnly(false)}
                 />
                 {/* Nút xoá LUÔN chiếm chỗ, chỉ ẩn/hiện bằng opacity. Gắn/gỡ khỏi
                     DOM (`{navQuery && …}` như bản cũ) làm ô nhập đổi bề rộng
