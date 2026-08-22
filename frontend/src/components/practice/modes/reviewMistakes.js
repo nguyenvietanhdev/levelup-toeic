@@ -335,14 +335,19 @@ export const ReviewMistakes = {
                      Gộp lại thay vì mỗi thứ một khối — chế độ này còn phải chừa
                      chỗ cho ô nhập/đáp án và thanh ba nút bên dưới. -->
                 <div class="rm-status">
-                    <span class="rm-mastery" title="Mức thuộc theo lịch giãn cách: ${mucThuoc}/5">
+                    <!-- Có CHỮ "Thuộc", không chỉ mỗi "0/5": năm chấm cạnh một
+                         phân số đọc thành "câu 0 trên 5" — tiến độ lượt chơi —
+                         chứ không ai đoán ra đó là mức thuộc. Lời giải thích
+                         nằm trong `title` thì trên điện thoại không hover được. -->
+                    <span class="rm-mastery" title="Mức thuộc từ này theo lịch ôn giãn cách: ${mucThuoc}/5. Trả lời đúng thì tăng, sai thì giảm.">
+                        <span class="rm-status-label">Thuộc</span>
                         ${[0, 1, 2, 3, 4].map(k =>
                             `<i class="fas fa-circle rm-dot${k < mucThuoc ? ' is-on' : ''}"></i>`
                         ).join('')}
                         <span class="rm-mastery-text">${mucThuoc}/5</span>
                     </span>
-                    <span class="rm-wrong" title="Số lần bạn đã sai từ này">
-                        <i class="fas fa-rotate-left"></i> sai ${soLanSai} lần
+                    <span class="rm-wrong" title="Số lần bạn đã trả lời sai từ này">
+                        <i class="fas fa-rotate-left"></i> đã sai ${soLanSai} lần
                     </span>
                     <span class="rm-kind">${NHAN_KIEU[question.kieu] || ''}</span>
                 </div>

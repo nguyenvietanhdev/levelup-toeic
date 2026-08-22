@@ -9768,6 +9768,14 @@ mark {
 
 /* Nhãn kiểu câu hỏi — người học cần biết câu này đang hỏi kiểu gì TRƯỚC khi
    nhìn xuống, vì ba kiểu có cách trả lời khác nhau. */
+/* Chữ "Thuộc" đứng trước dãy chấm — nhỏ và mờ hơn con số vì nó là nhãn, không
+   phải giá trị. Không có nó thì "0/5" bị đọc nhầm thành tiến độ lượt chơi. */
+.rm-status-label {
+    font-size: 0.85em;
+    color: var(--text-secondary);
+    margin-right: 2px;
+}
+
 .rm-kind {
     margin-left: auto;
     padding: 2px 10px;

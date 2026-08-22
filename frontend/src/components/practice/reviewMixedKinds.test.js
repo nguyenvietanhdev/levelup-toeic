@@ -505,3 +505,33 @@ describe('tab Cài đặt riêng cho ôn từ sai', () => {
         expect(muc).toMatch(/lật thẻ/);
     });
 });
+
+describe('thanh trạng thái tự giải thích được', () => {
+    test('mức thuộc có CHỮ, không chỉ mỗi "0/5"', () => {
+        // Năm chấm cạnh một phân số đọc thành "câu 0 trên 5" — tiến độ lượt
+        // chơi — chứ không ai đoán ra đó là mức thuộc từ này.
+        expect(src).toMatch(/rm-status-label">Thuộc</);
+    });
+
+    test('không dựa vào `title` để giải nghĩa — điện thoại không hover được', () => {
+        // `title` vẫn giữ để bổ sung chi tiết, nhưng nghĩa cốt lõi phải đọc
+        // được ngay trên màn hình.
+        const i = src.indexOf('class="rm-status"');
+        const khoi = src.slice(i, src.indexOf('</div>', i));
+        expect(khoi).toMatch(/rm-status-label/);
+        expect(khoi).toMatch(/đã sai \$\{soLanSai\} lần/);
+    });
+
+    test('nhãn có kiểu riêng, mờ hơn con số', () => {
+        // Nhãn ngang giá trị thì mắt không biết đọc cái nào trước.
+        const i = css.indexOf('.rm-status-label {');
+        expect(i).toBeGreaterThan(-1);
+        expect(css.slice(i, css.indexOf('}', i))).toMatch(/color: var\(--text-secondary\)/);
+    });
+
+    test('thanh trạng thái xuống dòng được khi chật', () => {
+        // Ba khối chữ trên một hàng ở màn hẹp — không wrap thì tràn ra ngoài.
+        const i = css.indexOf('.rm-status {');
+        expect(css.slice(i, css.indexOf('}', i))).toMatch(/flex-wrap: wrap/);
+    });
+});
