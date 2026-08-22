@@ -30,6 +30,10 @@ const UNLOCKS = [
     // 250 từ tiếng Anh — mở sớm thì họ mở ra rồi bỏ, ta trả tiền token cho một
     // lượt dùng vô ích.
     { key: 'feature:essay',        label: 'Luyện viết luận', requiredLevel: 18, icon: '✍️', order: 86 },
+    // Mở SỚM hơn Viết luận: dịch một đoạn 4 câu có sẵn nội dung dễ hơn hẳn tự
+    // nghĩ ra 250 từ, nên người ở mức này làm được và có cái để học. Vẫn muộn
+    // hơn các chế độ thường vì nó gọi AI có phí.
+    { key: 'feature:translation',  label: 'Dịch đoạn văn',   requiredLevel: 12, icon: '🔤', order: 85 },
     { key: 'feature:toeic',        label: 'Thi TOEIC',       requiredLevel: 20, icon: '📝', order: 90 },
 
     // ── Chế độ luyện tập (theo 4 tầng độ khó) ──
