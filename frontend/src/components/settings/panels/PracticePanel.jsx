@@ -6,6 +6,16 @@ import { bandLabel, BANDS, levelsFor } from '@lib/levelBands.js';
 
 const SEC_OPTIONS = [10, 15, 20, 25, 30, 45, 60, 90, 120];
 
+/**
+ * Ba kiểu hỏi của chế độ "Ôn lại từ sai", xếp theo độ khó tăng dần.
+ * Khớp `KIEU_HOI` trong `reviewMistakes.js` — đổi một bên phải đổi bên kia.
+ */
+const REVIEW_KINDS = [
+    { key: 'choice',    label: 'Chọn nghĩa', desc: 'Chọn đáp án đúng trong 4 lựa chọn' },
+    { key: 'truefalse', label: 'Đúng / Sai', desc: 'Xem một nghĩa và quyết định đúng hay sai' },
+    { key: 'fill',      label: 'Gõ từ',      desc: 'Tự gõ ra, không có gợi ý — khó nhất' },
+];
+
 // Thụt lề + vạch trái cho cài đặt PHỤ THUỘC một toggle phía trên → nhìn ra quan hệ cha–con.
 const NESTED = { paddingLeft: 14, borderLeft: '2px solid var(--border-color)' };
 
@@ -18,6 +28,23 @@ export default function PracticePanel({ s, handleQPS, updateSetting, handleDiffi
     const effSec = (id) => (typeof qt[id] === 'number' ? qt[id] : (legacy ?? getQuestionTimeDefault(id)));
     const firstSec = effSec(QUESTION_TIME_MODES[0].id);
     const allSame = QUESTION_TIME_MODES.every(m => effSec(m.id) === firstSec) ? firstSec : null;
+
+    // Kiểu hỏi đang bật. Chưa đặt gì → coi như bật CẢ BA: người chưa vào Cài đặt
+    // bao giờ phải thấy ba ô đều tick, không phải ba ô trống rồi tự hỏi mình đã
+    // tắt cái gì.
+    const kindsChon = Array.isArray(s.reviewKinds) && s.reviewKinds.length
+        ? s.reviewKinds
+        : REVIEW_KINDS.map(k => k.key);
+
+    const toggleKind = (key) => {
+        const sau = kindsChon.includes(key)
+            ? kindsChon.filter(k => k !== key)
+            : [...kindsChon, key];
+        // Bỏ tick cái cuối → lưu mảng RỖNG, và `kieuDuocPhep()` hiểu đó là "dùng
+        // cả ba". Chặn không cho bỏ thì người dùng kẹt ở một ô không tắt được;
+        // để rỗng nghĩa là "không giới hạn", đúng hơn là một lượt không có câu nào.
+        updateSetting('reviewKinds', sau);
+    };
     const tmVal = tmMode === 'all' ? (allSame ?? '') : effSec(tmMode);
     const tmOptions = (typeof tmVal === 'number' && !SEC_OPTIONS.includes(tmVal))
         ? [tmVal, ...SEC_OPTIONS].sort((a, b) => a - b) : SEC_OPTIONS;
@@ -94,6 +121,35 @@ export default function PracticePanel({ s, handleQPS, updateSetting, handleDiffi
                     </div>
                 </div>
             )}
+            {/* Kiểu hỏi cho chế độ "Ôn lại từ sai".
+                Chế độ đó trộn ba kiểu trong CÙNG một lượt — câu này chọn nghĩa,
+                câu sau gõ từ. Mặc định hệ thống tự chọn theo mức thuộc SM-2 của
+                từng từ; ai muốn chủ động thì bỏ tick để tắt kiểu không thích. */}
+            <div className="setting-item setting-item--column">
+                <div className="setting-info">
+                    <h4>Kiểu hỏi khi ôn từ sai</h4>
+                    <p>Bỏ tick để tắt kiểu không muốn gặp. Bỏ hết = dùng cả ba.</p>
+                </div>
+                <div className="review-kinds">
+                    {REVIEW_KINDS.map(k => {
+                        const dangBat = kindsChon.includes(k.key);
+                        return (
+                            <label key={k.key} className="review-kind">
+                                <input
+                                    type="checkbox"
+                                    checked={dangBat}
+                                    onChange={() => toggleKind(k.key)}
+                                />
+                                <span className="review-kind-body">
+                                    <strong>{k.label}</strong>
+                                    <em>{k.desc}</em>
+                                </span>
+                            </label>
+                        );
+                    })}
+                </div>
+            </div>
+
             <div className="setting-item">
                 <div className="setting-info">
                     <h4>Tự động chuyển câu</h4>

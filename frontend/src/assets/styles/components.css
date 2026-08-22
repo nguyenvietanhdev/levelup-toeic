@@ -9680,3 +9680,209 @@ mark {
     background: transparent;
     color: inherit;
 }
+
+
+/* ===================================
+   ÔN LẠI TỪ SAI — kiểm tra hỗn hợp
+   ===================================
+   Ba kiểu hỏi đan xen trong cùng một lượt, nên khung phải gọn: mỗi kiểu có
+   phần thân khác nhau (4 ô đáp án / 2 nút / 1 ô nhập) mà thanh ba nút dưới
+   cùng vẫn phải nằm trong khung hình. */
+
+.rm-container {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+/* Hàng trạng thái: mức thuộc · số lần sai · kiểu câu hỏi.
+   Gộp một hàng thay vì ba khối chồng — chừa chỗ cho phần hỏi–đáp bên dưới. */
+.rm-status {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+    font-size: 12px;
+    color: var(--text-secondary);
+}
+
+/* Mức thuộc SM-2 hiện thành 5 chấm — con số 3/5 một mình không nói lên tiến
+   trình, mà đây chính là thứ trả lời "từ này tôi thuộc chưa?". */
+.rm-mastery {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+}
+
+.rm-dot {
+    font-size: 7px;
+    color: var(--border-color);
+}
+
+.rm-dot.is-on {
+    color: #16a34a;
+}
+
+.rm-mastery-text {
+    margin-left: 4px;
+    font-weight: 600;
+}
+
+.rm-wrong {
+    padding: 2px 8px;
+    border-radius: 999px;
+    background: rgba(239, 68, 68, 0.12);
+    color: #dc2626;
+}
+
+/* Nhãn kiểu câu hỏi — người học cần biết câu này đang hỏi kiểu gì TRƯỚC khi
+   nhìn xuống, vì ba kiểu có cách trả lời khác nhau. */
+.rm-kind {
+    margin-left: auto;
+    padding: 2px 10px;
+    border-radius: 999px;
+    background: rgba(139, 92, 246, 0.15);
+    color: var(--accent-color);
+    font-weight: 600;
+}
+
+.rm-word {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    font-size: 26px;
+    font-weight: 700;
+    color: var(--primary-color);
+}
+
+.rm-phonetic {
+    font-size: 14px;
+    font-weight: 400;
+    color: var(--text-secondary);
+}
+
+.rm-prompt {
+    margin: 0 0 8px;
+    text-align: center;
+    font-size: 14px;
+    color: var(--text-secondary);
+}
+
+/* Nghĩa đem ra hỏi đúng/sai — to hơn dòng nhắc vì nó là thứ phải đánh giá. */
+.rm-shown {
+    margin-bottom: 10px;
+    padding: 10px;
+    border-radius: 10px;
+    background: var(--bg-secondary);
+    text-align: center;
+    font-size: 18px;
+    font-weight: 600;
+}
+
+.rm-tf {
+    display: flex;
+    gap: 12px;
+}
+
+.rm-tf .rm-tf-btn {
+    flex: 1;
+}
+
+/* Ô gõ từ + nút Kiểm tra trên MỘT hàng: hai bước liền nhau của một thao tác. */
+.rm-fill-row {
+    display: flex;
+    gap: 8px;
+}
+
+.rm-input {
+    flex: 1;
+    /* `min-width: 0` — thiếu thì input không co dưới kích thước nội dung và đẩy
+       nút Kiểm tra tràn ra ngoài. */
+    min-width: 0;
+    padding: 10px 14px;
+    border: 2px solid var(--border-color);
+    border-radius: 10px;
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    /* 16px, KHÔNG nhỏ hơn: Safari trên iOS tự phóng to trang khi chạm vào ô
+       nhập có chữ dưới 16px. */
+    font-size: 16px;
+}
+
+.rm-input:focus {
+    outline: none;
+    border-color: var(--accent-color);
+}
+
+.rm-input.is-correct {
+    border-color: #16a34a;
+    color: #16a34a;
+}
+
+.rm-input.is-wrong {
+    border-color: #dc2626;
+    color: #dc2626;
+}
+
+/* Bốn ô đáp án xếp hai cột — một cột thì bốn ô đẩy thanh nút xuống dưới mép. */
+.rm-choices {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+}
+
+@media (max-width: 520px) {
+    .rm-choices {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* ===================================
+   Cài đặt — chọn kiểu hỏi khi ôn từ sai
+   =================================== */
+
+.setting-item--column {
+    display: block;
+}
+
+.review-kinds {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-top: 8px;
+}
+
+.review-kind {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 8px 10px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background 0.15s ease;
+}
+
+.review-kind:hover {
+    background: var(--bg-secondary);
+}
+
+.review-kind input {
+    margin-top: 3px;
+    flex-shrink: 0;
+    cursor: pointer;
+}
+
+.review-kind-body {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+}
+
+.review-kind-body em {
+    font-size: 12px;
+    font-style: normal;
+    color: var(--text-secondary);
+}

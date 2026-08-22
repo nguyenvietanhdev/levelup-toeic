@@ -9,6 +9,83 @@ import { afterAnswer } from '@components/practice/practiceNav.js';
 import { startQuestionTimer } from '@components/practice/questionTimer.js';
 import { timeoutQuestion } from '@components/practice/questionTimeout.js';
 
+/**
+ * Ba kiểu hỏi, xếp theo ĐỘ KHÓ tăng dần.
+ *
+ *   choice    — nhìn thấy đáp án đúng trong 4 lựa chọn: chỉ cần NHẬN RA.
+ *   truefalse — thấy một nghĩa, quyết định đúng/sai: PHÂN BIỆT.
+ *   fill      — không gợi ý gì, tự gõ ra: NHỚ LẠI, khó nhất.
+ *
+ * Một từ trả lời đúng ở trắc nghiệm chưa chắc gõ ra được — mà đây là chế độ ôn
+ * từ ĐÃ SAI, nên cần biết người học thật sự nhớ hay chỉ nhận mặt chữ.
+ */
+const KIEU_HOI = ['choice', 'truefalse', 'fill'];
+
+/** Nhãn hiện trên thẻ trạng thái, cho biết câu này đang hỏi kiểu gì. */
+const NHAN_KIEU = {
+    choice: 'Chọn nghĩa',
+    truefalse: 'Đúng / Sai',
+    fill: 'Gõ từ',
+};
+
+/**
+ * Chọn kiểu hỏi cho MỘT từ, dựa trên mức thuộc SM-2 của chính từ đó.
+ *
+ * Mỗi câu một kiểu, đan xen liên tục trong cùng một lượt — không phải làm hết
+ * trắc nghiệm rồi mới sang gõ từ. Từ vừa sai lần đầu và từ sắp thuộc nằm cạnh
+ * nhau trong danh sách, nên hai câu liền kề thường khác kiểu.
+ *
+ *   mastery 0–1 → `choice`     Vừa sai xong, chưa nhớ mặt chữ. Bắt gõ ngay là
+ *                              chắc chắn sai lần nữa, không học được gì.
+ *   mastery 2–3 → `truefalse`  Đã nhận ra được, giờ kiểm xem có phân biệt nổi
+ *                              với nghĩa gần giống không.
+ *   mastery 4–5 → `fill`       Sắp thuộc. Chỉ khi gõ ra được mới là thuộc thật.
+ *
+ * Dùng SM-2 thay vì gọi AI: bảng `user_wrongwords` đã lưu sẵn `masteryLevel`
+ * của từng từ, tính từ lịch sử đúng/sai THẬT. AI phải đoán lại đúng thứ đó, mà
+ * còn tốn tiền và độ trễ mạng cho mỗi lượt.
+ */
+function kieuTheoMucThuoc(word) {
+    const m = Number(word?.masteryLevel) || 0;
+    if (m >= 4) return 'fill';
+    if (m >= 2) return 'truefalse';
+    return 'choice';
+}
+
+/**
+ * Những kiểu hỏi người dùng CHO PHÉP, đọc từ Cài đặt.
+ *
+ * `settings.reviewKinds` là mảng tên kiểu. Không có / rỗng / toàn giá trị lạ →
+ * dùng cả ba: người chưa vào Cài đặt bao giờ phải nhận được trải nghiệm đầy đủ,
+ * không phải một màn hình trống.
+ */
+function kieuDuocPhep() {
+    const chon = GameState.state?.settings?.reviewKinds;
+    if (!Array.isArray(chon)) return [...KIEU_HOI];
+    const hopLe = chon.filter((k) => KIEU_HOI.includes(k));
+    return hopLe.length ? hopLe : [...KIEU_HOI];
+}
+
+/**
+ * Kiểu hỏi cuối cùng cho một từ: SM-2 đề xuất, cài đặt của người dùng quyết.
+ *
+ * Nếu kiểu SM-2 chọn đang bị tắt thì LÙI VỀ kiểu dễ hơn còn bật, chứ không nhảy
+ * lên kiểu khó hơn — người tắt "Gõ từ" là người không muốn gõ, ép họ gõ vì
+ * không còn lựa chọn nào khác là làm ngược ý họ.
+ */
+function chonKieu(word, choPhep) {
+    const muon = kieuTheoMucThuoc(word);
+    if (choPhep.includes(muon)) return muon;
+
+    // Đi ngược từ vị trí của `muon` về phía dễ hơn.
+    const i = KIEU_HOI.indexOf(muon);
+    for (let k = i - 1; k >= 0; k--) {
+        if (choPhep.includes(KIEU_HOI[k])) return KIEU_HOI[k];
+    }
+    // Không còn kiểu nào dễ hơn → lấy kiểu bật đầu tiên (danh sách luôn khác rỗng).
+    return choPhep[0];
+}
+
 export const ReviewMistakes = {
 
     config: null,
@@ -70,9 +147,35 @@ export const ReviewMistakes = {
             masteryLevel: w.masteryLevel
         }));
 
-        this.questions = formattedWords.map(word =>
-            GameLogic.generateMultipleChoice(word, this.config.optionsCount)
-        );
+        // XEN KẼ ba kiểu hỏi thay vì chỉ trắc nghiệm.
+        //
+        // Mỗi kiểu kiểm tra một cách nhớ khác nhau: chọn đáp án là NHẬN RA (dễ
+        // nhất — nhìn thấy đáp án đúng trong bốn lựa chọn), gõ từ là NHỚ LẠI
+        // (khó nhất, không có gợi ý), đúng/sai là PHÂN BIỆT. Một từ trả lời
+        // đúng ở trắc nghiệm chưa chắc gõ ra được — mà chế độ này để ôn từ ĐÃ
+        // SAI, nên cần biết người học thật sự nhớ hay chỉ nhận mặt chữ.
+        //
+        // Xoay vòng theo chỉ số chứ không ngẫu nhiên: ngẫu nhiên có thể ra bốn
+        // câu gõ liên tiếp, mệt và nản đúng ở chế độ vốn đã khó.
+        // Kiểu hỏi CHỌN THEO TỪNG TỪ, không xoay vòng theo vị trí: một từ vừa
+        // sai lần đầu và một từ sắp thuộc cần hai cách kiểm tra khác nhau, dù
+        // chúng đứng cạnh nhau trong lượt.
+        //
+        // Người dùng bật/tắt kiểu nào ở Cài đặt thì chỉ những kiểu đó được dùng;
+        // nếu kiểu được SM-2 chọn đang tắt thì lùi về kiểu dễ hơn còn bật.
+        const choPhep = kieuDuocPhep();
+
+        this.questions = formattedWords.map((word) => {
+            const kieu = chonKieu(word, choPhep);
+
+            if (kieu === 'fill') {
+                return { ...GameLogic.generateFillBlank(word), kieu };
+            }
+            if (kieu === 'truefalse') {
+                return { ...GameLogic.generateSpeedQuiz(word, 2), kieu };
+            }
+            return { ...GameLogic.generateMultipleChoice(word, this.config.optionsCount), kieu };
+        });
     },
 
     showQuestion() {
@@ -109,107 +212,204 @@ export const ReviewMistakes = {
         const container = document.getElementById('practice-content');
         if (!container) return;
 
-        const wrongCount = question.word.wrongCount || 1;
+        const w = question.word;
+        const soLanSai = w.wrongCount || 1;
+        // 0–5 theo SM-2. Đây là thứ người học không nhìn thấy ở đâu khác, mà nó
+        // trả lời đúng câu họ quan tâm: "từ này tôi thuộc chưa?"
+        const mucThuoc = Math.max(0, Math.min(5, w.masteryLevel || 0));
 
         container.innerHTML = `
-            <div class="question-container">
-                <div class="review-badge">
-                    <span class="badge badge-warning">Luyện lại</span>
-                    <span class="wrong-count">Đã sai ${wrongCount} lần</span>
+            <div class="question-container rm-container">
+                <!-- Một hàng: mức thuộc + số lần sai + kiểu câu hỏi.
+                     Gộp lại thay vì mỗi thứ một khối — chế độ này còn phải chừa
+                     chỗ cho ô nhập/đáp án và thanh ba nút bên dưới. -->
+                <div class="rm-status">
+                    <span class="rm-mastery" title="Mức thuộc theo lịch giãn cách: ${mucThuoc}/5">
+                        ${[0, 1, 2, 3, 4].map(k =>
+                            `<i class="fas fa-circle rm-dot${k < mucThuoc ? ' is-on' : ''}"></i>`
+                        ).join('')}
+                        <span class="rm-mastery-text">${mucThuoc}/5</span>
+                    </span>
+                    <span class="rm-wrong" title="Số lần bạn đã sai từ này">
+                        <i class="fas fa-rotate-left"></i> sai ${soLanSai} lần
+                    </span>
+                    <span class="rm-kind">${NHAN_KIEU[question.kieu] || ''}</span>
                 </div>
 
-                <div class="question-word">
-                    <div class="word-display">${question.word.en}</div>
-                    <div class="word-phonetic">${question.word.phonetic || ''}</div>
-                    <div class="word-type">${question.word.type || ''}</div>
-                    ${question.word.image ? `
-                        <img src="${question.word.image}" class="word-image" alt="${question.word.en}"
-                              class="js-hide-on-error">
-                    ` : ''}
+                <div class="rm-word">
+                    <span class="rm-word-text">${question.displayWord || w.en}</span>
+                    <button class="btn-speak-mini" id="rm-speak-btn" title="Nghe phát âm">
+                        <i class="fas fa-volume-up"></i>
+                    </button>
+                    ${w.phonetic ? `<span class="rm-phonetic">/${w.phonetic}/</span>` : ''}
                 </div>
 
-                <div class="question-prompt">
-                    Nghĩa của từ này là gì?
-                </div>
-
-                <div class="choices-container">
-                    ${question.options.map((option, index) => `
-                        <button class="choice-btn" data-index="${index}">
-                            ${option}
-                        </button>
-                    `).join('')}
-                </div>
+                <div class="rm-body">${this.bodyHtml(question)}</div>
             </div>
         `;
 
         this.attachListeners();
 
         if (GameState.state?.settings?.autoPronunciation) {
-            setTimeout(() => {
-                GameLogic.speakWord(question.word.en, 'en-US');
-            }, 300);
+            setTimeout(() => GameLogic.speakWord(w.en), 300);
         }
     },
 
-    attachListeners() {
-        const choices = document.querySelectorAll('.choice-btn');
+    /** Phần hỏi–đáp, khác nhau theo kiểu câu hỏi. */
+    bodyHtml(question) {
+        if (question.kieu === 'fill') {
+            return `
+                <p class="rm-prompt">${question.prompt}</p>
+                <div class="rm-fill-row">
+                    <input type="text" id="rm-input" class="rm-input"
+                           placeholder="${question.placeholder}"
+                           autocomplete="nope-review-answer" autocorrect="off"
+                           autocapitalize="off" spellcheck="false" />
+                    <button class="btn btn-primary" id="rm-check-btn">
+                        <i class="fas fa-check"></i> Kiểm tra
+                    </button>
+                </div>`;
+        }
 
-        choices.forEach((btn, index) => {
-            btn.addEventListener('click', () => {
-                this.selectAnswer(index);
-            });
+        if (question.kieu === 'truefalse') {
+            return `
+                <p class="rm-prompt">Nghĩa dưới đây có đúng không?</p>
+                <div class="rm-shown">${question.shownAnswer}</div>
+                <div class="rm-tf">
+                    <button class="choice-btn rm-tf-btn" data-tf="true">
+                        <i class="fas fa-check"></i> Đúng
+                    </button>
+                    <button class="choice-btn rm-tf-btn" data-tf="false">
+                        <i class="fas fa-times"></i> Sai
+                    </button>
+                </div>`;
+        }
+
+        return `
+            <p class="rm-prompt">Nghĩa của từ này là gì?</p>
+            <div class="choices-container rm-choices">
+                ${question.options.map((opt, k) => `
+                    <button class="choice-btn" data-index="${k}">${opt}</button>
+                `).join('')}
+            </div>`;
+    },
+
+    attachListeners() {
+        const question = this.questions[this.currentIndex];
+        if (!question) return;
+
+        document.getElementById('rm-speak-btn')?.addEventListener('click', () => {
+            // Không truyền ngôn ngữ — `speakWord` tự nhận chữ Hán.
+            GameLogic.speakWord(question.word.en);
         });
+
+        if (question.kieu === 'fill') {
+            const input = document.getElementById('rm-input');
+            const btn = document.getElementById('rm-check-btn');
+            const nop = () => this.chamFill(input?.value || '');
+
+            btn?.addEventListener('click', nop);
+            input?.addEventListener('keydown', (e) => {
+                // Enter để nộp. `isComposing` là BẮT BUỘC với tiếng Trung: bộ gõ
+                // dùng Enter để chọn chữ trong danh sách gợi ý, không chặn thì
+                // vừa gõ pinyin xong nhấn Enter là nộp luôn chuỗi chưa thành chữ.
+                if (e.key === 'Enter' && !e.isComposing) {
+                    e.preventDefault();
+                    nop();
+                }
+            });
+            setTimeout(() => input?.focus(), 100);
+            return;
+        }
+
+        if (question.kieu === 'truefalse') {
+            document.querySelectorAll('.rm-tf-btn').forEach((btn) => {
+                btn.addEventListener('click', () => {
+                    this.chamTruocSau(btn.dataset.tf === 'true', btn);
+                });
+            });
+            return;
+        }
+
+        document.querySelectorAll('.rm-choices .choice-btn').forEach((btn, k) => {
+            btn.addEventListener('click', () => this.selectAnswer(k));
+        });
+    },
+
+    /** Chấm câu GÕ TỪ. */
+    chamFill(traLoi) {
+        const question = this.questions[this.currentIndex];
+        const input = document.getElementById('rm-input');
+        if (!question || !input || input.disabled) return;
+
+        const dung = GameLogic.checkFillBlank(traLoi, question.correctAnswer);
+        input.disabled = true;
+        input.classList.add(dung ? 'is-correct' : 'is-wrong');
+        const btn = document.getElementById('rm-check-btn');
+        if (btn) btn.disabled = true;
+
+        this.ketThucCau(dung, question, question.correctAnswer);
+    },
+
+    /** Chấm câu ĐÚNG/SAI. */
+    chamTruocSau(chonDung, btnDaBam) {
+        const question = this.questions[this.currentIndex];
+        if (!question) return;
+
+        const nut = document.querySelectorAll('.rm-tf-btn');
+        if (btnDaBam?.disabled) return;
+        nut.forEach((b) => { b.disabled = true; });
+
+        const dung = chonDung === question.isCorrect;
+        btnDaBam?.classList.add(dung ? 'correct' : 'wrong');
+
+        this.ketThucCau(dung, question, question.isCorrect ? 'Đúng' : 'Sai');
+    },
+
+    /**
+     * Phần chung sau khi chấm: ghi điểm, phát âm, báo kết quả, sang câu kế.
+     *
+     * Ba kiểu hỏi trước đây mỗi cái tự lặp lại đoạn này; gom vào một chỗ thì
+     * sửa luật tính điểm chỉ phải sửa một nơi.
+     */
+    ketThucCau(dung, question, dapAn) {
+        PracticeManager.recordAnswer(dung, question.word);
+
+        if (GameState.state.settings.soundEnabled) {
+            Utils.playSound(dung ? Config.sounds.correct : Config.sounds.wrong, 0.5);
+        }
+
+        Notification.show(dung
+            ? { type: 'success', title: 'Chính xác!',
+                message: 'Từ này sẽ quay lại muộn hơn theo lịch ôn', duration: 2000 }
+            : { type: 'error', title: 'Chưa đúng',
+                message: `Đáp án đúng: ${dapAn}`, duration: 3000 });
+
+        if (GameState.state.settings.soundEnabled && question.word.en) {
+            setTimeout(() => GameLogic.speakWord(question.word.en), 500);
+        }
+
+        this.showWordInfo(question.word);
+        afterAnswer(this, 'review-mistakes');
     },
 
     selectAnswer(index) {
         const question = this.questions[this.currentIndex];
         this.selectedAnswer = index;
 
-        const choices = document.querySelectorAll('.choice-btn');
-        choices.forEach(btn => btn.disabled = true);
+        const choices = document.querySelectorAll('.rm-choices .choice-btn');
+        if (choices[index]?.disabled) return;
+        choices.forEach((btn) => { btn.disabled = true; });
 
-        const isCorrect = question.options[index] === question.correctAnswer;
+        const dung = question.options[index] === question.correctAnswer;
+        choices[index].classList.add(dung ? 'correct' : 'wrong');
 
-        choices[index].classList.add(isCorrect ? 'correct' : 'wrong');
-
-        if (!isCorrect) {
-            const correctIndex = question.options.indexOf(question.correctAnswer);
-            if (correctIndex !== -1) {
-                choices[correctIndex].classList.add('correct');
-            }
+        if (!dung) {
+            const iDung = question.options.indexOf(question.correctAnswer);
+            if (iDung !== -1) choices[iDung].classList.add('correct');
         }
 
-        PracticeManager.recordAnswer(isCorrect, question.word);
-
-        if (GameState.state.settings.soundEnabled) {
-            Utils.playSound(isCorrect ? Config.sounds.correct : Config.sounds.wrong, 0.5);
-        }
-
-        if (isCorrect) {
-            Notification.show({
-                type: 'success',
-                title: 'Chính xác!',
-                message: 'Từ này đã được xóa khỏi danh sách cần ôn lại',
-                duration: 2000
-            });
-        } else {
-            Notification.show({
-                type: 'error',
-                title: 'Chưa đúng',
-                message: `Đáp án đúng: ${question.correctAnswer}`,
-                duration: 3000
-            });
-        }
-
-        if (GameState.state.settings.soundEnabled && question.word.en) {
-            setTimeout(() => {
-                GameLogic.speakWord(question.word.en, 'en-US');
-            }, 500);
-        }
-
-        this.showWordInfo(question.word);
-
-        afterAnswer(this, 'review-mistakes');
+        this.ketThucCau(dung, question, question.correctAnswer);
     },
 
     showWordInfo(word) {

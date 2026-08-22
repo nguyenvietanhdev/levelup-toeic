@@ -85,6 +85,20 @@ const settingsSchema = new mongoose.Schema(
         // Tự chuyển câu sau khi trả lời (luyện tập).
         autoAdvance: { type: Boolean, default: true },
 
+        /**
+         * Kiểu hỏi được phép trong chế độ "Ôn lại từ sai": 'choice' /
+         * 'truefalse' / 'fill'.
+         *
+         * Mảng RỖNG = không giới hạn (dùng cả ba), không phải "không có kiểu
+         * nào" — người bỏ tick hết là người không muốn giới hạn, chứ không phải
+         * muốn một lượt không có câu nào.
+         *
+         * PHẢI khai ở đây: Mongoose ở chế độ `strict` XOÁ ÂM THẦM mọi trường
+         * không khai, nên thiếu dòng này thì lựa chọn của người dùng lưu xong là
+         * mất, không có lỗi nào báo.
+         */
+        reviewKinds: { type: [String], default: undefined },
+
         // ── Cấu hình bài thi TOEIC ───────────────────────────────────────────
         // Bốn trường này người dùng chỉnh khá kỹ; mất là phải dựng lại từ đầu.
         toeicPerQuestionTimer: { type: Boolean, default: false },
