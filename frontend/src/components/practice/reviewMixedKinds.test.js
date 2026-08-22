@@ -15,8 +15,14 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 const src = readFileSync(join(__dirname, 'modes', 'reviewMistakes.js'), 'utf8');
+// Khối kiểu hỏi nằm ở panel RIÊNG, không phải trong "Luyện tập": đây là cài
+// đặt của một chế độ, không phải cài đặt dùng chung cho cả 16 chế độ.
 const panel = readFileSync(
+    join(__dirname, '..', 'settings', 'panels', 'ReviewPanel.jsx'), 'utf8');
+const practicePanel = readFileSync(
     join(__dirname, '..', 'settings', 'panels', 'PracticePanel.jsx'), 'utf8');
+const settingsScreen = readFileSync(
+    join(__dirname, '..', 'settings', 'SettingsScreen.jsx'), 'utf8');
 const schema = readFileSync(
     join(__dirname, '..', '..', '..', '..', 'backend', 'models', 'UserProfile.js'), 'utf8');
 const css = readFileSync(
@@ -35,23 +41,24 @@ function napBoChon(settings = {}) {
 describe('xoay vòng đủ BA kiểu theo vị trí câu', () => {
     const M = napBoChon();
 
-    test('từ tiếng Trung: chọn nghĩa → đúng/sai → nghe → … → viết chữ', () => {
+    test('từ tiếng Trung: lật thẻ → chọn nghĩa → đúng/sai → … → viết chữ', () => {
         // Đây là thứ người dùng thấy trực tiếp: câu này một kiểu, câu sau kiểu
         // khác. Không phải làm hết một kiểu rồi mới sang kiểu khác.
         const cp = M.kieuDuocPhep();
         const w = { masteryLevel: 0, en: '多少' };
-        const r = [0, 1, 2, 3, 4, 5].map(i => M.chonKieu(w, cp, i));
-        expect(r[0]).toBe('choice');
-        expect(r[1]).toBe('truefalse');
-        expect(r[2]).toBe('listen');
-        expect(r[5]).toBe('hanzi');
-        // Ít nhất bốn kiểu KHÁC NHAU trong sáu câu — đó mới là "hỗn hợp".
-        expect(new Set(r).size).toBeGreaterThanOrEqual(4);
+        const r = [0, 1, 2, 3, 4, 5, 6].map(i => M.chonKieu(w, cp, i));
+        expect(r[0]).toBe('flashcard');
+        expect(r[1]).toBe('choice');
+        expect(r[2]).toBe('truefalse');
+        expect(r[3]).toBe('listen');
+        expect(r[6]).toBe('hanzi');
+        // Ít nhất năm kiểu KHÁC NHAU trong bảy câu — đó mới là "hỗn hợp".
+        expect(new Set(r).size).toBeGreaterThanOrEqual(5);
     });
 
     test('từ Latin ĐỦ DÀI được xếp chữ cái', () => {
         const cp = M.kieuDuocPhep();
-        expect(M.chonKieu({ en: 'meticulously' }, cp, 3)).toBe('scramble');
+        expect(M.chonKieu({ en: 'meticulously' }, cp, 4)).toBe('scramble');
     });
 
     test('từ Latin QUÁ NGẮN bỏ qua xếp chữ cái', () => {
@@ -86,7 +93,7 @@ describe('xoay vòng đủ BA kiểu theo vị trí câu', () => {
         // là một kiểu duy nhất suốt cả lượt — đúng thứ người dùng báo.
         const cp = M.kieuDuocPhep();
         for (const m of [0, 1, 2, 3, 4, 5]) {
-            expect(M.chonKieu({ masteryLevel: m, en: 'meticulously' }, cp, 2)).toBe('listen');
+            expect(M.chonKieu({ masteryLevel: m, en: 'meticulously' }, cp, 3)).toBe('listen');
         }
     });
 
@@ -109,9 +116,14 @@ describe('xoay vòng đủ BA kiểu theo vị trí câu', () => {
         expect(src).not.toMatch(/Math\.random\(\)/);
     });
 
-    test('sáu kiểu xếp theo độ khó TĂNG DẦN', () => {
+    test('bảy kiểu xếp theo độ khó TĂNG DẦN', () => {
         // Thứ tự này quyết định thứ tự xoay vòng: dễ trước để người học vào nhịp.
-        expect(M.KIEU_HOI).toEqual(['choice', 'truefalse', 'listen', 'scramble', 'fill', 'hanzi']);
+        // Cũng là thứ tự ưu tiên khi `chonKieu` lùi về kiểu dễ hơn.
+        expect(M.KIEU_HOI).toEqual(['flashcard', 'choice', 'truefalse', 'listen', 'scramble', 'fill', 'hanzi']);
+    });
+
+    test('lật thẻ đứng ĐẦU — dễ nhất, không phải chọn cũng không phải gõ', () => {
+        expect(M.KIEU_HOI[0]).toBe('flashcard');
     });
 });
 
@@ -122,8 +134,11 @@ describe('người dùng tự chọn kiểu — cài đặt thắng SM-2', () =>
         const M = napBoChon({ reviewKinds: ['choice', 'truefalse'] });
         const cp = M.kieuDuocPhep();
         const w = { masteryLevel: 0 };
-        expect(M.chonKieu(w, cp, 2)).toBe('truefalse');   // vị trí 2 vốn là fill
-        expect(M.chonKieu(w, cp, 0)).toBe('choice');
+        expect(M.chonKieu(w, cp, 5)).toBe('truefalse');   // vị trí 5 vốn là fill
+        expect(M.chonKieu(w, cp, 1)).toBe('choice');
+        // Vị trí 0 vốn là `flashcard`, cũng đang tắt → lùi phải, vì không còn
+        // kiểu nào bên trái. Không được trả `undefined`.
+        expect(['choice', 'truefalse']).toContain(M.chonKieu(w, cp, 0));
     });
 
     test('chỉ bật "Gõ từ" thì mọi câu đều gõ', () => {
@@ -140,7 +155,7 @@ describe('người dùng tự chọn kiểu — cài đặt thắng SM-2', () =>
         // ôn không có câu nào — vô dụng, mà người dùng không hề muốn thế.
         for (const v of [[], undefined, null, ['xyz']]) {
             const M = napBoChon({ reviewKinds: v });
-            expect(M.kieuDuocPhep()).toEqual(['choice', 'truefalse', 'listen', 'scramble', 'fill', 'hanzi']);
+            expect(M.kieuDuocPhep()).toEqual(['flashcard', 'choice', 'truefalse', 'listen', 'scramble', 'fill', 'hanzi']);
         }
     });
 
@@ -216,15 +231,15 @@ describe('thanh trạng thái mức thuộc', () => {
 });
 
 describe('ô chọn kiểu trong Cài đặt', () => {
-    test('có đủ ba ô', () => {
-        expect(panel).toMatch(/const REVIEW_KINDS = \[/);
-        for (const k of ['choice', 'truefalse', 'fill']) {
+    test('có đủ ô cho mọi kiểu', () => {
+        expect(panel).toMatch(/export const REVIEW_KINDS = \[/);
+        for (const k of ['flashcard', 'choice', 'truefalse', 'fill']) {
             expect(panel).toContain(`key: '${k}'`);
         }
     });
 
-    test('chưa đặt gì thì hiện CẢ BA đã tick', () => {
-        // Ba ô trống làm người dùng tự hỏi mình đã tắt cái gì.
+    test('chưa đặt gì thì hiện TẤT CẢ đã tick', () => {
+        // Ô trống làm người dùng tự hỏi mình đã tắt cái gì.
         expect(panel).toMatch(/Array\.isArray\(s\.reviewKinds\) && s\.reviewKinds\.length/);
     });
 
@@ -414,9 +429,79 @@ describe('hai kiểu mới: nghe & xếp chữ cái', () => {
         expect(css.slice(i, css.indexOf('}', i))).toMatch(/min-height/);
     });
 
-    test('cả sáu kiểu có ô chọn trong Cài đặt', () => {
-        for (const k of ['choice', 'truefalse', 'listen', 'scramble', 'fill', 'hanzi']) {
+    test('cả bảy kiểu có ô chọn trong Cài đặt', () => {
+        // Kiểu chạy được mà không có ô tắt thì người dùng gặp nó mà không có
+        // cách nào bỏ.
+        for (const k of ['flashcard', 'choice', 'truefalse', 'listen', 'scramble', 'fill', 'hanzi']) {
             expect(panel).toContain(`key: '${k}'`);
         }
+    });
+
+    test('danh sách ở Cài đặt khớp `KIEU_HOI` — đủ và đúng THỨ TỰ', () => {
+        // Hai danh sách ở hai file; lệch nhau thì hoặc có kiểu không tắt được,
+        // hoặc có ô tick chẳng điều khiển gì.
+        const oPanel = [...panel.matchAll(/key: '([a-z]+)'/g)].map(m => m[1]);
+        expect(oPanel).toEqual(['flashcard', 'choice', 'truefalse', 'listen', 'scramble', 'fill', 'hanzi']);
+    });
+});
+
+describe('kiểu LẬT THẺ', () => {
+    test('hàng chấm ẩn sẵn, chỉ hiện sau khi lật', () => {
+        // Chấm trước khi thấy nghĩa thì không có gì để đối chiếu — "Tôi nhớ"
+        // lúc đó là vô nghĩa.
+        expect(src).toMatch(/is-hidden" id="rm-flash-judge-row"/);
+        // Và đúng cú bấm "Lật thẻ" là thứ bỏ `is-hidden` đi.
+        const i = src.indexOf("getElementById('rm-flash-reveal')");
+        expect(i).toBeGreaterThan(-1);
+        expect(src.slice(i, i + 500)).toMatch(/hangCham\?\.classList\.remove\('is-hidden'\)/);
+    });
+
+    test('bấm chấm hai lần không tính điểm hai lần', () => {
+        // `ketThucCau` gọi `recordAnswer`; bấm nhanh hai cái là hai lượt ghi cho
+        // cùng một câu. Các kiểu khác chặn bằng `disabled`, kiểu này cũng phải.
+        const i = src.indexOf('const cham = (nho)');
+        const than = src.slice(i, src.indexOf('};', i));
+        expect(than).toMatch(/disabled = true/);
+    });
+
+    test('không có bộ sinh — chỉ cần từ và nghĩa', () => {
+        // `correctAnswer` phải có, vì `ketThucCau` dùng nó để báo đáp án đúng
+        // như mọi kiểu khác.
+        expect(src).toMatch(/kieu === 'flashcard'[\s\S]{0,400}correctAnswer: word\.vn/);
+    });
+
+    test('hết giờ ở kiểu không có `options` thì không vỡ', () => {
+        // Thẻ lật / gõ từ / viết chữ Hán đều không có `options`. Đọc thẳng
+        // `question.options.indexOf` là `undefined.indexOf` — vỡ đúng lúc hết
+        // giờ, tức lúc người dùng không bấm gì để cứu.
+        expect(src).toMatch(/Array\.isArray\(question\.options\)/);
+    });
+
+    test('mặt sau ẩn bằng grid-rows, không phải display', () => {
+        // `display` bật lên đột ngột thì thanh ba nút bên dưới nhảy một nhịp —
+        // chế độ này vốn đã phải vừa khung nhìn.
+        const i = css.indexOf('.rm-flash {');
+        expect(i).toBeGreaterThan(-1);
+        expect(css.slice(i, css.indexOf('}', i))).toMatch(/grid-template-rows: 0fr/);
+        expect(css).toMatch(/\.rm-flash\.is-open\s*\{[^}]*grid-template-rows: 1fr/);
+    });
+});
+
+describe('tab Cài đặt riêng cho ôn từ sai', () => {
+    test('có mục điều hướng riêng, không nằm trong "Luyện tập"', () => {
+        expect(settingsScreen).toMatch(/key: 'review'/);
+        expect(settingsScreen).toMatch(/<ReviewPanel/);
+        // Khối đã rời khỏi PracticePanel hoàn toàn — sót lại là hai bản sao
+        // cùng sửa một cài đặt.
+        expect(practicePanel).not.toContain('reviewKinds');
+        expect(practicePanel).not.toContain('REVIEW_KINDS');
+    });
+
+    test('tìm được bằng từ khoá người dùng thật sự gõ', () => {
+        // Người dùng gõ thứ họ MUỐN ĐỔI ("lật thẻ"), không gõ tên tab.
+        const i = settingsScreen.indexOf("key: 'review'");
+        const muc = settingsScreen.slice(i, settingsScreen.indexOf('},', i));
+        expect(muc).toMatch(/keywords:/);
+        expect(muc).toMatch(/lật thẻ/);
     });
 });

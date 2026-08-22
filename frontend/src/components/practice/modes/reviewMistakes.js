@@ -32,7 +32,12 @@ async function ensureHanziWriter() {
     return HanziWriter;
 }
 
-const KIEU_HOI = ['choice', 'truefalse', 'listen', 'scramble', 'fill', 'hanzi'];
+// Xếp theo ĐỘ KHÓ tăng dần: `chonKieu` lùi về phía TRÁI khi kiểu được chọn
+// đang bị tắt, nên thứ tự ở đây là thứ tự ưu tiên khi lùi.
+//
+// `flashcard` đứng đầu vì nó dễ nhất: không phải chọn, không phải gõ — chỉ lật
+// thẻ rồi tự đánh giá. Đó cũng là bước đầu tiên của việc học một từ vừa sai.
+const KIEU_HOI = ['flashcard', 'choice', 'truefalse', 'listen', 'scramble', 'fill', 'hanzi'];
 
 /** Chữ Hán — dùng để biết một từ có viết được không. */
 const HAN_RE = /[\u4e00-\u9fff\u3400-\u4dbf]/;
@@ -45,6 +50,7 @@ function chuHanDau(text) {
 
 /** Nhãn hiện trên thẻ trạng thái, cho biết câu này đang hỏi kiểu gì. */
 const NHAN_KIEU = {
+    flashcard: 'Lật thẻ',
     choice: 'Chọn nghĩa',
     truefalse: 'Đúng / Sai',
     listen: 'Nghe & chọn',
@@ -249,6 +255,12 @@ export const ReviewMistakes = {
         this.questions = formattedWords.map((word, i) => {
             const kieu = chonKieu(word, choPhep, i);
 
+            if (kieu === 'flashcard') {
+                // Không có bộ sinh: thẻ lật chỉ cần mặt trước (từ) và mặt sau
+                // (nghĩa). `correctAnswer` giữ nghĩa để `ketThucCau` báo được
+                // đáp án như mọi kiểu khác.
+                return { word, kieu, correctAnswer: word.vn };
+            }
             if (kieu === 'listen') {
                 // Cùng bộ sinh với trắc nghiệm; khác ở chỗ CHE mặt chữ và phát
                 // âm — người học phải nhận ra từ qua tai, không qua mắt.
@@ -298,7 +310,12 @@ export const ReviewMistakes = {
     onQuestionTimeout() {
         const question = this.questions[this.currentIndex];
         if (!question) return;
-        const ci = question.options.indexOf(question.correctAnswer);
+        // `options` chỉ có ở kiểu trắc nghiệm/nghe — thẻ lật, gõ từ, viết chữ
+        // Hán đều không có. Đọc thẳng là `undefined.indexOf` → vỡ đúng lúc hết
+        // giờ, tức là lúc người dùng không bấm gì để cứu.
+        const ci = Array.isArray(question.options)
+            ? question.options.indexOf(question.correctAnswer)
+            : -1;
         timeoutQuestion(this, 'review-mistakes', { correctIndex: ci >= 0 ? ci : undefined, word: question.word });
     },
 
@@ -363,6 +380,29 @@ export const ReviewMistakes = {
                            autocapitalize="off" spellcheck="false" />
                     <button class="btn btn-primary" id="rm-check-btn">
                         <i class="fas fa-check"></i> Kiểm tra
+                    </button>
+                </div>`;
+        }
+
+        if (question.kieu === 'flashcard') {
+            // Hai bước trong CÙNG một khối, đổi bằng class chứ không dựng lại
+            // DOM: dựng lại thì mất hiệu ứng lật và ô chữ nhảy một nhịp.
+            return `
+                <p class="rm-prompt">Nhớ nghĩa của từ này không? Lật thẻ để đối chiếu.</p>
+                <div class="rm-flash" id="rm-flash">
+                    <div class="rm-flash-back" id="rm-flash-back">${question.correctAnswer}</div>
+                </div>
+                <div class="rm-flash-actions" id="rm-flash-reveal-row">
+                    <button class="btn btn-primary" id="rm-flash-reveal">
+                        <i class="fas fa-eye"></i> Lật thẻ
+                    </button>
+                </div>
+                <div class="rm-flash-actions is-hidden" id="rm-flash-judge-row">
+                    <button class="btn btn-secondary" id="rm-flash-no">
+                        <i class="fas fa-times"></i> Chưa nhớ
+                    </button>
+                    <button class="btn btn-primary" id="rm-flash-yes">
+                        <i class="fas fa-check"></i> Tôi nhớ
                     </button>
                 </div>`;
         }
@@ -468,6 +508,11 @@ export const ReviewMistakes = {
 
         if (question.kieu === 'scramble') {
             this.ganXepChuCai(question);
+            return;
+        }
+
+        if (question.kieu === 'flashcard') {
+            this.ganLatThe(question);
             return;
         }
 
@@ -633,6 +678,40 @@ export const ReviewMistakes = {
     },
 
     /** Chấm câu ĐÚNG/SAI. */
+    /**
+     * Thẻ lật: hiện nghĩa rồi để người học TỰ chấm.
+     *
+     * Không có đáp án khách quan như sáu kiểu kia — đây là kiểu duy nhất tin
+     * vào lời tự đánh giá. Đổi lại nó kiểm được thứ không kiểu nào kiểm được:
+     * NHỚ LẠI tự do, không có bốn lựa chọn để loại trừ và không bắt gõ đúng
+     * chính tả. Với từ vừa sai lần đầu thì đó là bước học, chưa phải bước thi.
+     *
+     * Chỉ chấm được SAU khi đã lật: chấm trước khi thấy nghĩa thì người học
+     * không có gì để đối chiếu, và "Tôi nhớ" lúc đó là vô nghĩa.
+     */
+    ganLatThe(question) {
+        const the = document.getElementById('rm-flash');
+        const hangLat = document.getElementById('rm-flash-reveal-row');
+        const hangCham = document.getElementById('rm-flash-judge-row');
+
+        document.getElementById('rm-flash-reveal')?.addEventListener('click', () => {
+            the?.classList.add('is-open');
+            hangLat?.classList.add('is-hidden');
+            hangCham?.classList.remove('is-hidden');
+            // Đọc luôn khi lật: nghe và thấy nghĩa cùng lúc thì hai đường vào
+            // trí nhớ cùng được củng cố.
+            if (GameState.state?.settings?.soundEnabled) GameLogic.speakWord(question.word.en);
+        });
+
+        const cham = (nho) => {
+            document.querySelectorAll('#rm-flash-judge-row .btn')
+                .forEach((b) => { b.disabled = true; });
+            this.ketThucCau(nho, question, question.correctAnswer);
+        };
+        document.getElementById('rm-flash-yes')?.addEventListener('click', () => cham(true));
+        document.getElementById('rm-flash-no')?.addEventListener('click', () => cham(false));
+    },
+
     chamTruocSau(chonDung, btnDaBam) {
         const question = this.questions[this.currentIndex];
         if (!question) return;

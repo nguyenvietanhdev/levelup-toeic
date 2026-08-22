@@ -20,6 +20,7 @@ import AccountPanel from './panels/AccountPanel.jsx';
 import AboutPanel from './panels/AboutPanel.jsx';
 import ReportPanel from './panels/ReportPanel.jsx';
 import ToeicExamPanel from './panels/ToeicExamPanel.jsx';
+import ReviewPanel from './panels/ReviewPanel.jsx';
 import { levelsFor } from '@lib/levelBands.js';
 
 // Thứ tự = mức độ thường dùng, và gom theo LĨNH VỰC:
@@ -37,6 +38,11 @@ const NAV_ITEMS = [
       keywords: 'giọng đọc tốc độ phát âm loa tiếng nói voice tts hiệu ứng nhạc nền đúng sai phản hồi bấm nút im lặng tắt tiếng' },
     { key: 'practice',  label: 'Luyện tập',   icon: 'fa-gamepad',
       keywords: 'số câu độ khó thời gian tự động chuyển câu gợi ý' },
+    // Tách khỏi "Luyện tập": đây là cài đặt của MỘT chế độ, không phải cài đặt
+    // dùng chung cho cả 16 chế độ. Bảy ô tick nằm chung chiếm quá nửa tab
+    // "Luyện tập" mà chỉ ảnh hưởng đúng một chế độ.
+    { key: 'review',    label: 'Ôn từ sai',   icon: 'fa-repeat',
+      keywords: 'kiểu hỏi lật thẻ trắc nghiệm đúng sai nghe xếp chữ gõ từ viết chữ hán hỗn hợp đan xen' },
     { key: 'toeic',     label: 'Thi TOEIC',   icon: 'fa-graduation-cap',
       keywords: 'đề thi part bấm giờ chấm điểm' },
     { key: 'account',   label: 'Tài khoản',   icon: 'fa-user',
@@ -572,6 +578,7 @@ export default function SettingsScreen({ active }) {
                                         handleDifficulty={handleDifficulty}
                                     />
                                 )}
+                                {item.key === 'review' && <ReviewPanel s={s} updateSetting={updateSetting} />}
                                 {item.key === 'toeic' && <ToeicExamPanel s={s} updateSetting={updateSetting} />}
                                 {item.key === 'account' && (
                                     <AccountPanel

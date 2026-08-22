@@ -9832,6 +9832,54 @@ mark {
     gap: 12px;
 }
 
+/* THẺ LẬT — mặt sau (nghĩa) ẩn cho tới khi bấm "Lật thẻ".
+   Ẩn bằng chiều cao 0 chứ không `display: none`: chế độ này phải vừa khung
+   nhìn, mà `display` bật lên đột ngột thì thanh ba nút bên dưới nhảy một
+   nhịp. Chuyển chiều cao cho mắt bám theo được chỗ nội dung xuất hiện. */
+.rm-flash {
+    display: grid;
+    /* `0fr → 1fr` thay vì `max-height`: không phải đoán một con số cao hơn nội
+       dung thật, nên nghĩa dài mấy dòng cũng không bị cắt. */
+    grid-template-rows: 0fr;
+    transition: grid-template-rows 0.25s ease;
+    margin-bottom: 10px;
+}
+
+.rm-flash.is-open {
+    grid-template-rows: 1fr;
+}
+
+.rm-flash-back {
+    overflow: hidden;
+    text-align: center;
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--text-primary);
+    /* Padding nằm ở lớp TRONG: đặt ở lớp ngoài thì lúc thu về 0fr vẫn còn
+       khoảng đệm, thành một dải trống không hiểu vì sao lại có. */
+    padding: 0;
+    transition: padding 0.25s ease;
+}
+
+.rm-flash.is-open .rm-flash-back {
+    padding: 12px 10px;
+    border-radius: 10px;
+    background: var(--bg-secondary);
+}
+
+.rm-flash-actions {
+    display: flex;
+    gap: 12px;
+}
+
+.rm-flash-actions .btn {
+    flex: 1;
+}
+
+.rm-flash-actions.is-hidden {
+    display: none;
+}
+
 .rm-tf .rm-tf-btn {
     flex: 1;
 }
