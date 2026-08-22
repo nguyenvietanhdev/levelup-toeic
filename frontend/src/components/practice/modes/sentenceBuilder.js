@@ -149,30 +149,34 @@ export const SentenceBuilder = {
 
         container.innerHTML = `
             <div class="question-container sentence-builder-container">
-                <div class="question-prompt">
-                    <h3>🧩 Sắp xếp các cụm từ thành câu hoàn chỉnh</h3>
-                    <div class="instruction-box">
-                        <p><i class="fas fa-info-circle"></i> <strong>Cách chơi:</strong> Click vào các cụm từ bên dưới theo thứ tự đúng để ghép thành câu tiếng Anh có nghĩa</p>
-                    </div>
+                <!-- Ba khối gợi ý gộp thành MỘT HÀNG NGANG.
+                     Xếp chồng như cũ chúng chiếm 294px — gần một nửa màn hình —
+                     trong khi vùng chơi thật (ô thả câu + kho từ + nút) chỉ 232px
+                     và bị đẩy xuống dưới mép, phải cuộn mới thấy.
 
-                    ${question.translation ? `
-                        <div class="translation-hint-box">
-                            <div class="translation-label">
-                                <i class="fas fa-language"></i>
-                                <strong>Nghĩa của câu:</strong>
+                     Hướng dẫn "Cách chơi" bỏ hẳn khỏi luồng: nó lặp lại đúng
+                     điều tiêu đề đã nói ("Sắp xếp các cụm từ thành câu"), đọc
+                     một lần là thuộc, mà chiếm nguyên một khối mỗi câu. Chuyển
+                     thành thuộc tính title trên tiêu đề cho ai cần. -->
+                <div class="question-prompt sb-prompt">
+                    <h3 class="sb-title" title="Click vào các cụm từ bên dưới theo thứ tự đúng để ghép thành câu có nghĩa">
+                        🧩 Sắp xếp các cụm từ thành câu hoàn chỉnh
+                    </h3>
+
+                    <div class="sb-hints">
+                        ${question.translation ? `
+                            <div class="sb-hint sb-hint--translation">
+                                <span class="sb-hint-label"><i class="fas fa-language"></i> Nghĩa</span>
+                                <span class="sb-hint-value">${question.translation}</span>
                             </div>
-                            <div class="translation-text">${question.translation}</div>
-                        </div>
-                    ` : ''}
+                        ` : ''}
 
-                    <div class="word-hint-box">
-                        <div class="word-hint-label">
-                            <i class="fas fa-lightbulb"></i>
-                            <strong>Gợi ý từ vựng chính:</strong>
-                        </div>
-                        <div class="word-meaning">
-                            <span class="highlight-word">${question.word.en}</span>
-                            <span class="word-translation">= ${question.wordVn}</span>
+                        <div class="sb-hint sb-hint--word">
+                            <span class="sb-hint-label"><i class="fas fa-lightbulb"></i> Từ khoá</span>
+                            <span class="sb-hint-value">
+                                <span class="highlight-word">${question.word.en}</span>
+                                <span class="word-translation">= ${question.wordVn}</span>
+                            </span>
                         </div>
                     </div>
                 </div>

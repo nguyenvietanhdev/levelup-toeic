@@ -5827,18 +5827,6 @@ mark {
    SENTENCE BUILDER MODE
    =================================== */
 
-.sentence-area {
-    min-height: 120px;
-    padding: var(--spacing-lg);
-    background: var(--bg-secondary);
-    border: 2px dashed var(--border-color);
-    border-radius: var(--border-radius-lg);
-    margin-bottom: var(--spacing-xl);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
 .sentence-placeholder {
     color: var(--text-muted);
     font-style: italic;
@@ -6034,37 +6022,92 @@ mark {
     margin: 0 auto;
 }
 
-.instruction-box {
-    margin-top: var(--spacing-md);
-    padding: var(--spacing-md);
-    background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(37, 99, 235, 0.1));
-    border-left: 4px solid var(--info-color);
-    border-radius: var(--border-radius);
+/* ===================================
+   XẾP CÂU — cụm gợi ý gọn một hàng
+   ===================================
+   Ba khối gợi ý cũ (hướng dẫn, nghĩa câu, từ khoá) xếp chồng chiếm 294px, gần
+   một nửa màn hình, đẩy vùng chơi thật (ô thả + kho từ + nút) xuống dưới mép.
+   Gộp thành một hàng ngang và bỏ hướng dẫn lặp lại thì còn ~60px. */
+
+.sb-prompt {
+    /* Không dùng `margin-top` của các box cũ nữa — chúng cộng dồn thành khoảng
+       trống lớn giữa từng khối. */
+    margin-bottom: 12px;
 }
 
-.instruction-box p {
-    margin: 0;
-    color: var(--text-primary);
-    font-size: var(--font-size-sm);
+.sb-title {
+    margin: 0 0 10px;
+    font-size: 1.05rem;
+    text-align: center;
+}
+
+.sb-hints {
     display: flex;
-    align-items: center;
-    gap: var(--spacing-sm);
+    flex-wrap: wrap;
+    gap: 8px;
 }
 
-.instruction-box i {
-    color: var(--info-color);
-    font-size: 1.2em;
+/* Mỗi gợi ý là một chip nằm ngang: nhãn nhỏ bên trái, nội dung bên phải.
+   `flex: 1 1 260px` để hai chip chia đôi hàng trên màn rộng và tự xuống dòng
+   trên màn hẹp — không phải viết media query riêng. */
+.sb-hint {
+    flex: 1 1 260px;
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    min-width: 0;
+    padding: 8px 12px;
+    border-radius: 10px;
+    font-size: 0.9rem;
+    line-height: 1.4;
+}
+
+.sb-hint-label {
+    flex-shrink: 0;
+    font-weight: 600;
+    font-size: 0.78rem;
+    opacity: 0.85;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+}
+
+/* `min-width: 0` để câu dài xuống dòng trong chip thay vì đẩy chip tràn ra. */
+.sb-hint-value {
+    min-width: 0;
+    word-break: break-word;
+}
+
+/* Giữ đúng hai màu cũ để người dùng vẫn nhận ra đâu là nghĩa, đâu là từ khoá. */
+.sb-hint--translation {
+    background: rgba(16, 185, 129, 0.12);
+    border: 1px solid rgba(16, 185, 129, 0.35);
+}
+
+.sb-hint--translation .sb-hint-label {
+    color: var(--success-color);
+}
+
+.sb-hint--word {
+    background: rgba(139, 92, 246, 0.12);
+    border: 1px solid rgba(139, 92, 246, 0.35);
+}
+
+.sb-hint--word .sb-hint-label {
+    color: var(--accent-color);
+}
+
+/* Từ khoá vẫn nổi bật — nó là thứ người học phải gắn vào câu. */
+.sb-hint--word .highlight-word {
+    font-weight: 700;
+    color: var(--accent-color);
+}
+
+.sb-hint--word .word-translation {
+    opacity: 0.85;
+    font-style: italic;
 }
 
 /* Translation Hint Box - Hiển thị nghĩa của câu */
-.translation-hint-box {
-    margin-top: var(--spacing-md);
-    padding: var(--spacing-lg);
-    background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(5, 150, 105, 0.1));
-    border: 2px solid var(--success-color);
-    border-radius: var(--border-radius-large);
-}
-
 .translation-label {
     display: flex;
     align-items: center;
@@ -6086,39 +6129,6 @@ mark {
     padding: var(--spacing-md);
     background: rgba(255, 255, 255, 0.5);
     border-radius: var(--border-radius);
-}
-
-.word-hint-box {
-    margin-top: var(--spacing-md);
-    padding: var(--spacing-lg);
-    background: linear-gradient(135deg, rgba(139, 92, 246, 0.1), rgba(236, 72, 153, 0.1));
-    border-radius: var(--border-radius-large);
-    border: 2px solid rgba(139, 92, 246, 0.3);
-}
-
-.word-hint-label {
-    display: flex;
-    align-items: center;
-    gap: var(--spacing-sm);
-    color: var(--accent-color);
-    font-size: var(--font-size-sm);
-    margin-bottom: var(--spacing-sm);
-}
-
-.word-hint-label i {
-    color: #f59e0b;
-    font-size: 1.2em;
-}
-
-.word-hint-box .word-meaning {
-    background: transparent;
-    padding: 0;
-    margin: 0;
-    text-align: left;
-    display: flex;
-    align-items: center;
-    gap: var(--spacing-sm);
-    flex-wrap: wrap;
 }
 
 .highlight-word {
@@ -6150,14 +6160,17 @@ mark {
     color: var(--info-color);
 }
 
-/* Sentence Area - Vùng hiển thị câu đã chọn */
+/* Sentence Area - Vùng hiển thị câu đã chọn.
+   Kích thước cũ (min-height 120 + padding 24×2 + margin 24×2) chiếm 192px cho
+   MỘT ô thả — nhiều hơn cả kho từ bên dưới. Nén còn ~120px: vẫn đủ chỗ cho câu
+   hai dòng, mà cả màn không phải cuộn nữa. */
 .sentence-area {
-    min-height: 120px;
-    padding: var(--spacing-xl);
+    min-height: 84px;
+    padding: var(--spacing-md);
     background: var(--bg-secondary);
     border: 3px dashed var(--border-color);
     border-radius: var(--border-radius-large);
-    margin: var(--spacing-xl) 0;
+    margin: var(--spacing-md) 0;
     display: flex;
     align-items: center;
     justify-content: center;
