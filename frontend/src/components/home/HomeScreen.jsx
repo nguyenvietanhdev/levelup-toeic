@@ -65,14 +65,24 @@ const gameModes = [
         { mode: 'hanzi-writing', icon: 'fa-paintbrush', label: 'Luyện viết chữ Hán', desc: 'Tô theo nét mẫu, chấm đúng thứ tự nét', cost: 15, color: C_HARD, zhOnly: true },
     ]},
     { group: 'Nâng cao & Thử thách', icon: 'fa-brain', modes: [
-        { mode: 'context-learning', icon: 'fa-book-reader', label: 'Hiểu qua câu', desc: 'Đọc câu ví dụ, suy luận nghĩa tiếng Việt', cost: 10, color: C_MAX, weekendOnly: true },
+        // Hai chế độ luyện CÂU dưới đây bỏ `weekendOnly`.
+        //
+        // Chúng là con đường duy nhất trong app rèn kỹ năng đặt câu — 12 chế độ
+        // còn lại đều hỏi từ ĐƠN LẺ (chọn nghĩa, ghép cặp, nghe rồi chọn). Khoá
+        // vào cuối tuần nghĩa là người học chỉ chạm tới kỹ năng đó hai ngày mỗi
+        // tuần, mà đó lại là kỹ năng cần lặp đều nhất.
+        //
+        // Cùng lý do đã bỏ khoá cho "Ôn lại từ sai": khan hiếm chỉ có ý nghĩa
+        // với thứ thưởng nhiều (Tốc độ vẫn giữ `weekendOnly`), không phải với
+        // thứ người học cần luyện hằng ngày.
+        { mode: 'context-learning', icon: 'fa-book-reader', label: 'Hiểu qua câu', desc: 'Đọc câu ví dụ, suy luận nghĩa tiếng Việt', cost: 10, color: C_MAX },
         // KHÔNG `weekendOnly`, KHÔNG tốn năng lượng — khác mọi chế độ khác trong
         // nhóm này, và có lý do: đây là chế độ ôn lại thứ mình ĐÃ SAI, theo lịch
         // giãn cách SM-2. Lịch đó chỉ có tác dụng khi ôn đúng ngày đến hạn; khoá
         // vào cuối tuần là phá chính cơ chế nó dựa vào. Thu phí thì lại phạt đúng
         // người chịu khó sửa lỗi.
         { mode: 'review-mistakes', icon: 'fa-repeat', label: 'Ôn lại từ sai', desc: 'Ôn theo lịch giãn cách các từ đã làm sai', cost: 0, color: C_MAX, special: true },
-        { mode: 'sentence-builder', icon: 'fa-puzzle-piece', label: 'Xếp câu', desc: 'Sắp xếp cụm từ thành câu hoàn chỉnh', cost: 15, color: C_MAX, weekendOnly: true },
+        { mode: 'sentence-builder', icon: 'fa-puzzle-piece', label: 'Xếp câu', desc: 'Sắp xếp cụm từ thành câu hoàn chỉnh', cost: 15, color: C_MAX },
         { mode: 'speed-quiz', icon: 'fa-clock', label: 'Tốc độ', desc: 'Trả lời nhanh nhất trong giới hạn thời gian', cost: 20, color: C_MAX, weekendOnly: true },
     ]},
 ];
