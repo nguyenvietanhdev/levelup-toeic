@@ -112,19 +112,19 @@ describe('luồng chạy của chế độ Ôn lại từ sai', () => {
         expect(pm.slice(i, i + 300)).toMatch(/!dangLaNhomTuSai/);
     });
 
-    test('KHÔNG qua popup chọn Part', () => {
-        // Pool là các từ đã sai trong nhóm, không chia theo Part — hỏi Part là
-        // hỏi một câu không có câu trả lời đúng.
-        const i = nav.indexOf("if (mode === 'review-mistakes')");
-        expect(i).toBeGreaterThan(-1);
-        const body = nav.slice(i, i + 500);
-        expect(body).toMatch(/PRACTICE_REQUESTED/);
-        expect(body).not.toMatch(/showPartSelectionModal/);
+    test('ĐI CHUNG đường với mọi chế độ: chọn đề rồi chọn Part', () => {
+        // Trước đây nó nhảy thẳng vào bài sau khi chọn đề, với lý do "pool không
+        // chia theo Part". Sai với dữ liệu thật: 208/208 từ sai trong DB đều có
+        // `part`. Ôn lẫn lộn từ của 12 nhóm trong một lượt thì không tập trung
+        // vào chỗ nào cả.
+        expect(nav).not.toMatch(/if \(mode === 'review-mistakes'\)/);
     });
 
-    test('hoãn trước khi vào màn luyện — popup cũ chưa gỡ khỏi DOM', () => {
-        const i = nav.indexOf("if (mode === 'review-mistakes')");
-        expect(nav.slice(i, i + 500)).toMatch(/setTimeout\(/);
+    test('vẫn hoãn trước khi mở popup Part — popup đề chưa gỡ khỏi DOM', () => {
+        // `onSelected()` chạy TRƯỚC `onClose()`, nên hai modal cùng `id` tồn tại
+        // đồng thời trong một nhịp. Lối chung đã có `setTimeout` cho việc này.
+        const i = nav.indexOf('const handleTopicSelected');
+        expect(nav.slice(i, i + 1200)).toMatch(/setTimeout\(/);
     });
 
     test('mode truyền xuống popup bằng STATE, không phải ref', () => {

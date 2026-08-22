@@ -9901,3 +9901,28 @@ mark {
     font-style: normal;
     color: var(--text-secondary);
 }
+
+/* Ô tô nét chữ Hán trong lượt ôn từ sai.
+   Vuông, căn giữa, có viền mờ để thấy rõ vùng vẽ. Kích thước do JS đặt theo bề
+   rộng thật (kẹp 180–260px) — nhỏ hơn thì nét chen nhau khó tô bằng ngón tay,
+   to hơn thì đẩy thanh ba nút ra khỏi khung hình. */
+.rm-hanzi {
+    margin: 0 auto;
+    max-width: 260px;
+    border: 2px dashed var(--border-color);
+    border-radius: 12px;
+    background: var(--bg-secondary);
+}
+
+.rm-hanzi-actions {
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+    margin-top: 8px;
+}
+
+.rm-hanzi-actions .btn {
+    flex: 0 1 auto;
+    font-size: 13px;
+    padding: 6px 14px;
+}

@@ -130,18 +130,6 @@ export default function TopNav() {
         pendingModeRef.current = null;
         setTopicMode(null);
 
-        // `review-mistakes` KHÔNG qua popup chọn Part: pool của nó là các từ đã
-        // sai trong nhóm vừa chọn, không chia theo Part. Bắt chọn Part ở đây là
-        // hỏi một câu không có câu trả lời đúng.
-        if (mode === 'review-mistakes') {
-            // Vẫn phải hoãn: `onSelected()` chạy TRƯỚC `onClose()`, nên popup
-            // chọn đề còn trong cây DOM. Vào thẳng màn luyện tập lúc đó là màn
-            // mới dựng trong khi popup cũ chưa gỡ — cùng lớp lỗi với hai modal
-            // trùng `id` mô tả ở dưới.
-            setTimeout(() => EventBus.emit(GameEvents.PRACTICE_REQUESTED, { mode }), 200);
-            return;
-        }
-
         if (mode) {
             // Chọn đề xong → mở Part selector với pendingMode,
             // PartSelector.selectPart() sẽ emit PRACTICE_REQUESTED sau khi user chọn part.

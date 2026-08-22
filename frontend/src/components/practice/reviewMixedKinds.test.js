@@ -35,13 +35,31 @@ function napBoChon(settings = {}) {
 describe('xoay vòng đủ BA kiểu theo vị trí câu', () => {
     const M = napBoChon();
 
-    test('câu 1 chọn nghĩa → câu 2 đúng/sai → câu 3 gõ từ', () => {
+    test('từ tiếng Trung xoay đủ BỐN kiểu, kể cả viết chữ', () => {
         // Đây là thứ người dùng thấy trực tiếp: câu này một kiểu, câu sau kiểu
         // khác. Không phải làm hết một kiểu rồi mới sang kiểu khác.
         const cp = M.kieuDuocPhep();
-        const w = { masteryLevel: 0 };
-        expect([0, 1, 2, 3, 4, 5].map(i => M.chonKieu(w, cp, i)))
-            .toEqual(['choice', 'truefalse', 'fill', 'choice', 'truefalse', 'fill']);
+        const w = { masteryLevel: 0, en: '多少' };
+        expect([0, 1, 2, 3, 4].map(i => M.chonKieu(w, cp, i)))
+            .toEqual(['choice', 'truefalse', 'fill', 'hanzi', 'choice']);
+    });
+
+    test('từ tiếng Anh KHÔNG rơi vào viết chữ Hán', () => {
+        // Bắt viết "due" thì không có nét nào để tô. Lọc theo TỪNG TỪ chứ không
+        // theo ngôn ngữ đang học: bộ từ tiếng Trung vẫn có thể lẫn từ Latin.
+        const cp = M.kieuDuocPhep();
+        const w = { masteryLevel: 0, en: 'due' };
+        for (const i of [0, 1, 2, 3, 4, 5]) {
+            expect(M.chonKieu(w, cp, i)).not.toBe('hanzi');
+        }
+    });
+
+    test('chỉ bật viết chữ mà gặp từ tiếng Anh → rơi về chọn nghĩa', () => {
+        // Một câu dễ vẫn hơn một lượt trống.
+        const M2 = napBoChon({ reviewKinds: ['hanzi'] });
+        const cp2 = M2.kieuDuocPhep();
+        expect(M2.chonKieu({ en: 'due' }, cp2, 0)).toBe('choice');
+        expect(M2.chonKieu({ en: '多少' }, cp2, 0)).toBe('hanzi');
     });
 
     test('KHÔNG phụ thuộc mức thuộc', () => {
@@ -73,9 +91,9 @@ describe('xoay vòng đủ BA kiểu theo vị trí câu', () => {
         expect(src).not.toMatch(/Math\.random\(\)/);
     });
 
-    test('ba kiểu xếp theo độ khó TĂNG DẦN', () => {
+    test('bốn kiểu xếp theo độ khó TĂNG DẦN', () => {
         // Thứ tự này quyết định thứ tự xoay vòng: dễ trước để người học vào nhịp.
-        expect(M.KIEU_HOI).toEqual(['choice', 'truefalse', 'fill']);
+        expect(M.KIEU_HOI).toEqual(['choice', 'truefalse', 'fill', 'hanzi']);
     });
 });
 
@@ -104,7 +122,7 @@ describe('người dùng tự chọn kiểu — cài đặt thắng SM-2', () =>
         // ôn không có câu nào — vô dụng, mà người dùng không hề muốn thế.
         for (const v of [[], undefined, null, ['xyz']]) {
             const M = napBoChon({ reviewKinds: v });
-            expect(M.kieuDuocPhep()).toEqual(['choice', 'truefalse', 'fill']);
+            expect(M.kieuDuocPhep()).toEqual(['choice', 'truefalse', 'fill', 'hanzi']);
         }
     });
 
@@ -138,9 +156,11 @@ describe('mỗi câu một kiểu, đan xen trong cùng lượt', () => {
 });
 
 describe('chấm điểm gom về một chỗ', () => {
-    test('ba kiểu cùng đi qua ketThucCau', () => {
-        // Mỗi kiểu tự lặp lại đoạn ghi điểm thì sửa luật tính điểm phải sửa ba nơi.
-        expect((src.match(/this\.ketThucCau\(/g) || []).length).toBe(3);
+    test('MỌI kiểu cùng đi qua ketThucCau', () => {
+        // Mỗi kiểu tự lặp lại đoạn ghi điểm thì sửa luật tính điểm phải sửa
+        // nhiều nơi. Đếm ≥ 4 vì kiểu viết chữ có ba lối kết thúc (tô xong / xem
+        // mẫu xong / bỏ qua chữ).
+        expect((src.match(/this\.ketThucCau\(/g) || []).length).toBeGreaterThanOrEqual(4);
     });
 
     test('không chấm hai lần khi bấm liên tiếp', () => {
@@ -262,5 +282,63 @@ describe('chữ dài không tràn ra khỏi khung', () => {
         const body = css.slice(i, css.indexOf('}', i));
         expect(body).toMatch(/word-break/);
         expect(body).toMatch(/min-width:\s*0/);
+    });
+});
+
+describe('vào chế độ phải qua popup chọn đề RỒI chọn Part', () => {
+    const pm = readFileSync(join(__dirname, 'practiceManager.js'), 'utf8');
+    const nav = readFileSync(
+        join(__dirname, '..', '..', 'layouts', 'TopNav.jsx'), 'utf8');
+
+    test('bắt chọn nhóm từ sai trước khi chạy', () => {
+        expect(pm).toMatch(/mode === 'review-mistakes' && !dangLaNhomTuSai/);
+    });
+
+    test('KHÔNG còn miễn bước chọn Part', () => {
+        // 208/208 từ sai trong DB đều có `part`, nên chia Part được và nên chia:
+        // ôn lẫn lộn từ của 12 nhóm khác nhau trong một lượt thì không tập trung
+        // vào chỗ nào cả.
+        const i = pm.indexOf('buộc chọn Part trước');
+        const dieuKien = pm.slice(i, pm.indexOf('showPartSelectionModal', i));
+        expect(dieuKien).not.toMatch(/mode !== 'review-mistakes'/);
+    });
+
+    test('TopNav không còn lối tắt bỏ qua popup Part', () => {
+        // Trước đây nó nhảy thẳng vào bài sau khi chọn đề.
+        expect(nav).not.toMatch(/if \(mode === 'review-mistakes'\)/);
+    });
+});
+
+describe('viết chữ Hán — dọn dẹp đúng chỗ', () => {
+    test('huỷ ô vẽ trước khi sang câu kế', () => {
+        // Thư viện giữ listener trên SVG; để lại thì mỗi câu chữ Hán cộng thêm
+        // một bộ và nét tô của câu cũ vẫn ăn.
+        const i = src.indexOf('ketThucCau(dung, question, dapAn) {');
+        expect(src.slice(i, i + 300)).toMatch(/this\.huyOVe\(\)/);
+    });
+
+    test('huỷ cả khi rời chế độ', () => {
+        const i = src.indexOf('cleanup() {');
+        expect(src.slice(i, i + 400)).toMatch(/this\.huyOVe\(\)/);
+    });
+
+    test('nạp thư viện THEO YÊU CẦU, không import tĩnh', () => {
+        // ~40KB chỉ dùng khi lượt ôn thật sự có chữ Hán.
+        expect(src).toMatch(/await import\('hanzi-writer'\)/);
+        expect(src).not.toMatch(/^import .* from 'hanzi-writer'/m);
+    });
+
+    test('bỏ kết quả nếu đã sang câu khác trong lúc nạp', () => {
+        // Người dùng bấm "Tiếp" nhanh hơn mạng thì ô vẽ của câu cũ hiện trên câu mới.
+        const i = src.indexOf('async dungOVe(question) {');
+        const body = src.slice(i, src.indexOf('\n    },', i));
+        expect(body).toMatch(/this\.currentIndex !== idxLucGoi/);
+        expect(body).toMatch(/box\.isConnected/);
+    });
+
+    test('lấy dữ liệu nét từ repo, không phải CDN ngoài', () => {
+        // CSP của app chặn connect-src lạ.
+        const i = src.indexOf('async dungOVe(question) {');
+        expect(src.slice(i, i + 2500)).toMatch(/fetch\(`\/hanzi\//);
     });
 });

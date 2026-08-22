@@ -146,8 +146,12 @@ export const PracticeManager = {
         }
 
         // Đã chọn đề nhưng chưa chọn Part → buộc chọn Part trước.
-        // Bỏ qua khi: retry từ sai, review-mistakes, hoặc đang ở chế độ Ngẫu nhiên tất cả.
-        if (TopicSelector.currentTopic && !PartSelector.selectedPart && !PartSelector.retryWords?.length && mode !== 'review-mistakes' && PartSelector.practiceMode !== 'random-all') {
+        // Bỏ qua khi: retry từ sai, hoặc đang ở chế độ Ngẫu nhiên tất cả.
+        //
+        // `review-mistakes` KHÔNG còn được miễn: 208/208 từ sai trong DB đều có
+        // `part`, nên chia Part được và nên chia — ôn lẫn lộn từ của 12 nhóm
+        // khác nhau trong một lượt thì không tập trung vào chỗ nào cả.
+        if (TopicSelector.currentTopic && !PartSelector.selectedPart && !PartSelector.retryWords?.length && PartSelector.practiceMode !== 'random-all') {
             PartSelector.pendingMode = mode;
             PartSelector.showPartSelectionModal();
             return false;

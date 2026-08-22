@@ -14,6 +14,8 @@ const REVIEW_KINDS = [
     { key: 'choice',    label: 'Chọn nghĩa', desc: 'Chọn đáp án đúng trong 4 lựa chọn' },
     { key: 'truefalse', label: 'Đúng / Sai', desc: 'Xem một nghĩa và quyết định đúng hay sai' },
     { key: 'fill',      label: 'Gõ từ',      desc: 'Tự gõ ra, không có gợi ý — khó nhất' },
+    // Chỉ xuất hiện với từ CÓ chữ Hán — từ tiếng Anh tự bỏ qua kiểu này.
+    { key: 'hanzi',     label: 'Viết chữ Hán', desc: 'Tô lại nét chữ; chỉ dùng cho từ tiếng Trung' },
 ];
 
 // Thụt lề + vạch trái cho cài đặt PHỤ THUỘC một toggle phía trên → nhìn ra quan hệ cha–con.

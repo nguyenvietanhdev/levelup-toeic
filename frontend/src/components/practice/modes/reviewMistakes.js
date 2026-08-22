@@ -19,13 +19,36 @@ import { timeoutQuestion } from '@components/practice/questionTimeout.js';
  * Một từ trả lời đúng ở trắc nghiệm chưa chắc gõ ra được — mà đây là chế độ ôn
  * từ ĐÃ SAI, nên cần biết người học thật sự nhớ hay chỉ nhận mặt chữ.
  */
-const KIEU_HOI = ['choice', 'truefalse', 'fill'];
+/**
+ * `hanzi-writer` nạp THEO YÊU CẦU, không import tĩnh: gói này ~40KB và chỉ dùng
+ * khi lượt ôn thật sự có chữ Hán — người học tiếng Anh không bao giờ chạm tới.
+ */
+let HanziWriter = null;
+async function ensureHanziWriter() {
+    if (!HanziWriter) {
+        const mod = await import('hanzi-writer');
+        HanziWriter = mod.default;
+    }
+    return HanziWriter;
+}
+
+const KIEU_HOI = ['choice', 'truefalse', 'fill', 'hanzi'];
+
+/** Chữ Hán — dùng để biết một từ có viết được không. */
+const HAN_RE = /[\u4e00-\u9fff\u3400-\u4dbf]/;
+
+/** Các nét của một chữ Hán đơn. Chỉ viết được từng chữ một. */
+function chuHanDau(text) {
+    const m = String(text || '').match(HAN_RE);
+    return m ? m[0] : '';
+}
 
 /** Nhãn hiện trên thẻ trạng thái, cho biết câu này đang hỏi kiểu gì. */
 const NHAN_KIEU = {
     choice: 'Chọn nghĩa',
     truefalse: 'Đúng / Sai',
     fill: 'Gõ từ',
+    hanzi: 'Viết chữ Hán',
 };
 
 /**
@@ -80,6 +103,21 @@ function kieuDuocPhep() {
 }
 
 /**
+ * Lọc bỏ những kiểu KHÔNG dùng được với từ này.
+ *
+ * `hanzi` chỉ có nghĩa khi từ thật sự chứa chữ Hán — bắt viết "due" thì không
+ * có nét nào để tô. Lọc theo TỪNG TỪ chứ không theo ngôn ngữ đang học: bộ từ
+ * tiếng Trung vẫn có thể lẫn từ Latin, và ngược lại.
+ */
+function locTheoTu(choPhep, word) {
+    const vietDuoc = !!chuHanDau(word?.en);
+    const loc = vietDuoc ? choPhep : choPhep.filter((k) => k !== 'hanzi');
+    // Không còn kiểu nào (người dùng chỉ bật `hanzi` mà từ lại là tiếng Anh) →
+    // rơi về `choice`: một câu dễ vẫn hơn một lượt trống.
+    return loc.length ? loc : ['choice'];
+}
+
+/**
  * Kiểu hỏi cuối cùng cho một từ: SM-2 đề xuất, cài đặt của người dùng quyết.
  *
  * Nếu kiểu SM-2 chọn đang bị tắt thì LÙI VỀ kiểu dễ hơn còn bật, chứ không nhảy
@@ -87,16 +125,19 @@ function kieuDuocPhep() {
  * không còn lựa chọn nào khác là làm ngược ý họ.
  */
 function chonKieu(word, choPhep, viTri = 0) {
+    // Lọc theo TỪ trước: kiểu vòng xoay chỉ ra có thể không dùng được với từ này.
+    const duoc = locTheoTu(choPhep, word);
+
     const muon = kieuTheoMucThuoc(word, viTri);
-    if (choPhep.includes(muon)) return muon;
+    if (duoc.includes(muon)) return muon;
 
     // Đi ngược từ vị trí của `muon` về phía dễ hơn.
     const i = KIEU_HOI.indexOf(muon);
     for (let k = i - 1; k >= 0; k--) {
-        if (choPhep.includes(KIEU_HOI[k])) return KIEU_HOI[k];
+        if (duoc.includes(KIEU_HOI[k])) return KIEU_HOI[k];
     }
     // Không còn kiểu nào dễ hơn → lấy kiểu bật đầu tiên (danh sách luôn khác rỗng).
-    return choPhep[0];
+    return duoc[0];
 }
 
 /**
@@ -197,6 +238,11 @@ export const ReviewMistakes = {
         this.questions = formattedWords.map((word, i) => {
             const kieu = chonKieu(word, choPhep, i);
 
+            if (kieu === 'hanzi') {
+                // Không có bộ sinh sẵn cho kiểu này — nó chỉ cần chữ để tô, và
+                // nghĩa để người học biết đang viết chữ nào.
+                return { word, kieu, chuCanViet: chuHanDau(word.en), correctAnswer: word.vn };
+            }
             if (kieu === 'fill') {
                 return { ...GameLogic.generateFillBlank(word), kieu };
             }
@@ -300,6 +346,20 @@ export const ReviewMistakes = {
                 </div>`;
         }
 
+        if (question.kieu === 'hanzi') {
+            return `
+                <p class="rm-prompt">Viết lại chữ này theo nét mẫu</p>
+                <div class="rm-hanzi" id="rm-hanzi-box"></div>
+                <div class="rm-hanzi-actions">
+                    <button class="btn btn-secondary" id="rm-hanzi-demo">
+                        <i class="fas fa-play"></i> Xem mẫu
+                    </button>
+                    <button class="btn btn-secondary" id="rm-hanzi-skip">
+                        <i class="fas fa-forward"></i> Bỏ qua chữ này
+                    </button>
+                </div>`;
+        }
+
         if (question.kieu === 'truefalse') {
             return `
                 <p class="rm-prompt">Nghĩa dưới đây có đúng không?</p>
@@ -351,6 +411,11 @@ export const ReviewMistakes = {
             return;
         }
 
+        if (question.kieu === 'hanzi') {
+            this.dungOVe(question);
+            return;
+        }
+
         if (question.kieu === 'truefalse') {
             document.querySelectorAll('.rm-tf-btn').forEach((btn) => {
                 btn.addEventListener('click', () => {
@@ -362,6 +427,75 @@ export const ReviewMistakes = {
 
         document.querySelectorAll('.rm-choices .choice-btn').forEach((btn, k) => {
             btn.addEventListener('click', () => this.selectAnswer(k));
+        });
+    },
+
+    /**
+     * Dựng ô tô nét cho câu VIẾT CHỮ HÁN.
+     *
+     * Bất đồng bộ vì thư viện nạp theo yêu cầu. Người dùng có thể bấm "Tiếp"
+     * trước khi nạp xong, nên phải kiểm lại chỉ số câu trước khi vẽ — không thì
+     * ô vẽ của câu cũ hiện trên câu mới.
+     */
+    async dungOVe(question) {
+        const idxLucGoi = this.currentIndex;
+        const box = document.getElementById('rm-hanzi-box');
+        if (!box || !question.chuCanViet) return;
+
+        const W = await ensureHanziWriter();
+        if (!W || this.currentIndex !== idxLucGoi) return;
+        // Ô có thể đã bị gỡ khỏi DOM trong lúc chờ nạp.
+        if (!box.isConnected) return;
+
+        // Ô vuông theo bề rộng thật, kẹp trong [180, 260]: nhỏ hơn thì nét chen
+        // nhau khó tô bằng ngón tay, to hơn thì đẩy thanh ba nút khỏi khung hình.
+        const size = Math.max(180, Math.min(260, box.clientWidth || 220));
+        box.style.height = `${size}px`;
+
+        this.writer = W.create(box, question.chuCanViet, {
+            width: size,
+            height: size,
+            padding: 10,
+            showCharacter: false,
+            showOutline: true,          // nét mờ để tô theo
+            strokeColor: '#e11d48',
+            outlineColor: '#d4d4d8',
+            drawingWidth: 22,
+            // Dữ liệu nét lấy từ `public/hanzi`, không phải CDN ngoài: CSP của
+            // app chặn connect-src lạ, và để trong repo thì không phụ thuộc mạng.
+            charDataLoader: (char, onLoad, onErr) => {
+                fetch(`/hanzi/${encodeURIComponent(char)}.json`)
+                    .then(r => (r.ok ? r.json() : Promise.reject(new Error(String(r.status)))))
+                    .then(onLoad)
+                    .catch(onErr);
+            },
+        });
+
+        let saiNet = 0;
+        this.writer?.quiz({
+            showHintAfterMisses: 2,
+            onMistake: () => { saiNet += 1; },
+            // Tô xong cả chữ = đúng, nhưng chỉ khi không sai quá 2 nét: tô đúng
+            // sau khi máy gợi ý từng nét thì chưa gọi là nhớ.
+            onComplete: () => this.ketThucCau(saiNet <= 2, question, question.word.en),
+        });
+
+        document.getElementById('rm-hanzi-demo')?.addEventListener('click', () => {
+            // `animateCharacter` HUỶ quiz đang chạy (hành vi của thư viện) —
+            // phải mở lại, không thì tô tiếp không ăn và bài đứng im.
+            this.writer?.animateCharacter({
+                onComplete: () => {
+                    this.writer?.quiz({
+                        showHintAfterMisses: 2,
+                        onMistake: () => { saiNet += 1; },
+                        onComplete: () => this.ketThucCau(false, question, question.word.en),
+                    });
+                },
+            });
+        });
+
+        document.getElementById('rm-hanzi-skip')?.addEventListener('click', () => {
+            this.ketThucCau(false, question, question.word.en);
         });
     },
 
@@ -402,6 +536,10 @@ export const ReviewMistakes = {
      * sửa luật tính điểm chỉ phải sửa một nơi.
      */
     ketThucCau(dung, question, dapAn) {
+        // Huỷ ô vẽ trước khi sang câu kế: thư viện giữ listener trên SVG, để lại
+        // thì mỗi câu chữ Hán cộng thêm một bộ và nét tô của câu cũ vẫn ăn.
+        this.huyOVe();
+
         PracticeManager.recordAnswer(dung, question.word);
 
         if (GameState.state.settings.soundEnabled) {
@@ -541,9 +679,17 @@ export const ReviewMistakes = {
         PracticeManager.complete();
     },
 
+    /** Huỷ ô tô nét đang mở, nếu có. */
+    huyOVe() {
+        try { this.writer?.cancelQuiz?.(); } catch { /* thư viện chưa nạp */ }
+        this.writer = null;
+    },
+
     cleanup() {
         EventBus.off(GameEvents.HINT_USED, this._onHint);
         this._onHint = null;
+        // Rời chế độ giữa lúc đang tô nét thì thư viện còn giữ listener trên SVG.
+        this.huyOVe();
         this.questions = [];
         this.currentIndex = 0;
         this.selectedAnswer = null;
