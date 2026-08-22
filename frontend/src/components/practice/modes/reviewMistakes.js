@@ -86,6 +86,22 @@ function chonKieu(word, choPhep) {
     return choPhep[0];
 }
 
+/**
+ * Chữ đem ra hỏi, lấy đúng trường mà mỗi bộ sinh trả về.
+ *
+ * Ba bộ sinh KHÔNG thống nhất tên trường:
+ *   generateMultipleChoice → `question`
+ *   generateSpeedQuiz      → `question`
+ *   generateFillBlank      → `displayWord`
+ *
+ * Đọc thiếu một trường thì ở chế độ ĐẢO CHIỀU (VN→EN) màn hình hiện sai vế:
+ * đáng lẽ hỏi nghĩa tiếng Việt thì lại hiện từ tiếng Anh — tức lộ luôn đáp án.
+ * Rơi về `word.en` chỉ khi cả hai đều trống.
+ */
+function deBai(question) {
+    return question?.displayWord || question?.question || question?.word?.en || '';
+}
+
 export const ReviewMistakes = {
 
     config: null,
@@ -237,7 +253,7 @@ export const ReviewMistakes = {
                 </div>
 
                 <div class="rm-word">
-                    <span class="rm-word-text">${question.displayWord || w.en}</span>
+                    <span class="rm-word-text">${deBai(question)}</span>
                     <button class="btn-speak-mini" id="rm-speak-btn" title="Nghe phát âm">
                         <i class="fas fa-volume-up"></i>
                     </button>

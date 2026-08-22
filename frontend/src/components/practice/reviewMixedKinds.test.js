@@ -186,3 +186,63 @@ describe('server không xoá mất lựa chọn', () => {
         expect(schema).toMatch(/reviewKinds: \{ type: \[String\]/);
     });
 });
+
+describe('hiện ĐÚNG vế của câu hỏi', () => {
+    // Ba bộ sinh không thống nhất tên trường: `generateMultipleChoice` và
+    // `generateSpeedQuiz` trả `question`, còn `generateFillBlank` trả
+    // `displayWord`. Đọc thiếu một trường thì ở chế độ ĐẢO CHIỀU (VN→EN) màn
+    // hình hiện từ tiếng Anh thay vì nghĩa tiếng Việt — tức lộ luôn đáp án.
+    const deBai = (() => {
+        const i = src.indexOf('function deBai');
+        return new Function(`${src.slice(i, src.indexOf('\n}', i) + 2)}; return deBai;`)();
+    })();
+
+    test('trắc nghiệm EN→VN hiện từ tiếng Anh', () => {
+        expect(deBai({ question: 'due', word: { en: 'due' } })).toBe('due');
+    });
+
+    test('trắc nghiệm VN→EN hiện NGHĨA, không lộ từ', () => {
+        expect(deBai({ question: 'đến hạn', word: { en: 'due' } })).toBe('đến hạn');
+    });
+
+    test('đúng/sai dùng `question` như trắc nghiệm', () => {
+        expect(deBai({ question: 'đến hạn', shownAnswer: 'due', word: { en: 'due' } }))
+            .toBe('đến hạn');
+    });
+
+    test('gõ từ dùng `displayWord`', () => {
+        expect(deBai({ displayWord: 'đến hạn', word: { en: 'due' } })).toBe('đến hạn');
+    });
+
+    test('cả hai trống → rơi về word.en, không ra undefined', () => {
+        expect(deBai({ word: { en: 'due' } })).toBe('due');
+    });
+
+    test('dữ liệu hỏng → chuỗi rỗng, không nổ', () => {
+        expect(deBai(null)).toBe('');
+        expect(deBai({})).toBe('');
+    });
+
+    test('markup THẬT SỰ gọi deBai, không đọc thẳng word.en', () => {
+        // Có hàm đúng mà markup không dùng thì vô ích: đọc thẳng `word.en` là
+        // chế độ đảo chiều hiện từ tiếng Anh thay vì nghĩa — lộ luôn đáp án.
+        expect(src).toMatch(/rm-word-text">\$\{deBai\(question\)\}/);
+    });
+});
+
+describe('chữ dài không tràn ra khỏi khung', () => {
+    test('con trực tiếp của flex-column có min-width: 0', () => {
+        // Mặc định `min-width: auto` — con KHÔNG co dưới kích thước nội dung,
+        // nên câu dài hơn khung thì tràn ngang thay vì xuống dòng.
+        expect(css).toMatch(/\.rm-container > \*\s*\{[^}]*min-width:\s*0/);
+    });
+
+    test('chữ đem ra hỏi tự xuống dòng', () => {
+        // Bộ từ có thể lưu cả cụm ("is there a near here"), không chỉ một từ.
+        const i = css.indexOf('.rm-word-text {');
+        expect(i).toBeGreaterThan(-1);
+        const body = css.slice(i, css.indexOf('}', i));
+        expect(body).toMatch(/word-break/);
+        expect(body).toMatch(/min-width:\s*0/);
+    });
+});

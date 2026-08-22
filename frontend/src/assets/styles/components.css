@@ -9757,6 +9757,21 @@ mark {
     color: var(--primary-color);
 }
 
+/* Chữ đem ra hỏi. Có thể là một từ ("due") hoặc CẢ CÂU khi bộ từ lưu cụm —
+   phải xuống dòng thay vì tràn ngang ra khỏi khung. */
+.rm-word-text {
+    min-width: 0;
+    text-align: center;
+    word-break: break-word;
+}
+
+/* Con TRỰC TIẾP của flex-column mặc định `min-width: auto`, tức KHÔNG co dưới
+   kích thước nội dung — thân câu hỏi dài hơn khung là tràn ngang, không xuống
+   dòng. Đây là thứ đẩy chữ sang phải và cắt mất trong ảnh người dùng gửi. */
+.rm-container > * {
+    min-width: 0;
+}
+
 .rm-phonetic {
     font-size: 14px;
     font-weight: 400;
