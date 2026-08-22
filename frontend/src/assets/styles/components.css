@@ -809,10 +809,18 @@
 .practice-content {
   background-color: var(--bg-primary);
   border-radius: var(--border-radius-large);
-  padding: var(--spacing-md);
+  /* `sm` thay `md`: mỗi chế độ bên trong đã có đệm riêng, lớp này chỉ cần đủ
+     để nội dung không chạm viền. 16px thừa ở đây là 32px chiều cao mất đi. */
+  padding: var(--spacing-sm) var(--spacing-md);
   box-shadow: var(--shadow-small);
   margin-bottom: var(--spacing-md);
-  min-height: 280px;
+  /* `min-height` giữ khung khỏi co giật khi câu ngắn nối câu dài — nhưng 280px
+     là SÀN CỨNG: nội dung gọn tới đâu khối này vẫn cao 280px, cộng padding và
+     margin thành 328px, đủ đẩy thanh ba nút (Gợi ý / Dừng giờ / Bỏ qua) xuống
+     dưới mép màn.
+     200px vẫn đủ chống giật cho mọi chế độ (câu ngắn nhất ~180px) mà trả lại
+     80px cho thanh công cụ. */
+  min-height: 180px;
 }
 
 .practice-actions {
@@ -1630,17 +1638,23 @@
 }
 
 .countdown-timer {
-  font-size: 72px;
+  /* 44px chứ không 72px: đây là một chỉ số phụ trong bài, không phải màn hình
+     chào. Cỡ cũ chiếm hơn 100px chiều cao và đẩy hai nút Đúng/Sai xuống dưới
+     mép màn — mà chế độ này tính điểm theo TỐC ĐỘ bấm, cuộn tìm nút là mất giây. */
+  font-size: 44px;
   font-weight: bold;
   color: var(--error-color);
-  margin-bottom: var(--spacing-xl);
+  margin-bottom: var(--spacing-md);
   animation: pulse 1s ease-in-out infinite;
 }
 
 .speed-question {
-  font-size: var(--font-size-xl);
-  margin-bottom: var(--spacing-lg);
-  padding: var(--spacing-lg);
+  /* `lg` thay `xl`: `.arrow` và `.shown-answer` không có luật riêng nên thừa
+     kế cỡ chữ từ đây — hạ một bậc là cả khối thấp xuống ~20px, đủ để thanh ba
+     nút (Gợi ý / Dừng giờ / Bỏ qua) lọt vào khung hình. */
+  font-size: var(--font-size-lg);
+  margin-bottom: var(--spacing-sm);
+  padding: var(--spacing-sm) var(--spacing-md);
   background-color: var(--bg-secondary);
   border-radius: var(--border-radius);
 }
@@ -1652,7 +1666,9 @@
 }
 
 .speed-choice-btn {
-  padding: var(--spacing-xl);
+  /* `lg` thay `xl`: nút vẫn cao ~64px, thừa ngưỡng 44px vùng chạm, mà tiết
+     kiệm 16px chiều cao — đủ để cả hai nút nằm trong khung hình. */
+  padding: var(--spacing-lg);
   background-color: var(--bg-secondary);
   border: 2px solid var(--border-color);
   border-radius: var(--border-radius-large);
@@ -5886,37 +5902,9 @@ mark {
     transform: scale(1.1);
 }
 
-.words-pool {
-    display: flex;
-    flex-wrap: wrap;
-    gap: var(--spacing-md);
-    justify-content: center;
-    margin-bottom: var(--spacing-xl);
-    padding: var(--spacing-lg);
-    background: var(--bg-tertiary);
-    border-radius: var(--border-radius-lg);
-}
-
-.word-btn {
-    padding: var(--spacing-md) var(--spacing-lg);
-    background: white;
-    border: 2px solid var(--border-color);
-    border-radius: var(--border-radius);
-    color: var(--text-primary);
-    font-size: var(--font-size-base);
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    box-shadow: var(--shadow-sm);
-}
-
-.word-btn:hover:not(:disabled) {
-    transform: translateY(-2px);
-    box-shadow: var(--shadow-md);
-    border-color: var(--primary-color);
-    background: var(--primary-color);
-    color: white;
-}
+/* `.words-pool`, `.word-btn` và `:hover` khai ở khối "Word Buttons" bên dưới —
+   luật ở đây bị ghi đè hoàn toàn nên đã gỡ. Chỉ giữ hai trạng thái mà khối kia
+   không khai lại. */
 
 .word-btn:disabled {
     opacity: 0.3;
@@ -5926,13 +5914,6 @@ mark {
 .word-btn.selected {
     background: var(--bg-secondary);
     border-color: var(--border-color);
-}
-
-.sentence-actions {
-    display: flex;
-    gap: var(--spacing-md);
-    justify-content: center;
-    margin-bottom: var(--spacing-lg);
 }
 
 .result-sentence {
@@ -6032,12 +6013,12 @@ mark {
 .sb-prompt {
     /* Không dùng `margin-top` của các box cũ nữa — chúng cộng dồn thành khoảng
        trống lớn giữa từng khối. */
-    margin-bottom: 12px;
+    margin-bottom: 8px;
 }
 
 .sb-title {
-    margin: 0 0 10px;
-    font-size: 1.05rem;
+    margin: 0 0 8px;
+    font-size: 1rem;
     text-align: center;
 }
 
@@ -6165,12 +6146,15 @@ mark {
    MỘT ô thả — nhiều hơn cả kho từ bên dưới. Nén còn ~120px: vẫn đủ chỗ cho câu
    hai dòng, mà cả màn không phải cuộn nữa. */
 .sentence-area {
-    min-height: 84px;
-    padding: var(--spacing-md);
+    /* 60px = một dòng câu + đệm. Câu dài tự nở thêm; đặt sàn cao hơn chỉ tạo
+       khoảng trống chết ở phần lớn câu, mà mỗi px ở đây đẩy thanh ba nút
+       (Gợi ý / Dừng giờ / Bỏ qua) xuống dưới mép màn. */
+    min-height: 52px;
+    padding: var(--spacing-sm) var(--spacing-md);
     background: var(--bg-secondary);
     border: 3px dashed var(--border-color);
     border-radius: var(--border-radius-large);
-    margin: var(--spacing-md) 0;
+    margin: var(--spacing-sm) 0;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -6270,7 +6254,10 @@ mark {
 
 /* Words Pool Container */
 .words-pool-container {
-    padding: var(--spacing-lg);
+    /* `lg` (24px) mỗi phía cộng với padding của chính các nút bên trong thành
+       một viền dày vô ích. `sm` là đủ: các nút đã có đệm riêng, khung này chỉ
+       cần một viền mỏng để tách khỏi nền. */
+    padding: var(--spacing-sm);
     background: var(--bg-primary);
     border-radius: var(--border-radius-large);
     box-shadow: var(--shadow-small);
@@ -6300,12 +6287,15 @@ mark {
     text-align: center;
 }
 
-/* Phrase Buttons - Cụm từ lớn hơn */
+/* Phrase Buttons - Cụm từ.
+   Cỡ cũ (padding 16/32, min-width 120) làm mỗi nút cao 54px và rộng thừa; ba
+   nút một hàng đã đẩy kho từ + hàng nút Kiểm tra xuống dưới mép màn. Nén còn
+   ~40px cao — vẫn trên ngưỡng 44px vùng chạm nhờ padding ngang rộng. */
 .phrase-btn {
-    min-width: 120px;
-    padding: var(--spacing-md) var(--spacing-xl);
+    min-width: 96px;
+    padding: 9px var(--spacing-lg);
     background: linear-gradient(135deg, #8b5cf6, #ec4899);
-    font-size: var(--font-size-md);
+    font-size: var(--font-size-base);
     white-space: nowrap;
 }
 
@@ -6329,11 +6319,17 @@ mark {
 }
 
 /* Sentence Actions */
+/* Hàng nút "Làm lại / Kiểm tra".
+   Trước đây khai HAI lần trong file này; luật sau ghi đè `margin-top` của luật
+   trước nên sửa ở luật trước không có tác dụng gì. Đã gộp làm một. */
 .sentence-actions {
     display: flex;
     gap: var(--spacing-md);
     justify-content: center;
-    margin-top: var(--spacing-xl);
+    /* Sát ngay dưới kho từ: chọn cụm → bấm Kiểm tra là hai bước liền nhau của
+       cùng một thao tác. `xl` cũ đẩy nút trôi xuống khỏi tầm nhìn. */
+    margin-top: var(--spacing-sm);
+    margin-bottom: var(--spacing-sm);
 }
 
 .sentence-actions .btn {

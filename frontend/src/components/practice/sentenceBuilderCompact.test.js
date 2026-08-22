@@ -70,7 +70,11 @@ describe('vùng chơi được nới chỗ', () => {
         const body = luat('.sentence-area');
         const h = Number((body.match(/min-height:\s*(\d+)px/) || [])[1]);
         expect(h).toBeLessThan(120);
-        expect(h).toBeGreaterThanOrEqual(70);   // vẫn đủ cho câu hai dòng
+        // Sàn đủ cho MỘT hàng chip (38px) + đệm. Không đặt 84px cho hai hàng:
+        // nó ngốn thêm 32px MỖI CÂU, mà chính 32px đó đẩy thanh ba nút (Gợi ý /
+        // Dừng giờ / Bỏ qua) ra khỏi khung hình. Câu dài hơn một hàng thì ô tự
+        // nở — giật một nhịp chấp nhận được, nút bấm không thấy thì không.
+        expect(h).toBeGreaterThanOrEqual(46);
     });
 
     test('margin và padding không còn dùng spacing-xl', () => {

@@ -235,6 +235,30 @@ export const SentenceBuilder = {
         checkBtn?.addEventListener('click', () => {
             this.checkAnswer();
         });
+
+        // Enter = Kiểm tra. Xếp xong cụm cuối thì tay đang ở chuột/bàn phím,
+        // với xuống nút Kiểm tra là một thao tác thừa cho mỗi câu.
+        //
+        // Gắn MỘT lần cho cả lượt chứ không mỗi câu: `attachListeners` chạy lại
+        // sau mỗi `showQuestion`, gắn ở đó thì sau 10 câu có 10 listener và một
+        // phím Enter gọi `checkAnswer` 10 lần.
+        if (!this._onKey) {
+            this._onKey = (e) => {
+                if (e.key !== 'Enter') return;
+                // Không cướp Enter khi con trỏ đang trong ô nhập (ô tìm ở nav).
+                const tag = (e.target?.tagName || '').toUpperCase();
+                if (tag === 'INPUT' || tag === 'TEXTAREA') return;
+
+                // Chỉ khi nút đang bấm được: chưa xếp cụm nào, hoặc đã kiểm tra
+                // rồi thì nút `disabled` — Enter cũng phải im như cú bấm chuột.
+                const btn = document.getElementById('check-btn');
+                if (!btn || btn.disabled) return;
+
+                e.preventDefault();
+                this.checkAnswer();
+            };
+            document.addEventListener('keydown', this._onKey);
+        }
     },
 
     selectPhrase(phrase, btn) {
@@ -487,6 +511,13 @@ export const SentenceBuilder = {
     cleanup() {
         EventBus.off(GameEvents.HINT_USED, this._onHint);
         this._onHint = null;
+
+        // Gỡ phím Enter: không gỡ thì nó còn sống sau khi rời chế độ và bấm
+        // Enter ở màn khác vẫn gọi `checkAnswer` của bài đã đóng.
+        if (this._onKey) {
+            document.removeEventListener('keydown', this._onKey);
+            this._onKey = null;
+        }
         this.questions = [];
         this.currentIndex = 0;
         this.selectedWords = [];
