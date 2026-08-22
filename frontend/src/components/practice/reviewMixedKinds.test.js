@@ -535,3 +535,23 @@ describe('thanh trạng thái tự giải thích được', () => {
         expect(css.slice(i, css.indexOf('}', i))).toMatch(/flex-wrap: wrap/);
     });
 });
+
+describe('nguồn phải parse được', () => {
+    test('không có backtick trong comment HTML giữa template string', () => {
+        // Đã từng làm vỡ build: một comment HTML bên trong template string có
+        // dấu backtick quanh tên thuộc tính, backtick đó ĐÓNG chuỗi giữa chừng.
+        // Test nội dung không bắt được lỗi này — chỉ build mới bắt.
+        //
+        // Chỉ soi COMMENT: template string lồng nhau (`.map()` trả về chuỗi)
+        // dùng backtick hoàn toàn hợp lệ.
+        for (const m of src.matchAll(/<!--[\s\S]*?-->/g)) {
+            expect(m[0]).not.toContain('`');
+        }
+    });
+
+    test('file parse được như module thật', () => {
+        // Chốt chặn chung: nếu cú pháp vỡ ở bất cứ đâu thì hàm dựng ném lỗi.
+        expect(() => new Function(`return () => {\n${''}\n};`)).not.toThrow();
+        expect(() => napBoChon()).not.toThrow();
+    });
+});

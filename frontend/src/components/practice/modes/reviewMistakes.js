@@ -338,7 +338,9 @@ export const ReviewMistakes = {
                     <!-- Có CHỮ "Thuộc", không chỉ mỗi "0/5": năm chấm cạnh một
                          phân số đọc thành "câu 0 trên 5" — tiến độ lượt chơi —
                          chứ không ai đoán ra đó là mức thuộc. Lời giải thích
-                         nằm trong `title` thì trên điện thoại không hover được. -->
+                         đặt trong thuộc tính title thì trên điện thoại không
+                         hover được. (Không dùng dấu backtick trong khối này:
+                         nó nằm trong template string, backtick đóng chuỗi.) -->
                     <span class="rm-mastery" title="Mức thuộc từ này theo lịch ôn giãn cách: ${mucThuoc}/5. Trả lời đúng thì tăng, sai thì giảm.">
                         <span class="rm-status-label">Thuộc</span>
                         ${[0, 1, 2, 3, 4].map(k =>
