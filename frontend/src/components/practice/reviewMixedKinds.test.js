@@ -341,8 +341,15 @@ describe('vào chế độ phải qua popup chọn đề RỒI chọn Part', () 
     });
 
     test('TopNav không còn lối tắt bỏ qua popup Part', () => {
-        // Trước đây nó nhảy thẳng vào bài sau khi chọn đề.
-        expect(nav).not.toMatch(/if \(mode === 'review-mistakes'\)/);
+        // Trước đây nó nhảy thẳng vào bài sau khi chọn đề, thay vì mở popup Part.
+        // Cấm đúng HÀNH VI đó chứ không cấm mọi câu `if` nhắc tới chế độ này:
+        // TopNav vẫn cần một nhánh riêng để đặt cờ `daChonDeTuSai`.
+        // Gỡ comment trước khi soi: chú thích ngay dưới đó có nhắc
+        // `PRACTICE_REQUESTED`, mà chữ trong comment không phải hành vi.
+        const navCode = nav.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*/g, '');
+        expect(navCode).not.toMatch(/review-mistakes'\)[\s\S]{0,200}PRACTICE_REQUESTED/);
+        // Và đường duy nhất sau khi chọn đề vẫn là mở popup Part.
+        expect(nav).toMatch(/showPartSelectionModal/);
     });
 });
 

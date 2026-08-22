@@ -158,3 +158,50 @@ describe('model — trường lang', () => {
         expect(path.defaultValue).toBe('en');
     });
 });
+
+describe('danh sách từ sai ở popup chọn nhóm cũng lọc theo ngôn ngữ', () => {
+    const { readFileSync } = require('node:fs');
+    const { join } = require('node:path');
+    const ctrl = readFileSync(
+        join(__dirname, '..', 'controllers', 'wrongWordsController.js'), 'utf8');
+    const model = readFileSync(
+        join(__dirname, '..', 'models', 'WrongWord.js'), 'utf8');
+
+    /** Thân `getAllWrongWords` — nơi popup chọn nhóm lấy dữ liệu. */
+    function than() {
+        const i = ctrl.indexOf('exports.getAllWrongWords');
+        return ctrl.slice(i, ctrl.indexOf('\nexports.', i + 10));
+    }
+
+    test('đọc ngôn ngữ từ HỒ SƠ, không nhận từ client', () => {
+        // Client khai `lang` là client tự chọn xem mình thấy nhóm nào — mà nó
+        // không biết người dùng đang học gì.
+        const t = than();
+        expect(t).toMatch(/settings\?\.vocabLang === 'zh'/);
+        expect(t).not.toMatch(/req\.query\.lang|req\.body\.lang/);
+    });
+
+    test('truyền `lang` xuống truy vấn', () => {
+        // Thiếu tham số này thì popup hiện lẫn nhóm tiếng Trung với tiếng Anh,
+        // và chọn nhóm nào cũng ra một lượt ôn lẫn lộn — đúng lỗi người dùng báo.
+        expect(than()).toMatch(/getActiveWords\(userId, limit, lang\)/);
+    });
+
+    test('bộ lọc dùng CHUNG một nguồn, không chép đôi', () => {
+        // Hai bản sao của cùng một regex thì sửa một bên là hai endpoint lọc
+        // khác nhau, mà không lỗi nào báo.
+        expect(model).toMatch(/statics\.langFilter/);
+        expect(ctrl).toMatch(/WrongWord\.langFilter\(lang\)/);
+        // Regex chữ Hán chỉ được khai ở MỘT chỗ.
+        expect(ctrl).not.toMatch(/u4e00/);
+    });
+
+    test('bản ghi cũ chưa có `lang` vẫn lọc đúng bằng chữ Hán', () => {
+        // 139 bản ghi trong DB không có trường `lang`. Bỏ qua chúng thì tính
+        // năng vô dụng cho tới khi người dùng gặp lại từng từ.
+        const i = model.indexOf('statics.langFilter');
+        const t = model.slice(i, model.indexOf('\n};', i));
+        expect(t).toMatch(/\$exists: false/);
+        expect(t).toMatch(/\$not: \{ \$regex: HAN \}/);
+    });
+});

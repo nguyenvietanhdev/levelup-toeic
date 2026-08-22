@@ -25,6 +25,14 @@ function thanStart() {
     return src.slice(i, src.indexOf('\n    cleanupMode(mode)', i));
 }
 
+/** Khối guard của `review-mistakes` — từ dòng `if` tới hết thân nó. */
+function khoiGuard() {
+    const t = thanStart();
+    const i = t.indexOf("if (mode === 'review-mistakes'");
+    expect(i).toBeGreaterThan(-1);
+    return t.slice(i, t.indexOf('\n\n', i));
+}
+
 describe('vế 1 — luôn phải chọn đề trước', () => {
     test('guard chọn đề đứng TRƯỚC guard chọn Part', () => {
         // Đứng sau thì `review-mistakes` đã lọt vào bước Part rồi mới bị chặn.
@@ -55,17 +63,14 @@ describe('vế 1 — luôn phải chọn đề trước', () => {
     });
 
     test('chặn rồi thì DỪNG, không chạy tiếp xuống trừ năng lượng', () => {
-        const t = thanStart();
-        const i = t.indexOf("mode === 'review-mistakes'");
-        // Ngay trong khối guard phải có `return false`.
-        expect(t.slice(i, i + 220)).toMatch(/return false;/);
+        // Thiếu `return false` thì guard chỉ mở popup rồi vẫn chạy tiếp xuống
+        // trừ năng lượng và vào bài — popup nằm đè lên màn luyện tập.
+        expect(khoiGuard()).toMatch(/return false;/);
     });
 
     test('popup mở đúng ở tab từ vựng sai, khoá hai tab kia', () => {
         // `pendingMode` là thứ TopicModal đọc để khoá tab.
-        const t = thanStart();
-        const i = t.indexOf("mode === 'review-mistakes'");
-        expect(t.slice(i, i + 220)).toMatch(/TOPIC_MODAL_REQUESTED, \{ pendingMode: mode \}/);
+        expect(khoiGuard()).toMatch(/TOPIC_MODAL_REQUESTED, \{ pendingMode: mode \}/);
     });
 
     test('ngoại lệ duy nhất là "Làm lại N câu sai"', () => {
@@ -113,5 +118,43 @@ describe('vế 2 — rời chế độ là mất lựa chọn đề', () => {
         const i = src.indexOf("UI.showScreen('home-screen');");
         const truoc = src.slice(Math.max(0, i - 400), i);
         expect(truoc).toMatch(/xoaLuaChonTuSai/);
+    });
+});
+
+describe('KHÔNG lặp popup — `start()` chạy nhiều lần cho một lượt', () => {
+    const nav = readFileSync(
+        join(__dirname, '..', '..', 'layouts', 'TopNav.jsx'), 'utf8');
+
+    test('dùng CỜ MỘT LẦN, không dựa vào trạng thái đề', () => {
+        // `PartSelector.selectPart()` phát `PRACTICE_REQUESTED` để chạy lại sau
+        // khi chọn Part. Điều kiện dựa trên trạng thái thì lần chạy thứ hai
+        // trông y hệt lần đầu → popup mở lại → vòng lặp không thoát ra được.
+        expect(khoiGuard()).toMatch(/PartSelector\.daChonDeTuSai/);
+    });
+
+    test('cờ bị TIÊU ngay khi đọc — chỉ dùng được một lượt', () => {
+        // Không tiêu thì lượt sau vào thẳng bài, phá vế 1 của quy tắc.
+        const g = khoiGuard();
+        const i = g.indexOf('if (PartSelector.daChonDeTuSai)');
+        expect(i).toBeGreaterThan(-1);
+        expect(g.slice(i, i + 140)).toMatch(/daChonDeTuSai = false/);
+    });
+
+    test('cờ được ĐẶT khi chọn xong đề từ sai', () => {
+        expect(nav).toMatch(/daChonDeTuSai = true/);
+        // Chỉ đặt cho đúng chế độ này — đặt cho mọi chế độ là cấp sẵn một lượt
+        // bỏ qua popup cho chế độ khác.
+        const i = nav.indexOf('daChonDeTuSai = true');
+        expect(nav.slice(Math.max(0, i - 140), i)).toMatch(/review-mistakes/);
+    });
+
+    test('rời chế độ thì xoá cờ VÔ ĐIỀU KIỆN', () => {
+        // Thoát giữa chừng lúc cờ còn bật thì lần vào sau nó tiêu cờ cũ và đi
+        // thẳng vào bài, bỏ qua bước chọn đề.
+        const i = src.indexOf('xoaLuaChonTuSai() {');
+        const than = src.slice(i, src.indexOf('\n    },', i));
+        // Xoá cờ phải đứng TRƯỚC câu `return` sớm theo loại đề.
+        expect(than.indexOf('daChonDeTuSai = false'))
+            .toBeLessThan(than.indexOf('return;'));
     });
 });

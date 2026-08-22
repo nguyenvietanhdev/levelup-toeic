@@ -131,6 +131,10 @@ export default function TopNav() {
         setTopicMode(null);
 
         if (mode) {
+            // Đánh dấu "lượt này đã chọn xong đề từ sai", để lần `start()` chạy
+            // lại sau khi chọn Part không mở lại popup chọn đề.
+            if (mode === 'review-mistakes') PartSelector.daChonDeTuSai = true;
+
             // Chọn đề xong → mở Part selector với pendingMode,
             // PartSelector.selectPart() sẽ emit PRACTICE_REQUESTED sau khi user chọn part.
             //

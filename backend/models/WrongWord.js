@@ -303,13 +303,31 @@ WrongWordSchema.statics.getWordsToReview = async function(userId, limit = 10) {
 /**
  * Static method: Lấy tất cả từ đang active
  */
-WrongWordSchema.statics.getActiveWords = async function(userId, limit = 100) {
-    return this.find({
-        userId,
-        status: 'active'
-    })
-    .sort({ priorityScore: -1, wrongCount: -1 })
-    .limit(limit);
+/**
+ * Bộ lọc theo NGÔN NGỮ, dùng chung cho mọi truy vấn từ sai.
+ *
+ * Người đang học tiếng Trung mà danh sách từ sai hiện lẫn từ tiếng Anh thì
+ * nhóm nào cũng mở ra sai — chọn `hsk1` xong lại gặp `sentence_pattern`.
+ *
+ * Bản ghi CŨ chưa có `lang` vẫn phải lọc đúng, nếu không tính năng vô dụng cho
+ * tới khi người dùng gặp lại từng từ. Suy bằng chữ Hán ngay trong truy vấn — đã
+ * kiểm trên dữ liệu thật: không source nào trộn hai loại, 0 ngoại lệ.
+ */
+WrongWordSchema.statics.langFilter = function(lang) {
+    const HAN = '[\u4e00-\u9fff\u3400-\u4dbf]';
+    return lang === 'zh'
+        ? { $or: [{ lang: 'zh' }, { lang: { $exists: false }, en: { $regex: HAN } }] }
+        : { $or: [{ lang: 'en' }, { lang: { $exists: false }, en: { $not: { $regex: HAN } } }] };
+};
+
+WrongWordSchema.statics.getActiveWords = async function(userId, limit = 100, lang = null) {
+    // `lang` tuỳ chọn để không phá vỡ nơi gọi cũ, nhưng mọi nơi hiển thị cho
+    // người dùng đều phải truyền: thiếu nó là danh sách trộn hai thứ tiếng.
+    const filter = { userId, status: 'active' };
+    if (lang) Object.assign(filter, this.langFilter(lang));
+    return this.find(filter)
+        .sort({ priorityScore: -1, wrongCount: -1 })
+        .limit(limit);
 };
 
 /**

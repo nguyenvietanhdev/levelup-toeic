@@ -143,9 +143,23 @@ export const PracticeManager = {
         // đúng những câu vừa sai TRONG lượt này chứ không mở lượt mới, nên
         // không có đề nào để chọn — bắt chọn lại đề ở đây là làm hỏng chính
         // chức năng của nút đó.
+        //
+        // Thực thi bằng CỜ MỘT LẦN chứ không bằng "đề hiện tại là nhóm nào".
+        // `start()` chạy NHIỀU LẦN cho một lượt: lần đầu người dùng bấm, rồi
+        // `PartSelector.selectPart()` phát `PRACTICE_REQUESTED` để chạy lại sau
+        // khi đã chọn Part. Điều kiện dựa trên trạng thái thì lần chạy thứ hai
+        // trông y hệt lần đầu và popup mở lại — đúng vòng lặp người dùng gặp.
+        //
+        // Cờ được ĐẶT khi chọn xong đề ở tab "Từ vựng sai", và TIÊU ngay tại
+        // đây. Tiêu rồi thì lượt sau lại phải chọn — giữ nguyên quy tắc bất
+        // biến, mà không cần đoán xem đây là lần chạy thứ mấy.
         if (mode === 'review-mistakes' && !PartSelector.retryWords?.length) {
-            EventBus.emit(GameEvents.TOPIC_MODAL_REQUESTED, { pendingMode: mode });
-            return false;
+            if (PartSelector.daChonDeTuSai) {
+                PartSelector.daChonDeTuSai = false;
+            } else {
+                EventBus.emit(GameEvents.TOPIC_MODAL_REQUESTED, { pendingMode: mode });
+                return false;
+            }
         }
 
         // Chưa chọn đề → hiện popup chọn đề trước. Sau khi chọn đề xong,
@@ -936,6 +950,9 @@ export const PracticeManager = {
      * bấm nhầm vào chế độ khác thì không có lý do gì mất lựa chọn của họ.
      */
     xoaLuaChonTuSai() {
+        // Cờ xoá VÔ ĐIỀU KIỆN, trước cả phép kiểm đề: thoát giữa chừng lúc cờ
+        // còn bật thì lần vào sau nó tiêu cờ cũ và đi thẳng vào bài.
+        PartSelector.daChonDeTuSai = false;
         if (!String(TopicSelector.currentTopic?.id || '').startsWith('wrong:')) return;
         TopicSelector.setCurrentTopic(null);
         PartSelector.selectedPart = null;

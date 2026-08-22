@@ -125,14 +125,24 @@ describe('luồng chạy của chế độ Ôn lại từ sai', () => {
         // chia theo Part". Sai với dữ liệu thật: 208/208 từ sai trong DB đều có
         // `part`. Ôn lẫn lộn từ của 12 nhóm trong một lượt thì không tập trung
         // vào chỗ nào cả.
-        expect(nav).not.toMatch(/if \(mode === 'review-mistakes'\)/);
+        // Cấm đúng HÀNH VI "chọn đề xong vào thẳng bài", không cấm mọi câu `if`
+        // nhắc tới chế độ này — TopNav vẫn cần nhánh riêng để đặt cờ một lần.
+        // Gỡ comment trước khi soi: chú thích ngay dưới đó có nhắc
+        // `PRACTICE_REQUESTED`, mà chữ trong comment không phải hành vi.
+        const navCode = nav.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*/g, '');
+        expect(navCode).not.toMatch(/review-mistakes'\)[\s\S]{0,200}PRACTICE_REQUESTED/);
+        expect(nav).toMatch(/showPartSelectionModal/);
     });
 
     test('vẫn hoãn trước khi mở popup Part — popup đề chưa gỡ khỏi DOM', () => {
         // `onSelected()` chạy TRƯỚC `onClose()`, nên hai modal cùng `id` tồn tại
         // đồng thời trong một nhịp. Lối chung đã có `setTimeout` cho việc này.
         const i = nav.indexOf('const handleTopicSelected');
-        expect(nav.slice(i, i + 1200)).toMatch(/setTimeout\(/);
+        const than = nav.slice(i, nav.indexOf('}, []);', i));
+        expect(than).toMatch(/setTimeout\(/);
+        // Và `showPartSelectionModal` phải nằm TRONG `setTimeout` đó.
+        expect(than.indexOf('setTimeout('))
+            .toBeLessThan(than.indexOf('showPartSelectionModal'));
     });
 
     test('mode truyền xuống popup bằng STATE, không phải ref', () => {

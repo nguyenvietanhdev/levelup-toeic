@@ -219,12 +219,7 @@ exports.getWordsToReview = async (req, res) => {
         // không thì tính năng vô dụng cho tới khi người dùng gặp lại từng từ.
         // Suy bằng chữ Hán ngay trong truy vấn — đã kiểm trên dữ liệu thật:
         // không source nào trộn hai loại, 0 ngoại lệ.
-        const HAN = '[\u4e00-\u9fff\u3400-\u4dbf]';
-        const langFilter = lang === 'zh'
-            ? { $or: [{ lang: 'zh' }, { lang: { $exists: false }, en: { $regex: HAN } }] }
-            : { $or: [{ lang: 'en' }, { lang: { $exists: false }, en: { $not: { $regex: HAN } } }] };
-
-        const base = { userId, status: 'active', ...langFilter };
+        const base = { userId, status: 'active', ...WrongWord.langFilter(lang) };
         const filter = { ...base };
         if (!all) filter.nextReviewDate = { $lte: new Date() };
 
@@ -268,15 +263,22 @@ exports.getAllWrongWords = async (req, res) => {
         const userId = req.user.id || req.user._id;
         const limit = parseInt(req.query.limit) || 100;
 
-        logger.debug(`📚 getAllWrongWords: Fetching active words for user ${userId}, limit=${limit}`);
+        // Ngôn ngữ lấy từ HỒ SƠ, không nhận từ client — giống `getWordsToReview`.
+        // Thiếu bước này thì popup chọn nhóm từ sai hiện lẫn nhóm tiếng Trung
+        // với nhóm tiếng Anh, và chọn nhóm nào cũng ra một lượt ôn lẫn lộn.
+        const profile = await UserProfile.findOne({ userId }).select('settings').lean();
+        const lang = profile?.settings?.vocabLang === 'zh' ? 'zh' : 'en';
 
-        const words = await WrongWord.getActiveWords(userId, limit);
+        logger.debug(`📚 getAllWrongWords: Fetching active words for user ${userId}, limit=${limit}, lang=${lang}`);
+
+        const words = await WrongWord.getActiveWords(userId, limit, lang);
 
         logger.debug(`✅ getAllWrongWords: Found ${words.length} active words`);
 
         res.status(200).json({
             success: true,
             count: words.length,
+            lang,
             data: words
         });
     } catch (error) {

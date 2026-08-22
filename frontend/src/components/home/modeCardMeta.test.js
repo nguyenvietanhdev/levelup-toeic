@@ -68,17 +68,26 @@ describe('nguồn số lượt đã chơi', () => {
 });
 
 describe('lưới không lệch chiều cao', () => {
-    test('`mode-meta` xếp DỌC và có chiều cao tối thiểu', () => {
-        // Chỉ chế độ ôn từ mới có dòng "N từ cần ôn", chỉ chế độ đã chơi mới có
-        // dòng "N lượt" — không ghim chiều cao thì các thẻ cao thấp khác nhau.
+    test('`mode-meta` xếp DỌC và neo xuống đáy thẻ', () => {
         const i = css.indexOf('.mode-meta {');
         expect(i).toBeGreaterThan(-1);
         const rule = css.slice(i, css.indexOf('}', i));
         expect(rule).toMatch(/flex-direction: column/);
-        expect(rule).toMatch(/min-height/);
-        // Neo xuống đáy: các thẻ có tên chế độ dài ngắn khác nhau, canh từ trên
+        // Neo đáy: các thẻ có tên và mô tả dài ngắn khác nhau, canh từ trên
         // xuống thì viên năng lượng mỗi thẻ một cao độ.
+        expect(rule).toMatch(/margin-top: auto/);
         expect(rule).toMatch(/justify-content: flex-end/);
+    });
+
+    test('KHÔNG kẹp `min-height` — nguồn của khoảng hở thừa', () => {
+        // Các ô trong một hàng grid đã tự bằng chiều cao nhau, nên kẹp sàn chỉ
+        // chừa sẵn chỗ cho dòng thứ ba mà hầu hết thẻ không có: phần mô tả và
+        // khối này bị đẩy xa nhau ra.
+        // Gỡ comment trước khi soi: lý do KHÔNG kẹp được ghi ngay trong rule,
+        // và chữ `min-height` trong lời giải thích đó không phải khai báo.
+        const i = css.indexOf('.mode-meta {');
+        const rule = css.slice(i, css.indexOf('}', i)).replace(/\/\*[\s\S]*?\*\//g, '');
+        expect(rule).not.toMatch(/min-height/);
     });
 
     test('mỗi selector khai đúng MỘT lần', () => {

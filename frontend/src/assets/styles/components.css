@@ -583,12 +583,15 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 6px;
+  gap: 4px;
+  /* `margin-top: auto` đẩy cả khối xuống đáy thẻ. Các ô trong một hàng grid đã
+     tự bằng chiều cao nhau (`align-items: stretch` mặc định), nên chỉ cần neo
+     đáy là hàng nút năng lượng thẳng nhau — không cần kẹp `min-height`.
+
+     Bản trước kẹp 84px = ba dòng đầy đủ, nhưng hầu hết thẻ chỉ có HAI dòng
+     (số lượt + năng lượng) nên luôn thừa ra một dòng trống giữa phần mô tả và
+     khối này. Đó là khoảng hở người dùng thấy là "xa quá, trông xấu". */
   margin-top: auto;
-  /* Chiều cao đều cho MỌI thẻ: chỉ chế độ ôn từ có dòng "N từ cần ôn" và chỉ
-     chế độ đã chơi có dòng "N lượt", nên không kẹp sàn thì các thẻ trong lưới
-     cao thấp lệch nhau. 84px = ba dòng đầy đủ. */
-  min-height: 84px;
   justify-content: flex-end;
 }
 
