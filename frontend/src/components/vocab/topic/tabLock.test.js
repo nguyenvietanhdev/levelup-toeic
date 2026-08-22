@@ -103,13 +103,21 @@ describe('popup KHÔNG mở vào tab đã khoá', () => {
 describe('luồng chạy của chế độ Ôn lại từ sai', () => {
     test('BẮT chọn nhóm từ sai trước khi chạy', () => {
         // Trước đây nó bỏ qua bước chọn đề và ôn lẫn lộn mọi nguồn.
-        expect(pm).toMatch(/mode === 'review-mistakes' && !dangLaNhomTuSai/);
-        expect(pm).toMatch(/startsWith\('wrong:'\)/);
+        expect(pm).toMatch(/mode === 'review-mistakes'/);
+        expect(pm).toMatch(/TOPIC_MODAL_REQUESTED, \{ pendingMode: mode \}/);
     });
 
-    test('đề đang chọn ĐÃ là nhóm từ sai → không hỏi lại', () => {
-        const i = pm.indexOf('dangLaNhomTuSai');
-        expect(pm.slice(i, i + 300)).toMatch(/!dangLaNhomTuSai/);
+    test('đề đang chọn ĐÃ là nhóm từ sai → VẪN hỏi lại', () => {
+        // Đảo lại luật cũ. Trước đây đề còn là nhóm `wrong:` thì bỏ qua popup —
+        // nghĩa là lượt hai trở đi vào thẳng bước chọn Part.
+        //
+        // Nhóm từ sai THAY ĐỔI sau mỗi lượt: từ trả lời đúng rời khỏi danh sách
+        // đến hạn. Nhóm của lượt trước không còn là nhóm người dùng muốn ôn
+        // lượt này, nên mỗi lượt phải là một lựa chọn mới.
+        expect(pm).not.toMatch(/dangLaNhomTuSai/);
+        // Và lựa chọn cũ bị xoá khi rời chế độ, để lần vào sau không có gì để
+        // đi tắt qua.
+        expect(pm).toMatch(/xoaLuaChonTuSai\(\)/);
     });
 
     test('ĐI CHUNG đường với mọi chế độ: chọn đề rồi chọn Part', () => {

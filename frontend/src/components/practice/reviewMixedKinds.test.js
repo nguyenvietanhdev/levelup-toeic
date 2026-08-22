@@ -324,8 +324,11 @@ describe('vào chế độ phải qua popup chọn đề RỒI chọn Part', () 
     const nav = readFileSync(
         join(__dirname, '..', '..', 'layouts', 'TopNav.jsx'), 'utf8');
 
-    test('bắt chọn nhóm từ sai trước khi chạy', () => {
-        expect(pm).toMatch(/mode === 'review-mistakes' && !dangLaNhomTuSai/);
+    test('bắt chọn nhóm từ sai trước khi chạy — MỌI lượt, không riêng lượt đầu', () => {
+        // Luật chi tiết nằm ở `reviewTopicRule.test.js`; ở đây chỉ chốt là chế
+        // độ này có guard riêng và guard đó mở popup chọn đề.
+        expect(pm).toMatch(/mode === 'review-mistakes'/);
+        expect(pm).toMatch(/TOPIC_MODAL_REQUESTED, \{ pendingMode: mode \}/);
     });
 
     test('KHÔNG còn miễn bước chọn Part', () => {

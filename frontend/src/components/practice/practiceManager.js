@@ -128,19 +128,29 @@ export const PracticeManager = {
             this.cleanupMode(this.currentSession.mode);
         }
 
-        // `review-mistakes` cũng phải CHỌN NHÓM từ sai trước — nhưng chỉ khi đề
-        // đang chọn không phải nhóm từ sai. Trước đây nó bỏ qua bước này hoàn
-        // toàn và ôn lẫn lộn mọi nguồn; giờ popup mở với tab "Từ vựng sai" và
-        // hai tab kia bị khoá (xem `mode` trong TopicModal).
-        const dangLaNhomTuSai = String(TopicSelector.currentTopic?.id || '').startsWith('wrong:');
-        if (mode === 'review-mistakes' && !dangLaNhomTuSai) {
+        // QUY TẮC BẤT BIẾN của `review-mistakes`: LUÔN phải qua popup chọn đề ở
+        // tab "Từ vựng sai" trước, không bao giờ vào thẳng bước chọn Part.
+        //
+        // Vào bằng lối nào cũng vậy — thẻ ở trang chủ, mục ở sidebar, hay lượt
+        // trước vừa xong. Mỗi lượt ôn là một lựa chọn mới: nhóm từ sai thay đổi
+        // sau mỗi lượt (từ trả lời đúng rời khỏi danh sách đến hạn), nên nhóm
+        // của lượt trước không còn là nhóm người dùng muốn ôn lượt này.
+        //
+        // Popup mở với tab "Từ vựng sai" bật sẵn và hai tab kia bị khoá
+        // (xem `mode` trong TopicModal).
+        //
+        // Ngoại lệ DUY NHẤT: nút "Làm lại N câu sai" ở màn kết quả. Nó chạy lại
+        // đúng những câu vừa sai TRONG lượt này chứ không mở lượt mới, nên
+        // không có đề nào để chọn — bắt chọn lại đề ở đây là làm hỏng chính
+        // chức năng của nút đó.
+        if (mode === 'review-mistakes' && !PartSelector.retryWords?.length) {
             EventBus.emit(GameEvents.TOPIC_MODAL_REQUESTED, { pendingMode: mode });
             return false;
         }
 
         // Chưa chọn đề → hiện popup chọn đề trước. Sau khi chọn đề xong,
         // TopNav.handleTopicSelected sẽ mở popup Part, rồi PRACTICE_REQUESTED tự start lại.
-        if (!TopicSelector.currentTopic && mode !== 'review-mistakes') {
+        if (!TopicSelector.currentTopic) {
             EventBus.emit(GameEvents.TOPIC_MODAL_REQUESTED, { pendingMode: mode });
             return false;
         }
@@ -833,6 +843,7 @@ export const PracticeManager = {
                         Utils.stopAllSounds();
                         this.cleanupCurrentMode();
                         this.cleanupKeyboardShortcuts();
+                        this.xoaLuaChonTuSai();
                         this.currentSession = null;
                         Modal.close();
                         UI.showScreen('home-screen');
@@ -913,6 +924,26 @@ export const PracticeManager = {
         this.cleanupMode(this.currentSession.mode);
     },
 
+    /**
+     * Xoá đề + Part đã chọn khi rời chế độ ÔN TỪ SAI.
+     *
+     * Vế thứ hai của quy tắc bất biến: thoát giữa chừng hay làm xong hết đều
+     * phải chọn lại đề ở lượt sau. Giữ nguyên lựa chọn cũ thì lần vào sau
+     * `start()` thấy `currentTopic` là nhóm `wrong:` và đi thẳng xuống bước
+     * Part — đúng cái đường tắt mà quy tắc này cấm.
+     *
+     * Chỉ xoá khi đề đang chọn LÀ nhóm từ sai: người dùng đang ôn Topic 3 rồi
+     * bấm nhầm vào chế độ khác thì không có lý do gì mất lựa chọn của họ.
+     */
+    xoaLuaChonTuSai() {
+        if (!String(TopicSelector.currentTopic?.id || '').startsWith('wrong:')) return;
+        TopicSelector.setCurrentTopic(null);
+        PartSelector.selectedPart = null;
+        // `settings` là bản sao thứ hai của cùng một lựa chọn; bỏ sót nó thì
+        // popup Part mở ra với Part cũ đã tick sẵn.
+        if (GameState.state?.settings) GameState.state.settings.selectedPart = null;
+    },
+
     exit(targetScreenId = 'home-screen') {
         logger.log('🚪 PracticeManager.exit() called with targetScreenId:', targetScreenId);
 
@@ -944,6 +975,7 @@ export const PracticeManager = {
 
                             this.cleanupCurrentMode();
                             this.cleanupKeyboardShortcuts();
+                            this.xoaLuaChonTuSai();
 
                             this.currentSession = null;
                             logger.log('🧹 Session cleared');
@@ -971,6 +1003,7 @@ export const PracticeManager = {
             this.stopTimer();
             this.cleanupCurrentMode();
             this.cleanupKeyboardShortcuts();
+            this.xoaLuaChonTuSai();
             this.currentSession = null;
             if (typeof UI !== 'undefined' && UI.showScreen) {
                 UI.showScreen(targetScreenId);
