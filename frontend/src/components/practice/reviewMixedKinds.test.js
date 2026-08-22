@@ -32,54 +32,71 @@ function napBoChon(settings = {}) {
     )(GameState);
 }
 
-describe('SM-2 chọn kiểu theo mức thuộc của TỪNG TỪ', () => {
+describe('xoay vòng đủ BA kiểu theo vị trí câu', () => {
     const M = napBoChon();
 
-    test('vừa sai (0–1) → chọn nghĩa, dễ nhất', () => {
-        // Bắt gõ ngay từ mình vừa quên là chắc chắn sai lần nữa, không học được gì.
-        expect(M.kieuTheoMucThuoc({ masteryLevel: 0 })).toBe('choice');
-        expect(M.kieuTheoMucThuoc({ masteryLevel: 1 })).toBe('choice');
+    test('câu 1 chọn nghĩa → câu 2 đúng/sai → câu 3 gõ từ', () => {
+        // Đây là thứ người dùng thấy trực tiếp: câu này một kiểu, câu sau kiểu
+        // khác. Không phải làm hết một kiểu rồi mới sang kiểu khác.
+        const cp = M.kieuDuocPhep();
+        const w = { masteryLevel: 0 };
+        expect([0, 1, 2, 3, 4, 5].map(i => M.chonKieu(w, cp, i)))
+            .toEqual(['choice', 'truefalse', 'fill', 'choice', 'truefalse', 'fill']);
     });
 
-    test('đã nhận ra được (2–3) → đúng/sai', () => {
-        expect(M.kieuTheoMucThuoc({ masteryLevel: 2 })).toBe('truefalse');
-        expect(M.kieuTheoMucThuoc({ masteryLevel: 3 })).toBe('truefalse');
+    test('KHÔNG phụ thuộc mức thuộc', () => {
+        // Bản đầu chọn kiểu theo `masteryLevel`. Nhưng 208/208 từ trong DB đang
+        // ở mastery 0–1 nên MỌI câu ra `choice`: lý thuyết là hỗn hợp, thực tế
+        // là một kiểu duy nhất suốt cả lượt — đúng thứ người dùng báo.
+        const cp = M.kieuDuocPhep();
+        for (const m of [0, 1, 2, 3, 4, 5]) {
+            expect(M.chonKieu({ masteryLevel: m }, cp, 2)).toBe('fill');
+        }
     });
 
-    test('sắp thuộc (4–5) → gõ từ, khó nhất', () => {
-        // Chỉ khi gõ ra được mới là thuộc thật.
-        expect(M.kieuTheoMucThuoc({ masteryLevel: 4 })).toBe('fill');
-        expect(M.kieuTheoMucThuoc({ masteryLevel: 5 })).toBe('fill');
+    test('vị trí hỏng → vẫn ra kiểu hợp lệ, không undefined', () => {
+        const cp = M.kieuDuocPhep();
+        for (const v of [undefined, null, NaN, -1, 'x']) {
+            expect(M.KIEU_HOI ?? ['choice', 'truefalse', 'fill'])
+                .toContain(M.chonKieu({ masteryLevel: 0 }, cp, v));
+        }
     });
 
-    test('thiếu masteryLevel → coi như 0, không nổ', () => {
-        // 205/208 từ trong DB đang ở mastery 0; bản ghi cũ có thể thiếu hẳn trường.
-        expect(M.kieuTheoMucThuoc({})).toBe('choice');
-        expect(M.kieuTheoMucThuoc(null)).toBe('choice');
-        expect(M.kieuTheoMucThuoc({ masteryLevel: 'x' })).toBe('choice');
+    test('xoay vòng, KHÔNG ngẫu nhiên', () => {
+        // Ngẫu nhiên có thể ra bốn câu gõ liên tiếp — mệt và nản đúng ở chế độ
+        // vốn đã khó. Gọi lại cùng vị trí phải cho cùng kết quả.
+        const cp = M.kieuDuocPhep();
+        const w = { masteryLevel: 0 };
+        for (let i = 0; i < 6; i++) {
+            expect(M.chonKieu(w, cp, i)).toBe(M.chonKieu(w, cp, i));
+        }
+        expect(src).not.toMatch(/Math\.random\(\)/);
     });
 
     test('ba kiểu xếp theo độ khó TĂNG DẦN', () => {
-        // Thứ tự này là thứ `chonKieu` dựa vào để lùi về kiểu dễ hơn.
+        // Thứ tự này quyết định thứ tự xoay vòng: dễ trước để người học vào nhịp.
         expect(M.KIEU_HOI).toEqual(['choice', 'truefalse', 'fill']);
     });
 });
 
 describe('người dùng tự chọn kiểu — cài đặt thắng SM-2', () => {
-    test('tắt "Gõ từ" thì từ sắp thuộc lùi về đúng/sai', () => {
+    test('tắt "Gõ từ" thì câu đáng lẽ gõ lùi về đúng/sai', () => {
         // LÙI VỀ kiểu dễ hơn, không nhảy lên kiểu khó hơn: người tắt "Gõ từ" là
         // người không muốn gõ.
         const M = napBoChon({ reviewKinds: ['choice', 'truefalse'] });
         const cp = M.kieuDuocPhep();
-        expect(M.chonKieu({ masteryLevel: 5 }, cp)).toBe('truefalse');
-        expect(M.chonKieu({ masteryLevel: 0 }, cp)).toBe('choice');
+        const w = { masteryLevel: 0 };
+        expect(M.chonKieu(w, cp, 2)).toBe('truefalse');   // vị trí 2 vốn là fill
+        expect(M.chonKieu(w, cp, 0)).toBe('choice');
     });
 
-    test('chỉ bật "Gõ từ" thì mọi từ đều gõ', () => {
+    test('chỉ bật "Gõ từ" thì mọi câu đều gõ', () => {
         // Không còn kiểu nào dễ hơn → lấy kiểu bật đầu tiên.
         const M = napBoChon({ reviewKinds: ['fill'] });
         const cp = M.kieuDuocPhep();
-        expect(M.chonKieu({ masteryLevel: 0 }, cp)).toBe('fill');
+        for (const i of [0, 1, 2]) {
+            expect(M.chonKieu({ masteryLevel: 0 }, cp, i)).toBe('fill');
+        }
     });
 
     test('bỏ tick hết = KHÔNG giới hạn, không phải rỗng', () => {
@@ -98,10 +115,11 @@ describe('người dùng tự chọn kiểu — cài đặt thắng SM-2', () =>
 });
 
 describe('mỗi câu một kiểu, đan xen trong cùng lượt', () => {
-    test('kiểu gắn theo TỪ, không theo vị trí trong danh sách', () => {
-        // Xoay vòng `i % 3` thì từ vừa sai lần đầu vẫn có thể rơi vào câu gõ.
-        expect(src).toMatch(/const kieu = chonKieu\(word, choPhep\)/);
-        expect(src).not.toMatch(/KIEU_HOI\[i % KIEU_HOI\.length\]/);
+    test('mỗi câu nhận VỊ TRÍ của nó để xoay vòng', () => {
+        // Không truyền `i` thì mọi câu dùng vị trí mặc định 0 và cùng ra một
+        // kiểu — hỏng đúng thứ vừa sửa.
+        expect(src).toMatch(/const kieu = chonKieu\(word, choPhep, i\)/);
+        expect(src).toMatch(/formattedWords\.map\(\(word, i\) =>/);
     });
 
     test('mỗi câu mang kiểu riêng của nó', () => {

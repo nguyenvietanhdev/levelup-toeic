@@ -45,12 +45,25 @@ const NHAN_KIEU = {
  * của từng từ, tính từ lịch sử đúng/sai THẬT. AI phải đoán lại đúng thứ đó, mà
  * còn tốn tiền và độ trễ mạng cho mỗi lượt.
  */
-function kieuTheoMucThuoc(word) {
-    const m = Number(word?.masteryLevel) || 0;
-    if (m >= 4) return 'fill';
-    if (m >= 2) return 'truefalse';
-    return 'choice';
+function kieuTheoMucThuoc(word, viTri = 0) {
+    // XOAY VÒNG đủ ba kiểu theo vị trí câu: câu 1 chọn nghĩa, câu 2 đúng/sai,
+    // câu 3 gõ từ, rồi lặp lại.
+    //
+    // Bản đầu chọn kiểu theo `masteryLevel`, nhưng 208/208 từ trong DB đang ở
+    // mastery 0–1 nên MỌI câu đều ra `choice`: về lý thuyết là hỗn hợp, thực tế
+    // là một kiểu duy nhất suốt cả lượt. Mức thuộc chỉ phân hoá được sau nhiều
+    // lượt ôn — mà người học cần thấy biến thể ngay từ lượt đầu.
+    //
+    // Xoay vòng chứ không ngẫu nhiên: ngẫu nhiên có thể ra bốn câu gõ liên tiếp,
+    // mệt và nản đúng ở chế độ vốn đã khó.
+    //
+    // `word` giữ trong chữ ký cho các quy tắc theo từ về sau (và để `chonKieu`
+    // gọi thống nhất), hiện chưa dùng tới.
+    void word;
+    const i = Math.abs(Number(viTri) || 0) % KIEU_HOI.length;
+    return KIEU_HOI[i];
 }
+
 
 /**
  * Những kiểu hỏi người dùng CHO PHÉP, đọc từ Cài đặt.
@@ -73,8 +86,8 @@ function kieuDuocPhep() {
  * lên kiểu khó hơn — người tắt "Gõ từ" là người không muốn gõ, ép họ gõ vì
  * không còn lựa chọn nào khác là làm ngược ý họ.
  */
-function chonKieu(word, choPhep) {
-    const muon = kieuTheoMucThuoc(word);
+function chonKieu(word, choPhep, viTri = 0) {
+    const muon = kieuTheoMucThuoc(word, viTri);
     if (choPhep.includes(muon)) return muon;
 
     // Đi ngược từ vị trí của `muon` về phía dễ hơn.
@@ -181,8 +194,8 @@ export const ReviewMistakes = {
         // nếu kiểu được SM-2 chọn đang tắt thì lùi về kiểu dễ hơn còn bật.
         const choPhep = kieuDuocPhep();
 
-        this.questions = formattedWords.map((word) => {
-            const kieu = chonKieu(word, choPhep);
+        this.questions = formattedWords.map((word, i) => {
+            const kieu = chonKieu(word, choPhep, i);
 
             if (kieu === 'fill') {
                 return { ...GameLogic.generateFillBlank(word), kieu };
