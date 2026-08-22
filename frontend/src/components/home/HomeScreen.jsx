@@ -635,15 +635,21 @@ export default function HomeScreen({ active }) {
                                                     <i className="fas fa-exclamation-circle"></i> {wrongWordsCount} từ cần ôn
                                                 </span>
                                             )}
-                                            <span className="mode-cost"><i className="fas fa-bolt"></i> {m.cost}</span>
                                             {/* Số lần đã chơi — cho biết chế độ nào mình
                                                 đang bỏ quên. Ẩn khi chưa chơi lần nào: số
-                                                0 không nói thêm gì mà chiếm một dòng. */}
+                                                0 không nói thêm gì mà chiếm một dòng.
+
+                                                Đứng TRÊN ô năng lượng, không phải dưới: ô
+                                                năng lượng là viên màu vàng nổi bật, đặt gì
+                                                dưới nó thì thứ đó thành cái đuôi thừa treo
+                                                dưới một khối đã đóng. Mọi dòng chữ nhỏ gom
+                                                lên trên, viên màu chốt đáy thẻ. */}
                                             {playCounts[m.mode] > 0 && (
                                                 <span className="mode-played" title={`Bạn đã chơi ${playCounts[m.mode]} lượt`}>
                                                     <i className="fas fa-clock-rotate-left"></i> {playCounts[m.mode]} lượt
                                                 </span>
                                             )}
+                                            <span className="mode-cost"><i className="fas fa-bolt"></i> {m.cost}</span>
                                         </div>
                                     )}
                                 </div>
