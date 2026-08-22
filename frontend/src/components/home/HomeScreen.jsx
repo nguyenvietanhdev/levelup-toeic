@@ -616,11 +616,18 @@ export default function HomeScreen({ active }) {
                                             <i className="fas fa-lock"></i> Mở sau: <span className="mode-weekend-countdown">{weekendTimer}</span>
                                         </div>
                                     ) : (
-                                        <div className="mode-cost"><i className="fas fa-bolt"></i> {m.cost}</div>
-                                    )}
-                                    {!locked && m.mode === 'review-mistakes' && (
-                                        <div className="wrong-words-count" style={{ marginTop: 8, color: '#a855f7', fontWeight: 'bold', fontSize: '0.9em' }}>
-                                            <i className="fas fa-exclamation-circle"></i> <span>{wrongWordsCount}</span> từ cần ôn
+                                        /* Số từ cần ôn đứng CÙNG HÀNG với ô năng lượng,
+                                           không xuống dòng riêng: hai thứ đều là thông
+                                           tin "chi phí / thứ đang chờ" của thẻ này. Tách
+                                           ra làm thẻ cao thêm một dòng, mà chỉ mỗi chế độ
+                                           ôn từ mới có dòng đó — các thẻ lệch chiều cao. */
+                                        <div className="mode-meta">
+                                            {!locked && m.mode === 'review-mistakes' && wrongWordsCount > 0 && (
+                                                <span className="wrong-words-count">
+                                                    <i className="fas fa-exclamation-circle"></i> {wrongWordsCount} từ cần ôn
+                                                </span>
+                                            )}
+                                            <span className="mode-cost"><i className="fas fa-bolt"></i> {m.cost}</span>
                                         </div>
                                     )}
                                 </div>

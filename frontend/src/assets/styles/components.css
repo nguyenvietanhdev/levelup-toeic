@@ -576,6 +576,33 @@
   flex: 1;
 }
 
+/* Hàng cuối thẻ chế độ: [số từ cần ôn] [năng lượng].
+   Gộp một hàng thay vì xếp chồng — chỉ mỗi chế độ ôn từ có dòng "N từ cần ôn",
+   để riêng thì thẻ đó cao hơn các thẻ khác và lưới lệch. */
+.mode-meta {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: auto;
+}
+
+/* Số từ đang chờ ôn. Màu tím tách khỏi ô năng lượng vàng: một cái là CHI PHÍ,
+   cái kia là THỨ ĐANG CHỜ — cùng màu thì đọc nhầm thành hai con số cùng loại. */
+.mode-meta .wrong-words-count {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border-radius: var(--border-radius);
+  background: rgba(168, 85, 247, 0.15);
+  color: #a855f7;
+  font-weight: 700;
+  font-size: 0.85em;
+  white-space: nowrap;
+}
+
 .mode-cost {
   display: inline-flex;
   align-items: center;
@@ -9926,3 +9953,50 @@ mark {
     font-size: 13px;
     padding: 6px 14px;
 }
+
+/* Câu XẾP CHỮ CÁI trong lượt ôn từ sai. */
+.rm-scramble {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 6px;
+    margin-bottom: 10px;
+}
+
+.rm-letter {
+    min-width: 38px;
+    padding: 8px 10px;
+    border: 2px solid var(--border-color);
+    border-radius: 8px;
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    font-size: 18px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: opacity 0.15s ease;
+}
+
+/* Chữ đã dùng vẫn CHIẾM CHỖ, chỉ mờ đi: gỡ khỏi luồng thì hàng co lại và các
+   chữ còn lại nhảy chỗ sau mỗi lần bấm — bấm nhầm liên tục. */
+.rm-letter.is-used {
+    opacity: 0.25;
+    cursor: default;
+}
+
+/* Ô hiện từ đang ghép. Chiều cao cố định để hàng nút bên dưới không nhảy khi
+   chữ đầu tiên được thêm vào. */
+.rm-scramble-answer {
+    min-height: 44px;
+    margin-bottom: 10px;
+    padding: 8px;
+    border: 2px dashed var(--border-color);
+    border-radius: 10px;
+    background: var(--bg-secondary);
+    text-align: center;
+    font-size: 20px;
+    font-weight: 700;
+    letter-spacing: 2px;
+}
+
+.rm-scramble-answer.is-correct { border-color: #16a34a; color: #16a34a; }
+.rm-scramble-answer.is-wrong   { border-color: #dc2626; color: #dc2626; }

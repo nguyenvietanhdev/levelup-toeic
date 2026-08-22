@@ -35,13 +35,31 @@ function napBoChon(settings = {}) {
 describe('xoay vòng đủ BA kiểu theo vị trí câu', () => {
     const M = napBoChon();
 
-    test('từ tiếng Trung xoay đủ BỐN kiểu, kể cả viết chữ', () => {
+    test('từ tiếng Trung: chọn nghĩa → đúng/sai → nghe → … → viết chữ', () => {
         // Đây là thứ người dùng thấy trực tiếp: câu này một kiểu, câu sau kiểu
         // khác. Không phải làm hết một kiểu rồi mới sang kiểu khác.
         const cp = M.kieuDuocPhep();
         const w = { masteryLevel: 0, en: '多少' };
-        expect([0, 1, 2, 3, 4].map(i => M.chonKieu(w, cp, i)))
-            .toEqual(['choice', 'truefalse', 'fill', 'hanzi', 'choice']);
+        const r = [0, 1, 2, 3, 4, 5].map(i => M.chonKieu(w, cp, i));
+        expect(r[0]).toBe('choice');
+        expect(r[1]).toBe('truefalse');
+        expect(r[2]).toBe('listen');
+        expect(r[5]).toBe('hanzi');
+        // Ít nhất bốn kiểu KHÁC NHAU trong sáu câu — đó mới là "hỗn hợp".
+        expect(new Set(r).size).toBeGreaterThanOrEqual(4);
+    });
+
+    test('từ Latin ĐỦ DÀI được xếp chữ cái', () => {
+        const cp = M.kieuDuocPhep();
+        expect(M.chonKieu({ en: 'meticulously' }, cp, 3)).toBe('scramble');
+    });
+
+    test('từ Latin QUÁ NGẮN bỏ qua xếp chữ cái', () => {
+        // "due" xáo lên vẫn đoán ra ngay — không kiểm tra được gì.
+        const cp = M.kieuDuocPhep();
+        for (const i of [0, 1, 2, 3, 4, 5]) {
+            expect(M.chonKieu({ en: 'due' }, cp, i)).not.toBe('scramble');
+        }
     });
 
     test('từ tiếng Anh KHÔNG rơi vào viết chữ Hán', () => {
@@ -68,7 +86,7 @@ describe('xoay vòng đủ BA kiểu theo vị trí câu', () => {
         // là một kiểu duy nhất suốt cả lượt — đúng thứ người dùng báo.
         const cp = M.kieuDuocPhep();
         for (const m of [0, 1, 2, 3, 4, 5]) {
-            expect(M.chonKieu({ masteryLevel: m }, cp, 2)).toBe('fill');
+            expect(M.chonKieu({ masteryLevel: m, en: 'meticulously' }, cp, 2)).toBe('listen');
         }
     });
 
@@ -91,9 +109,9 @@ describe('xoay vòng đủ BA kiểu theo vị trí câu', () => {
         expect(src).not.toMatch(/Math\.random\(\)/);
     });
 
-    test('bốn kiểu xếp theo độ khó TĂNG DẦN', () => {
+    test('sáu kiểu xếp theo độ khó TĂNG DẦN', () => {
         // Thứ tự này quyết định thứ tự xoay vòng: dễ trước để người học vào nhịp.
-        expect(M.KIEU_HOI).toEqual(['choice', 'truefalse', 'fill', 'hanzi']);
+        expect(M.KIEU_HOI).toEqual(['choice', 'truefalse', 'listen', 'scramble', 'fill', 'hanzi']);
     });
 });
 
@@ -122,7 +140,7 @@ describe('người dùng tự chọn kiểu — cài đặt thắng SM-2', () =>
         // ôn không có câu nào — vô dụng, mà người dùng không hề muốn thế.
         for (const v of [[], undefined, null, ['xyz']]) {
             const M = napBoChon({ reviewKinds: v });
-            expect(M.kieuDuocPhep()).toEqual(['choice', 'truefalse', 'fill', 'hanzi']);
+            expect(M.kieuDuocPhep()).toEqual(['choice', 'truefalse', 'listen', 'scramble', 'fill', 'hanzi']);
         }
     });
 
@@ -264,7 +282,8 @@ describe('hiện ĐÚNG vế của câu hỏi', () => {
     test('markup THẬT SỰ gọi deBai, không đọc thẳng word.en', () => {
         // Có hàm đúng mà markup không dùng thì vô ích: đọc thẳng `word.en` là
         // chế độ đảo chiều hiện từ tiếng Anh thay vì nghĩa — lộ luôn đáp án.
-        expect(src).toMatch(/rm-word-text">\$\{deBai\(question\)\}/);
+        // Kiểu NGHE che mặt chữ nên có nhánh riêng; phần còn lại vẫn qua `deBai`.
+        expect(src).toMatch(/rm-word-text">\$\{question\.kieu === 'listen' \? [^}]+ : deBai\(question\)\}/);
     });
 });
 
@@ -340,5 +359,64 @@ describe('viết chữ Hán — dọn dẹp đúng chỗ', () => {
         // CSP của app chặn connect-src lạ.
         const i = src.indexOf('async dungOVe(question) {');
         expect(src.slice(i, i + 2500)).toMatch(/fetch\(`\/hanzi\//);
+    });
+});
+
+describe('hai kiểu mới: nghe & xếp chữ cái', () => {
+    test('kiểu NGHE che mặt chữ', () => {
+        // Thấy chữ thì không còn phải nghe — mà đó đúng là kỹ năng kiểu này
+        // kiểm tra.
+        expect(src).toMatch(/question\.kieu === 'listen' \? '🔊/);
+    });
+
+    test('kiểu NGHE tự phát âm khi câu hiện', () => {
+        // Không phát thì người học ngồi nhìn dấu hỏi, không có gì để chọn.
+        // Neo vào `attachListeners`, không phải `bodyHtml` — hai hàm cùng mở
+        // bằng `if (question.kieu === 'listen')`.
+        const iAttach = src.indexOf('attachListeners() {');
+        const i = src.indexOf("if (question.kieu === 'listen')", iAttach);
+        expect(i).toBeGreaterThan(-1);
+        expect(src.slice(i, i + 500)).toMatch(/GameLogic\.speakWord\(question\.word\.en\)/);
+    });
+
+    test('xếp chữ cái giữ trạng thái trên object, không đọc ngược từ DOM', () => {
+        // Đọc từ DOM thì hai chữ cái giống nhau ("ee") không phân biệt được cái
+        // nào đã dùng.
+        const i = src.indexOf('ganXepChuCai(question) {');
+        expect(i).toBeGreaterThan(-1);
+        expect(src.slice(i, i + 1600)).toMatch(/this\._xep\.push\(/);
+    });
+
+    test('so đáp án bỏ hoa/thường và khoảng trắng', () => {
+        // Cụm nhiều chữ ("take off") xáo lên thì người học không biết đặt dấu
+        // cách ở đâu.
+        const i = src.indexOf('ganXepChuCai(question) {');
+        const body = src.slice(i, i + 2200);
+        expect(body).toContain('toLowerCase()');
+        // Khớp phần "bỏ khoảng trắng" mà không phải escape lồng nhiều lớp.
+        expect(body).toContain("replace(/");
+        expect(body).toContain("/g, '')");
+    });
+
+    test('chữ đã dùng vẫn CHIẾM CHỖ, chỉ mờ đi', () => {
+        // Gỡ khỏi luồng thì hàng co lại và các chữ còn lại nhảy chỗ sau mỗi lần
+        // bấm — bấm nhầm liên tục.
+        const i = css.indexOf('.rm-letter.is-used {');
+        expect(i).toBeGreaterThan(-1);
+        const body = css.slice(i, css.indexOf('}', i));
+        expect(body).toMatch(/opacity/);
+        expect(body).not.toMatch(/display:\s*none/);
+    });
+
+    test('ô ghép có chiều cao cố định', () => {
+        // Không thì hàng nút bên dưới nhảy khi chữ đầu tiên được thêm vào.
+        const i = css.indexOf('.rm-scramble-answer {');
+        expect(css.slice(i, css.indexOf('}', i))).toMatch(/min-height/);
+    });
+
+    test('cả sáu kiểu có ô chọn trong Cài đặt', () => {
+        for (const k of ['choice', 'truefalse', 'listen', 'scramble', 'fill', 'hanzi']) {
+            expect(panel).toContain(`key: '${k}'`);
+        }
     });
 });

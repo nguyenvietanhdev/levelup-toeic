@@ -32,7 +32,7 @@ async function ensureHanziWriter() {
     return HanziWriter;
 }
 
-const KIEU_HOI = ['choice', 'truefalse', 'fill', 'hanzi'];
+const KIEU_HOI = ['choice', 'truefalse', 'listen', 'scramble', 'fill', 'hanzi'];
 
 /** Chữ Hán — dùng để biết một từ có viết được không. */
 const HAN_RE = /[\u4e00-\u9fff\u3400-\u4dbf]/;
@@ -47,6 +47,8 @@ function chuHanDau(text) {
 const NHAN_KIEU = {
     choice: 'Chọn nghĩa',
     truefalse: 'Đúng / Sai',
+    listen: 'Nghe & chọn',
+    scramble: 'Xếp chữ cái',
     fill: 'Gõ từ',
     hanzi: 'Viết chữ Hán',
 };
@@ -110,8 +112,17 @@ function kieuDuocPhep() {
  * tiếng Trung vẫn có thể lẫn từ Latin, và ngược lại.
  */
 function locTheoTu(choPhep, word) {
-    const vietDuoc = !!chuHanDau(word?.en);
-    const loc = vietDuoc ? choPhep : choPhep.filter((k) => k !== 'hanzi');
+    const mat = String(word?.en || '');
+    const coChuHan = !!chuHanDau(mat);
+    // Xếp chữ cái chỉ có nghĩa với từ Latin đủ dài: chữ Hán không tách được
+    // thành chữ cái, mà từ 1–2 ký tự thì xáo lên vẫn đoán ra ngay.
+    const xepDuoc = !coChuHan && mat.replace(/\s/g, '').length >= 4;
+
+    const loc = choPhep.filter((k) => {
+        if (k === 'hanzi') return coChuHan;
+        if (k === 'scramble') return xepDuoc;
+        return true;
+    });
     // Không còn kiểu nào (người dùng chỉ bật `hanzi` mà từ lại là tiếng Anh) →
     // rơi về `choice`: một câu dễ vẫn hơn một lượt trống.
     return loc.length ? loc : ['choice'];
@@ -238,6 +249,14 @@ export const ReviewMistakes = {
         this.questions = formattedWords.map((word, i) => {
             const kieu = chonKieu(word, choPhep, i);
 
+            if (kieu === 'listen') {
+                // Cùng bộ sinh với trắc nghiệm; khác ở chỗ CHE mặt chữ và phát
+                // âm — người học phải nhận ra từ qua tai, không qua mắt.
+                return { ...GameLogic.generateListening(word, this.config.optionsCount), kieu };
+            }
+            if (kieu === 'scramble') {
+                return { ...GameLogic.generateWordScramble(word), kieu };
+            }
             if (kieu === 'hanzi') {
                 // Không có bộ sinh sẵn cho kiểu này — nó chỉ cần chữ để tô, và
                 // nghĩa để người học biết đang viết chữ nào.
@@ -312,7 +331,9 @@ export const ReviewMistakes = {
                 </div>
 
                 <div class="rm-word">
-                    <span class="rm-word-text">${deBai(question)}</span>
+                    <!-- Kiểu NGHE che mặt chữ: thấy chữ thì không còn phải nghe,
+                         và đó đúng là kỹ năng kiểu này kiểm tra. -->
+                    <span class="rm-word-text">${question.kieu === 'listen' ? '🔊 ? ? ?' : deBai(question)}</span>
                     <button class="btn-speak-mini" id="rm-speak-btn" title="Nghe phát âm">
                         <i class="fas fa-volume-up"></i>
                     </button>
@@ -341,6 +362,35 @@ export const ReviewMistakes = {
                            autocomplete="nope-review-answer" autocorrect="off"
                            autocapitalize="off" spellcheck="false" />
                     <button class="btn btn-primary" id="rm-check-btn">
+                        <i class="fas fa-check"></i> Kiểm tra
+                    </button>
+                </div>`;
+        }
+
+        if (question.kieu === 'listen') {
+            return `
+                <p class="rm-prompt">Nghe rồi chọn nghĩa đúng</p>
+                <div class="choices-container rm-choices">
+                    ${question.options.map((opt, k) => `
+                        <button class="choice-btn" data-index="${k}">${opt}</button>
+                    `).join('')}
+                </div>`;
+        }
+
+        if (question.kieu === 'scramble') {
+            return `
+                <p class="rm-prompt">Xếp lại các chữ cái thành từ đúng</p>
+                <div class="rm-scramble" id="rm-scramble-pool">
+                    ${question.scrambledLetters.map((ch, k) => `
+                        <button class="rm-letter" data-k="${k}">${ch}</button>
+                    `).join('')}
+                </div>
+                <div class="rm-scramble-answer" id="rm-scramble-answer"></div>
+                <div class="rm-fill-row">
+                    <button class="btn btn-secondary" id="rm-scramble-clear">
+                        <i class="fas fa-redo"></i> Làm lại
+                    </button>
+                    <button class="btn btn-primary" id="rm-scramble-check" disabled>
                         <i class="fas fa-check"></i> Kiểm tra
                     </button>
                 </div>`;
@@ -413,6 +463,20 @@ export const ReviewMistakes = {
 
         if (question.kieu === 'hanzi') {
             this.dungOVe(question);
+            return;
+        }
+
+        if (question.kieu === 'scramble') {
+            this.ganXepChuCai(question);
+            return;
+        }
+
+        if (question.kieu === 'listen') {
+            // Phát ngay khi câu hiện — không nghe thì không có gì để chọn.
+            setTimeout(() => GameLogic.speakWord(question.word.en), 300);
+            document.querySelectorAll('.rm-choices .choice-btn').forEach((btn, k) => {
+                btn.addEventListener('click', () => this.selectAnswer(k));
+            });
             return;
         }
 
@@ -497,6 +561,60 @@ export const ReviewMistakes = {
         document.getElementById('rm-hanzi-skip')?.addEventListener('click', () => {
             this.ketThucCau(false, question, question.word.en);
         });
+    },
+
+    /**
+     * Câu XẾP CHỮ CÁI: bấm từng chữ để ghép, bấm lại để bỏ ra.
+     *
+     * Giữ trạng thái trên `this._xep` chứ không đọc ngược từ DOM: đọc từ DOM thì
+     * hai chữ cái giống nhau ("ee") không phân biệt được cái nào đã dùng.
+     */
+    ganXepChuCai(question) {
+        this._xep = [];
+        const pool = document.getElementById('rm-scramble-pool');
+        const oDap = document.getElementById('rm-scramble-answer');
+        const btnCheck = document.getElementById('rm-scramble-check');
+
+        const veLai = () => {
+            if (oDap) oDap.textContent = this._xep.map((x) => x.ch).join('');
+            if (btnCheck) btnCheck.disabled = this._xep.length === 0;
+        };
+
+        pool?.querySelectorAll('.rm-letter').forEach((btn) => {
+            btn.addEventListener('click', () => {
+                if (btn.disabled) return;
+                btn.disabled = true;
+                btn.classList.add('is-used');
+                this._xep.push({ k: btn.dataset.k, ch: btn.textContent, btn });
+                veLai();
+            });
+        });
+
+        document.getElementById('rm-scramble-clear')?.addEventListener('click', () => {
+            this._xep.forEach((x) => {
+                x.btn.disabled = false;
+                x.btn.classList.remove('is-used');
+            });
+            this._xep = [];
+            veLai();
+        });
+
+        btnCheck?.addEventListener('click', () => {
+            if (btnCheck.disabled) return;
+            btnCheck.disabled = true;
+            pool?.querySelectorAll('.rm-letter').forEach((b) => { b.disabled = true; });
+
+            const traLoi = this._xep.map((x) => x.ch).join('');
+            // So không phân biệt hoa/thường và bỏ khoảng trắng — cụm từ nhiều
+            // chữ ("take off") xáo lên thì người học không biết đặt dấu cách đâu.
+            const chuan = (t) => String(t || '').toLowerCase().replace(/\s/g, '');
+            const dung = chuan(traLoi) === chuan(question.correctAnswer);
+
+            if (oDap) oDap.classList.add(dung ? 'is-correct' : 'is-wrong');
+            this.ketThucCau(dung, question, question.correctAnswer);
+        });
+
+        veLai();
     },
 
     /** Chấm câu GÕ TỪ. */
