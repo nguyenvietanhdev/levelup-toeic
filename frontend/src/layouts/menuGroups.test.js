@@ -62,10 +62,42 @@ describe('KHÔNG có màn ôn từ trùng lặp', () => {
         expect(app).not.toContain('ReviewScreen');
     });
 
-    test('badge menu không gọi API đã bỏ', () => {
-        // Gọi mỗi lần mở menu cho một badge không còn ai hiển thị là phí băng thông.
-        expect(badges).not.toContain('reviewDue');
-        expect(badges).not.toContain('wrong-words/review');
+    test('badge số từ đến hạn có nguồn cấp', () => {
+        // Mục "Ôn lại từ sai" ở sidebar dùng badge này. Khai `badgeKey` mà không
+        // có nguồn thì badge im lặng không hiện — không lỗi nào báo.
+        expect(menu).toContain("badgeKey: 'reviewDue'");
+        expect(badges).toMatch(/reviewDue: res\.dueTotal \|\| 0/);
+    });
+
+    test('đếm bằng limit=1 — chỉ cần con số, không kéo cả danh sách', () => {
+        expect(badges).toMatch(/wrong-words\/review\?limit=1/);
+    });
+});
+
+describe('mục CHẠY CHẾ ĐỘ ở sidebar', () => {
+    test('"Ôn lại từ sai" dùng `mode`, không phải `screen`', () => {
+        // Nó là một chế độ luyện tập, không phải một trang riêng — điều hướng
+        // bằng `showScreen` sẽ tìm một màn hình không tồn tại.
+        expect(menu).toMatch(/mode: 'review-mistakes'/);
+        const i = menu.indexOf("mode: 'review-mistakes'");
+        const dong = menu.slice(menu.lastIndexOf('{', i), menu.indexOf('}', i));
+        expect(dong).not.toMatch(/screen:/);
+    });
+
+    test('đóng menu TRƯỚC khi phát sự kiện', () => {
+        // `PracticeManager` có thể mở popup chọn đề; menu còn mở thì popup nằm
+        // dưới lớp phủ của nó và bấm không được.
+        const i = menu.indexOf('const handleMode');
+        const body = menu.slice(i, menu.indexOf('};', i));
+        expect(body.indexOf('setMenuOpen(false)'))
+            .toBeLessThan(body.indexOf('PRACTICE_REQUESTED'));
+    });
+
+    test('key và data-screen chịu được mục không có `screen`', () => {
+        // `key={item.screen}` với mục chỉ có `mode` cho `key=undefined` — React
+        // cảnh báo và có thể dựng lại nhầm phần tử khi danh sách đổi.
+        expect(menu).toMatch(/key=\{item\.screen \|\| item\.mode\}/);
+        expect(menu).toMatch(/data-screen=\{item\.screen \|\| undefined\}/);
     });
 });
 

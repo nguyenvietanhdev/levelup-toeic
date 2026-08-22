@@ -186,6 +186,9 @@ export default function HomeScreen({ active }) {
     const [weekendTimer, setWeekendTimer] = useState(getTimeUntilWeekend());
     const [stats, setStats] = useState({});
     const [wrongWordsCount, setWrongWordsCount] = useState(0);
+    // Số lượt đã chơi từng chế độ. Đọc từ GameState (đồng bộ với server qua
+    // `progress.modeStats`) chứ không gọi API riêng — dữ liệu đã có sẵn.
+    const [playCounts, setPlayCounts] = useState({});
     const [userRank, setUserRank] = useState(null);
     // Độ chính xác TOEIC trung bình (mọi lần thi) + số lần thi — cho vòng tiến độ thứ 4.
     const [toeicStats, setToeicStats] = useState({ averageAccuracy: 0, totalAttempts: 0 });
@@ -206,6 +209,11 @@ export default function HomeScreen({ active }) {
         // daily quest sau Phase A). Fallback GameState legacy nếu rỗng.
         const cached = Quest.getQuests?.('daily') || [];
         setQuests(cached.length ? cached : (s.quests?.daily || []));
+        // Gom về dạng { mode: soLuot } cho thẻ chế độ đọc thẳng.
+        const ms = s.progress?.modeStats || {};
+        setPlayCounts(Object.fromEntries(
+            Object.entries(ms).map(([k, v]) => [k, Number(v?.played) || 0])
+        ));
         // KHÔNG đặt `wrongWordsCount` ở đây: hàm này chạy lại mỗi lần
         // QUEST_UPDATED và sẽ ghi đè số ĐẾN HẠN lấy từ server bằng TỔNG số từ
         // sai trong localStorage — con số lớn hơn thực tế và không lọc ngôn ngữ.
@@ -616,11 +624,11 @@ export default function HomeScreen({ active }) {
                                             <i className="fas fa-lock"></i> Mở sau: <span className="mode-weekend-countdown">{weekendTimer}</span>
                                         </div>
                                     ) : (
-                                        /* Số từ cần ôn đứng CÙNG HÀNG với ô năng lượng,
-                                           không xuống dòng riêng: hai thứ đều là thông
-                                           tin "chi phí / thứ đang chờ" của thẻ này. Tách
-                                           ra làm thẻ cao thêm một dòng, mà chỉ mỗi chế độ
-                                           ôn từ mới có dòng đó — các thẻ lệch chiều cao. */
+                                        /* Hai DÒNG riêng, không gộp một hàng: "N từ cần
+                                           ôn" là thứ ĐANG CHỜ, còn ô năng lượng là CHI PHÍ
+                                           — xếp cạnh nhau thì đọc thành hai con số cùng
+                                           loại. `mode-meta` giữ chiều cao đều cho mọi thẻ
+                                           bằng `min-height` nên lưới không lệch. */
                                         <div className="mode-meta">
                                             {!locked && m.mode === 'review-mistakes' && wrongWordsCount > 0 && (
                                                 <span className="wrong-words-count">
@@ -628,6 +636,14 @@ export default function HomeScreen({ active }) {
                                                 </span>
                                             )}
                                             <span className="mode-cost"><i className="fas fa-bolt"></i> {m.cost}</span>
+                                            {/* Số lần đã chơi — cho biết chế độ nào mình
+                                                đang bỏ quên. Ẩn khi chưa chơi lần nào: số
+                                                0 không nói thêm gì mà chiếm một dòng. */}
+                                            {playCounts[m.mode] > 0 && (
+                                                <span className="mode-played" title={`Bạn đã chơi ${playCounts[m.mode]} lượt`}>
+                                                    <i className="fas fa-clock-rotate-left"></i> {playCounts[m.mode]} lượt
+                                                </span>
+                                            )}
                                         </div>
                                     )}
                                 </div>

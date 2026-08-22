@@ -581,11 +581,15 @@
    để riêng thì thẻ đó cao hơn các thẻ khác và lưới lệch. */
 .mode-meta {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: center;
-  flex-wrap: wrap;
-  gap: 8px;
+  gap: 6px;
   margin-top: auto;
+  /* Chiều cao đều cho MỌI thẻ: chỉ chế độ ôn từ có dòng "N từ cần ôn" và chỉ
+     chế độ đã chơi có dòng "N lượt", nên không kẹp sàn thì các thẻ trong lưới
+     cao thấp lệch nhau. 84px = ba dòng đầy đủ. */
+  min-height: 84px;
+  justify-content: flex-end;
 }
 
 /* Số từ đang chờ ôn. Màu tím tách khỏi ô năng lượng vàng: một cái là CHI PHÍ,
@@ -10000,3 +10004,16 @@ mark {
 
 .rm-scramble-answer.is-correct { border-color: #16a34a; color: #16a34a; }
 .rm-scramble-answer.is-wrong   { border-color: #dc2626; color: #dc2626; }
+
+/* Số lượt đã chơi một chế độ. Nhạt và nhỏ hơn hai dòng trên: đây là thông tin
+   THAM KHẢO (chế độ nào mình đang bỏ quên), không phải thứ cần quyết định ngay
+   như chi phí năng lượng. */
+.mode-played {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.78em;
+  color: var(--text-secondary);
+  opacity: 0.85;
+  white-space: nowrap;
+}

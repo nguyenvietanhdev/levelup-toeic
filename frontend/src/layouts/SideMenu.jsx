@@ -6,6 +6,7 @@ import SeasonCountdown from '@components/season/SeasonCountdown.jsx';
 import QuickSettings from './QuickSettings.jsx';
 import { loadUnlocks, lockInfo } from '@game/featureUnlocks.js';
 import { Notification } from '@ui/Toaster.jsx';
+import { EventBus, GameEvents } from '@game/eventBus.js';
 
 // `feature` = key trong FeatureUnlock → khoá theo Level (Hồ sơ/Cài đặt luôn mở).
 //
@@ -21,6 +22,13 @@ const MENU_GROUPS = [
         title: 'Luyện tập',
         items: [
             { label: 'Luyện đề test TOEIC', icon: 'fa-graduation-cap', screen: 'toeic-screen', hot: true, feature: 'feature:toeic' },
+            // Mục kiểu CHẠY CHẾ ĐỘ (`mode`) chứ không đổi màn (`screen`): ôn từ
+            // sai là một chế độ luyện tập, không phải một trang riêng.
+            //
+            // Đặt ở sidebar dù nó vẫn nằm trong lưới 16 chế độ: đây là thứ NÊN
+            // làm hằng ngày và có số từ đến hạn thay đổi liên tục, nên cần lối
+            // vào không phải cuộn tìm giữa 16 thẻ.
+            { label: 'Ôn lại từ sai', icon: 'fa-repeat', mode: 'review-mistakes', badgeKey: 'reviewDue', badgeStyle: 'reward' },
         ],
     },
     {
@@ -93,6 +101,15 @@ export default function SideMenu() {
         setMenuOpen(false);
     };
 
+    /**
+     * Mục CHẠY CHẾ ĐỘ. Đóng menu rồi mới phát sự kiện: `PracticeManager` có thể
+     * mở popup chọn đề, mà menu còn mở thì popup nằm dưới lớp phủ của nó.
+     */
+    const handleMode = (mode) => {
+        setMenuOpen(false);
+        setTimeout(() => EventBus.emit(GameEvents.PRACTICE_REQUESTED, { mode }), 150);
+    };
+
     // Khách bấm vào mục bị khóa → mở popup đăng nhập thay vì điều hướng.
     const handleLockedClick = () => {
         setAuthModal('login');
@@ -161,12 +178,13 @@ export default function SideMenu() {
                                 const locked = guestLocked || levelLocked;
                                 return (
                                     <button
-                                        key={item.screen}
+                                        key={item.screen || item.mode}
                                         className={`menu-item${currentScreen === item.screen ? ' active' : ''}${locked ? ' is-locked' : ''}`}
-                                        data-screen={item.screen}
+                                        data-screen={item.screen || undefined}
                                         onClick={() => {
                                             if (guestLocked) return handleLockedClick();
                                             if (levelLocked) return handleLevelLockedClick(item, lv.requiredLevel);
+                                            if (item.mode) return handleMode(item.mode);
                                             handleNav(item.screen);
                                         }}
                                         title={guestLocked ? 'Đăng nhập để mở khóa'

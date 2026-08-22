@@ -33,7 +33,7 @@ export function countClaimableAchievements() {
  *   Used by TopNav so the hamburger badge stays current without opening the menu.
  */
 export function useMenuBadges(isLoggedIn, { listenEvents = false } = {}) {
-    const [badges, setBadges] = useState({ quest: 0, achievement: 0, online: 0, shopDiscount: 0, statsExport: 0 });
+    const [badges, setBadges] = useState({ quest: 0, achievement: 0, online: 0, shopDiscount: 0, statsExport: 0, reviewDue: 0 });
 
     const refresh = useCallback(async (signal) => {
         const unclaimedQuests = countUnclaimedQuests();
@@ -56,6 +56,14 @@ export function useMenuBadges(isLoggedIn, { listenEvents = false } = {}) {
         fetch('/api/leaderboard/online-count', { headers: authHeaders(), signal })
             .then(r => r.json())
             .then(res => { if (res?.success) setBadges(b => ({ ...b, online: res.count || 0 })); })
+            .catch(() => {});
+
+        // Số từ ĐẾN HẠN ôn, cho badge mục "Ôn lại từ sai". `limit=1` vì chỉ cần
+        // con số `dueTotal` (server tính độc lập với limit) — kéo cả danh sách về
+        // chỉ để đếm là phí băng thông mỗi lần mở menu.
+        fetch('/api/wrong-words/review?limit=1', { headers: authHeaders(), signal })
+            .then(r => r.json())
+            .then(res => { if (res?.success) setBadges(b => ({ ...b, reviewDue: res.dueTotal || 0 })); })
             .catch(() => {});
 
         fetch('/api/shop/items', { headers: authHeaders(), signal })
