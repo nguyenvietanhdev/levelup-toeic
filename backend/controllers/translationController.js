@@ -5,6 +5,8 @@ const { generatePassage, gradeTranslation, limitsFor, countUnits, mucKho } =
     require('../services/translationGrader');
 const { awardXp } = require('../utils/userStateHelper');
 const { isVipActive } = require('../utils/energyCosts');
+const Essay = require('../models/Essay');
+const { thongKe, chuanHoaLoai } = require('../services/errorTaxonomy');
 const logger = require('../utils/logger');
 
 /**
@@ -244,3 +246,60 @@ exports.history = async (req, res, next) => {
 
 exports.ENERGY_COST = ENERGY_COST;
 exports.XP_BASE = XP_BASE;
+
+/**
+ * @desc    Nhật ký lỗi ngữ pháp — gom từ MỌI bài đã chấm
+ * @route   GET /api/translation/mistakes
+ *
+ * Gom cả bài Dịch lẫn bài Viết luận: cùng một người viết thì sai cùng một kiểu,
+ * chia đôi thống kê theo chế độ chỉ làm mỗi bên ít dữ liệu hơn mà không nói
+ * thêm được gì.
+ *
+ * Đây là thứ ChatGPT không làm được cho người học: nó không nhớ họ đã sai gì
+ * tháng trước.
+ */
+exports.mistakes = async (req, res, next) => {
+    try {
+        const userId = req.user.id || req.user._id;
+        // Cửa sổ thời gian: mặc định 90 ngày. Lỗi từ nửa năm trước có thể đã sửa
+        // được rồi, tính vào thống kê là chẩn đoán theo dữ liệu đã cũ.
+        const days = Math.min(365, Math.max(7, parseInt(req.query.days, 10) || 90));
+        const tu = new Date(Date.now() - days * 86400000);
+
+        const [dich, luan] = await Promise.all([
+            Translation.find({ userId, createdAt: { $gte: tu } })
+                .select('notes createdAt').lean(),
+            Essay.find({ userId, createdAt: { $gte: tu } })
+                .select('issues createdAt').lean(),
+        ]);
+
+        // Gộp thành một danh sách phẳng, giữ nguyên chỗ nó đến từ đâu để về sau
+        // trả lời được "lỗi này gặp ở bài nào".
+        const all = [
+            ...dich.flatMap((d) => (d.notes || []).map((n) => ({ ...n, nguon: 'translation', at: d.createdAt }))),
+            ...luan.flatMap((e) => (e.issues || []).map((n) => ({ ...n, nguon: 'essay', at: e.createdAt }))),
+        ];
+
+        const stats = thongKe(all);
+        // Ví dụ THẬT của người học cho mỗi nhóm, tối đa 3: "bạn sai mạo từ 14
+        // lần" không dạy được gì nếu không thấy lại chính câu mình đã viết.
+        const viDu = {};
+        for (const s of stats) {
+            viDu[s.key] = all
+                .filter((x) => chuanHoaLoai(x.loai ?? x.type) === s.key)
+                .slice(-3)
+                .map((x) => ({
+                    quote: String(x.quote || ''),
+                    issue: String(x.issue || ''),
+                    fix: String(x.better || x.fix || ''),
+                }));
+        }
+
+        res.json({
+            success: true,
+            data: { days, total: all.length, stats, examples: viDu },
+        });
+    } catch (error) {
+        next(error);
+    }
+};

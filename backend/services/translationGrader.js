@@ -24,6 +24,7 @@ function chatCompletion(...args) {
 }
 
 const { parseJson, clampBand, countUnits } = require('./essayGrader');
+const { chiThiPhanLoai, chuanHoaLoai } = require('./errorTaxonomy');
 
 /**
  * Ba trục chấm.
@@ -176,6 +177,7 @@ async function gradeTranslation({ passage = '', translation = '', userId = null,
         'Write "issue" and "summary" in Vietnamese. Keep "quote" and "better"',
         `in ${dich}, quoting the learner's own words exactly.`,
         'Give at most 4 notes — the most useful ones, not every small slip.',
+        chiThiPhanLoai(),
     ].join('\n');
 
     const messages = [
@@ -213,6 +215,7 @@ async function gradeTranslation({ passage = '', translation = '', userId = null,
             quote: String(n?.quote || ''),
             issue: String(n?.issue || ''),
             better: String(n?.better || ''),
+            loai: chuanHoaLoai(n?.type),
         }))
         .filter((n) => n.issue);
 

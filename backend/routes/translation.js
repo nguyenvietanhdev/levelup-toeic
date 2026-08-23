@@ -22,4 +22,9 @@ router.post('/grade', requireLevel('feature:translation'), ctrl.grade);
 // phải xem lại được bài mình đã làm — đó là dữ liệu của họ.
 router.get('/history', ctrl.history);
 
+// KHÔNG khoá theo Level: nhật ký lỗi là dữ liệu học tập của chính người
+// dùng, gom từ những bài họ đã trả năng lượng để chấm. Khoá nó là giữ lại
+// thứ họ đã trả tiền.
+router.get('/mistakes', ctrl.mistakes);
+
 module.exports = router;

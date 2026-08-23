@@ -20,6 +20,8 @@
  * `OPENAI_API_KEY`. Nạp lười để phần thuần tuý (dựng prompt, đọc JSON, kẹp
  * band) kiểm thử được mà không cần khoá API — đó là chỗ dễ sai nhất.
  */
+const { chiThiPhanLoai, chuanHoaLoai } = require('./errorTaxonomy');
+
 function chatCompletion(...args) {
     return require('../config/openai').chatCompletion(...args);
 }
@@ -251,6 +253,7 @@ async function gradeEssay({ prompt = '', essay = '', userId = null, lang = 'en' 
             'Write every comment, issue, fix and strength in VIETNAMESE.',
             'Keep "quote" and "improved" in CHINESE (they are the composition text).',
             'Be specific: quote the actual wording, never say "some grammar errors".',
+            chiThiPhanLoai(),
         ].join('\n')
         : [
             'You are an experienced IELTS Writing examiner.',
@@ -271,6 +274,7 @@ async function gradeEssay({ prompt = '', essay = '', userId = null, lang = 'en' 
             'Write every comment, issue, fix and strength in VIETNAMESE.',
             'Keep "quote" and "improved" in English (they are the essay text).',
             'Be specific: quote the actual wording, never say "some grammar errors".',
+            chiThiPhanLoai(),
         ].join('\n');
 
     const messages = [
@@ -310,7 +314,10 @@ async function gradeEssay({ prompt = '', essay = '', userId = null, lang = 'en' 
             scores,
             overall: overallBand(scores, lang),
             comments: parsed.comments || {},
-            errors: Array.isArray(parsed.errors) ? parsed.errors.slice(0, 12) : [],
+            // Chuẩn hoá nhãn NGAY tại đây: `Article`/`articles`/`ARTICLE` là ba
+            // chuỗi khác nhau, để nguyên thì thống kê tách thành ba dòng.
+            errors: (Array.isArray(parsed.errors) ? parsed.errors.slice(0, 12) : [])
+                .map((e) => ({ ...e, type: chuanHoaLoai(e?.type) })),
             strengths: Array.isArray(parsed.strengths) ? parsed.strengths.slice(0, 5) : [],
             improved: typeof parsed.improved === 'string' ? parsed.improved : '',
         },

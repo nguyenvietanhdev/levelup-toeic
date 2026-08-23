@@ -62,6 +62,16 @@ const translationSchema = new mongoose.Schema(
                 quote: { type: String, default: '' },
                 issue: { type: String, default: '' },
                 better: { type: String, default: '' },
+                // Nhóm lỗi, để thống kê được "hay sai gì nhất". Mongoose ở chế
+                // độ `strict` XOÁ ÂM THẦM trường chưa khai — thiếu dòng này thì
+                // nhãn AI gán bị mất sạch mà không lỗi nào báo.
+                //
+                // Tên `loai` chứ KHÔNG phải `type`: `type` là từ khoá Mongoose
+                // dùng để khai kiểu dữ liệu. Ở đây nó vẫn chạy vì được bọc
+                // trong object, nhưng một lần đơn giản hoá thành `type: String`
+                // là trường biến mất — cùng loại bẫy đã khiến `errors` phải đổi
+                // tên thành `issues` trong Essay.
+                loai: { type: String, default: 'other' },
             }],
             default: [],
             _id: false,

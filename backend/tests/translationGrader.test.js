@@ -193,7 +193,11 @@ describe('chấm bản dịch', () => {
             notes: [{ quote: 'a' }, { issue: 'lỗi thật' }],
         }));
         const r = await gradeTranslation({ passage: 'x', translation: 'y' });
-        expect(r.notes).toEqual([{ quote: '', issue: 'lỗi thật', better: '' }]);
+        expect(r.notes).toEqual([
+            // `loai: 'other'` vì AI không gán nhãn — nhãn lạ/thiếu không được
+            // vứt đi, nếu không tổng trong thống kê nhỏ hơn số lỗi thật.
+            { quote: '', issue: 'lỗi thật', better: '', loai: 'other' },
+        ]);
     });
 
     test('AI trả thiếu `scores` → báo lỗi, KHÔNG trả điểm 0 giả', async () => {
