@@ -58,4 +58,14 @@ export const TranslationAPI = {
     async history(limit = 20) {
         return unwrap(await Http.get(`/translation/history?limit=${limit}`));
     },
+
+    /**
+     * Nhật ký lỗi ngữ pháp — gom từ MỌI bài đã chấm (Dịch + Viết luận).
+     *
+     * Không truyền gì thì lấy 90 ngày gần nhất: lỗi từ nửa năm trước có thể đã
+     * sửa được rồi, tính vào thống kê là chẩn đoán theo dữ liệu đã cũ.
+     */
+    async mistakes(days = 90) {
+        return unwrap(await Http.get(`/translation/mistakes?days=${days}`));
+    },
 };

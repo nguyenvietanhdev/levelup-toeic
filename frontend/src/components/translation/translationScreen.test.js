@@ -197,3 +197,77 @@ describe('CSS riêng của chế độ', () => {
         expect(css.slice(i, css.indexOf('}', i))).toMatch(/flex-wrap: wrap/);
     });
 });
+
+describe('nhật ký lỗi ngữ pháp', () => {
+    const log = readFileSync(join(__dirname, 'MistakeLog.jsx'), 'utf8');
+
+    test('gom từ CẢ Dịch lẫn Viết luận, không chia đôi theo chế độ', () => {
+        // Cùng một người viết thì sai cùng kiểu; chia đôi chỉ làm mỗi bên ít dữ
+        // liệu hơn mà không nói thêm được gì.
+        const ctrl = readFileSync(
+            join(__dirname, '..', '..', '..', '..', 'backend', 'controllers',
+                'translationController.js'), 'utf8');
+        const i = ctrl.indexOf('exports.mistakes');
+        const than = ctrl.slice(i);
+        expect(than).toMatch(/Translation\.find/);
+        expect(than).toMatch(/Essay\.find/);
+    });
+
+    test('có VÍ DỤ thật cho mỗi nhóm, không chỉ con số', () => {
+        // "Bạn sai mạo từ 14 lần" không dạy được gì nếu không thấy lại câu
+        // mình đã viết.
+        expect(log).toMatch(/examples\?\.\[s\.key\]/);
+        expect(log).toMatch(/ml-example/);
+    });
+
+    test('có gợi ý luyện tập, không chỉ chẩn đoán', () => {
+        // Biết mình sai nhiều mà không biết làm gì tiếp thì thống kê chỉ để ngắm.
+        expect(log).toMatch(/s\.hint/);
+    });
+
+    test('thanh dài theo TỈ LỆ với nhóm nhiều nhất', () => {
+        // Con số đứng một mình không cho thấy "14" là nhiều hay ít so với các
+        // lỗi khác.
+        expect(log).toMatch(/s\.count \/ nhieuNhat/);
+        // Và không chia cho 0 khi danh sách rỗng.
+        expect(log).toMatch(/stats\[0\]\?\.count \|\| 1/);
+    });
+
+    test('không có dữ liệu thì NÓI RÕ, không để màn trống', () => {
+        // Màn trống làm người dùng tưởng tính năng hỏng.
+        expect(log).toMatch(/Chưa có dữ liệu/);
+        expect(log).toMatch(/ml-empty-hint/);
+    });
+
+    test('lỗi mạng hiện được nút thử lại', () => {
+        expect(log).toMatch(/Thử lại/);
+    });
+
+    test('chỉ MỘT nhóm mở tại một thời điểm', () => {
+        // Mở hết thì danh sách dài ra và mất luôn cái nhìn tổng quan.
+        expect(log).toMatch(/setMoNhom\(dangMo \? '' : s\.key\)/);
+    });
+
+    test('mặc định 90 ngày — không tính lỗi đã quá cũ', () => {
+        expect(log).toMatch(/useState\(90\)/);
+    });
+
+    test('nằm chung màn với phần làm bài, dạng tab', () => {
+        // Xem mình hay sai gì rồi làm bài ngay là một mạch; tách màn riêng thì
+        // phải nhớ đường quay lại.
+        expect(src).toMatch(/<MistakeLog \/>/);
+        expect(src).toMatch(/tr-tab/);
+    });
+
+    test('CSS mỗi selector khai đúng một lần', () => {
+        for (const sel of ['.ml-bar {', '.ml-row {', '.tr-tabs {', '.ml-empty {']) {
+            expect(css.split(sel).length - 1).toBe(1);
+        }
+    });
+
+    test('tab chưa chọn vẫn có viền dưới trong suốt', () => {
+        // Thêm viền lúc chọn làm nút cao thêm 2px và cả hàng nhích một nhịp.
+        const i = css.indexOf('.tr-tab {');
+        expect(css.slice(i, css.indexOf('}', i))).toMatch(/border-bottom: 2px solid transparent/);
+    });
+});

@@ -5,6 +5,7 @@ import { GameLogic } from '@game/gameLogic.js';
 import { Energy } from '@game/energy.js';
 import { Notification } from '@ui/Toaster.jsx';
 import { TranslationAPI } from '@api/translation.js';
+import MistakeLog from './MistakeLog.jsx';
 
 /**
  * Luyện DỊCH — đọc một đoạn tiếng Việt, viết lại bằng tiếng Anh (hoặc Trung).
@@ -73,6 +74,10 @@ export default function TranslationScreen({ active }) {
     const [level, setLevel] = useState('medium');
     const [loadingDe, setLoadingDe] = useState(false);
     const [grading, setGrading] = useState(false);
+    // 'lam' = làm bài · 'loi' = nhật ký lỗi. Đặt chung màn thay vì tách riêng:
+    // xem mình hay sai gì rồi làm bài ngay là một mạch, tách ra thì phải nhớ
+    // đường quay lại.
+    const [tab, setTab] = useState('lam');
 
     // `onBought` của popup nạp năng lượng gọi lại chính `handleGrade` — không
     // đưa được `handleGrade` vào deps của chính nó.
@@ -164,6 +169,23 @@ export default function TranslationScreen({ active }) {
                 <h2><i className="fas fa-language"></i> Dịch đoạn văn</h2>
             </div>
 
+            <div className="tr-tabs">
+                <button
+                    className={`tr-tab${tab === 'lam' ? ' is-on' : ''}`}
+                    onClick={() => setTab('lam')}
+                >
+                    <i className="fas fa-pen"></i> Làm bài
+                </button>
+                <button
+                    className={`tr-tab${tab === 'loi' ? ' is-on' : ''}`}
+                    onClick={() => setTab('loi')}
+                >
+                    <i className="fas fa-clipboard-list"></i> Nhật ký lỗi
+                </button>
+            </div>
+
+            {tab === 'loi' ? <MistakeLog /> : (
+            <>
             {!de ? (
                 <div className="essay-intro">
                     <p>
@@ -310,6 +332,8 @@ export default function TranslationScreen({ active }) {
                         </div>
                     )}
                 </div>
+            )}
+            </>
             )}
         </div>
     );
