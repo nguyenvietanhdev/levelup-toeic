@@ -60,10 +60,6 @@ const gameModes = [
         { mode: 'example-fill-blank', icon: 'fa-pen-to-square', label: 'Điền vào câu', desc: 'Điền từ đúng vào câu ví dụ', cost: 12, color: C_HARD },
         { mode: 'phonetic-quiz', icon: 'fa-spell-check', label: 'Đọc phiên âm', desc: 'Nhìn ký hiệu IPA, tìm từ tiếng Anh tương ứng', cost: 12, color: C_HARD },
         { mode: 'fill-blank', icon: 'fa-pen', label: 'Điền từ', desc: 'Điền từ tiếng Anh vào chỗ trống', cost: 15, color: C_HARD },
-        // Chỉ hiện khi đang học tiếng Trung — chế độ này viết chữ Hán, vào bằng bộ
-        // từ vựng tiếng Anh thì không có gì để viết. practiceManager cũng chặn lại
-        // lần nữa, nhưng ẩn ở đây thì người dùng không phải bấm vào mới biết.
-        { mode: 'hanzi-writing', icon: 'fa-paintbrush', label: 'Luyện viết chữ Hán', desc: 'Tô theo nét mẫu, chấm đúng thứ tự nét', cost: 15, color: C_HARD, zhOnly: true },
     ]},
     { group: 'Nâng cao & Thử thách', icon: 'fa-brain', modes: [
         // Hai chế độ luyện CÂU dưới đây bỏ `weekendOnly`.
@@ -78,6 +74,14 @@ const gameModes = [
         // thứ người học cần luyện hằng ngày.
         { mode: 'context-learning', icon: 'fa-book-reader', label: 'Hiểu qua câu', desc: 'Đọc câu ví dụ, suy luận nghĩa tiếng Việt', cost: 10, color: C_MAX },
         { mode: 'sentence-builder', icon: 'fa-puzzle-piece', label: 'Xếp câu', desc: 'Sắp xếp cụm từ thành câu hoàn chỉnh', cost: 15, color: C_MAX },
+        // `zhOnly` = chỉ chạy được với bộ từ tiếng Trung. Vẫn HIỆN khi học tiếng
+        // Anh nhưng ở trạng thái khoá, không ẩn đi: ẩn thì người học tiếng Anh
+        // không bao giờ biết app có chế độ này, mà nó là lý do để họ thử học
+        // tiếng Trung. Khoá thì họ thấy và hiểu cần đổi ngôn ngữ.
+        //
+        // Xếp ở nhóm THỬ THÁCH chứ không phải "Đọc & Viết": tô đúng thứ tự nét
+        // là việc khó nhất trong app với người mới học chữ Hán.
+        { mode: 'hanzi-writing', icon: 'fa-paintbrush', label: 'Luyện viết chữ Hán', desc: 'Tô theo nét mẫu, chấm đúng thứ tự nét', cost: 15, color: C_MAX, zhOnly: true },
         { mode: 'speed-quiz', icon: 'fa-clock', label: 'Tốc độ', desc: 'Trả lời nhanh nhất trong giới hạn thời gian', cost: 20, color: C_MAX, weekendOnly: true },
     ]},
 ];
@@ -322,6 +326,18 @@ export default function HomeScreen({ active }) {
                 title: `🔒 Cần Level ${lv.requiredLevel}`,
                 message: `Chế độ này mở khi bạn đạt Level ${lv.requiredLevel}. Luyện tập thêm để lên cấp!`,
                 duration: 3500,
+            });
+            return;
+        }
+        // Chế độ chỉ chạy với bộ từ tiếng Trung. Chặn ở đây chứ không chỉ làm mờ
+        // thẻ: `game-mode-card--locked` là CSS, mà `onClick` vẫn gắn trên thẻ —
+        // bấm vào vẫn vào bài rồi mới vỡ ở chỗ không có chữ Hán nào để viết.
+        if (modeConfig?.zhOnly && getVocabLang() !== 'zh') {
+            Notification.show({
+                type: 'info',
+                title: '🈶 Cần bộ từ tiếng Trung',
+                message: 'Chế độ này tô nét chữ Hán. Đổi ngôn ngữ học sang tiếng Trung ở Cài đặt để dùng.',
+                duration: 4000,
             });
             return;
         }
@@ -600,18 +616,18 @@ export default function HomeScreen({ active }) {
                             <div className="mode-group-label">
                                 <i className={`fas ${group.icon}`}></i> {group.group}
                             </div>
-                            {group.modes
-                                // Chế độ gắn cờ `zhOnly` chỉ có nghĩa với bộ từ vựng
-                                // tiếng Trung — ẨN HẲN thay vì khoá, vì đây không phải
-                                // phần thưởng để mở mà là chuyện "không áp dụng được".
-                                .filter(m => !m.zhOnly || getVocabLang() === 'zh')
-                                .map(m => {
-                                // 3 loại khoá: khách chưa login, theo LEVEL, theo cuối tuần.
+                            {group.modes.map(m => {
+                                // 4 loại khoá: khách chưa login, theo LEVEL, theo cuối
+                                // tuần, và theo NGÔN NGỮ đang học.
                                 const guestLocked = !isLoggedIn && !GUEST_FREE_MODES.has(m.mode);
                                 const lv = lockInfo(`mode:${m.mode}`);
                                 const levelLocked = lv.locked;
                                 const weekendLocked = m.weekendOnly && !isWeekend();
-                                const locked = guestLocked || levelLocked || weekendLocked;
+                                // `zhOnly` chỉ chạy được với bộ từ tiếng Trung. HIỆN
+                                // nhưng khoá, không ẩn: ẩn thì người học tiếng Anh
+                                // không bao giờ biết app có chế độ này.
+                                const langLocked = m.zhOnly && getVocabLang() !== 'zh';
+                                const locked = guestLocked || levelLocked || weekendLocked || langLocked;
                                 return (
                                 <div
                                     key={m.mode}
@@ -635,6 +651,14 @@ export default function HomeScreen({ active }) {
                                     ) : weekendLocked ? (
                                         <div className="mode-weekend-badge">
                                             <i className="fas fa-lock"></i> Mở sau: <span className="mode-weekend-countdown">{weekendTimer}</span>
+                                        </div>
+                                    ) : langLocked ? (
+                                        // Nói rõ ĐIỀU KIỆN chứ không chỉ "bị khoá":
+                                        // đây là khoá người dùng tự mở được ngay bằng
+                                        // cách đổi ngôn ngữ học, khác hẳn khoá theo
+                                        // Level phải cày mới tới.
+                                        <div className="mode-level-badge" title="Chế độ này cần bộ từ vựng tiếng Trung">
+                                            <i className="fas fa-language"></i> Cần học <b>tiếng Trung</b>
                                         </div>
                                     ) : (
                                         /* Hai DÒNG riêng, không gộp một hàng: "N từ cần
