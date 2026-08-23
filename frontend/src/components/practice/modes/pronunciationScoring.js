@@ -216,9 +216,20 @@ function cungMotTu(a, b) {
     return false;
 }
 
-export function scoreSentence(transcript, target) {
-    const want = normalize(target, false).split(' ').filter(Boolean);
-    const heard = normalize(transcript, false).split(' ').filter(Boolean);
+export function scoreSentence(transcript, target, isZh = false) {
+    // Tiếng Trung tách theo CHỮ, tiếng Anh theo TỪ.
+    //
+    // Không tách thì cả câu tiếng Trung tính là một "từ" duy nhất: sai một chữ
+    // thành sai cả câu, và phản hồi ra "không nghe rõ" cho người vừa nói rành
+    // rọt. Đó là lý do chế độ đọc câu từng bị tắt hẳn cho tiếng Trung — nhưng
+    // tắt là bỏ mất tính năng, còn tách đúng đơn vị thì nó chạy được.
+    // `cungMotTu` KHÔNG cần nhánh riêng cho tiếng Trung: với ký tự đơn nó cho
+    // cùng kết quả như so bằng (`买`/`卖` → false, `昨`/`今` → false), vì cả ba
+    // luật của nó — giống hệt, đảo thứ tự chữ cái, thêm/bớt đuôi — đều không
+    // kích hoạt được trên một ký tự. Đã kiểm bằng số thật.
+    const tach = (t) => (isZh ? [...t].filter((c) => c.trim()) : t.split(' ').filter(Boolean));
+    const want = tach(normalize(target, isZh));
+    const heard = tach(normalize(transcript, isZh));
 
     if (!want.length) return { words: [], correct: 0, total: 0, ratio: 0 };
 

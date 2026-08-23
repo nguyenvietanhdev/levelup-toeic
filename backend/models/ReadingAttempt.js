@@ -20,6 +20,14 @@ const readingAttemptSchema = new mongoose.Schema(
         /** Dạng văn bản: email · notice · advertisement · article · memo · schedule. */
         dang: { type: String, default: 'email' },
         level: { type: String, enum: ['easy', 'medium', 'hard'], default: 'medium' },
+        /**
+         * Ngôn ngữ của bài đọc: 'en' = TOEIC Part 7, 'zh' = HSK 阅读.
+         *
+         * PHẢI lưu cùng bài: hai chuẩn có độ dài và dạng văn bản khác nhau, nên
+         * đọc lại lịch sử mà không biết bài thuộc chuẩn nào thì không so sánh
+         * được điểm giữa các lượt.
+         */
+        lang: { type: String, enum: ['en', 'zh'], default: 'en', index: true },
         /** Các từ đề bài được yêu cầu dùng tới. */
         words: { type: [String], default: [] },
 

@@ -349,3 +349,78 @@ describe('controller — đáp án phải ở lại server', () => {
         expect(than).toMatch(/\.select\('title dang level correct total createdAt'\)/);
     });
 });
+
+describe('hỗ trợ CẢ HAI ngôn ngữ', () => {
+    test('tiếng Trung dùng chuẩn HSK, không phải TOEIC', async () => {
+        // Hai CHUẨN chứ không phải một chuẩn dịch sang hai thứ tiếng — cùng lý
+        // do đã tách IELTS/HSK ở Viết luận. Tiếng Trung không có TOEIC.
+        aiTraVe(BAI_OK(2));
+        await generateReading({ lang: 'zh' });
+        const p = promptHeThong();
+        expect(p).toMatch(/HSK reading comprehension/);
+        expect(p).not.toMatch(/TOEIC Part 7/);
+    });
+
+    test('tiếng Anh vẫn dùng chuẩn TOEIC', async () => {
+        aiTraVe(BAI_OK(2));
+        await generateReading({ lang: 'en' });
+        expect(promptHeThong()).toMatch(/TOEIC Part 7/);
+    });
+
+    test('độ dài đo bằng CHỮ HÁN, không phải từ', async () => {
+        // "150 words" là yêu cầu model không đo được với tiếng Trung — không có
+        // khoảng trắng giữa các từ.
+        aiTraVe(BAI_OK(2));
+        await generateReading({ lang: 'zh' });
+        expect(promptHeThong()).toMatch(/characters/);
+        expect(promptHeThong()).not.toMatch(/of \d+-\d+ words/);
+    });
+
+    test('bài và câu hỏi viết bằng tiếng Trung', async () => {
+        // Ra đề tiếng Anh rồi bắt đọc hiểu tiếng Trung là bài kiểm tra dịch.
+        aiTraVe(BAI_OK(2));
+        await generateReading({ lang: 'zh' });
+        expect(promptHeThong()).toMatch(/in Simplified Chinese/);
+    });
+
+    test('giải thích LUÔN bằng tiếng Việt ở cả hai', async () => {
+        // Người học chưa đọc vững ngôn ngữ đích; giải thích bằng chính ngôn ngữ
+        // đó là thêm rào cản đúng lúc họ cần hiểu vì sao sai.
+        for (const lang of ['en', 'zh']) {
+            aiTraVe(BAI_OK(2));
+            await generateReading({ lang });
+            expect(promptHeThong()).toMatch(/"explain" in Vietnamese/);
+        }
+    });
+
+    test('trả về `lang` để client biết bài thuộc chuẩn nào', async () => {
+        aiTraVe(BAI_OK(2));
+        expect((await generateReading({ lang: 'zh' })).lang).toBe('zh');
+        aiTraVe(BAI_OK(2));
+        expect((await generateReading({})).lang).toBe('en');
+    });
+
+    test('ngôn ngữ đọc từ HỒ SƠ, KHÔNG nhận từ client', () => {
+        // Client khai `lang` là client tự chọn xem mình nhận bài tiếng gì — mà
+        // nó không biết người dùng đang học gì. Cùng nguyên tắc với Dịch và
+        // Viết luận.
+        const { readFileSync } = require('node:fs');
+        const { join } = require('node:path');
+        const ctrl = readFileSync(
+            join(__dirname, '..', 'controllers', 'readingController.js'), 'utf8');
+        const i = ctrl.indexOf('exports.passage');
+        const than = ctrl.slice(i, ctrl.indexOf('exports.grade'));
+        expect(than).toMatch(/settings\?\.vocabLang === 'zh'/);
+        expect(than).not.toMatch(/req\.body\.lang/);
+    });
+
+    test('lưu `lang` cùng bài — để so điểm giữa các lượt', () => {
+        // Hai chuẩn có độ dài và dạng văn bản khác nhau; không biết bài thuộc
+        // chuẩn nào thì điểm không so được.
+        const { readFileSync } = require('node:fs');
+        const { join } = require('node:path');
+        const ctrl = readFileSync(
+            join(__dirname, '..', 'controllers', 'readingController.js'), 'utf8');
+        expect(ctrl).toMatch(/lang: luu\.data\.lang \|\| 'en'/);
+    });
+});

@@ -80,8 +80,15 @@ exports.passage = async (req, res, next) => {
         const words = Array.isArray(req.body.words) ? req.body.words : [];
         const level = mucKho(req.body.level);
 
+        // Ngôn ngữ lấy từ HỒ SƠ, không nhận từ client — cùng nguyên tắc với
+        // Dịch và Viết luận. Người đang học tiếng Trung mà nhận bài đọc tiếng
+        // Anh thì chế độ này vô dụng với họ.
+        const profile = await UserProfile.findOne({ userId: req.user.id })
+            .select('settings').lean();
+        const lang = profile?.settings?.vocabLang === 'zh' ? 'zh' : 'en';
+
         const ai = await generateReading({
-            tuVung: words, userId: req.user.id, level, dang: req.body.dang,
+            tuVung: words, userId: req.user.id, level, dang: req.body.dang, lang,
         });
         if (!ai.success) {
             logger.error('Reading passage: AI failed', ai.error);
@@ -108,6 +115,7 @@ exports.passage = async (req, res, next) => {
                 dang: ai.dang,
                 dangVi: ai.dangVi,
                 level: ai.level,
+                lang: ai.lang,
                 words: ai.words,
                 // CHỈ đề và lựa chọn — không có `answer`, không có `explain`.
                 // Gửi kèm là người dùng mở DevTools thấy đáp án ngay.
@@ -187,6 +195,7 @@ exports.grade = async (req, res, next) => {
             passage: luu.data.passage,
             dang: luu.data.dang,
             level: luu.data.level,
+            lang: luu.data.lang || 'en',
             words: luu.data.words,
             // Ghép đề với kết quả: lưu cả `options` để mở lại lịch sử còn thấy
             // mình đã chọn gì trong bốn phương án nào.

@@ -190,17 +190,23 @@ export const PronunciationMode = {
 
         // Chế độ ĐỌC CÂU: đọc cả câu ví dụ thay vì một từ.
         //
-        // Chỉ bật cho tiếng Anh. Tiếng Trung không tách từ bằng khoảng trắng nên
-        // "chấm từng từ" không có nghĩa ở đó, mà giá trị của chế độ này nằm
-        // đúng ở chỗ chỉ ra từ nào chưa rõ.
+        // Bật cho CẢ HAI ngôn ngữ. Bản đầu chặn tiếng Trung vì `scoreSentence`
+        // tách theo khoảng trắng, mà câu tiếng Trung không có — cả câu tính là
+        // một "từ", sai một chữ thành sai cả câu. Giờ hàm đó tách theo CHỮ khi
+        // `isZh`, nên chỉ ra được đúng chữ nào chưa rõ.
         //
         // Bỏ qua câu quá dài: đọc liền 25 từ thì Web Speech hay tự ngắt giữa
         // chừng, và người học sai một từ ở cuối phải đọc lại từ đầu.
-        const docCau = !this._isZh() && GameState.state?.settings?.pronounceSentence === true;
+        const docCau = GameState.state?.settings?.pronounceSentence === true;
 
         this.questions = words.map(word => {
             const cau = docCau ? String(word.example || '').trim() : '';
-            const dungCau = cau && cau.split(/\s+/).length <= 18;
+            // Đơn vị đo khác nhau: 18 TỪ tiếng Anh, 30 CHỮ tiếng Trung. Đo câu
+            // tiếng Trung bằng số "từ" thì mọi câu đều ra 1 và không câu nào bị
+            // loại, kể cả câu dài 80 chữ.
+            const dungCau = cau && (this._isZh()
+                ? [...cau.replace(/\s/g, '')].length <= 30
+                : cau.split(/\s+/).length <= 18);
             return {
                 word,
                 wordPk:   wordPk(word),
@@ -472,7 +478,7 @@ export const PronunciationMode = {
             // Ngưỡng đạt 0.8: câu dài nói trượt một từ vẫn nên được đi tiếp,
             // nhưng phản hồi vẫn chỉ đích danh từ đó để lần sau sửa. Bắt phải
             // đúng 100% thì một từ khó chặn cả lượt.
-            const cau = scoreSentence(transcript, this.cauDoc);
+            const cau = scoreSentence(transcript, this.cauDoc, this._isZh());
             const dat = cau.ratio >= 0.8;
             this._lastResult = cau;
 

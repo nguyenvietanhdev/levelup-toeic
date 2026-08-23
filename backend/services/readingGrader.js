@@ -88,7 +88,8 @@ function donCauHoi(raw) {
  * `tuVung` = các từ người học vừa luyện. Bài đọc dùng đúng vốn từ đó nên đọc
  * xong là ôn lại luôn — thay vì gặp một văn bản toàn từ chưa thấy bao giờ.
  */
-async function generateReading({ tuVung = [], userId = null, level = 'medium', dang = '' } = {}) {
+async function generateReading({ tuVung = [], userId = null, level = 'medium', dang = '', lang = 'en' } = {}) {
+    const zh = lang === 'zh';
     const muc = mucKho(level);
     const soCau = CAU_HOI_THEO_MUC[muc];
     const kieu = chuanHoaDang(dang);
@@ -102,9 +103,17 @@ async function generateReading({ tuVung = [], userId = null, level = 'medium', d
         .slice(0, 8);
 
     const doDai = muc === 'easy' ? '80-120' : muc === 'hard' ? '200-260' : '130-180';
+    // Chữ Hán đặc hơn từ tiếng Anh: cùng một lượng thông tin cần ít ký tự hơn.
+    // Dùng chung con số là bài tiếng Trung dài gấp rưỡi bài tiếng Anh.
+    const doDaiZh = muc === 'easy' ? '100-150' : muc === 'hard' ? '250-350' : '160-220';
 
+    // Hai CHUẨN chứ không phải một chuẩn dịch sang hai thứ tiếng — cùng lý do
+    // đã tách IELTS/HSK ở Viết luận. Tiếng Trung không có TOEIC; dạng đọc hiểu
+    // tương đương là HSK 阅读, và độ dài đo bằng CHỮ HÁN chứ không phải từ.
     const system = [
-        'You write TOEIC Part 7 reading comprehension items.',
+        zh
+            ? 'You write HSK reading comprehension (阅读) items.'
+            : 'You write TOEIC Part 7 reading comprehension items.',
         'Return ONLY valid JSON, no markdown fences, no commentary.',
         'Shape: {',
         '  "title": "...",',
@@ -112,7 +121,11 @@ async function generateReading({ tuVung = [], userId = null, level = 'medium', d
         `  "questions": [ { "question": "...", "options": ["...","...","...","..."],`,
         '                  "answer": "A|B|C|D", "explain": "..." } ]',
         '}',
-        `The passage must be a realistic business ${kieu} of ${doDai} words.`,
+        zh
+            // Đơn vị là CHỮ, không phải từ: tiếng Trung không đặt khoảng trắng
+            // giữa các từ nên "150 words" là một yêu cầu model không đo được.
+            ? `The passage must be a realistic ${kieu} in Simplified Chinese, ${doDaiZh} characters.`
+            : `The passage must be a realistic business ${kieu} of ${doDai} words.`,
         `Write exactly ${soCau} questions.`,
         'Each question must have exactly 4 options.',
         // Đây là điều phân biệt Part 7 thật với một bài trắc nghiệm từ vựng:
@@ -121,11 +134,13 @@ async function generateReading({ tuVung = [], userId = null, level = 'medium', d
         'or detail synthesis. Never ask about a word\'s dictionary meaning.',
         'Exactly one option is correct; the other three must be plausible.',
         // Giải thích bằng TIẾNG VIỆT: người học chế độ này theo định nghĩa là
-        // người chưa đọc vững tiếng Anh; giải thích bằng tiếng Anh là thêm một
-        // tầng rào cản đúng lúc họ đang cần hiểu vì sao mình sai.
+        // người chưa đọc vững ngôn ngữ đích; giải thích bằng chính ngôn ngữ đó
+        // là thêm một tầng rào cản đúng lúc họ cần hiểu vì sao mình sai.
         'Write "explain" in Vietnamese, one or two sentences, quoting the part',
         'of the passage that proves the answer.',
-        'Keep "title", "passage", "question" and "options" in English.',
+        zh
+            ? 'Keep "title", "passage", "question" and "options" in Simplified Chinese.'
+            : 'Keep "title", "passage", "question" and "options" in English.',
     ];
 
     if (tu.length) {
@@ -162,6 +177,7 @@ async function generateReading({ tuVung = [], userId = null, level = 'medium', d
 
     return {
         success: true,
+        lang: zh ? 'zh' : 'en',
         title: String(parsed.title || '').trim(),
         passage: String(parsed.passage).trim(),
         dang: kieu,

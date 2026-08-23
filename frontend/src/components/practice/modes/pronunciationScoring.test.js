@@ -412,11 +412,25 @@ describe('chế độ đọc CÂU — nối vào PronunciationMode', () => {
         expect(schema).toMatch(/pronounceSentence: \{ type: Boolean, default: false \}/);
     });
 
-    test('CHỈ cho tiếng Anh', () => {
-        // Tiếng Trung không tách từ bằng khoảng trắng nên "chấm từng từ" không
-        // có nghĩa ở đó.
+    test('bật cho CẢ HAI ngôn ngữ', () => {
+        // Bản đầu chặn tiếng Trung vì `scoreSentence` tách theo khoảng trắng,
+        // mà câu tiếng Trung không có — cả câu tính là một "từ", sai một chữ
+        // thành sai cả câu và phản hồi ra "không nghe rõ" cho người vừa nói
+        // rành rọt. Giờ hàm đó tách theo CHỮ khi `isZh`.
         const i = mode.indexOf('const docCau');
-        expect(mode.slice(i, mode.indexOf(';', i))).toMatch(/!this\._isZh\(\)/);
+        expect(mode.slice(i, mode.indexOf(';', i))).not.toMatch(/_isZh/);
+        // Và phải TRUYỀN `isZh` xuống, nếu không nó vẫn tách theo khoảng trắng.
+        expect(mode).toMatch(/scoreSentence\(transcript, this\.cauDoc, this\._isZh\(\)\)/);
+    });
+
+    test('giới hạn độ dài đo theo ĐÚNG đơn vị của mỗi ngôn ngữ', () => {
+        // Đo câu tiếng Trung bằng số "từ" thì mọi câu đều ra 1 và không câu nào
+        // bị loại, kể cả câu dài 80 chữ.
+        const i = mode.indexOf('const dungCau');
+        const khoi = mode.slice(i, mode.indexOf(';', i));
+        expect(khoi).toMatch(/_isZh\(\)/);
+        expect(khoi).toContain('<= 30');
+        expect(khoi).toContain('<= 18');
     });
 
     test('câu QUÁ DÀI tự rơi về đọc từ', () => {
@@ -453,10 +467,17 @@ describe('chế độ đọc CÂU — nối vào PronunciationMode', () => {
         expect(mode).toMatch(/escapeText\(w\.word\)/);
     });
 
-    test('có ô bật/tắt trong Cài đặt, ẩn khi học tiếng Trung', () => {
+    test('ô bật/tắt hiện cho CẢ HAI ngôn ngữ', () => {
         expect(panel).toMatch(/pronounceSentence/);
-        const i = panel.indexOf('pronounceSentence');
-        expect(panel.slice(Math.max(0, i - 400), i)).toMatch(/!== 'zh'/);
+        // Không còn bọc trong điều kiện ngôn ngữ.
+        const i = panel.indexOf('<h4>Phát âm: đọc cả câu</h4>');
+        expect(i).toBeGreaterThan(-1);
+        expect(panel.slice(Math.max(0, i - 300), i)).not.toMatch(/!== 'zh' && \(/);
+    });
+
+    test('mô tả dùng đúng đơn vị theo ngôn ngữ đang học', () => {
+        // "chấm từng từ" với tiếng Trung là sai: đơn vị ở đó là CHỮ.
+        expect(panel).toMatch(/=== 'zh' \? 'chữ' : 'từ'/);
     });
 
     test('từ chưa rõ phân biệt bằng GẠCH CHÂN, không chỉ bằng màu', () => {
@@ -470,5 +491,61 @@ describe('chế độ đọc CÂU — nối vào PronunciationMode', () => {
         for (const sel of ['.pron-sentence {', '.pron-word {', '.pron-words {']) {
             expect(css.split(sel).length - 1).toBe(1);
         }
+    });
+});
+
+describe('chấm câu TIẾNG TRUNG — theo chữ, không theo khoảng trắng', () => {
+    test('đọc đúng cả câu', () => {
+        const r = scoreSentence('我昨天上班迟到了', '我昨天上班迟到了', true);
+        expect(r.correct).toBe(8);
+        expect(r.total).toBe(8);
+    });
+
+    test('sai MỘT chữ → chỉ đúng chữ đó, không phải cả câu', () => {
+        // Đây là lý do chế độ này từng bị tắt hẳn cho tiếng Trung: không tách
+        // theo chữ thì cả câu tính là một "từ", sai một chữ thành sai hết, và
+        // phản hồi ra "không nghe rõ" cho người vừa nói rành rọt.
+        const r = scoreSentence('我今天上班迟到了', '我昨天上班迟到了', true);
+        expect(r.correct).toBe(7);
+        expect(r.total).toBe(8);
+        expect(r.words.find((w) => !w.ok).word).toBe('昨');
+    });
+
+    test('nuốt mất chữ giữa câu — các chữ sau không lệch nhịp', () => {
+        const r = scoreSentence('我上班迟到了', '我昨天上班迟到了', true);
+        expect(r.correct).toBe(6);
+        expect(r.words.filter((w) => !w.ok).map((w) => w.word)).toEqual(['昨', '天']);
+    });
+
+    test('dấu câu tiếng Trung KHÔNG tính là chữ', () => {
+        const r = scoreSentence('我好。', '我好', true);
+        expect(r.total).toBe(2);
+        expect(r.correct).toBe(2);
+    });
+
+    test('so BẰNG NHAU tuyệt đối — 买 và 卖 là hai chữ khác nhau', () => {
+        // Luật "thêm/bớt đuôi" của tiếng Anh không có nghĩa với một ký tự đơn,
+        // mà hai chữ này nghĩa ngược nhau.
+        const r = scoreSentence('我要卖东西', '我要买东西', true);
+        expect(r.words.find((w) => !w.ok).word).toBe('买');
+    });
+
+    test('phản hồi nêu đích danh chữ chưa rõ', () => {
+        const r = scoreSentence('我今天上班迟到了', '我昨天上班迟到了', true);
+        expect(sentenceFeedback(r)).toContain('昨');
+        expect(sentenceFeedback(r)).toContain('7/8');
+    });
+
+    test('tiếng Anh KHÔNG bị ảnh hưởng — vẫn tách theo từ', () => {
+        const r = scoreSentence('the meeting starts at wine', 'the meeting starts at nine', false);
+        expect(r.total).toBe(5);
+        expect(r.words.find((w) => !w.ok).word).toBe('nine');
+    });
+
+    test('mặc định (không truyền cờ) vẫn là tiếng Anh', () => {
+        // Nơi gọi cũ không truyền tham số thứ ba; đổi mặc định là làm hỏng
+        // chúng mà không có gì báo.
+        const r = scoreSentence('a b c', 'a b c');
+        expect(r.total).toBe(3);
     });
 });
