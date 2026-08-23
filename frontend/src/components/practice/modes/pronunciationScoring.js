@@ -167,3 +167,109 @@ export function feedbackMessage(result, target, isZh) {
     if ([...result.heard].length < [...want].length) return `Nghe thành "${result.heard}" — có vẻ thiếu âm.`;
     return `Nghe thành "${result.heard}".`;
 }
+
+/**
+ * Chấm một CÂU: từng từ một, thay vì đúng/sai cả câu.
+ *
+ * Vì sao cần riêng hàm này chứ không dùng `scoreAttempt` cho câu: câu 10 từ nói
+ * sai 1 từ cho `similarity` khoảng 0.9 — vượt ngưỡng, tính là "gần đúng", và
+ * người học không bao giờ biết đó là từ nào. Cả giá trị của việc luyện câu nằm
+ * ở chỗ chỉ ra ĐÚNG từ phát âm sai.
+ *
+ * Căn theo THỨ TỰ bằng quy hoạch động (Needleman–Wunsch rút gọn), không so
+ * theo chỉ số: máy nghe hụt hoặc thừa một từ thì so theo chỉ số làm mọi từ
+ * phía sau lệch đi một nhịp và bị báo sai hết.
+ *
+ * Chỉ dùng cho tiếng Anh — tiếng Trung không tách từ bằng khoảng trắng, nên
+ * "từng từ" không có nghĩa ở đó.
+ *
+ * @param {string} transcript  chữ máy nghe được
+ * @param {string} target      câu cần nói
+ * @returns {{words: Array<{word:string, ok:boolean, heard:string}>, correct:number,
+ *            total:number, ratio:number}}
+ */
+/**
+ * Hai từ tiếng Anh có coi là NÓI ĐÚNG cùng một từ không.
+ *
+ * KHÔNG dùng `isNear` — hàm đó chỉnh cho từ tiếng Trung và cho qua mọi sai lệch
+ * một ký tự khi từ đủ dài. Chạy trên số thật: `wine`/`nine` ra 0.75 và được cho
+ * qua, nhưng thay phụ âm đầu chính là loại lỗi phát âm ta cần bắt.
+ *
+ * Quy tắc ở đây phân biệt theo LOẠI sai lệch:
+ *   - cùng bộ chữ cái, chỉ khác thứ tự (`recieve`/`receive`) → lỗi CHÍNH TẢ của
+ *     bộ nhận dạng, cho qua: người học không phát âm sai gì cả.
+ *   - thêm/bớt đuôi (`start`/`starts`) → máy nuốt âm cuối, cho qua.
+ *   - thay ký tự → phát ra âm khác, KHÔNG cho qua dù chỉ lệch một.
+ */
+function cungMotTu(a, b) {
+    if (!a || !b) return false;
+    if (a === b) return true;
+
+    // Cùng bộ chữ cái = chỉ đảo thứ tự, không phải phát âm khác.
+    const xep = (s) => [...s].sort().join('');
+    if (xep(a) === xep(b)) return true;
+
+    // Thêm/bớt ở ĐUÔI: một chuỗi là tiền tố của chuỗi kia, lệch tối đa 2 ký tự.
+    const [ngan, dai] = a.length <= b.length ? [a, b] : [b, a];
+    if (dai.startsWith(ngan) && dai.length - ngan.length <= 2) return true;
+
+    return false;
+}
+
+export function scoreSentence(transcript, target) {
+    const want = normalize(target, false).split(' ').filter(Boolean);
+    const heard = normalize(transcript, false).split(' ').filter(Boolean);
+
+    if (!want.length) return { words: [], correct: 0, total: 0, ratio: 0 };
+
+    // `khop[i][j]` = số từ khớp nhiều nhất giữa want[i..] và heard[j..].
+    const n = want.length, m = heard.length;
+    const khop = Array.from({ length: n + 1 }, () => new Array(m + 1).fill(0));
+    for (let i = n - 1; i >= 0; i--) {
+        for (let j = m - 1; j >= 0; j--) {
+            // `cungMotTu` chứ không phải `===`: máy nghe "recieve" cho
+            // "receive" là lỗi chính tả của bộ nhận dạng, không phải lỗi phát
+            // âm của người học. Bắt lỗi đó là phạt oan.
+            khop[i][j] = cungMotTu(heard[j], want[i])
+                ? 1 + khop[i + 1][j + 1]
+                : Math.max(khop[i + 1][j], khop[i][j + 1]);
+        }
+    }
+
+    // Lần lại đường đi để biết từ nào đã khớp.
+    const words = [];
+    let i = 0, j = 0;
+    while (i < n) {
+        if (j < m && cungMotTu(heard[j], want[i])) {
+            words.push({ word: want[i], ok: true, heard: heard[j] });
+            i++; j++;
+        } else if (j < m && khop[i][j + 1] >= khop[i + 1][j]) {
+            // Máy nghe thừa một từ — bỏ qua nó, không tính lỗi cho người học.
+            j++;
+        } else {
+            words.push({ word: want[i], ok: false, heard: '' });
+            i++;
+        }
+    }
+
+    // `n > 0` chắc chắn: câu đích rỗng đã thoát ở `return` phía trên.
+    const correct = words.filter(w => w.ok).length;
+    return { words, correct, total: n, ratio: correct / n };
+}
+
+/**
+ * Câu phản hồi cho một lượt đọc CÂU.
+ *
+ * Nêu đích danh tối đa 3 từ sai. Liệt kê hết thì câu 10 từ sai 8 cho một dòng
+ * dài không ai đọc, mà 3 từ đầu đã đủ để biết phải luyện gì.
+ */
+export function sentenceFeedback(result) {
+    if (!result.total) return 'Không có câu để đọc.';
+    if (!result.correct) return 'Không nghe rõ — thử nói to và chậm hơn.';
+    if (result.correct === result.total) return 'Cả câu đều rõ — rất tốt!';
+
+    const sai = result.words.filter(w => !w.ok).map(w => w.word);
+    const nêu = sai.slice(0, 3).map(w => `"${w}"`).join(', ');
+    const con = sai.length > 3 ? ` và ${sai.length - 3} từ nữa` : '';
+    return `Đúng ${result.correct}/${result.total} từ. Chưa rõ: ${nêu}${con}.`;
+}

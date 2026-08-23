@@ -20,6 +20,7 @@
 import { describe, test, expect } from 'vitest';
 import {
     normalize, editDistance, similarity, isNear, scoreAttempt, feedbackMessage,
+    scoreSentence, sentenceFeedback,
 } from './pronunciationScoring.js';
 
 describe('normalize', () => {
@@ -290,5 +291,99 @@ describe('PronunciationMode — chấm và phản hồi', () => {
         document.getElementById('mic-status').textContent = 'Đang nghe...';
         mode.showInterim('');
         expect(document.getElementById('mic-status').textContent).toBe('Đang nghe...');
+    });
+});
+
+describe('chấm cả CÂU — chỉ ra từ nào sai', () => {
+    test('đọc đúng hết', () => {
+        const r = scoreSentence('the meeting starts at nine', 'The meeting starts at nine.');
+        expect(r.correct).toBe(5);
+        expect(r.total).toBe(5);
+        expect(r.words.every(w => w.ok)).toBe(true);
+    });
+
+    test('sai MỘT từ giữa câu — nêu đúng từ đó', () => {
+        // Đây là lý do hàm này tồn tại: `scoreAttempt` cho câu 5 từ sai 1 sẽ ra
+        // similarity ~0.9, vượt ngưỡng "gần đúng", và người học không bao giờ
+        // biết mình sai từ nào.
+        const r = scoreSentence('the meeting starts at wine', 'the meeting starts at nine');
+        expect(r.correct).toBe(4);
+        expect(r.words.find(w => !w.ok).word).toBe('nine');
+    });
+
+    test('máy nghe HỤT một từ — các từ sau không bị lệch nhịp', () => {
+        // So theo chỉ số thì thiếu một từ ở đầu làm mọi từ phía sau lệch một
+        // nhịp và bị báo sai hết.
+        const r = scoreSentence('meeting starts at nine', 'the meeting starts at nine');
+        expect(r.correct).toBe(4);
+        expect(r.words.filter(w => !w.ok).map(w => w.word)).toEqual(['the']);
+    });
+
+    test('máy nghe THỪA một từ — không tính lỗi cho người học', () => {
+        // Bộ nhận dạng tự chèn từ là lỗi của nó, không phải của người nói.
+        const r = scoreSentence('um the meeting starts at nine', 'the meeting starts at nine');
+        expect(r.correct).toBe(5);
+        expect(r.ratio).toBe(1);
+    });
+
+    test('từ lặp lại được đếm đủ, không gộp làm một', () => {
+        const r = scoreSentence('very very good', 'very very good');
+        expect(r.correct).toBe(3);
+    });
+
+    test('sai chính tả nhẹ của bộ nhận dạng KHÔNG bị tính là lỗi phát âm', () => {
+        // "recieve" cho "receive" là lỗi chính tả của máy — phạt là phạt oan.
+        const r = scoreSentence('please recieve the document', 'please receive the document');
+        expect(r.correct).toBe(4);
+    });
+
+    test('không nghe được gì → mọi từ đều sai, không vỡ', () => {
+        const r = scoreSentence('', 'the meeting starts at nine');
+        expect(r.correct).toBe(0);
+        expect(r.total).toBe(5);
+        expect(r.ratio).toBe(0);
+    });
+
+    test('câu đích rỗng → không chia cho 0', () => {
+        const r = scoreSentence('anything', '');
+        expect(r.total).toBe(0);
+        expect(Number.isFinite(r.ratio)).toBe(true);
+    });
+
+    test('giữ nguyên THỨ TỰ từ của câu đích', () => {
+        // Người học đọc phản hồi theo thứ tự câu; xáo lên là không dò lại được.
+        const r = scoreSentence('a c', 'a b c');
+        expect(r.words.map(w => w.word)).toEqual(['a', 'b', 'c']);
+    });
+
+    test('dấu câu và hoa thường không ảnh hưởng', () => {
+        const r = scoreSentence('THE MEETING, STARTS!', 'the meeting starts');
+        expect(r.correct).toBe(3);
+    });
+});
+
+describe('phản hồi cho lượt đọc câu', () => {
+    test('nêu đích danh từ chưa rõ', () => {
+        const r = scoreSentence('the meeting starts at wine', 'the meeting starts at nine');
+        expect(sentenceFeedback(r)).toContain('nine');
+        expect(sentenceFeedback(r)).toContain('4/5');
+    });
+
+    test('nêu tối đa 3 từ rồi tóm tắt phần còn lại', () => {
+        // Câu 10 từ sai 8 mà liệt kê hết thì thành một dòng dài không ai đọc.
+        const r = scoreSentence('a', 'a b c d e f');
+        const msg = sentenceFeedback(r);
+        expect(msg).toMatch(/và 2 từ nữa/);
+        expect(msg).not.toContain('"f"');
+    });
+
+    test('đúng hết thì khen, không liệt kê gì', () => {
+        const r = scoreSentence('a b c', 'a b c');
+        expect(sentenceFeedback(r)).toMatch(/rất tốt/i);
+    });
+
+    test('không nghe được gì thì bảo nói to hơn, không nói "sai"', () => {
+        const r = scoreSentence('', 'a b c');
+        expect(sentenceFeedback(r)).toMatch(/to và chậm/);
     });
 });
