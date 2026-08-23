@@ -1,4 +1,5 @@
 const Essay = require('../models/Essay');
+const { chuanHoaMuc } = require('../services/aiLevel');
 const UserStats = require('../models/UserStats');
 const UserProfile = require('../models/UserProfile');
 const { generatePrompt, gradeEssay, countUnits, limitsFor } =
@@ -69,7 +70,8 @@ exports.prompt = async (req, res, next) => {
         const lang = profile?.settings?.vocabLang === 'zh' ? 'zh' : 'en';
         const { min } = limitsFor(lang);
 
-        const ai = await generatePrompt({ topicHint, userId: req.user.id, lang });
+        const level = chuanHoaMuc(req.body.level);
+        const ai = await generatePrompt({ topicHint, userId: req.user.id, lang, level });
         if (!ai.success) {
             logger.error('Essay prompt: AI failed', ai.error);
             return res.status(503).json({
@@ -82,7 +84,7 @@ exports.prompt = async (req, res, next) => {
             success: true,
             // `minWords` giữ nguyên TÊN cho tương thích, nhưng với tiếng Trung
             // nó là số CHỮ HÁN — `lang` cho client biết đơn vị nào để hiển thị.
-            data: { prompt: ai.prompt, type: ai.type, topicHint, lang, minWords: min },
+            data: { prompt: ai.prompt, type: ai.type, topicHint, lang, minWords: min, level },
         });
     } catch (error) {
         next(error);

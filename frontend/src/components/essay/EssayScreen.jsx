@@ -50,6 +50,18 @@ function countUnits(text, lang) {
     return String(text || '').trim().split(/\s+/).filter(Boolean).length;
 }
 
+/**
+ * Ba mức khó, khớp `services/aiLevel.js` ở server.
+ *
+ * Mô tả nói rõ nó ảnh hưởng CÁI GÌ — "Dễ/Vừa/Khó" một mình không cho biết là
+ * khó ở đề bài, ở vốn từ, hay ở độ dài yêu cầu.
+ */
+const MUC_KHO = [
+    { key: 'easy', label: 'Dễ', desc: 'Đề quen thuộc' },
+    { key: 'medium', label: 'Vừa', desc: 'Đề công sở' },
+    { key: 'hard', label: 'Khó', desc: 'Đề trừu tượng' },
+];
+
 export default function EssayScreen({ active }) {
     const { showScreen, syncFromState } = useGame();
 
@@ -58,6 +70,7 @@ export default function EssayScreen({ active }) {
     const [result, setResult] = useState(null);
     const [loadingPrompt, setLoadingPrompt] = useState(false);
     const [grading, setGrading] = useState(false);
+    const [level, setLevel] = useState('medium');
 
     // `onBought` của popup nạp năng lượng gọi lại chính `handleGrade` — không
     // đưa được `handleGrade` vào deps của chính nó.
@@ -82,7 +95,7 @@ export default function EssayScreen({ active }) {
         if (loadingPrompt) return;
         setLoadingPrompt(true);
         try {
-            const d = await EssayAPI.prompt();
+            const d = await EssayAPI.prompt({ level });
             if (!d?.prompt) throw new Error('Server trả về đề không hợp lệ');
             setPrompt(d);
             // Đề mới thì bỏ bài cũ — giữ lại là người dùng nộp nhầm bài của đề
@@ -94,7 +107,7 @@ export default function EssayScreen({ active }) {
         } finally {
             setLoadingPrompt(false);
         }
-    }, [loadingPrompt]);
+    }, [loadingPrompt, level]);
 
     const handleGrade = useCallback(async () => {
         if (grading || !prompt) return;
@@ -168,6 +181,22 @@ export default function EssayScreen({ active }) {
                             </>
                         )}
                     </p>
+                    {/* Ba mức dùng CHUNG một bảng với Dịch và Đọc hiểu (server:
+                        `services/aiLevel.js`), nên "Khó" ở đây và "Khó" ở đó là
+                        cùng một trình độ — người học so được giữa các chế độ. */}
+                    <div className="tr-levels">
+                        {MUC_KHO.map((m) => (
+                            <button
+                                key={m.key}
+                                className={`tr-level${level === m.key ? ' is-on' : ''}`}
+                                onClick={() => setLevel(m.key)}
+                            >
+                                <strong>{m.label}</strong>
+                                <em>{m.desc}</em>
+                            </button>
+                        ))}
+                    </div>
+
                     <button className="btn btn-primary" onClick={handleNewPrompt} disabled={loadingPrompt}>
                         {loadingPrompt
                             ? <><i className="fas fa-spinner fa-spin"></i> Đang lấy đề…</>

@@ -131,13 +131,17 @@ describe('cả ba lượt gọi dùng cùng một luật', () => {
 });
 
 describe('start không gửi tham số đề/part/lang', () => {
-    test('chỉ gửi `topic`', async () => {
+    test('chỉ gửi `topic` và `level`', async () => {
         // Server tự đọc đề/part/ngôn ngữ từ hồ sơ — gửi thêm là mở lại đúng
         // ranh giới đã gây ra cả chuỗi lỗi trước đó.
+        // `level` là NGOẠI LỆ có chủ ý và là tham số duy nhất được phép: nó là
+        // lựa chọn người dùng vừa bấm ngay trên màn hình, server không có cách
+        // nào biết. Khác hẳn `source`/`part`/`lang` — những thứ server đọc được
+        // từ hồ sơ, và client tự gom là mở lại đúng ranh giới đã gây cả chuỗi lỗi.
         post.mockResolvedValue({ success: true, data: { success: true, data: { id: 'a' } } });
         await ConversationAPI.start();
         const [url, body] = post.mock.calls[0];
         expect(url).toBe('/conversation/start');
-        expect(Object.keys(body)).toEqual(['topic']);
+        expect(Object.keys(body).sort()).toEqual(['level', 'topic']);
     });
 });

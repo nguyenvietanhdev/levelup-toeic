@@ -112,14 +112,18 @@ describe('lỗi mang theo DỮ LIỆU, không chỉ câu chữ', () => {
 });
 
 describe('start KHÔNG gửi chủ đề — server tự đọc', () => {
-    test('prompt gửi body rỗng', async () => {
+    test('prompt CHỈ gửi `level`', async () => {
         // Mỗi tham số client phải tự gom là một chỗ đoán sai hình dạng dữ liệu —
         // bài học từ 5 lỗi liên tiếp của Hội thoại.
+        // `level` là NGOẠI LỆ có chủ ý và là tham số duy nhất được phép: nó là
+        // lựa chọn người dùng vừa bấm ngay trên màn hình, server không có cách
+        // nào biết. Khác hẳn `source`/`part`/`lang` — những thứ server đọc được
+        // từ hồ sơ, và client tự gom là mở lại đúng ranh giới đã gây cả chuỗi lỗi.
         post.mockResolvedValue({ success: true, data: { success: true, data: { prompt: 'x' } } });
         await EssayAPI.prompt();
         const [url, body] = post.mock.calls[0];
         expect(url).toBe('/essay/prompt');
-        expect(Object.keys(body)).toEqual([]);
+        expect(Object.keys(body)).toEqual(['level']);
     });
 });
 

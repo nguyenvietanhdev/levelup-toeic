@@ -39,8 +39,11 @@ export const EssayAPI = {
      * bài học từ Hội thoại: mỗi tham số client phải tự gom là một chỗ đoán sai
      * hình dạng dữ liệu.
      */
-    async prompt() {
-        return unwrap(await Http.post('/essay/prompt', {}));
+    async prompt({ level = 'medium' } = {}) {
+        // `level` là tham số DUY NHẤT client gửi: nó là lựa chọn của người dùng
+        // ngay tại màn hình, server không có cách nào biết. Chủ đề và ngôn ngữ
+        // vẫn do server đọc từ hồ sơ.
+        return unwrap(await Http.post('/essay/prompt', { level }));
     },
 
     /** Nộp bài và chấm. */

@@ -1,4 +1,5 @@
 const Conversation = require('../models/Conversation');
+const { chuanHoaMuc } = require('../services/aiLevel');
 const UserStats = require('../models/UserStats');
 const UserProfile = require('../models/UserProfile');
 const Vocabulary = require('../models/Vocabulary');
@@ -202,7 +203,8 @@ exports.start = async (req, res, next) => {
             });
         }
 
-        const ai = await openConversation({ lang, topic, targetWords, userId: req.user.id });
+        const level = chuanHoaMuc(req.body.level);
+        const ai = await openConversation({ lang, topic, targetWords, userId: req.user.id, level });
         if (!ai.success) {
             // AI lỗi thì HOÀN năng lượng — người dùng không được gì mà vẫn mất
             // tiền là lỗi tệ nhất trong nhóm này.
@@ -220,6 +222,7 @@ exports.start = async (req, res, next) => {
             userId: req.user.id,
             source, part, lang, topic,
             targetWords,
+            level,
             turns: [{ role: 'npc', content: ai.content }],
         });
 
@@ -280,6 +283,9 @@ exports.reply = async (req, res, next) => {
             usedWords: convo.usedWords,
             turns: convo.turns,
             userId: req.user.id,
+            // Đọc lại từ phiên, không nhận từ client: client khai mức khác
+            // giữa chừng là đổi độ khó sau khi đã bắt đầu.
+            level: convo.level,
         });
 
         if (ai.success) {

@@ -73,8 +73,10 @@ export const ConversationAPI = {
      * `topic` (bối cảnh hội thoại) vẫn cho truyền: nó là lựa chọn của người
      * dùng cho PHIÊN NÀY, không phải dữ liệu đã lưu ở đâu đó.
      */
-    async start({ topic = '' } = {}) {
-        const res = await Http.post('/conversation/start', { topic });
+    async start({ topic = '', level = 'medium' } = {}) {
+        // `level` chỉ gửi khi MỞ phiên — các lượt đáp sau đọc lại từ phiên đã
+        // lưu, để không đổi được độ khó giữa chừng.
+        const res = await Http.post('/conversation/start', { topic, level });
         return unwrap(res);
     },
 

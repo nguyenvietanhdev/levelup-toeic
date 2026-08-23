@@ -21,6 +21,18 @@ import { isSpeechSupported, speechLangFor, createSpeechInput } from '@lib/speech
  * ở đây chỉ hiển thị. Chép luật chấm sang client là mời gọi hai bên lệch nhau —
  * tô sáng một đằng, ăn điểm một nẻo, mà người dùng chỉ thấy "máy tính sai".
  */
+/**
+ * Ba mức khó, khớp `services/aiLevel.js` ở server.
+ *
+ * Mô tả nói rõ nó ảnh hưởng CÁI GÌ — "Dễ/Vừa/Khó" một mình không cho biết là
+ * khó ở từ vựng, ở tốc độ, hay ở độ dài.
+ */
+const MUC_KHO = [
+    { key: 'easy', label: 'Dễ', desc: 'Từ thông dụng, câu ngắn' },
+    { key: 'medium', label: 'Vừa', desc: 'Từ công sở' },
+    { key: 'hard', label: 'Khó', desc: 'Từ ít gặp, câu phức' },
+];
+
 export default function ConversationScreen({ active }) {
     const { showScreen, syncFromState } = useGame();
 
@@ -30,6 +42,7 @@ export default function ConversationScreen({ active }) {
     const [starting, setStarting] = useState(false);
     const [result, setResult] = useState(null);     // kết quả sau khi chốt
     const [speechOn, setSpeechOn] = useState(false);
+    const [level, setLevel] = useState('medium');
 
     const speechRef = useRef(null);
     // Trỏ tới `handleStart` để `onBought` của popup nạp năng lượng gọi lại được.
@@ -99,7 +112,7 @@ export default function ConversationScreen({ active }) {
         setStarting(true);
         setResult(null);
         try {
-            const data = await ConversationAPI.start();
+            const data = await ConversationAPI.start({ level });
             // Chốt cuối: không có `id` thì KHÔNG phải phiên hợp lệ.
             //
             // `unwrap` đã ném lỗi cho mọi thất bại đã biết, nhưng nếu server đổi
@@ -145,7 +158,7 @@ export default function ConversationScreen({ active }) {
         } finally {
             setStarting(false);
         }
-    }, [starting, lang, speak, syncFromState]);
+    }, [starting, lang, speak, syncFromState, level]);
 
     handleStartRef.current = handleStart;
 
@@ -252,6 +265,22 @@ export default function ConversationScreen({ active }) {
                         dùng những từ đó — bạn đáp lại, càng dùng được nhiều từ
                         càng nhiều thưởng.
                     </p>
+                    {/* Ba mức dùng CHUNG một bảng với Dịch và Đọc hiểu (server:
+                        `services/aiLevel.js`), nên "Khó" ở đây và "Khó" ở đó là
+                        cùng một trình độ — người học so được giữa các chế độ. */}
+                    <div className="tr-levels">
+                        {MUC_KHO.map((m) => (
+                            <button
+                                key={m.key}
+                                className={`tr-level${level === m.key ? ' is-on' : ''}`}
+                                onClick={() => setLevel(m.key)}
+                            >
+                                <strong>{m.label}</strong>
+                                <em>{m.desc}</em>
+                            </button>
+                        ))}
+                    </div>
+
                     <button className="btn btn-primary" onClick={handleStart} disabled={starting}>
                         {starting
                             ? <><i className="fas fa-spinner fa-spin"></i> Đang tạo…</>

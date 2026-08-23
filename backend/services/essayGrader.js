@@ -21,6 +21,7 @@
  * band) kiểm thử được mà không cần khoá API — đó là chỗ dễ sai nhất.
  */
 const { chiThiPhanLoai, chuanHoaLoai } = require('./errorTaxonomy');
+const { chiThiMuc } = require('./aiLevel');
 
 function chatCompletion(...args) {
     return require('../config/openai').chatCompletion(...args);
@@ -167,7 +168,7 @@ function overallBand(scores = {}, lang = 'en') {
  * đúng vốn từ họ vừa học — thứ ChatGPT không làm được vì nó không biết người
  * học đang học gì.
  */
-async function generatePrompt({ topicHint = '', userId = null, lang = 'en' } = {}) {
+async function generatePrompt({ topicHint = '', userId = null, lang = 'en', level = 'medium' } = {}) {
     const zh = lang === 'zh';
 
     const system = zh
@@ -178,6 +179,7 @@ async function generatePrompt({ topicHint = '', userId = null, lang = 'en' } = {
             'Return ONLY valid JSON, no markdown fences, no commentary.',
             'Shape: { "prompt": "...", "type": "叙述|说明|议论|应用" }',
             'The prompt MUST be written in Simplified Chinese.',
+            chiThiMuc(level),
             'It must be ONE task of 1-2 sentences, in the style of a real HSK',
             `writing task, asking the learner to write about ${MIN_CHARS_ZH} characters.`,
             'Use vocabulary and grammar appropriate for an intermediate learner.',
@@ -186,6 +188,7 @@ async function generatePrompt({ topicHint = '', userId = null, lang = 'en' } = {
             'You write IELTS Writing Task 2 questions.',
             'Return ONLY valid JSON, no markdown fences, no commentary.',
             'Shape: { "prompt": "...", "type": "opinion|discussion|problem-solution|advantages-disadvantages" }',
+            chiThiMuc(level),
             'The prompt must be ONE question of 2-3 sentences, in the exact',
             'style of a real IELTS Task 2 question.',
         ].join('\n');

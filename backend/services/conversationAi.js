@@ -8,6 +8,8 @@ function chatCompletion(...args) {
     return require('../config/openai').chatCompletion(...args);
 }
 
+const { chiThiMuc } = require('./aiLevel');
+
 /**
  * Sinh hội thoại luyện nói, ÉP dùng đúng bộ từ người học vừa luyện.
  *
@@ -56,7 +58,7 @@ function pickWords(targetWords = [], usedWords = [], n = WORDS_IN_PROMPT) {
  * Viết bằng tiếng Anh vì mọi model đều bám prompt tiếng Anh tốt hơn; nội dung
  * SINH RA thì vẫn theo `lang`.
  */
-function systemPrompt({ lang, topic, words }) {
+function systemPrompt({ lang, topic, words, level }) {
     const L = langName(lang);
     return [
         `You are a friendly conversation partner helping a ${NATIVE} speaker practise ${L}.`,
@@ -70,7 +72,10 @@ function systemPrompt({ lang, topic, words }) {
         `4. Naturally work in some of these words: ${words.join(', ')}.`,
         '   Do NOT use all of them at once, and do NOT list them — the learner',
         '   needs words left to use themselves.',
-        '5. Stay at beginner level. Simple grammar, everyday vocabulary.',
+        // Trước đây cứng ở "beginner level": người Level 18 — đúng mốc mở khoá
+        // của chế độ này — vẫn nhận hội thoại vỡ lòng, và không có cách nào
+        // tăng độ khó.
+        `5. ${chiThiMuc(level)}`,
         '6. If the learner makes a mistake, just reply naturally. Do not correct',
         '   them mid-conversation; corrections come at the end.',
     ].filter(Boolean).join('\n');
@@ -81,10 +86,10 @@ function systemPrompt({ lang, topic, words }) {
  *
  * @returns {{success:boolean, content?:string, error?:string}}
  */
-async function openConversation({ lang = 'en', topic = '', targetWords = [], userId = null } = {}) {
+async function openConversation({ lang = 'en', topic = '', targetWords = [], userId = null, level = 'medium' } = {}) {
     const words = pickWords(targetWords, [], WORDS_IN_PROMPT);
     const messages = [
-        { role: 'system', content: systemPrompt({ lang, topic, words }) },
+        { role: 'system', content: systemPrompt({ lang, topic, words, level }) },
         {
             role: 'user',
             content: 'Start the conversation. Greet me and ask one simple question.',
@@ -109,8 +114,7 @@ async function openConversation({ lang = 'en', topic = '', targetWords = [], use
  * @param {Array}  o.turns  Toàn bộ lượt đã có (`{ role: 'npc'|'user', content }`).
  */
 async function replyTurn({
-    lang = 'en', topic = '', targetWords = [], usedWords = [], turns = [], userId = null,
-} = {}) {
+    lang = 'en', topic = '', targetWords = [], usedWords = [], turns = [], userId = null, level = 'medium',} = {}) {
     // Ưu tiên từ CHƯA dùng: hội thoại tự lái về phía những từ người học còn nợ,
     // thay vì lặp lại mấy từ đã ăn điểm rồi.
     const words = pickWords(targetWords, usedWords, WORDS_IN_PROMPT);
@@ -127,7 +131,7 @@ async function replyTurn({
     }));
 
     const messages = [
-        { role: 'system', content: systemPrompt({ lang, topic, words }) },
+        { role: 'system', content: systemPrompt({ lang, topic, words, level }) },
         ...recent,
     ];
 

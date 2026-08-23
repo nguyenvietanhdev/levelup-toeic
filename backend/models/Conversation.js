@@ -38,6 +38,12 @@ const conversationSchema = new mongoose.Schema(
 
         // Chủ đề hội thoại, do AI đặt lúc mở phiên (vd "đi chợ", "hỏi đường").
         topic: { type: String, default: '' },
+        /**
+         * Mức khó của phiên. PHẢI lưu: `replyTurn` chạy ở request khác với
+         * `openConversation`, nên không lưu thì mọi lượt đáp sau lượt đầu rơi
+         * về mặc định và hội thoại tự dễ đi giữa chừng.
+         */
+        level: { type: String, enum: ['easy', 'medium', 'hard'], default: 'medium' },
 
         /**
          * Danh sách từ người học CẦN dùng.

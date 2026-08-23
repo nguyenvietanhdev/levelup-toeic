@@ -109,8 +109,20 @@ describe('dùng đúng API sẵn có của app', () => {
         //
         // Bỏ hết tham số là bỏ hết cơ hội đoán sai ở ranh giới — đó là GỐC của
         // cả chuỗi lỗi, không phải logic hội thoại.
-        expect(src).toMatch(/ConversationAPI\.start\(\)/);
-        expect(api).toMatch(/async start\(\{ topic = '' \} = \{\}\)/);
+        // `level` là NGOẠI LỆ có chủ ý và là tham số duy nhất được phép: nó là
+        // lựa chọn người dùng vừa bấm ngay trên màn hình, server không có cách
+        // nào biết. Khác hẳn `source`/`part`/`lang` — những thứ server đọc được
+        // từ hồ sơ, và client tự gom là mở lại đúng ranh giới đã gây cả chuỗi lỗi.
+        expect(src).toMatch(/ConversationAPI\.start\(\{ level \}\)/);
+        expect(api).toMatch(/async start\(\{ topic = '', level = 'medium' \} = \{\}\)/);
+        // Vẫn cấm ba thứ server tự đọc được.
+        // Soi đúng ĐỐI SỐ của lời gọi, không soi cả file — `lang` xuất hiện hợp
+        // lệ ở nhiều chỗ khác trong màn này.
+        const i = src.indexOf('ConversationAPI.start(');
+        const doiSo = src.slice(i, src.indexOf(')', i));
+        for (const cam of ['source', 'part', 'lang']) {
+            expect(doiSo).not.toContain(cam);
+        }
         // Vẫn ĐỌC `currentTopic` để biết đã chọn đề chưa — đó là việc khác hẳn
         // với việc GỬI nó lên server. Chỉ cấm truyền `source` vào lời gọi.
         expect(src).not.toMatch(/ConversationAPI\.start\(\{[^}]*source/);
