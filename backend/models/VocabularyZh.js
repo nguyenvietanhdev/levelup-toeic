@@ -11,6 +11,11 @@ const vocabularyZhSchema = new mongoose.Schema(
         type: { type: String, default: '' },
         image: { type: String, default: '' },
         example: { type: String, default: '' },
+        // Phiên âm CỦA CÂU ví dụ (IPA cho tiếng Anh, pinyin cho tiếng Trung).
+        // Sinh bằng AI lúc cần rồi lưu lại: câu ví dụ là dữ liệu tĩnh nên phiên
+        // âm của nó vĩnh viễn đúng — tính lại mỗi lần là trả tiền cho cùng một
+        // câu mãi. Rỗng = chưa sinh bao giờ.
+        examplePhonetic: { type: String, default: '' },
         level: { type: String, default: '' },
         source: { type: String, required: true, trim: true },
 

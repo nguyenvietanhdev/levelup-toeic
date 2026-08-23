@@ -29,8 +29,12 @@ const reveal = (() => {
 describe('không chặn việc hiện câu hỏi', () => {
     test('KHÔNG await khi lấy phiên âm', () => {
         // `await` ở đây là người học nhìn màn chờ Google trả lời.
-        expect(reveal).toMatch(/layPinyinCau\(cau\)\.then\(/);
-        expect(reveal).not.toMatch(/await layPinyinCau/);
+        // Đổi sang `layPhienAmCau`: hàm chung cho CẢ HAI ngôn ngữ. Bản cũ
+        // `layPinyinCau` chỉ phục vụ tiếng Trung, nên câu ví dụ tiếng Anh
+        // không bao giờ có phiên âm — đúng chỗ người học cần nhất, vì đọc
+        // cả câu khó hơn đọc một từ.
+        expect(reveal).toMatch(/layPhienAmCau\(cau\)\.then\(/);
+        expect(reveal).not.toMatch(/await layPhienAmCau/);
     });
 
     test('ô phiên âm có sẵn trong markup, điền sau', () => {
@@ -74,7 +78,7 @@ describe('chỉ gọi khi CẦN', () => {
     });
 
     test('câu tiếng Anh không tốn request', () => {
-        // `layPinyinCau` tự kiểm chữ Hán và trả '' ngay, không gọi mạng —
+        // `layPhienAmCau` tự chọn đường theo ngôn ngữ của câu —
         // xem `sentencePinyin.test.js`.
         const lib = readFileSync(
             join(__dirname, '..', '..', 'lib', 'sentencePinyin.js'), 'utf8');

@@ -6,6 +6,7 @@ import { getVocabLang } from '@api/vocabulary.js';
 import { UploadVocabAPI } from '@api/uploadVocab.js';
 import { openUploadModal } from '@components/vocab/upload/openUploadModal.js';
 import { Notification } from '@ui/Toaster.jsx';
+import { TtsAPI } from '@api/tts.js';
 
 // Ngôn ngữ học của hệ thống (en/zh) → mã đích ưu tiên khi dịch.
 const studyTargetLang = () => (getVocabLang() === 'zh' ? 'zh-CN' : 'en');
@@ -40,13 +41,70 @@ function fallbackSpeak(text, code) {
     } catch { /* no-op */ }
 }
 
+/**
+ * Phát một Object URL cùng origin, có KHUẾCH ĐẠI.
+ *
+ * `audio.volume` trần ở 1.0 nên không to hơn mức gốc được; `GainNode` là cách
+ * duy nhất vượt qua. Chỉ dùng được với nguồn CÙNG ORIGIN — Web Audio đòi
+ * `crossOrigin` được server chấp nhận, mà `translate.google.com/translate_tts`
+ * không trả `Access-Control-Allow-Origin` (đã kiểm bằng curl): đặt cờ đó cho
+ * URL của Google là request bị chặn và tiếng biến mất hoàn toàn.
+ *
+ * Khuếch đại hỏng thì vẫn phát ở mức gốc — thà nhỏ còn hơn im.
+ */
+function phatToHon(url, onDone) {
+    const audio = new Audio(url);
+    try {
+        const Ctx = window.AudioContext || window.webkitAudioContext;
+        if (Ctx) {
+            const ctx = new Ctx();
+            const gain = ctx.createGain();
+            gain.gain.value = 2.2;
+            ctx.createMediaElementSource(audio).connect(gain).connect(ctx.destination);
+            ctx.resume?.().catch(() => {});
+            // Đóng context khi phát xong: mỗi lần bấm loa mở một context mới, mà
+            // trình duyệt giới hạn số context đồng thời — không đóng thì sau vài
+            // chục lần tra từ là không phát được nữa.
+            audio.addEventListener('ended', () => ctx.close?.().catch(() => {}), { once: true });
+        }
+    } catch { /* không khuếch đại được thì phát ở mức gốc */ }
+    audio.addEventListener('ended', () => onDone?.(), { once: true });
+    return audio;
+}
+
 function speakText(text, code) {
     if (!text) return;
     const tl = code === 'zh-CN' || code === 'zh' ? 'zh-CN' : String(code || 'en').split('-')[0];
+
+    // Tiếng Anh và tiếng Trung đi qua `/api/tts` của chính app: giọng Neural rõ
+    // hơn, và vì CÙNG ORIGIN nên khuếch đại được. Hai thứ tiếng này chiếm gần
+    // hết lượt dùng — đây là ngôn ngữ người học đang học.
+    //
+    // Các thứ tiếng khác (ja/ko/fr/de…) `/api/tts` không phục vụ, nên vẫn dùng
+    // Google TTS ở mức gốc.
+    if (tl === 'en' || tl === 'zh-CN') {
+        TtsAPI.synthesize(text.slice(0, 200), tl === 'en' ? 'en' : 'zh', 1)
+            .then((r) => {
+                if (!r?.url) throw new Error('tts');
+                // Thu hồi Object URL sau khi phát xong — không thu thì mỗi lần
+                // bấm loa giữ lại một blob trong bộ nhớ cho tới khi tải lại trang.
+                phatToHon(r.url, () => URL.revokeObjectURL(r.url))
+                    .play().catch(() => URL.revokeObjectURL(r.url));
+            })
+            .catch(() => phatGoogle(text, code, tl));
+        return;
+    }
+    phatGoogle(text, code, tl);
+}
+
+/** Lối phát dự phòng: Google TTS, rồi tới giọng hệ điều hành. */
+function phatGoogle(text, code, tl) {
     const url = `https://translate.google.com/translate_tts?ie=UTF-8&tl=${encodeURIComponent(tl)}&client=tw-ob&q=${encodeURIComponent(text.slice(0, 200))}`;
     let fell = false;
     const fb = () => { if (!fell) { fell = true; fallbackSpeak(text, code); } };
     try {
+        // KHÔNG khuếch đại được ở đây: xem `phatToHon` — Google không trả CORS
+        // nên Web Audio không chạm vào luồng này. Phát ở mức gốc.
         const audio = new Audio(url);
         audio.onerror = fb;
         audio.play().catch(fb);

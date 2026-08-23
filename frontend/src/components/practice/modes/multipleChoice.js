@@ -8,7 +8,7 @@ import { PartSelector } from '@components/vocab/part/partSelector.js';
 import { afterAnswer } from '@components/practice/practiceNav.js';
 import { startQuestionTimer } from '@components/practice/questionTimer.js';
 import { timeoutQuestion } from '@components/practice/questionTimeout.js';
-import { layPinyinCau, coChuHan } from '@lib/sentencePinyin.js';
+import { layPhienAmCau, coChuHan } from '@lib/sentencePinyin.js';
 
 export const MultipleChoice = {
 
@@ -301,9 +301,9 @@ export const MultipleChoice = {
             GameLogic.speakWord(cau);
         });
 
-        // Phiên âm cả câu (chỉ tiếng Trung) — không `await`, điền vào sau.
+        // Phiên âm cả câu (IPA cho tiếng Anh, pinyin cho tiếng Trung).
         const idxLucGoi = this.currentIndex;
-        layPinyinCau(cau).then((pinyin) => {
+        layPhienAmCau(cau).then((pinyin) => {
             // Bỏ nếu đã sang câu khác: người dùng bấm "Tiếp" nhanh hơn mạng thì
             // phiên âm câu trước sẽ hiện dưới câu sau.
             if (!pinyin || this.currentIndex !== idxLucGoi) return;
