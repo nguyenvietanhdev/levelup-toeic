@@ -273,6 +273,7 @@ app.use('/api/essay', require('./routes/essay')); // Luyện viết luận (ch�
 app.use('/api/translation', require('./routes/translation')); // Luyện dịch Việt → Anh/Trung
 app.use('/api/reading', require('./routes/reading')); // Luyện đọc hiểu (TOEIC Part 7)
 app.use('/api/phonetic', require('./routes/phonetic')); // Phiên âm câu ví dụ (IPA/pinyin)
+app.use('/api/coach', require('./routes/coach')); // Gợi ý luyện tập cá nhân
 app.use('/api/shop', require('./routes/shop'));
 app.use('/api/leaderboard', require('./routes/leaderboard'));
 app.use('/api/wrong-words', require('./routes/wrongWords')); // Wrong words with spaced repetition

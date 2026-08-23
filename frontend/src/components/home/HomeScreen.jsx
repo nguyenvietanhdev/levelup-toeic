@@ -15,6 +15,7 @@ import { Notification } from '@ui/Toaster.jsx';
 import { loadUnlocks, lockInfo } from '@game/featureUnlocks.js';
 import { Storage } from '@lib/storage.js';
 import { getVocabLang } from '@api/vocabulary.js';
+import CoachPanel from './CoachPanel.jsx';
 
 // 4 tầng ĐỘ KHÓ (màu = độ khó): 🟢 Dễ < 🔵 Trung bình < 🟣 Khó < 🔴 Thử thách.
 // Trong mỗi tầng, sắp theo cost (dễ → khó).
@@ -335,6 +336,19 @@ export default function HomeScreen({ active }) {
         PracticeManager.start(mode);
     };
 
+    /**
+     * Bấm một gợi ý → mở thẳng đích của nó.
+     *
+     * `screen` đi qua `showScreen` (chế độ AI có màn hình riêng); `mode` đi qua
+     * `handleModeClick` để hưởng đủ mọi phép kiểm sẵn có — khách chưa đăng
+     * nhập, khoá theo Level, chế độ cuối tuần, và bước chọn đề. Gọi thẳng
+     * `PracticeManager.start` là bỏ qua hết chúng.
+     */
+    const handleCoachPick = (g) => {
+        if (g?.screen) return showScreen(g.screen);
+        if (g?.mode) handleModeClick(g.mode);
+    };
+
     const claimingRef = useRef(new Set());
     const handleClaimQuest = async (quest) => {
         const code = quest.code || quest.id;
@@ -444,6 +458,11 @@ export default function HomeScreen({ active }) {
                     </button>
                 </div>
             )}
+            {/* Gợi ý đặt TRÊN thẻ streak và trên lưới chế độ: đây là thứ trả lời
+                câu người dùng đang có trong đầu lúc vừa vào ("làm gì bây giờ"),
+                nên phải đọc được trước khi mắt trôi xuống lưới 16 ô. */}
+            <CoachPanel onPick={handleCoachPick} />
+
             <div className="streak-card">
                 <div className="streak-flame">
                     <i className="fas fa-fire"></i>
