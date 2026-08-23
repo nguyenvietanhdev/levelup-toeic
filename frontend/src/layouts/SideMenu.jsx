@@ -47,6 +47,7 @@ const MENU_GROUPS = [
             // tắt cho người đã biết mình muốn gì. Nhật ký lỗi nằm trong màn này
             // nên nó cũng là đường vào nhanh nhất để xem mình hay sai gì.
             { label: 'Dịch đoạn văn', icon: 'fa-language', screen: 'translation-screen', feature: 'feature:translation' },
+            { label: 'Đọc hiểu Part 7', icon: 'fa-book-open-reader', screen: 'reading-screen', feature: 'feature:reading' },
         ],
     },
     {

@@ -59,6 +59,9 @@ const gameModes = [
         { mode: 'example-fill-blank', icon: 'fa-pen-to-square', label: 'Điền vào câu', desc: 'Điền từ đúng vào câu ví dụ', cost: 12, color: C_HARD },
         { mode: 'phonetic-quiz', icon: 'fa-spell-check', label: 'Đọc phiên âm', desc: 'Nhìn ký hiệu IPA, tìm từ tiếng Anh tương ứng', cost: 12, color: C_HARD },
         { mode: 'fill-blank', icon: 'fa-pen', label: 'Điền từ', desc: 'Điền từ tiếng Anh vào chỗ trống', cost: 15, color: C_HARD },
+        // Thẻ kiểu MÀN HÌNH RIÊNG như Dịch đoạn văn: bài đọc do AI sinh, không
+        // lấy từ bộ từ đã lọc nên không có đề/Part để chọn.
+        { mode: 'reading', icon: 'fa-book-open-reader', label: 'Đọc hiểu Part 7', desc: 'Đọc email, thông báo… rồi trả lời câu hỏi — đúng dạng đề thi', cost: 15, color: C_HARD, screen: 'reading-screen', feature: 'feature:reading' },
         // Chỉ hiện khi đang học tiếng Trung — chế độ này viết chữ Hán, vào bằng bộ
         // từ vựng tiếng Anh thì không có gì để viết. practiceManager cũng chặn lại
         // lần nữa, nhưng ẩn ở đây thì người dùng không phải bấm vào mới biết.

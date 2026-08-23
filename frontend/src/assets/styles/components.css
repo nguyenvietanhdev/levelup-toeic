@@ -9417,6 +9417,118 @@ mark {
   color: var(--text-secondary);
 }
 
+/* ── Đọc hiểu Part 7 ──────────────────────────────────────────────────── */
+
+.rd-types {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  justify-content: center;
+  margin-top: 12px;
+}
+
+.rd-passage {
+  padding: 14px 16px;
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  background: var(--bg-secondary);
+  margin-bottom: 16px;
+}
+
+/* `pre-wrap` giữ xuống dòng của email/thông báo — gộp thành khối chữ liền thì
+   mất bố cục, mà bố cục là một phần của việc đọc hiểu Part 7. */
+.rd-passage-text {
+  white-space: pre-wrap;
+  line-height: 1.7;
+  margin: 8px 0 0;
+}
+
+.rd-questions { display: flex; flex-direction: column; gap: 16px; }
+
+.rd-q {
+  padding: 12px;
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+}
+
+/* Sau khi chấm: viền TRÁI dày đổi màu, không tô nền cả khối — nền màu làm chữ
+   câu hỏi khó đọc, mà người học còn phải đọc lại nó để hiểu vì sao sai. */
+.rd-q.is-right { border-left: 4px solid var(--success-color, #10b981); }
+.rd-q.is-wrong { border-left: 4px solid var(--danger-color, #ef4444); }
+
+.rd-q-text {
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+  margin-bottom: 10px;
+  font-weight: 600;
+  line-height: 1.5;
+}
+
+.rd-q-num {
+  flex: 0 0 auto;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--accent-color);
+  color: #fff;
+  font-size: 0.75em;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.rd-opts { display: flex; flex-direction: column; gap: 6px; }
+
+.rd-opt {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  padding: 9px 12px;
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  text-align: left;
+  line-height: 1.45;
+  cursor: pointer;
+}
+
+.rd-opt:disabled { cursor: default; }
+.rd-opt:not(:disabled):hover { border-color: var(--accent-color); }
+
+.rd-opt.is-picked { border-color: var(--accent-color); background: rgba(139, 92, 246, 0.12); }
+
+/* Đáp án đúng tô xanh DÙ người học chọn gì: thấy đáp án đúng ở đâu mới học
+   được, chỉ biết mình sai thì không. */
+.rd-opt.is-right {
+  border-color: var(--success-color, #10b981);
+  background: rgba(16, 185, 129, 0.16);
+}
+
+.rd-opt.is-wrong {
+  border-color: var(--danger-color, #ef4444);
+  background: rgba(239, 68, 68, 0.16);
+  /* Gạch ngang để phân biệt được cả khi không nhìn ra màu. */
+  text-decoration: line-through;
+}
+
+.rd-opt-label {
+  flex: 0 0 auto;
+  width: 20px;
+  font-weight: 700;
+  opacity: 0.7;
+}
+
+.rd-explain {
+  margin: 10px 0 0;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: rgba(245, 158, 11, 0.12);
+  font-size: 0.9em;
+  line-height: 1.55;
+}
+
 /* Hai tab: làm bài · nhật ký lỗi. */
 .tr-tabs {
   display: flex;
