@@ -4,6 +4,7 @@ import { Notification } from "@ui/Toaster.jsx";
 import { useTopics } from "./useTopics.js";
 import { TopicSelector } from "./topicSelector.js";
 import LevelBar from "./LevelBar.jsx";
+import { theoDoiCuon } from "@lib/scrollMemory.js";
 
 /**
  * Tab chứa đề ĐANG CHỌN — để popup mở đúng chỗ thay vì luôn về "Từ vựng chung".
@@ -88,6 +89,22 @@ export default function TopicModal({ open, mode = null, onClose, onSelected }) {
   const [query, setQuery] = useState("");
   const [searchReadOnly, setSearchReadOnly] = useState(true); // prevent autofill until user interacts
   const [busyId, setBusyId] = useState(null);
+
+  /**
+   * Nhớ vị trí cuộn RIÊNG cho từng tab.
+   *
+   * Ba tab là ba danh sách khác hẳn nhau; dùng chung một khoá thì chuyển tab
+   * xong bị ném xuống vị trí của tab trước — tệ hơn là không nhớ gì.
+   *
+   * Callback ref chứ không `useRef` + `useEffect`: React gọi nó với phần tử
+   * lúc gắn và với `null` lúc gỡ, nên vòng đời khớp chính xác với việc thêm và
+   * bỏ listener. Dùng `useEffect` thì phải tự đoán khi nào DOM đã sẵn sàng.
+   */
+  const goCuonRef = useRef(null);
+  const gapDanhSach = (el) => {
+    goCuonRef.current?.();
+    goCuonRef.current = el ? theoDoiCuon(`topic-modal:${tab}`, el) : null;
+  };
 
   useEffect(() => {
     if (!open) return;
@@ -297,7 +314,7 @@ export default function TopicModal({ open, mode = null, onClose, onSelected }) {
                 <p className="topic-hint">
                   Chọn bộ từ vựng bạn muốn luyện tập:
                 </p>
-                <div className="topics-list">
+                <div className="topics-list" ref={gapDanhSach}>
                   {loadingShared ? (
                     <p
                       style={{
@@ -360,7 +377,7 @@ export default function TopicModal({ open, mode = null, onClose, onSelected }) {
             ) : tab === "personal" ? (
               <div className="tab-content active">
                 <p className="topic-hint">Từ vựng bạn đã tải lên:</p>
-                <div className="topics-list">
+                <div className="topics-list" ref={gapDanhSach}>
                   {loadingPersonal ? (
                     <p
                       style={{
@@ -496,7 +513,7 @@ export default function TopicModal({ open, mode = null, onClose, onSelected }) {
                     ? 'Chọn nhóm từ sai bạn muốn ôn lại — miễn phí năng lượng:'
                     : 'Luyện lại những từ bạn đã làm sai:'}
                 </p>
-                <div className="topics-list">
+                <div className="topics-list" ref={gapDanhSach}>
                   {loadingWrong ? (
                     <p
                       style={{

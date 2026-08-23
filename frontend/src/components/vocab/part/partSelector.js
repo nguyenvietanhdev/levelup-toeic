@@ -6,6 +6,7 @@ import { EventBus, GameEvents } from '@game/eventBus.js';
 import { Notification } from '@ui/Toaster.jsx';
 import { Modal } from '@ui/Modal.jsx';
 import { toBand } from '@lib/levelBands.js';
+import { theoDoiCuon } from '@lib/scrollMemory.js';
 
 export const PartSelector = {
     parts: [],
@@ -234,6 +235,10 @@ export const PartSelector = {
             // phải cuộn: đọc tới cuối rồi còn phải vuốt ngược lên mới đóng được.
             buttons: [{ text: 'Đóng', className: 'btn-secondary' }],
             onClose: () => {
+                // Gỡ theo dõi cuộn TRƯỚC mọi thứ khác: listener treo trên phần
+                // tử đã bị Modal gỡ khỏi cây thì không ai dọn nữa.
+                this._goCuon?.();
+                this._goCuon = null;
                 this.pendingMode = null;
                 this._modalOpen = false;
                 this._unsubVocab?.();
@@ -243,6 +248,18 @@ export const PartSelector = {
                 clearTimeout(_refreshTimer);
             },
         });
+
+        // Nhớ vị trí cuộn qua các lần mở lại. Popup này có hàng chục Part; cuộn
+        // lại từ đầu mỗi lần mở là việc lặp đi lặp lại mà máy làm được.
+        //
+        // Bám `.modal-body` chứ KHÔNG phải `.topics-grid`: lưới Part không có
+        // `overflow` riêng (xem `layout.css`), phần cuộn thật là thân modal.
+        // Bám nhầm thì `scrollTop` luôn bằng 0 và tính năng im lặng không chạy.
+        //
+        // Gắn SAU `Modal.show` vì trước đó chưa có DOM để bám vào; `root()` neo
+        // vào modal CUỐI CÙNG nên không trúng popup cũ còn sót lại một nhịp.
+        this._goCuon?.();
+        this._goCuon = theoDoiCuon('part-selector', q('.modal-body'));
 
         const applyPartFilter = () => {
             const kw = searchQuery.trim().toLowerCase();

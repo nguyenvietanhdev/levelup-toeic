@@ -111,8 +111,12 @@ describe('popup "Chọn Part để luyện tập"', () => {
 
     test('đóng popup thì huỷ chốt chặn', () => {
         // Không huỷ thì 10 giây sau vẫn nhảy thông báo lỗi cho popup đã đóng.
+        // Soi CẢ khối `onClose` thay vì một cửa sổ ký tự cố định: khối này dài
+        // thêm mỗi lần popup có thêm thứ cần dọn, và cửa sổ cố định thì im lặng
+        // trượt ra ngoài.
         const i = partSel.indexOf('onClose: () =>');
-        expect(partSel.slice(i, i + 400)).toMatch(/clearTimeout\(_refreshTimer\)/);
+        const khoi = partSel.slice(i, partSel.indexOf('\n            },', i));
+        expect(khoi).toMatch(/clearTimeout\(_refreshTimer\)/);
     });
 
     test('_refreshTimer khai báo TRƯỚC Modal.show', () => {

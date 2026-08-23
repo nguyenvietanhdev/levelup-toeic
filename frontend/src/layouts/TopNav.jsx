@@ -144,13 +144,32 @@ export default function TopNav() {
             // cùng id. Khi đó mọi truy vấn DOM của popup Part trúng cái CŨ: thẻ
             // Part hiện ra nhưng bấm không ăn, phải đóng rồi mở lại mới chọn được.
             //
-            // `setTimeout` cho React kịp dọn. Nhưng chỉ dựa vào thời gian là
-            // đoán mò, nên PartSelector còn tự neo truy vấn vào modal CUỐI CÙNG
-            // (xem `root()` trong partSelector.js) — hai lớp cùng chặn.
-            setTimeout(() => {
+            // CHỜ modal cũ biến mất thật, không đoán bằng thời gian.
+            //
+            // Bản cũ `setTimeout(200)` đủ cho bộ từ nhỏ nhưng KHÔNG đủ khi đề có
+            // hàng trăm từ: React dựng lại danh sách lâu hơn, modal cũ còn trong
+            // cây khi popup Part mọc lên, và người dùng gặp đúng triệu chứng
+            // "bấm Part không ăn, phải đóng rồi mở lại". Tăng con số lên chỉ đổi
+            // ngưỡng chứ không sửa được — luôn có bộ từ đủ lớn để vượt qua.
+            //
+            // Hỏi DOM thay vì đoán: mở popup mới ngay khi không còn `.modal`
+            // nào. Vẫn giữ hạn 800ms để không treo mãi nếu có gì đó bất thường
+            // — thà mở sớm một nhịp (PartSelector còn tự neo vào modal CUỐI
+            // CÙNG, xem `root()`) còn hơn không mở.
+            let bo = 0;
+            const moPart = () => {
                 PartSelector.pendingMode = mode;
                 PartSelector.showPartSelectionModal();
-            }, 200);
+            };
+            const cho = () => {
+                if (!document.querySelector('#modal-container .modal') || bo >= 40) {
+                    moPart();
+                    return;
+                }
+                bo += 1;
+                requestAnimationFrame(cho);
+            };
+            requestAnimationFrame(cho);
         }
     }, []);
 
