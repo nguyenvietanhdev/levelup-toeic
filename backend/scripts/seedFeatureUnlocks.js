@@ -34,6 +34,10 @@ const UNLOCKS = [
     // nghĩ ra 250 từ, nên người ở mức này làm được và có cái để học. Vẫn muộn
     // hơn các chế độ thường vì nó gọi AI có phí.
     { key: 'feature:translation',  label: 'Dịch đoạn văn',   requiredLevel: 12, icon: '🔤', order: 85 },
+    // Cùng mốc với Dịch: đọc một email 150 từ rồi trả lời 3 câu không khó hơn
+    // dịch một đoạn 4 câu, và đây là phần chiếm tỉ trọng lớn nhất của đề thi
+    // thật — mở muộn là giữ người học xa đúng thứ họ cần luyện nhất.
+    { key: 'feature:reading',      label: 'Đọc hiểu Part 7', requiredLevel: 12, icon: '📖', order: 84 },
     { key: 'feature:toeic',        label: 'Thi TOEIC',       requiredLevel: 20, icon: '📝', order: 90 },
 
     // ── Chế độ luyện tập (theo 4 tầng độ khó) ──
