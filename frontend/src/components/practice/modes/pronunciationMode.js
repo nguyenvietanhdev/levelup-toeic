@@ -4,7 +4,7 @@ import { PartSelector } from '@components/vocab/part/partSelector.js';
 import { Config } from '@game/config.js';
 import { Utils } from '@lib/utils.js';
 import { Notification } from '@ui/Toaster.jsx';
-import { scoreAttempt, feedbackMessage } from './pronunciationScoring.js';
+import { scoreAttempt, feedbackMessage, scoreSentence, sentenceFeedback } from './pronunciationScoring.js';
 
 export const PronunciationMode = {
 
@@ -188,12 +188,29 @@ export const PronunciationMode = {
         const all = await PartSelector.getWordsForPractice(requestCount);
         const words = Array.isArray(all) ? all.slice(0, this.config?.questionsPerRound || 10) : [];
 
-        this.questions = words.map(word => ({
-            word,
-            wordPk:   wordPk(word),
-            wordVn:   word.vn,
-            wordType: word.type || '',
-        }));
+        // Chế độ ĐỌC CÂU: đọc cả câu ví dụ thay vì một từ.
+        //
+        // Chỉ bật cho tiếng Anh. Tiếng Trung không tách từ bằng khoảng trắng nên
+        // "chấm từng từ" không có nghĩa ở đó, mà giá trị của chế độ này nằm
+        // đúng ở chỗ chỉ ra từ nào chưa rõ.
+        //
+        // Bỏ qua câu quá dài: đọc liền 25 từ thì Web Speech hay tự ngắt giữa
+        // chừng, và người học sai một từ ở cuối phải đọc lại từ đầu.
+        const docCau = !this._isZh() && GameState.state?.settings?.pronounceSentence === true;
+
+        this.questions = words.map(word => {
+            const cau = docCau ? String(word.example || '').trim() : '';
+            const dungCau = cau && cau.split(/\s+/).length <= 18;
+            return {
+                word,
+                wordPk:   wordPk(word),
+                wordVn:   word.vn,
+                wordType: word.type || '',
+                // `cauDoc` rỗng nghĩa là câu này vẫn đọc theo TỪ — từ không có
+                // câu ví dụ, hoặc câu quá dài. Trộn lẫn được: mỗi câu tự quyết.
+                cauDoc:   dungCau ? cau : '',
+            };
+        });
     },
 
     showQuestion() {
@@ -204,6 +221,9 @@ export const PronunciationMode = {
 
         const question = this.questions[this.currentIndex];
         this.currentWord = question.wordPk;
+        // Đích ĐỌC có thể là câu, trong khi `currentWord` vẫn là từ — hai thứ
+        // khác nhau: `currentWord` còn dùng cho thông báo đáp án và phát mẫu.
+        this.cauDoc = question.cauDoc || '';
         this.currentAttempts = 0;
         this.wordCompleted = false;
 
@@ -215,7 +235,7 @@ export const PronunciationMode = {
         this.render(question);
 
         setTimeout(() => {
-            this.speakSample(question.wordPk);
+            this.speakSample(question.cauDoc || question.wordPk);
         }, 500);
     },
 
@@ -250,6 +270,14 @@ export const PronunciationMode = {
                                 <span class="word-type-badge">${question.wordType}</span>
                                 <span class="word-translation">${question.wordVn}</span>
                             </div>
+                            <!-- Câu cần đọc. Từ ở trên vẫn giữ nguyên: nó là từ
+                                 đang học, còn câu chỉ là ngữ cảnh để đọc — bỏ từ
+                                 đi thì chế độ này thôi không còn luyện từ vựng. -->
+                            ${question.cauDoc ? `
+                                <div class="pron-sentence" id="pron-sentence" title="Nhấn để nghe mẫu">
+                                    <i class="fas fa-quote-left"></i>
+                                    <span>${escapeText(question.cauDoc)}</span>
+                                </div>` : ''}
                         </div>
                     </div>
 
@@ -288,6 +316,10 @@ export const PronunciationMode = {
         const toolbarSkipBtn = document.getElementById('skip-btn');
 
         micBtn?.addEventListener('click', () => this.toggleListening());
+        // Nghe mẫu cả câu: đọc câu dài mà không nghe trước thì người học tự đoán
+        // ngữ điệu, và đó là thứ chế độ này định dạy.
+        document.getElementById('pron-sentence')
+            ?.addEventListener('click', () => this.speakSample(this.cauDoc));
         replayBtn?.addEventListener('click', () => this.replayWord());
         document.getElementById('word-text-speak')?.addEventListener('click', () => {
             this.speakSample(this.currentWord);
@@ -432,6 +464,24 @@ export const PronunciationMode = {
         // Chấm qua pronunciationScoring: so `===` tuyệt đối coi `你好` nghe thành
         // `你好吗` (máy tự chèn trợ từ) là SAI hoàn toàn, ngang với nói sai hẳn.
         const alts = (alternatives || []).map(a => a?.transcript?.trim()).filter(Boolean);
+
+        if (this.cauDoc) {
+            // Chấm theo TỪNG TỪ. `scoreAttempt` cho cả câu thì sai 1/10 từ vẫn
+            // ra ~0.9 và tính "gần đúng" — người học không biết sai từ nào.
+            //
+            // Ngưỡng đạt 0.8: câu dài nói trượt một từ vẫn nên được đi tiếp,
+            // nhưng phản hồi vẫn chỉ đích danh từ đó để lần sau sửa. Bắt phải
+            // đúng 100% thì một từ khó chặn cả lượt.
+            const cau = scoreSentence(transcript, this.cauDoc);
+            const dat = cau.ratio >= 0.8;
+            this._lastResult = cau;
+
+            this.showSentenceResult(transcript, dat, cau);
+            if (dat) this.handleCorrectAnswer();
+            else this.handleWrongAnswer(transcript);
+            return;
+        }
+
         const result = scoreAttempt(transcript, alts, this.currentWord, this._isZh());
         this._lastResult = result;
 
@@ -441,6 +491,45 @@ export const PronunciationMode = {
             this.handleCorrectAnswer();
         } else {
             this.handleWrongAnswer(transcript);
+        }
+    },
+
+    /**
+     * Hiện kết quả đọc CÂU: tô màu từng từ.
+     *
+     * Danh sách từ xanh/đỏ dạy nhiều hơn một câu chữ — người học nhìn một cái
+     * là thấy chỗ nào cần luyện, không phải đọc rồi tự dò lại trong câu.
+     */
+    showSentenceResult(transcript, dat, cau) {
+        const resultDiv = document.getElementById('recognition-result');
+        if (!resultDiv) return;
+
+        const tu = cau.words.map(w =>
+            `<span class="pron-word${w.ok ? '' : ' is-bad'}">${escapeText(w.word)}</span>`
+        ).join(' ');
+
+        resultDiv.style.display = 'block';
+        resultDiv.className = `recognition-result ${dat ? 'correct' : 'wrong'}`;
+        resultDiv.innerHTML = `
+            <div class="result-icon">
+                <i class="fas fa-${dat ? 'check-circle' : 'times-circle'}"></i>
+            </div>
+            <div class="result-text">
+                <strong>${escapeText(dat ? 'Đạt!' : 'Chưa đạt')}</strong>
+                <div class="pron-words">${tu}</div>
+                <div style="margin-top:4px;font-size:0.9em;opacity:0.85;">
+                    ${escapeText(sentenceFeedback(cau))}
+                </div>
+                <div style="margin-top:4px;font-size:0.85em;opacity:0.7;">
+                    Máy nghe: "${escapeText(transcript)}"
+                </div>
+            </div>
+        `;
+
+        const micStatus = document.getElementById('mic-status');
+        if (micStatus) {
+            micStatus.textContent = dat ? '✓ Đạt!' : '✗ Thử lại';
+            micStatus.className = `mic-status ${dat ? 'correct' : 'wrong'}`;
         }
     },
 

@@ -18,6 +18,8 @@
  *   - thay ký tự → phát ra âm khác, KHÔNG cho qua, dù chỉ lệch một ký tự
  */
 import { describe, test, expect } from 'vitest';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import {
     normalize, editDistance, similarity, isNear, scoreAttempt, feedbackMessage,
     scoreSentence, sentenceFeedback,
@@ -385,5 +387,88 @@ describe('phản hồi cho lượt đọc câu', () => {
     test('không nghe được gì thì bảo nói to hơn, không nói "sai"', () => {
         const r = scoreSentence('', 'a b c');
         expect(sentenceFeedback(r)).toMatch(/to và chậm/);
+    });
+});
+
+/**
+ * Nối chế độ đọc CÂU vào PronunciationMode.
+ *
+ * Đọc mã nguồn: phần này đụng mic, DOM và Web Speech — dựng đủ để chạy thật tốn
+ * nhiều hơn thứ nó kiểm. Điều cần giữ là các bất biến về luồng.
+ */
+describe('chế độ đọc CÂU — nối vào PronunciationMode', () => {
+    const mode = readFileSync(join(__dirname, 'pronunciationMode.js'), 'utf8');
+    const panel = readFileSync(
+        join(__dirname, '..', '..', 'settings', 'panels', 'PracticePanel.jsx'), 'utf8');
+    const schema = readFileSync(
+        join(__dirname, '..', '..', '..', '..', '..', 'backend', 'models', 'UserProfile.js'), 'utf8');
+    const css = readFileSync(
+        join(__dirname, '..', '..', '..', 'assets', 'styles', 'components.css'), 'utf8');
+
+    test('MẶC ĐỊNH TẮT — phải bật rõ ràng mới chạy', () => {
+        // Đọc cả câu khó hơn hẳn đọc một từ; bật sẵn thì người mới vào chế độ
+        // Phát âm gặp ngay câu 15 từ và bỏ luôn.
+        expect(mode).toMatch(/pronounceSentence === true/);
+        expect(schema).toMatch(/pronounceSentence: \{ type: Boolean, default: false \}/);
+    });
+
+    test('CHỈ cho tiếng Anh', () => {
+        // Tiếng Trung không tách từ bằng khoảng trắng nên "chấm từng từ" không
+        // có nghĩa ở đó.
+        const i = mode.indexOf('const docCau');
+        expect(mode.slice(i, mode.indexOf(';', i))).toMatch(/!this\._isZh\(\)/);
+    });
+
+    test('câu QUÁ DÀI tự rơi về đọc từ', () => {
+        // Web Speech hay tự ngắt giữa chừng với câu dài, và người học sai một từ
+        // ở cuối phải đọc lại từ đầu.
+        expect(mode).toContain('.length <= 18');
+    });
+
+    test('từ KHÔNG có câu ví dụ vẫn chạy được, không bỏ trắng', () => {
+        // `cauDoc` rỗng = câu đó đọc theo từ. Trộn lẫn trong cùng một lượt.
+        expect(mode).toMatch(/cauDoc:\s+dungCau \? cau : ''/);
+        // Và nhánh chấm câu chỉ chạy khi có `cauDoc`.
+        expect(mode).toMatch(/if \(this\.cauDoc\) \{/);
+    });
+
+    test('`currentWord` vẫn là TỪ, không bị ghi đè bằng câu', () => {
+        // Nó còn dùng cho thông báo đáp án và phát mẫu khi hết lượt thử.
+        const i = mode.indexOf('this.cauDoc = question.cauDoc');
+        expect(i).toBeGreaterThan(-1);
+        const truoc = mode.slice(Math.max(0, i - 300), i);
+        expect(truoc).toMatch(/this\.currentWord = question\.wordPk/);
+    });
+
+    test('ngưỡng đạt cho câu nới hơn cho từ', () => {
+        // Bắt đúng 100% thì một từ khó chặn cả lượt; nhưng phản hồi vẫn chỉ
+        // đích danh từ đó.
+        expect(mode).toMatch(/cau\.ratio >= 0\.8/);
+        expect(mode).toMatch(/showSentenceResult/);
+    });
+
+    test('mỗi từ hiện riêng, không phải một dòng chữ', () => {
+        expect(mode).toMatch(/class="pron-word\$\{w\.ok \? '' : ' is-bad'\}"/);
+        // Nội dung do máy nghe được — phải escape.
+        expect(mode).toMatch(/escapeText\(w\.word\)/);
+    });
+
+    test('có ô bật/tắt trong Cài đặt, ẩn khi học tiếng Trung', () => {
+        expect(panel).toMatch(/pronounceSentence/);
+        const i = panel.indexOf('pronounceSentence');
+        expect(panel.slice(Math.max(0, i - 400), i)).toMatch(/!== 'zh'/);
+    });
+
+    test('từ chưa rõ phân biệt bằng GẠCH CHÂN, không chỉ bằng màu', () => {
+        // Người không phân biệt được màu vẫn phải thấy từ nào sai.
+        const i = css.indexOf('.pron-word.is-bad {');
+        expect(i).toBeGreaterThan(-1);
+        expect(css.slice(i, css.indexOf('}', i))).toMatch(/text-decoration: underline/);
+    });
+
+    test('CSS mỗi selector khai đúng một lần', () => {
+        for (const sel of ['.pron-sentence {', '.pron-word {', '.pron-words {']) {
+            expect(css.split(sel).length - 1).toBe(1);
+        }
     });
 });

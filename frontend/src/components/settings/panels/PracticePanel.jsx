@@ -102,6 +102,24 @@ export default function PracticePanel({ s, handleQPS, updateSetting, handleDiffi
                 </div>
                 <Toggle checked={s.autoAdvance !== false} onChange={v => updateSetting('autoAdvance', v)} />
             </div>
+            {/* MẶC ĐỊNH TẮT, khác các cài đặt khác trong tab này. Đọc cả câu khó
+                hơn hẳn đọc một từ; bật sẵn thì người mới vào chế độ Phát âm gặp
+                ngay một câu 15 từ và bỏ luôn. Ai muốn khó hơn thì tự bật.
+
+                Chỉ áp cho tiếng Anh: tiếng Trung không tách từ bằng khoảng
+                trắng nên "chấm từng từ" không có nghĩa ở đó. */}
+            {(s.vocabLang || 'en') !== 'zh' && (
+                <div className="setting-item">
+                    <div className="setting-info">
+                        <h4>Phát âm: đọc cả câu</h4>
+                        <p>Đọc câu ví dụ thay vì một từ — chấm từng từ, chỉ ra từ nào chưa rõ</p>
+                    </div>
+                    <Toggle
+                        checked={s.pronounceSentence === true}
+                        onChange={v => updateSetting('pronounceSentence', v)}
+                    />
+                </div>
+            )}
             <div className="setting-item">
                 <label>Độ khó</label>
                 {/* Nhãn đổi theo ngôn ngữ: tiếng Trung phân cấp theo HSK, không

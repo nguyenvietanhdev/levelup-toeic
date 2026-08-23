@@ -84,6 +84,9 @@ const settingsSchema = new mongoose.Schema(
 
         // Tự chuyển câu sau khi trả lời (luyện tập).
         autoAdvance: { type: Boolean, default: true },
+        // Chế độ Phát âm: đọc cả câu ví dụ thay vì một từ. MẶC ĐỊNH TẮT — đọc
+        // câu khó hơn hẳn, bật sẵn thì người mới gặp ngay câu 15 từ và bỏ.
+        pronounceSentence: { type: Boolean, default: false },
 
         /**
          * Kiểu hỏi được phép trong chế độ "Ôn lại từ sai": 'choice' /
