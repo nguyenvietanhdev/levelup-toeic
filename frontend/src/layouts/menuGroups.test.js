@@ -169,10 +169,14 @@ describe('nhóm "Luyện với AI" ở sidebar', () => {
         }
     });
 
-    test('Dịch đoạn văn giữ CẢ thẻ ở lưới lẫn mục sidebar', () => {
-        // Hai lối vào cho hai tình huống: lưới là nơi người dùng THẤY chế độ
-        // khi đang chọn, sidebar là lối tắt cho người đã biết mình muốn gì.
-        expect(home).toMatch(/mode: 'translation'/);
-        expect(menu).toMatch(/screen: 'translation-screen'/);
+    test('chế độ có màn hình riêng CHỈ ở sidebar, không ở lưới', () => {
+        // Lưới trang chủ là nơi của 16 chế độ cùng một kiểu: bấm → chọn đề →
+        // chọn Part → vào bài. Chế độ gọi AI đi thẳng ra màn hình của nó, nằm
+        // lẫn trong lưới thì bấm vào lại rẽ một đường khác — lạc loài.
+        for (const sc of ['translation-screen', 'reading-screen',
+                          'conversation-screen', 'essay-screen']) {
+            expect(menu).toContain(sc);
+            expect(home).not.toContain(sc);
+        }
     });
 });

@@ -105,13 +105,15 @@ describe('hiển thị kết quả', () => {
 });
 
 describe('lối vào', () => {
-    test('có thẻ ở lưới VÀ mục ở sidebar', () => {
-        expect(home).toMatch(/screen: 'reading-screen'/);
+    test('lối vào là SIDEBAR, không phải thẻ trong lưới', () => {
+        // Lưới trang chủ chỉ chứa chế độ chạy qua `PracticeManager` — chọn đề,
+        // chọn Part rồi vào bài. Chế độ có màn hình riêng nằm lẫn giữa chúng
+        // thì bấm vào lại đi một đường khác hẳn, trông lạc loài.
         expect(menu).toMatch(/screen: 'reading-screen'/);
+        expect(home).not.toMatch(/reading-screen/);
     });
 
-    test('khoá theo Level ở cả hai lối vào', () => {
-        expect(home).toMatch(/feature: 'feature:reading'/);
+    test('khoá theo Level ở sidebar', () => {
         expect(menu).toMatch(/feature: 'feature:reading'/);
     });
 

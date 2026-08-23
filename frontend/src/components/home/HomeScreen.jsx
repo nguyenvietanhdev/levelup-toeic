@@ -59,9 +59,6 @@ const gameModes = [
         { mode: 'example-fill-blank', icon: 'fa-pen-to-square', label: 'Điền vào câu', desc: 'Điền từ đúng vào câu ví dụ', cost: 12, color: C_HARD },
         { mode: 'phonetic-quiz', icon: 'fa-spell-check', label: 'Đọc phiên âm', desc: 'Nhìn ký hiệu IPA, tìm từ tiếng Anh tương ứng', cost: 12, color: C_HARD },
         { mode: 'fill-blank', icon: 'fa-pen', label: 'Điền từ', desc: 'Điền từ tiếng Anh vào chỗ trống', cost: 15, color: C_HARD },
-        // Thẻ kiểu MÀN HÌNH RIÊNG như Dịch đoạn văn: bài đọc do AI sinh, không
-        // lấy từ bộ từ đã lọc nên không có đề/Part để chọn.
-        { mode: 'reading', icon: 'fa-book-open-reader', label: 'Đọc hiểu Part 7', desc: 'Đọc email, thông báo… rồi trả lời câu hỏi — đúng dạng đề thi', cost: 15, color: C_HARD, screen: 'reading-screen', feature: 'feature:reading' },
         // Chỉ hiện khi đang học tiếng Trung — chế độ này viết chữ Hán, vào bằng bộ
         // từ vựng tiếng Anh thì không có gì để viết. practiceManager cũng chặn lại
         // lần nữa, nhưng ẩn ở đây thì người dùng không phải bấm vào mới biết.
@@ -79,13 +76,6 @@ const gameModes = [
         // với thứ thưởng nhiều (Tốc độ vẫn giữ `weekendOnly`), không phải với
         // thứ người học cần luyện hằng ngày.
         { mode: 'context-learning', icon: 'fa-book-reader', label: 'Hiểu qua câu', desc: 'Đọc câu ví dụ, suy luận nghĩa tiếng Việt', cost: 10, color: C_MAX },
-        // Thẻ kiểu MÀN HÌNH RIÊNG (`screen`): bấm là mở thẳng màn hình của nó,
-        // không qua `PracticeManager` và không cần chọn đề/Part — đoạn văn do AI
-        // sinh chứ không lấy từ bộ từ đã lọc.
-        //
-        // Chỗ này trước là "Ôn lại từ sai". Chế độ đó vẫn còn nguyên, chỉ chuyển
-        // lối vào sang mục riêng ở sidebar để nhường ô cho chế độ mới.
-        { mode: 'translation', icon: 'fa-language', label: 'Dịch đoạn văn', desc: 'Đọc đoạn tiếng Việt, viết lại bằng tiếng Anh — AI chấm', cost: 15, color: C_MAX, screen: 'translation-screen', feature: 'feature:translation' },
         { mode: 'sentence-builder', icon: 'fa-puzzle-piece', label: 'Xếp câu', desc: 'Sắp xếp cụm từ thành câu hoàn chỉnh', cost: 15, color: C_MAX },
         { mode: 'speed-quiz', icon: 'fa-clock', label: 'Tốc độ', desc: 'Trả lời nhanh nhất trong giới hạn thời gian', cost: 20, color: C_MAX, weekendOnly: true },
     ]},
@@ -336,13 +326,6 @@ export default function HomeScreen({ active }) {
         }
         if (modeConfig?.weekendOnly && !isWeekend()) {
             Notification.show({ type: 'warning', title: '🔒 Chế độ cuối tuần', message: 'Chế độ này chỉ mở vào Thứ 7 & Chủ Nhật. Hãy quay lại vào cuối tuần!', duration: 3500 });
-            return;
-        }
-        // Thẻ kiểu MÀN HÌNH RIÊNG (`screen`): chế độ gọi AI có màn hình của
-        // nó, không chạy qua `PracticeManager` và không cần chọn đề/Part —
-        // đề bài do AI sinh chứ không lấy từ bộ từ đã lọc.
-        if (modeConfig?.screen) {
-            showScreen(modeConfig.screen);
             return;
         }
         if (!TopicSelector.getCurrentTopic()) {

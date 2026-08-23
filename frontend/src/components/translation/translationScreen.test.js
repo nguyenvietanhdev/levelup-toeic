@@ -155,18 +155,20 @@ describe('gửi lên server', () => {
 });
 
 describe('lối vào từ trang chủ', () => {
-    test('thẻ mở MÀN HÌNH riêng, không qua PracticeManager', () => {
-        // Đoạn văn do AI sinh chứ không lấy từ bộ từ đã lọc, nên không có đề/Part
-        // nào để chọn.
-        expect(home).toMatch(/screen: 'translation-screen'/);
-        const i = home.indexOf('modeConfig?.screen');
-        expect(i).toBeGreaterThan(-1);
-        // Và phải đứng TRƯỚC bước bắt chọn đề.
-        expect(i).toBeLessThan(home.indexOf('TOPIC_MODAL_REQUESTED', i - 400));
+    test('lối vào là SIDEBAR, không phải thẻ trong lưới', () => {
+        // Đoạn văn do AI sinh chứ không lấy từ bộ từ đã lọc — không có đề/Part
+        // nào để chọn, nên nó đi một đường khác hẳn 16 chế độ trong lưới.
+        const menu = readFileSync(
+            join(__dirname, '..', '..', 'layouts', 'SideMenu.jsx'), 'utf8');
+        expect(menu).toMatch(/screen: 'translation-screen'/);
+        expect(home).not.toMatch(/translation-screen/);
     });
 
-    test('khoá theo Level ở client lẫn server', () => {
-        expect(home).toMatch(/feature: 'feature:translation'/);
+    test('lưới KHÔNG còn thẻ kiểu màn hình riêng', () => {
+        // Mọi thẻ trong lưới phải cùng một kiểu: bấm là qua `PracticeManager`.
+        // Một thẻ đi đường khác là một ngoại lệ người dùng phải tự nhận ra.
+        expect(home).not.toMatch(/screen: '/);
+        expect(home).not.toMatch(/modeConfig\?\.screen/);
     });
 
     test('màn hình được đăng ký trong App', () => {
