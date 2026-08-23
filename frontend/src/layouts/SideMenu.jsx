@@ -39,6 +39,14 @@ const MENU_GROUPS = [
         items: [
             { label: 'Hội thoại', icon: 'fa-comments', screen: 'conversation-screen', feature: 'feature:conversation' },
             { label: 'Luyện viết luận', icon: 'fa-pen-nib', screen: 'essay-screen', feature: 'feature:essay' },
+            // Cùng nhóm với hai chế độ AI kia vì cùng bản chất: gọi AI có phí,
+            // tốn năng lượng, có màn hình riêng thay vì chạy qua PracticeManager.
+            //
+            // Vẫn giữ thẻ ở lưới trang chủ — hai lối vào cho hai tình huống:
+            // lưới là nơi người dùng THẤY chế độ khi đang chọn, sidebar là lối
+            // tắt cho người đã biết mình muốn gì. Nhật ký lỗi nằm trong màn này
+            // nên nó cũng là đường vào nhanh nhất để xem mình hay sai gì.
+            { label: 'Dịch đoạn văn', icon: 'fa-language', screen: 'translation-screen', feature: 'feature:translation' },
         ],
     },
     {

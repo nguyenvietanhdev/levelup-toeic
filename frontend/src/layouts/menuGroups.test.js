@@ -145,3 +145,34 @@ describe('số "từ cần ôn" trên ô chế độ', () => {
         expect(body).not.toContain('setWrongWordsCount');
     });
 });
+
+describe('nhóm "Luyện với AI" ở sidebar', () => {
+    test('có ĐỦ ba chế độ AI', () => {
+        // Ba chế độ này cùng bản chất: gọi AI có phí, tốn năng lượng, có màn
+        // hình riêng. Thiếu một cái ở đây thì nó chỉ vào được qua lưới trang
+        // chủ, trong khi hai cái kia có lối tắt.
+        const i = menu.indexOf("title: 'Luyện với AI'");
+        expect(i).toBeGreaterThan(-1);
+        const nhom = menu.slice(i, menu.indexOf('},\n    {', i));
+        for (const s of ['conversation-screen', 'essay-screen', 'translation-screen']) {
+            expect(nhom).toContain(s);
+        }
+    });
+
+    test('mỗi chế độ AI đều khoá theo Level ở sidebar', () => {
+        // Menu chỉ là giao diện — server vẫn chặn — nhưng hiện mục cho người
+        // chưa mở khoá rồi để họ bấm vào mới báo là mời rồi từ chối.
+        const i = menu.indexOf("title: 'Luyện với AI'");
+        const nhom = menu.slice(i, menu.indexOf('},\n    {', i));
+        for (const f of ['feature:conversation', 'feature:essay', 'feature:translation']) {
+            expect(nhom).toContain(f);
+        }
+    });
+
+    test('Dịch đoạn văn giữ CẢ thẻ ở lưới lẫn mục sidebar', () => {
+        // Hai lối vào cho hai tình huống: lưới là nơi người dùng THẤY chế độ
+        // khi đang chọn, sidebar là lối tắt cho người đã biết mình muốn gì.
+        expect(home).toMatch(/mode: 'translation'/);
+        expect(menu).toMatch(/screen: 'translation-screen'/);
+    });
+});
