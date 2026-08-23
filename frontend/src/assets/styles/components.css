@@ -9358,6 +9358,67 @@ mark {
 
 .essay-intro .btn { margin-top: 16px; }
 
+/* ── Dịch đoạn văn ──────────────────────────────────────────────────────
+   Dùng lại toàn bộ khung của Viết luận (`.essay-*`): hai chế độ có cùng
+   hình dạng — đề bài, ô nhập, điểm theo tiêu chí. Chỉ khai thêm những gì
+   riêng của chế độ này. */
+
+/* Câu nhắc "đoạn văn bám theo bộ từ đang học" — nhỏ và mờ hơn đoạn giới
+   thiệu chính vì nó là thông tin phụ, không phải lời mời bắt đầu. */
+.tr-intro-note {
+  margin-top: 10px;
+  font-size: 0.9em;
+  color: var(--text-secondary);
+}
+
+.tr-levels {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  margin-top: 16px;
+  /* Màn hẹp: ba nút xuống dòng thay vì bóp nhỏ tới mức bấm trượt. */
+  flex-wrap: wrap;
+}
+
+.tr-level {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 92px;
+  padding: 10px 14px;
+  border: 2px solid var(--border-color);
+  border-radius: 12px;
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.tr-level:hover { border-color: var(--accent-color); }
+
+/* Mức đang chọn: viền ĐẬM chứ không chỉ đổi nền — nền đổi nhẹ thì trên màn
+   sáng gần như không phân biệt được nút nào đang bật. */
+.tr-level.is-on {
+  border-color: var(--accent-color);
+  background: rgba(139, 92, 246, 0.12);
+}
+
+.tr-level em {
+  font-style: normal;
+  font-size: 0.8em;
+  color: var(--text-secondary);
+}
+
+/* Nhận xét tổng — đứng trước danh sách lỗi, đặt trong khung nhạt để tách
+   khỏi phần điểm số phía trên. */
+.tr-summary {
+  margin: 12px 0;
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: var(--bg-secondary);
+  line-height: 1.6;
+}
+
 .essay-body {
     max-width: 800px;
     margin: 0 auto;

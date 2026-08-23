@@ -101,25 +101,20 @@ describe('mục CHẠY CHẾ ĐỘ ở sidebar', () => {
     });
 });
 
-describe('chế độ "Ôn lại từ sai" trong lưới trang chủ', () => {
-    const line = (() => {
-        const i = home.indexOf("mode: 'review-mistakes'");
-        return home.slice(home.lastIndexOf('{', i), home.indexOf('},', i));
-    })();
-
-    test('KHÔNG khoá cuối tuần', () => {
-        // Lịch giãn cách SM-2 chỉ có tác dụng khi ôn đúng ngày đến hạn; khoá vào
-        // cuối tuần là phá chính cơ chế nó dựa vào.
-        expect(line).not.toContain('weekendOnly');
+describe('chế độ "Ôn lại từ sai"', () => {
+    test('lối vào là mục SIDEBAR, không còn thẻ trong lưới', () => {
+        // Ô trong lưới đã nhường cho chế độ Dịch đoạn văn. Chế độ này vẫn chạy
+        // nguyên vẹn — chỉ đổi lối vào.
+        expect(home).not.toMatch(/mode: 'review-mistakes'/);
+        expect(menu).toMatch(/mode: 'review-mistakes'/);
     });
 
     test('MIỄN PHÍ năng lượng', () => {
         // Thu phí cho việc sửa lỗi của chính mình là phạt đúng người chịu khó.
-        expect(line).toMatch(/cost: 0\b/);
-    });
-
-    test('mô tả nói rõ là ôn theo lịch giãn cách', () => {
-        expect(line).toMatch(/giãn cách/);
+        // Soi cấu hình GIÁ thật, không soi thẻ lưới: thẻ chuyển chỗ được, còn
+        // giá thì không được đổi chỉ vì nó chuyển chỗ.
+        const cfg = readFileSync(join(__dirname, '..', 'game', 'config.js'), 'utf8');
+        expect(cfg).toMatch(/'review-mistakes':\s*0\b/);
     });
 
     test('giá client và server phải KHỚP', () => {
