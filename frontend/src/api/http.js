@@ -72,6 +72,25 @@ export const Http = {
                 return { success: false, error: data.message || 'Token expired', code: 'UNAUTHORIZED' };
             }
 
+            // 503 = máy chủ CHƯA SẴN SÀNG (Render vừa ngủ dậy, DB chưa kết nối).
+            //
+            // Tách khỏi nhánh `!response.ok` bên dưới để KHÔNG ném lỗi: người
+            // dùng vẫn đăng nhập bình thường, chỉ là request này tới sớm quá.
+            // Ném thì màn hình hiện lỗi đỏ cho một tình huống tự khỏi sau vài
+            // giây, và họ tưởng app hỏng.
+            //
+            // Quan trọng hơn: KHÔNG phát `auth:expired` — đó chính là lỗi cũ,
+            // server trả 401 cho lỗi DB và client xoá token, bắt đăng nhập lại
+            // sau mỗi lần Render khởi động lại.
+            if (response.status === 503) {
+                return {
+                    success: false,
+                    error: data?.message || 'Máy chủ đang khởi động, thử lại sau vài giây.',
+                    code: 'SERVER_WARMING',
+                    retryable: true,
+                };
+            }
+
             if (response.status === 423) {
                 const lockType = data.lockType || 'unknown';
                 EventBus.emit('account:locked', { lockType, message: data.message });

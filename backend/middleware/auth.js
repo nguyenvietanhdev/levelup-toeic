@@ -1,5 +1,6 @@
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
+const logger = require('../utils/logger');
 
 /**
  * Protect routes - JWT Authentication
@@ -92,6 +93,33 @@ const protect = async (req, res, next) => {
         if (error.name === 'TokenExpiredError') {
             return res.status(401).json({ success: false, message: 'Token expired' });
         }
+
+        // MỌI lỗi khác KHÔNG được thành 401.
+        //
+        // Đây là lỗi thật đã gặp: Render khởi động lại instance (free tier ngủ
+        // sau 15 phút không có request), MongoDB chưa kết nối xong, nên
+        // `User.findById` ném `MongooseError`. Nhánh cuối cũ trả 401 cho lỗi đó
+        // — mà client thấy 401 là phát `auth:expired`, XOÁ TOKEN và đăng xuất.
+        // Người dùng bị bắt đăng nhập lại sau mỗi lần server ngủ dậy, dù token
+        // của họ còn hạn và hoàn toàn hợp lệ.
+        //
+        // 503 mới đúng nghĩa: "server chưa sẵn sàng, thử lại đi" — client giữ
+        // nguyên token và người dùng chỉ cần tải lại trang.
+        const dbChuaSan = error.name?.startsWith('Mongo')
+            || error.name === 'MongooseError'
+            || error.message?.includes('buffering timed out');
+        if (dbChuaSan) {
+            logger.warn('Auth: DB chưa sẵn sàng, trả 503 thay vì 401', error.message);
+            return res.status(503).json({
+                success: false,
+                message: 'Máy chủ đang khởi động, vui lòng thử lại sau vài giây.',
+                retryable: true,
+            });
+        }
+
+        // Lỗi lạ: vẫn 401 nhưng ghi log, vì không biết là lỗi gì thì không dám
+        // cho qua — chỉ là giờ nó không còn nuốt lỗi DB nữa.
+        logger.error('Auth: lỗi không rõ nguyên nhân', error);
         return res.status(401).json({ success: false, message: 'Not authorized' });
     }
 };
