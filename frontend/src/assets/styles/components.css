@@ -5190,6 +5190,21 @@ mark {
 }
 
 /* Hàng chữ + nút loa trên thẻ. Nút bám mép phải, chữ co giãn phần còn lại. */
+/* Phiên âm của câu ví dụ / từ đồng nghĩa trên Flashcard.
+   Nhỏ và mờ hơn nội dung chính: nó là chỉ dẫn CÁCH ĐỌC, không phải thứ để đọc.
+   Ẩn khi rỗng (`:empty`) — thẻ chưa lấy được phiên âm thì không chừa một dải
+   trống không hiểu vì sao lại có. */
+.card-extra-phonetic {
+  margin-top: 4px;
+  font-size: 0.82em;
+  font-style: italic;
+  opacity: 0.75;
+  line-height: 1.4;
+  word-break: break-word;
+}
+
+.card-extra-phonetic:empty { display: none; }
+
 .card-extra-row {
   display: flex;
   align-items: flex-start;

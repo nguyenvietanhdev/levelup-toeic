@@ -6,6 +6,8 @@ import { Notification } from '@ui/Toaster.jsx';
 import { Modal } from '@ui/Modal.jsx';
 import { PartSelector } from '@components/vocab/part/partSelector.js';
 import { FavoritesAPI } from '@api/favorites.js';
+import { EventBus, GameEvents } from '@game/eventBus.js';
+import { layPhienAmCau } from '@lib/sentencePinyin.js';
 
 export const Flashcard = {
 
@@ -111,10 +113,17 @@ export const Flashcard = {
                                         <strong>Ví dụ:</strong>
                                         <div class="card-extra-row">
                                             <p>${word.example}</p>
+                                            <!-- Nút DỊCH đứng TRƯỚC nút loa: đọc hiểu rồi mới
+                                                 nghe. Cùng thứ tự với chế độ Trắc nghiệm để
+                                                 tay quen một chỗ là quen mọi chỗ. -->
+                                            <button class="btn-speak-mini card-translate" data-tr="example" title="Dịch cả câu">
+                                                <i class="fas fa-language"></i>
+                                            </button>
                                             <button class="btn-speak-mini card-speak" data-speak="example" title="Nghe câu ví dụ">
                                                 <i class="fas fa-volume-up"></i>
                                             </button>
                                         </div>
+                                        <div class="card-extra-phonetic" id="fc-ph-example"></div>
                                     </div>
                                 ` : ''}
 
@@ -123,10 +132,14 @@ export const Flashcard = {
                                         <strong>Từ đồng nghĩa:</strong>
                                         <div class="card-extra-row">
                                             <p>${word.synonyms}</p>
+                                            <button class="btn-speak-mini card-translate" data-tr="synonyms" title="Dịch từ đồng nghĩa">
+                                                <i class="fas fa-language"></i>
+                                            </button>
                                             <button class="btn-speak-mini card-speak" data-speak="synonyms" title="Nghe từ đồng nghĩa">
                                                 <i class="fas fa-volume-up"></i>
                                             </button>
                                         </div>
+                                        <div class="card-extra-phonetic" id="fc-ph-synonyms"></div>
                                     </div>
                                 ` : ''}`;
 
@@ -253,6 +266,18 @@ export const Flashcard = {
             });
         });
 
+        // Nút DỊCH. `stopPropagation` vì cả thẻ là nút lật — không chặn thì mỗi
+        // lần bấm dịch là thẻ lật một cái, cùng lý do với nút loa ở trên.
+        document.querySelectorAll('.card-translate').forEach((btn) => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const text = btn.dataset.tr === 'example' ? word.example : word.synonyms;
+                if (text) EventBus.emit(GameEvents.TRANSLATE_REQUESTED, { text });
+            });
+        });
+
+        this.napPhienAm(word);
+
         const knownBtn = document.getElementById('known-btn');
         knownBtn?.addEventListener('click', () => {
             this.markAsKnown(word);
@@ -337,6 +362,27 @@ export const Flashcard = {
      * zh-CN (gameLogic.js:304). Truyền cứng 'en-US' là đọc câu tiếng Trung bằng
      * giọng tiếng Anh.
      */
+    /**
+     * Phiên âm cho câu ví dụ và từ đồng nghĩa — IPA (Anh) hoặc pinyin (Trung).
+     *
+     * KHÔNG `await`: đây là thông tin phụ trợ, chờ nó là chặn cả thẻ. Điền vào
+     * sau khi mạng trả về.
+     *
+     * Kiểm lại chỉ số thẻ trước khi ghi: người dùng bấm "Tiếp" nhanh hơn mạng
+     * thì phiên âm của thẻ trước hiện dưới thẻ sau.
+     */
+    napPhienAm(word) {
+        const idxLucGoi = this.currentIndex;
+        for (const [khoa, text] of [['example', word.example], ['synonyms', word.synonyms]]) {
+            if (!text) continue;
+            layPhienAmCau(text).then((ph) => {
+                if (!ph || this.currentIndex !== idxLucGoi) return;
+                const el = document.getElementById(`fc-ph-${khoa}`);
+                if (el) el.textContent = ph;
+            });
+        }
+    },
+
     pronounceText(text) {
         if (!text) return;
         GameLogic.speakWord(text);
