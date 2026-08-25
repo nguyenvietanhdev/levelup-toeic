@@ -5968,6 +5968,9 @@ mark {
 .result-sentence {
     display: flex;
     align-items: center;
+    /* Icon và chữ cùng hàng, nhưng hàng nút Dịch/Nghe phải rơi xuống dòng
+       riêng — nút nằm cạnh chữ thì nó trôi theo độ dài câu, mỗi câu một chỗ. */
+    flex-wrap: wrap;
     gap: var(--spacing-sm);
     padding: var(--spacing-lg);
     border-radius: var(--border-radius-lg);
@@ -5991,6 +5994,17 @@ mark {
     font-size: var(--font-size-md);
     text-align: center;
     line-height: 1.6;
+}
+
+/* Hàng nút Dịch / Nghe dưới câu đúng.
+   Xuống DÒNG RIÊNG chứ không nằm cạnh chữ: câu ở đây có thể dài mấy dòng, nhét
+   nút vào cuối dòng cuối thì nó trôi theo độ dài câu và mỗi lần một chỗ. */
+.result-actions {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  margin-top: 10px;
 }
 
 .result-sentence.correct {

@@ -82,3 +82,59 @@ describe('khoảng cách giữa hai khối', () => {
         expect(src).not.toMatch(/style="margin-top: 10px; animation-delay/);
     });
 });
+
+describe('nút Dịch và Nghe ở khối kết quả', () => {
+    test('có cả hai nút', () => {
+        expect(src).toMatch(/class="btn-speak-mini rs-translate"/);
+        expect(src).toMatch(/class="btn-speak-mini rs-speak"/);
+    });
+
+    test('nút DỊCH đứng trước nút LOA', () => {
+        // Đọc hiểu rồi mới nghe — cùng thứ tự với Flashcard và Trắc nghiệm, để
+        // tay quen một chỗ là quen mọi chỗ.
+        expect(src.indexOf('rs-translate')).toBeLessThan(src.indexOf('rs-speak'));
+    });
+
+    test('CHỈ gắn vào câu đúng, KHÔNG gắn vào câu sai', () => {
+        // Câu sai là thứ người học vừa tự ghép ra — nghe lại nó là học thuộc
+        // cái sai, còn dịch nó thì ra một câu tiếng Việt lộn xộn.
+        const i = src.indexOf('result-sentence wrong animate-pop');
+        const khoiSai = src.slice(i, src.indexOf('</div>', i));
+        expect(khoiSai).not.toMatch(/nutHoTro/);
+        // Và khối đúng thì có.
+        const j = src.indexOf('result-sentence correct" style=');
+        expect(src.slice(j, src.indexOf('</div>', j))).toMatch(/nutHoTro/);
+    });
+
+    test('luôn phát/dịch CÂU ĐÚNG, không phải câu người dùng gõ', () => {
+        expect(src).toMatch(/const cauDung = this\.correctSentence/);
+        expect(src).toMatch(/GameLogic\.speakWord\(cauDung\)/);
+        expect(src).toMatch(/TRANSLATE_REQUESTED, \{ text: cauDung \}/);
+    });
+
+    test('chặn nổi bọt trên cả hai nút', () => {
+        // Khu vực kết quả nằm trong vùng có handler khác; không chặn thì một cú
+        // bấm chạy hai việc.
+        for (const cls of ['rs-speak', 'rs-translate']) {
+            const i = src.indexOf(`.${cls}')`);
+            expect(src.slice(i, i + 200)).toMatch(/e\.stopPropagation\(\)/);
+        }
+    });
+
+    test('hàng nút xuống DÒNG RIÊNG, không chen cuối câu', () => {
+        // Câu ở đây dài mấy dòng; nhét nút vào cuối dòng cuối thì nó trôi theo
+        // độ dài câu và mỗi lần một chỗ.
+        const i = css.indexOf('.result-actions {');
+        expect(i).toBeGreaterThan(-1);
+        expect(css.slice(i, css.indexOf('}', i))).toMatch(/width: 100%/);
+        // Và khối cha phải cho phép xuống dòng.
+        const j = css.indexOf('.result-sentence {');
+        expect(css.slice(j, css.indexOf('}', j))).toMatch(/flex-wrap: wrap/);
+    });
+
+    test('KHÔNG khai thêm `.result-sentence` lần nữa', () => {
+        // File này đã có 2 rule cho selector đó (rule sau bổ sung rule trước).
+        // Thêm rule thứ ba là một chỗ nữa để quên khi sửa.
+        expect(css.split('\n.result-sentence {').length - 1).toBe(2);
+    });
+});

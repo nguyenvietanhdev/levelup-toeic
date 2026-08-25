@@ -400,12 +400,30 @@ export const SentenceBuilder = {
             // cụm từ ghép thành câu), nhưng kết quả là hai câu để so sánh —
             // cạnh nhau thì trên điện thoại bị bóp thành hai cột chữ dựng đứng.
             sentenceArea.classList.add('has-result');
+            // Hai nút CHỈ gắn vào câu ĐÚNG, không gắn vào câu sai.
+            //
+            // Câu sai là thứ người học vừa tự ghép ra — nghe lại nó là học
+            // thuộc cái sai, còn dịch nó thì ra một câu tiếng Việt lộn xộn
+            // không giúp gì. Câu đúng mới là thứ đáng nghe và đáng hiểu.
+            //
+            // Nút DỊCH trước nút LOA, cùng thứ tự với Flashcard và Trắc nghiệm.
+            const nutHoTro = `
+                <div class="result-actions">
+                    <button class="btn-speak-mini rs-translate" title="Dịch câu này">
+                        <i class="fas fa-language"></i>
+                    </button>
+                    <button class="btn-speak-mini rs-speak" title="Nghe câu này">
+                        <i class="fas fa-volume-up"></i>
+                    </button>
+                </div>`;
+
             if (isCorrect) {
                 sentenceArea.innerHTML = `
                     <div class="result-sentence correct animate-pop">
                         <i class="fas fa-check-circle"></i>
                         <strong>Chính xác!</strong><br>
                         "${userSentence}"
+                        ${nutHoTro}
                     </div>
                 `;
             } else {
@@ -419,9 +437,22 @@ export const SentenceBuilder = {
                         <i class="fas fa-check-circle"></i>
                         <strong>Đáp án đúng:</strong><br>
                         "${this.correctSentence}"
+                        ${nutHoTro}
                     </div>
                 `;
             }
+
+            // Câu để nghe/dịch LUÔN là câu đúng — kể cả khi trả lời đúng, vì
+            // lúc đó `userSentence` và `correctSentence` là một.
+            const cauDung = this.correctSentence;
+            sentenceArea.querySelector('.rs-speak')?.addEventListener('click', (e) => {
+                e.stopPropagation();
+                GameLogic.speakWord(cauDung);
+            });
+            sentenceArea.querySelector('.rs-translate')?.addEventListener('click', (e) => {
+                e.stopPropagation();
+                EventBus.emit(GameEvents.TRANSLATE_REQUESTED, { text: cauDung });
+            });
         }
 
         PracticeManager.recordAnswer(isCorrect, question.word);
