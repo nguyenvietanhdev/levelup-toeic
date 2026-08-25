@@ -6207,7 +6207,21 @@ mark {
     display: flex;
     align-items: center;
     justify-content: center;
+    /* Các cụm từ người dùng vừa xếp nằm NGANG (đó là một câu), nhưng phải
+       xuống dòng khi hết chỗ — không thì câu dài tràn ra ngoài khung. */
+    flex-wrap: wrap;
     transition: all 0.3s ease;
+}
+
+/* Khi hiện KẾT QUẢ thì xếp DỌC.
+   Hai khối "câu của bạn" và "đáp án đúng" nằm cạnh nhau bị bóp thành hai cột
+   hẹp trên điện thoại — chữ rơi xuống thành cột dựng đứng, mỗi dòng một hai
+   chữ, gần như không đọc được. Chúng là hai câu để SO SÁNH với nhau, mà so
+   sánh hai câu thì xếp trên–dưới mới đối chiếu được từng từ. */
+.sentence-area.has-result {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--spacing-sm);
 }
 
 .sentence-area:hover {

@@ -277,6 +277,11 @@ export const SentenceBuilder = {
         const sentenceArea = document.getElementById('sentence-area');
         if (!sentenceArea) return;
 
+        // Gỡ chế độ xếp dọc: hàm này chạy khi bấm "Làm lại" hoặc khi thêm/bớt
+        // cụm từ. Không gỡ thì khung kẹt ở dạng dọc và các cụm từ đang xếp bị
+        // đổ thành một cột — mỗi cụm một dòng, không còn nhìn ra câu.
+        sentenceArea.classList.remove('has-result');
+
         if (this.selectedWords.length === 0) {
             sentenceArea.innerHTML = `
                 <div class="sentence-placeholder">
@@ -391,6 +396,10 @@ export const SentenceBuilder = {
 
         const sentenceArea = document.getElementById('sentence-area');
         if (sentenceArea) {
+            // Chuyển khung sang xếp DỌC: ở trạng thái làm bài nó xếp ngang (các
+            // cụm từ ghép thành câu), nhưng kết quả là hai câu để so sánh —
+            // cạnh nhau thì trên điện thoại bị bóp thành hai cột chữ dựng đứng.
+            sentenceArea.classList.add('has-result');
             if (isCorrect) {
                 sentenceArea.innerHTML = `
                     <div class="result-sentence correct animate-pop">
@@ -406,7 +415,7 @@ export const SentenceBuilder = {
                         <strong>Chưa đúng</strong><br>
                         Câu của bạn: "${userSentence}"
                     </div>
-                    <div class="result-sentence correct" style="margin-top: 10px; animation-delay: 0.3s;">
+                    <div class="result-sentence correct" style="animation-delay: 0.3s;">
                         <i class="fas fa-check-circle"></i>
                         <strong>Đáp án đúng:</strong><br>
                         "${this.correctSentence}"
