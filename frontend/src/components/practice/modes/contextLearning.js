@@ -5,6 +5,7 @@ import { Utils } from '@lib/utils.js';
 import { Notification } from '@ui/Toaster.jsx';
 import { EventBus, GameEvents } from '@game/eventBus.js';
 import { PartSelector } from '@components/vocab/part/partSelector.js';
+import { afterAnswer } from '../practiceNav.js';
 
 export const ContextLearning = {
 
@@ -219,9 +220,10 @@ export const ContextLearning = {
 
         this.showWordInfo(question.word);
 
-        setTimeout(() => {
-            this.nextQuestion();
-        }, 2000);
+        // `afterAnswer` thay cho `setTimeout` cứng: nó tôn trọng cài đặt "Tự
+        // động chuyển câu" — tắt thì hiện thanh ← Trước / Tiếp → để tự bấm.
+        // Trước đây chế độ này tự chuyển bất kể cài đặt.
+        afterAnswer(this, 'context-learning');
     },
 
     showWordInfo(word) {

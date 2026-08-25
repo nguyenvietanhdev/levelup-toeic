@@ -34,6 +34,7 @@ import { EventBus, GameEvents } from '@game/eventBus.js';
 import { Notification } from '@ui/Toaster.jsx';
 import { PracticeManager } from '../practiceManager.js';
 import { startQuestionTimer, stopQuestionTimer } from '../questionTimer.js';
+import { afterAnswer } from '../practiceNav.js';
 
 /** Tách một từ ghép thành các chữ Hán đơn — luyện viết `你好` nghĩa là viết `你` rồi `好`. */
 export function splitHanzi(text) {
@@ -306,7 +307,8 @@ export const HanziWriting = {
             duration: 1600,
         });
 
-        setTimeout(() => this.nextQuestion(), 1200);
+        // Xem `contextLearning`: tôn trọng cài đặt "Tự động chuyển câu".
+        afterAnswer(this, 'hanzi-writing');
     },
 
     timeUp() {

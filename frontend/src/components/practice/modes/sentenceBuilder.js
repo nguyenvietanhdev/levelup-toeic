@@ -5,6 +5,7 @@ import { Config } from '@game/config.js';
 import { Utils } from '@lib/utils.js';
 import { Notification } from '@ui/Toaster.jsx';
 import { EventBus, GameEvents } from '@game/eventBus.js';
+import { afterAnswer } from '../practiceNav.js';
 
 export const SentenceBuilder = {
 
@@ -440,9 +441,8 @@ export const SentenceBuilder = {
             GameLogic.speakWord(this.correctSentence, 'en-US');
         }, 500);
 
-        setTimeout(() => {
-            this.nextQuestion();
-        }, 3500);
+        // Xem `contextLearning`: tôn trọng cài đặt "Tự động chuyển câu".
+        afterAnswer(this, 'sentence-builder');
     },
 
     nextQuestion() {
