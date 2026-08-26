@@ -417,12 +417,22 @@ export const SentenceBuilder = {
                     </button>
                 </div>`;
 
+            // Bọc nhãn + câu trong MỘT khối `.rs-body`, thay cho `<br>` trần.
+            //
+            // `<br>` giữa các mục flex không xuống dòng như trong văn bản
+            // thường: icon, nhãn và câu thành ba mục riêng, căn lệch nhau và
+            // nhãn trôi khỏi câu — đúng thứ trông như hỏng trong ảnh.
+            const than = (nhan, cau) => `
+                <div class="rs-body">
+                    <strong>${nhan}</strong>
+                    <div class="rs-text">"${cau}"</div>
+                </div>`;
+
             if (isCorrect) {
                 sentenceArea.innerHTML = `
                     <div class="result-sentence correct animate-pop">
                         <i class="fas fa-check-circle"></i>
-                        <strong>Chính xác!</strong><br>
-                        "${userSentence}"
+                        ${than('Chính xác!', userSentence)}
                         ${nutHoTro}
                     </div>
                 `;
@@ -430,13 +440,11 @@ export const SentenceBuilder = {
                 sentenceArea.innerHTML = `
                     <div class="result-sentence wrong animate-pop">
                         <i class="fas fa-times-circle"></i>
-                        <strong>Chưa đúng</strong><br>
-                        Câu của bạn: "${userSentence}"
+                        ${than('Chưa đúng — câu của bạn:', userSentence)}
                     </div>
                     <div class="result-sentence correct" style="animation-delay: 0.3s;">
                         <i class="fas fa-check-circle"></i>
-                        <strong>Đáp án đúng:</strong><br>
-                        "${this.correctSentence}"
+                        ${than('Đáp án đúng:', this.correctSentence)}
                         ${nutHoTro}
                     </div>
                 `;

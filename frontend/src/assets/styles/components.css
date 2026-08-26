@@ -5967,12 +5967,17 @@ mark {
 
 .result-sentence {
     display: flex;
-    align-items: center;
+    /* Căn ĐẦU chứ không giữa: khối này có `<br>` giữa nhãn và câu, nên nhãn là
+       một dòng còn câu là dòng khác. Căn giữa thì icon trôi xuống lưng chừng và
+       nhãn lệch khỏi câu — đúng thứ trông như hỏng trong ảnh người dùng gửi. */
+    align-items: flex-start;
     /* Icon và chữ cùng hàng, nhưng hàng nút Dịch/Nghe phải rơi xuống dòng
        riêng — nút nằm cạnh chữ thì nó trôi theo độ dài câu, mỗi câu một chỗ. */
     flex-wrap: wrap;
     gap: var(--spacing-sm);
-    padding: var(--spacing-lg);
+    /* Gọn hơn `--spacing-lg`: khối này thường có hai dòng chữ và một hàng nút,
+       đệm lớn đẩy tổng chiều cao vượt khung nhìn trên điện thoại. */
+    padding: var(--spacing-md);
     border-radius: var(--border-radius-lg);
     font-size: var(--font-size-lg);
     font-weight: 500;
@@ -5992,8 +5997,29 @@ mark {
 
 .result-sentence {
     font-size: var(--font-size-md);
-    text-align: center;
+    /* Căn TRÁI, không căn giữa: câu dài xuống dòng mà căn giữa thì mỗi dòng
+       một độ lệch, mắt phải tìm lại đầu dòng sau mỗi lần xuống. */
+    text-align: left;
     line-height: 1.6;
+}
+
+/* Nhãn + câu trong MỘT khối, xếp dọc. `flex: 1` để nó chiếm hết chiều ngang
+   còn lại sau icon — thiếu thì câu bó theo độ dài nội dung và hàng nút bị kéo
+   lên nằm cạnh nó. */
+.rs-body {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+/* Câu nhỏ hơn nhãn một chút và cho phép ngắt giữa từ dài — câu tiếng Trung
+   không có khoảng trắng nên không tự xuống dòng được. */
+.rs-text {
+    font-size: 0.95em;
+    line-height: 1.55;
+    word-break: break-word;
 }
 
 /* Hàng nút Dịch / Nghe dưới câu đúng.
@@ -6007,10 +6033,14 @@ mark {
   margin-top: 10px;
 }
 
+/* Khối "Đáp án đúng" dùng màu XANH, không dùng `--primary-color`.
+   `--primary-color` của theme này là đỏ hồng (#E11D48), nên khối đúng và khối
+   sai ra CÙNG MỘT MÀU ĐỎ — người học nhìn hai khung đỏ cạnh nhau không biết cái
+   nào là đáp án. `--success-color` có sẵn ở cả hai theme và đúng nghĩa. */
 .result-sentence.correct {
-    background: rgba(var(--primary-rgb, 225,29,72), 0.08);
-    color: var(--primary-color);
-    border: 2px solid var(--primary-color);
+    background: rgba(16, 185, 129, 0.12);
+    color: var(--success-color);
+    border: 2px solid var(--success-color);
 }
 
 .result-sentence.wrong {

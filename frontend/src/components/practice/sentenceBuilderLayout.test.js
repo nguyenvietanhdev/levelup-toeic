@@ -138,3 +138,54 @@ describe('nút Dịch và Nghe ở khối kết quả', () => {
         expect(css.split('\n.result-sentence {').length - 1).toBe(2);
     });
 });
+
+describe('màu và bố cục khối kết quả', () => {
+    test('khối ĐÚNG dùng màu xanh, KHÔNG dùng `--primary-color`', () => {
+        // `--primary-color` của theme này là đỏ hồng (#E11D48), nên khối đúng và
+        // khối sai ra CÙNG MỘT MÀU ĐỎ — người học nhìn hai khung đỏ cạnh nhau
+        // không biết cái nào là đáp án.
+        const i = css.indexOf('.result-sentence.correct {');
+        const rule = css.slice(i, css.indexOf('}', i));
+        expect(rule).toMatch(/--success-color/);
+        expect(rule).not.toMatch(/--primary-color/);
+    });
+
+    test('khối SAI vẫn đỏ — hai khối phải khác màu nhau', () => {
+        const i = css.indexOf('.result-sentence.wrong {');
+        expect(css.slice(i, css.indexOf('}', i))).toMatch(/--error-color/);
+    });
+
+    test('KHÔNG dùng `<br>` giữa các mục flex', () => {
+        // `<br>` giữa các mục flex không xuống dòng như trong văn bản thường:
+        // icon, nhãn và câu thành ba mục riêng, căn lệch nhau và nhãn trôi khỏi
+        // câu — đúng thứ trông như hỏng trong ảnh người dùng gửi.
+        const i = src.indexOf('const than = (nhan, cau)');
+        expect(i).toBeGreaterThan(-1);
+        const khoi = src.slice(i, src.indexOf('};', i));
+        expect(khoi).not.toMatch(/<br>/);
+        expect(khoi).toMatch(/class="rs-body"/);
+    });
+
+    test('nhãn và câu bọc trong MỘT khối xếp dọc', () => {
+        const i = css.indexOf('.rs-body {');
+        expect(i).toBeGreaterThan(-1);
+        const rule = css.slice(i, css.indexOf('}', i));
+        expect(rule).toMatch(/flex-direction: column/);
+        // `flex: 1` để chiếm hết chiều ngang còn lại sau icon — thiếu thì câu bó
+        // theo độ dài nội dung và hàng nút bị kéo lên nằm cạnh nó.
+        expect(rule).toMatch(/flex: 1/);
+        expect(rule).toMatch(/min-width: 0/);
+    });
+
+    test('icon căn ĐẦU, không căn giữa', () => {
+        // Khối có hai dòng (nhãn + câu); căn giữa thì icon trôi xuống lưng chừng.
+        const i = css.indexOf('.result-sentence {');
+        expect(css.slice(i, css.indexOf('}', i))).toMatch(/align-items: flex-start/);
+    });
+
+    test('câu tiếng Trung ngắt dòng được', () => {
+        // Không có khoảng trắng giữa các chữ nên không tự xuống dòng.
+        const i = css.indexOf('.rs-text {');
+        expect(css.slice(i, css.indexOf('}', i))).toMatch(/word-break: break-word/);
+    });
+});
