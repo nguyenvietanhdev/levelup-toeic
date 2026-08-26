@@ -210,3 +210,46 @@ describe('màu và bố cục khối kết quả', () => {
         expect(css.slice(i, css.indexOf('}', i))).toMatch(/word-break: break-word/);
     });
 });
+
+describe('ô Từ khoá: phiên âm + nút nghe', () => {
+    test('hiện phiên âm khi từ có', () => {
+        expect(src).toMatch(/question\.word\.phonetic \? `<span class="sb-phonetic">/);
+    });
+
+    test('KHÔNG chừa chỗ trống khi từ chưa có phiên âm', () => {
+        // 14 khung câu trong bộ giao tiếp cố ý không có phiên âm; hiện một dải
+        // trống ở đó là bố cục nhảy giữa các câu.
+        const i = src.indexOf('sb-phonetic');
+        expect(src.slice(Math.max(0, i - 60), i)).toMatch(/phonetic \? `/);
+    });
+
+    test('có nút nghe từ khoá', () => {
+        expect(src).toMatch(/class="btn-speak-mini sb-key-speak"/);
+    });
+
+    test('nút đọc câu hỏi từ STATE, không dùng biến tự do', () => {
+        // `attachListeners()` gọi không đối số — dùng thẳng `question` là
+        // `ReferenceError` ngay khi bấm, mà build KHÔNG bắt (lỗi lúc chạy).
+        // Soi chỗ GẮN sự kiện, không phải chỗ khai nút trong markup.
+        const i = src.indexOf(".sb-key-speak')");
+        expect(i).toBeGreaterThan(-1);
+        expect(src.slice(i, i + 400)).toMatch(/this\.questions\[this\.currentIndex\]/);
+    });
+
+    test('không truyền cứng ngôn ngữ cho `speakWord`', () => {
+        // Bộ từ tiếng Trung đọc bằng giọng Anh thì không nghe ra chữ nào.
+        const i = src.indexOf(".sb-key-speak')");
+        expect(src.slice(i, i + 400)).not.toMatch(/speakWord\([^)]*['"]en-US/);
+    });
+
+    test('chặn nổi bọt', () => {
+        const i = src.indexOf(".sb-key-speak')");
+        expect(src.slice(i, i + 400)).toMatch(/e\.stopPropagation\(\)/);
+    });
+
+    test('hàng từ khoá xuống dòng được khi chật', () => {
+        // Từ + phiên âm + nghĩa + nút trên màn hẹp không đủ một hàng.
+        const i = css.indexOf('.sb-hint-value {');
+        expect(css.slice(i, css.indexOf('}', i))).toMatch(/flex-wrap: wrap/);
+    });
+});

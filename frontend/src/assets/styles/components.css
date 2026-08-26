@@ -6154,6 +6154,19 @@ mark {
 .sb-hint-value {
     min-width: 0;
     word-break: break-word;
+    /* Từ + phiên âm + nghĩa + nút loa nằm cùng hàng, xuống dòng khi chật. */
+    display: inline-flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+/* Phiên âm của từ khoá — nhỏ và mờ hơn chính từ đó: nó là chỉ dẫn CÁCH ĐỌC,
+   không phải thứ để đọc. */
+.sb-phonetic {
+    font-size: 0.85em;
+    font-style: italic;
+    opacity: 0.7;
 }
 
 /* Giữ đúng hai màu cũ để người dùng vẫn nhận ra đâu là nghĩa, đâu là từ khoá. */

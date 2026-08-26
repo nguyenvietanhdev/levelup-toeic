@@ -176,7 +176,11 @@ export const SentenceBuilder = {
                             <span class="sb-hint-label"><i class="fas fa-lightbulb"></i> Từ khoá</span>
                             <span class="sb-hint-value">
                                 <span class="highlight-word">${question.word.en}</span>
+                                ${question.word.phonetic ? `<span class="sb-phonetic">${question.word.phonetic}</span>` : ''}
                                 <span class="word-translation">= ${question.wordVn}</span>
+                                <button class="btn-speak-mini sb-key-speak" title="Nghe phát âm từ khoá">
+                                    <i class="fas fa-volume-up"></i>
+                                </button>
                             </span>
                         </div>
                     </div>
@@ -219,6 +223,17 @@ export const SentenceBuilder = {
     },
 
     attachListeners() {
+        // Nút nghe TỪ KHOÁ. Đọc câu hỏi từ state chứ không nhận tham số:
+        // `attachListeners()` được gọi không đối số, nên dùng thẳng `question`
+        // là một biến tự do — `ReferenceError` ngay khi bấm, mà build không bắt.
+        //
+        // Không truyền ngôn ngữ: `speakWord` tự nhận chữ Hán và đổi sang zh-CN.
+        document.querySelector('.sb-key-speak')?.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const tu = this.questions[this.currentIndex]?.word?.en;
+            if (tu) GameLogic.speakWord(tu);
+        });
+
         const phraseBtns = document.querySelectorAll('.phrase-btn');
         const clearBtn = document.getElementById('clear-btn');
         const checkBtn = document.getElementById('check-btn');
