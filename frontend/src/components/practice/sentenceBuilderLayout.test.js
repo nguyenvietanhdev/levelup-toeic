@@ -121,13 +121,34 @@ describe('nút Dịch và Nghe ở khối kết quả', () => {
         }
     });
 
-    test('hàng nút xuống DÒNG RIÊNG, không chen cuối câu', () => {
-        // Câu ở đây dài mấy dòng; nhét nút vào cuối dòng cuối thì nó trôi theo
-        // độ dài câu và mỗi lần một chỗ.
+    test('hàng nút nằm CÙNG HÀNG, sát mép phải', () => {
+        // Bản trước dùng `width: 100%` nên hai icon nhỏ chiếm nguyên một dòng —
+        // phí chỗ và đẩy khối cao thêm. Nay `margin-left: auto` đẩy chúng sang
+        // phải, cùng hàng với nội dung.
         const i = css.indexOf('.result-actions {');
         expect(i).toBeGreaterThan(-1);
-        expect(css.slice(i, css.indexOf('}', i))).toMatch(/width: 100%/);
-        // Và khối cha phải cho phép xuống dòng.
+        const rule = css.slice(i, css.indexOf('}', i));
+        expect(rule).toMatch(/margin-left: auto/);
+        expect(rule).not.toMatch(/width: 100%/);
+    });
+
+    test('nút KHÔNG bị co lại khi câu dài', () => {
+        // Cùng hàng với chữ thì flex co mọi thứ; không khoá thì hai icon bị bóp
+        // méo trên màn hẹp.
+        const i = css.indexOf('.result-actions {');
+        expect(css.slice(i, css.indexOf('}', i))).toMatch(/flex-shrink: 0/);
+    });
+
+    test('nút căn GIỮA theo chiều dọc, không dính mép trên', () => {
+        // Khối cha căn `flex-start` (để icon không trôi xuống lưng chừng), nên
+        // hàng nút phải tự căn lại — không thì nó dính lên đỉnh khối.
+        const i = css.indexOf('.result-actions {');
+        expect(css.slice(i, css.indexOf('}', i))).toMatch(/align-self: center/);
+    });
+
+    test('khối cha vẫn cho xuống dòng khi chật', () => {
+        // Câu rất dài trên màn hẹp thì hàng nút vẫn phải rơi xuống được, thay vì
+        // bóp câu lại.
         const j = css.indexOf('.result-sentence {');
         expect(css.slice(j, css.indexOf('}', j))).toMatch(/flex-wrap: wrap/);
     });

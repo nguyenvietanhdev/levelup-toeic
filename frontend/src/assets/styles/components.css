@@ -6025,12 +6025,17 @@ mark {
 /* Hàng nút Dịch / Nghe dưới câu đúng.
    Xuống DÒNG RIÊNG chứ không nằm cạnh chữ: câu ở đây có thể dài mấy dòng, nhét
    nút vào cuối dòng cuối thì nó trôi theo độ dài câu và mỗi lần một chỗ. */
+/* Hàng nút Dịch / Nghe nằm CÙNG HÀNG với nội dung, sát mép phải.
+   Bản trước dùng `width: 100%` nên nó chiếm nguyên một dòng cho hai icon nhỏ —
+   phí một dòng và đẩy khối cao thêm.
+   `margin-left: auto` đẩy sang phải; `align-self: center` để hai nút nằm giữa
+   theo chiều dọc thay vì dính mép trên (khối cha căn `flex-start`). */
 .result-actions {
   display: flex;
-  justify-content: center;
   gap: 8px;
-  width: 100%;
-  margin-top: 10px;
+  margin-left: auto;
+  align-self: center;
+  flex-shrink: 0;
 }
 
 /* Khối "Đáp án đúng" dùng màu XANH, không dùng `--primary-color`.
