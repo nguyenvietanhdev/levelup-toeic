@@ -456,6 +456,12 @@ export const SentenceBuilder = {
                     <div class="result-sentence wrong animate-pop">
                         <i class="fas fa-times-circle"></i>
                         ${than('Chưa đúng — câu của bạn:', userSentence)}
+                        <div class="result-actions">
+                            <button class="btn-speak-mini rs-speak-wrong"
+                                    title="Nghe câu bạn vừa xếp">
+                                <i class="fas fa-volume-up"></i>
+                            </button>
+                        </div>
                     </div>
                     <div class="result-sentence correct" style="animation-delay: 0.3s;">
                         <i class="fas fa-check-circle"></i>
@@ -475,6 +481,15 @@ export const SentenceBuilder = {
             sentenceArea.querySelector('.rs-translate')?.addEventListener('click', (e) => {
                 e.stopPropagation();
                 EventBus.emit(GameEvents.TRANSLATE_REQUESTED, { text: cauDung });
+            });
+
+            // Nút loa cho câu SAI đọc chính câu họ vừa xếp, không phải câu
+            // đúng: nghe câu mình sai ngay cạnh câu đúng mới thấy được sai ở
+            // đâu. Không có nút dịch — dịch một câu hỏng ra tiếng Việt hỏng
+            // thì học nhầm.
+            sentenceArea.querySelector('.rs-speak-wrong')?.addEventListener('click', (e) => {
+                e.stopPropagation();
+                GameLogic.speakWord(userSentence);
             });
         }
 
@@ -534,12 +549,32 @@ export const SentenceBuilder = {
         const question = this.questions[this.currentIndex];
         if (!question || this.hintUsed) return;
 
+        // Gợi ý XẾP HỘ hai cụm đầu, không chỉ đọc ra.
+        //
+        // Đọc ra rồi bắt tự tìm lại trong đống nút là bắt làm việc hai lần mà
+        // không học thêm được gì: chỗ khó của chế độ này là THỨ TỰ, không phải
+        // dò chữ. Xếp hộ phần mở đầu để họ tiếp tục từ đó.
+        const cumDau = (question.correctPhrases || []).slice(0, 2);
+
+        // Dọn trước: đang xếp dở mà chèn vào cuối thì thứ tự sai ngay từ đầu,
+        // và họ sẽ tưởng gợi ý cho sai.
+        if (this.selectedWords.length) this.clearSentence();
+
+        for (const cum of cumDau) {
+            // Đi qua đúng đường bấm nút thật: `selectPhrase` mới khoá nút gốc
+            // lại. Đẩy thẳng vào `selectedWords` thì cụm đó còn bấm được lần
+            // nữa và câu thừa từ.
+            const btn = [...document.querySelectorAll('.phrase-btn')]
+                .find((b) => b.dataset.phrase === cum && !b.disabled);
+            if (btn) this.selectPhrase(cum, btn);
+        }
+
         const hintArea = document.getElementById('hint-area');
         const hintText = document.getElementById('hint-text');
 
         if (hintArea && hintText) {
             hintArea.style.display = 'flex';
-            hintText.textContent = `Câu bắt đầu bằng: "${question.words[0]} ${question.words[1]}"`;
+            hintText.textContent = `Đã xếp sẵn phần mở đầu: "${cumDau.join(' ')}"`;
         }
 
         this.hintUsed = true;
@@ -547,7 +582,7 @@ export const SentenceBuilder = {
         Notification.show({
             type: 'info',
             title: '💡 Gợi ý',
-            message: 'Đã hiển thị 2 từ đầu tiên'
+            message: 'Đã xếp sẵn 2 cụm đầu câu'
         });
     },
 

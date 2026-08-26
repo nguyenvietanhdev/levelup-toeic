@@ -253,3 +253,77 @@ describe('ô Từ khoá: phiên âm + nút nghe', () => {
         expect(css.slice(i, css.indexOf('}', i))).toMatch(/flex-wrap: wrap/);
     });
 });
+
+describe('nghe lại câu mình xếp sai', () => {
+    test('khối câu SAI có nút loa riêng', () => {
+        expect(src).toMatch(/class="btn-speak-mini rs-speak-wrong"/);
+    });
+
+    test('nút đó đọc câu NGƯỜI DÙNG xếp, không đọc câu đúng', () => {
+        // Đọc câu đúng ở cả hai khối thì nút trên khối sai thành vô nghĩa —
+        // không nghe ra mình sai chỗ nào.
+        const i = src.indexOf(".rs-speak-wrong')");
+        expect(i).toBeGreaterThan(-1);
+        const than = src.slice(i, i + 300);
+        expect(than).toMatch(/speakWord\(userSentence\)/);
+        expect(than).not.toMatch(/speakWord\(cauDung\)/);
+    });
+
+    test('khối SAI KHÔNG có nút dịch', () => {
+        // Dịch một câu hỏng ra tiếng Việt hỏng thì học nhầm.
+        const i = src.indexOf('result-sentence wrong');
+        const khoi = src.slice(i, src.indexOf('</div>', src.indexOf('result-actions', i)));
+        expect(khoi).not.toMatch(/rs-translate/);
+    });
+
+    test('chặn nổi bọt', () => {
+        const i = src.indexOf(".rs-speak-wrong')");
+        expect(src.slice(i, i + 300)).toMatch(/e\.stopPropagation\(\)/);
+    });
+});
+
+describe('gợi ý xếp hộ phần mở đầu', () => {
+    test('đọc `correctPhrases`, KHÔNG đọc `words`', () => {
+        // `question.words` không tồn tại — trường thật là `correctPhrases`.
+        // Đọc nhầm thì gợi ý in ra "undefined undefined".
+        const i = src.indexOf('    showHint() {');
+        const than = src.slice(i, src.indexOf('\n    },', i));
+        expect(than).toMatch(/question\.correctPhrases/);
+        expect(than).not.toMatch(/question\.words/);
+    });
+
+    test('XẾP cụm vào câu, không chỉ đọc ra', () => {
+        const i = src.indexOf('    showHint() {');
+        const than = src.slice(i, src.indexOf('\n    },', i));
+        expect(than).toMatch(/this\.selectPhrase\(/);
+    });
+
+    test('đi qua `selectPhrase`, không đẩy thẳng vào `selectedWords`', () => {
+        // Đẩy thẳng thì nút gốc không bị khoá → bấm được lần nữa → câu thừa từ.
+        const i = src.indexOf('    showHint() {');
+        const than = src.slice(i, src.indexOf('\n    },', i));
+        expect(than).not.toMatch(/selectedWords\.push/);
+    });
+
+    test('dọn câu đang xếp dở trước khi chèn', () => {
+        // Chèn vào cuối câu dở thì phần mở đầu nằm ở giữa — gợi ý thành ra sai.
+        const i = src.indexOf('    showHint() {');
+        const than = src.slice(i, src.indexOf('\n    },', i));
+        expect(than).toMatch(/clearSentence\(\)/);
+        expect(than.indexOf('clearSentence()')).toBeLessThan(than.indexOf('selectPhrase('));
+    });
+
+    test('soi THÂN HÀM, không soi chỗ gọi', () => {
+        // `indexOf('showHint()')` tìm ra CHỖ GỌI trước, và cửa sổ cắt từ đó
+        // không chứa thân hàm — mọi test dưới sẽ đỏ dù code đúng.
+        expect(src.indexOf('    showHint() {'))
+            .toBeGreaterThan(src.indexOf('this.showHint();'));
+    });
+
+    test('chỉ chèn cụm CHƯA bị khoá', () => {
+        // Câu có cụm lặp: không lọc `!b.disabled` thì cả hai lần đều tìm ra
+        // đúng một nút, cụm thứ hai không được chèn.
+        const i = src.indexOf('    showHint() {');
+        expect(src.slice(i, src.indexOf('\n    },', i))).toMatch(/!b\.disabled/);
+    });
+});
