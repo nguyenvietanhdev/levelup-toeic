@@ -315,16 +315,28 @@ describe('chuyển giữa hai popup — chờ modal cũ biến mất', () => {
         return nav.slice(i, nav.indexOf('}, []);', i));
     }
 
-    test('KHÔNG dùng `setTimeout` cố định nữa', () => {
+    test('KHÔNG chờ modal cũ bằng `setTimeout`', () => {
         // 200ms đủ cho bộ từ nhỏ nhưng không đủ khi đề có hàng trăm từ: modal
         // cũ còn trong cây khi popup Part mọc lên, và người dùng gặp đúng triệu
         // chứng "bấm Part không ăn, phải đóng rồi mở lại". Tăng con số chỉ đổi
         // ngưỡng — luôn có bộ từ đủ lớn để vượt qua.
-        // Gỡ COMMENT trước khi soi: lời giải thích ngay trên chỗ sửa có nhắc
-        // `setTimeout(200)` để ghi lại vì sao bỏ nó — chữ trong comment không
-        // phải hành vi.
+        //
+        // Điều kiện chờ phải là DOM, không phải đồng hồ. `setTimeout` VẪN được
+        // dùng sau đó cho nhịp nghỉ của người dùng — hai việc khác hẳn nhau.
         const code = thanChuyen().replace(/\/\/.*/g, '');
-        expect(code).not.toMatch(/setTimeout\(/);
+        const i = code.indexOf('const cho =');
+        const j = code.indexOf('requestAnimationFrame(cho);', i);
+        expect(i).toBeGreaterThan(-1);
+        expect(code.slice(i, j)).toMatch(/document\.querySelector/);
+        expect(code.slice(i, j)).not.toMatch(/setTimeout\(cho/);
+    });
+
+    test('NGHỈ một nhịp sau khi DOM sạch — cho mắt kịp theo', () => {
+        // Hai popup thay nhau tức thì thì người dùng không kịp nhận ra vừa chọn
+        // xong đề nào, chỉ thấy màn hình nháy một cái rồi hiện danh sách khác.
+        const code = thanChuyen().replace(/\/\/.*/g, '');
+        expect(code).toMatch(/const NGHI_MS = \d+/);
+        expect(code).toMatch(/setTimeout\(moPart, NGHI_MS\)/);
     });
 
     test('HỎI DOM: chờ tới khi không còn modal nào', () => {
@@ -343,7 +355,8 @@ describe('chuyển giữa hai popup — chờ modal cũ biến mất', () => {
         // Gọi trong vòng lặp mà quên `return` thì mỗi khung hình mở thêm một
         // popup chồng lên nhau.
         const t = thanChuyen();
-        const i = t.indexOf('moPart();');
-        expect(t.slice(i, i + 60)).toMatch(/return;/);
+        const i = t.indexOf('setTimeout(moPart, NGHI_MS);');
+        expect(i).toBeGreaterThan(-1);
+        expect(t.slice(i, i + 80)).toMatch(/return;/);
     });
 });

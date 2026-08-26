@@ -156,6 +156,16 @@ export default function TopNav() {
             // nào. Vẫn giữ hạn 800ms để không treo mãi nếu có gì đó bất thường
             // — thà mở sớm một nhịp (PartSelector còn tự neo vào modal CUỐI
             // CÙNG, xem `root()`) còn hơn không mở.
+            // Sau khi DOM đã sạch, CHỜ THÊM một nhịp ngắn rồi mới mở popup Part.
+            //
+            // Hai việc khác nhau, đừng gộp:
+            //   · Chờ modal cũ biến mất là điều kiện KỸ THUẬT — thiếu nó thì
+            //     truy vấn DOM trúng modal cũ và bấm Part không ăn.
+            //   · `NGHI_MS` là nhịp cho NGƯỜI DÙNG — hai popup thay nhau tức thì
+            //     thì mắt không kịp nhận ra vừa chọn xong đề nào, chỉ thấy màn
+            //     hình nháy một cái rồi hiện danh sách khác.
+            const NGHI_MS = 260;
+
             let bo = 0;
             const moPart = () => {
                 PartSelector.pendingMode = mode;
@@ -163,7 +173,7 @@ export default function TopNav() {
             };
             const cho = () => {
                 if (!document.querySelector('#modal-container .modal') || bo >= 40) {
-                    moPart();
+                    setTimeout(moPart, NGHI_MS);
                     return;
                 }
                 bo += 1;
