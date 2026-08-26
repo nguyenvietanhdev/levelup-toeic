@@ -8,6 +8,7 @@ import { PartSelector } from '@components/vocab/part/partSelector.js';
 import { afterAnswer } from '@components/practice/practiceNav.js';
 import { startQuestionTimer } from '@components/practice/questionTimer.js';
 import { timeoutQuestion } from '@components/practice/questionTimeout.js';
+import { htmlViDu, ganViDu } from '../exampleBlock.js';
 
 export const Listening = {
 
@@ -98,6 +99,8 @@ export const Listening = {
         if (!container) return;
 
         const isReversed = question.reversed;
+        // Khối câu ví dụ chung: câu + nút Dịch + nút Nghe + phiên âm.
+        const viDu = htmlViDu(question.word.example);
         container.innerHTML = `
             <div class="listening-container">
                 <div class="question-word question-word--split">
@@ -118,11 +121,7 @@ export const Listening = {
                             <div class="synonyms-label">Đồng nghĩa</div>
                             <div class="synonyms-list">${question.word.synonyms}</div>
                         ` : `<div class="synonyms-prompt">${isReversed ? 'Chọn từ tiếng Anh tương ứng:' : 'Chọn nghĩa đúng của từ bạn vừa nghe:'}</div>`}
-                        ${question.word.example ? `
-                            <div class="word-info-example" style="margin-top:10px">
-                                <i class="fas fa-quote-left" style="opacity:.5;margin-right:6px"></i>${question.word.example}
-                            </div>
-                        ` : ''}
+                        ${viDu.html}
                     </div>
                     ${question.word.image ? `
                         <div class="question-image-col">
@@ -143,6 +142,8 @@ export const Listening = {
         `;
 
         this.attachListeners(question);
+        // Gắn SAU khi ghi HTML: nút chưa có trong cây thì không bám vào được.
+        ganViDu(viDu.id, question.word.example, { modeObj: this });
     },
 
     attachListeners(question) {

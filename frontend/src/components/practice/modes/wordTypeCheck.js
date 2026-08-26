@@ -8,6 +8,7 @@ import { PartSelector } from '@components/vocab/part/partSelector.js';
 import { afterAnswer } from '@components/practice/practiceNav.js';
 import { startQuestionTimer } from '@components/practice/questionTimer.js';
 import { timeoutQuestion } from '@components/practice/questionTimeout.js';
+import { chenViDu } from '../exampleBlock.js';
 
 export const WordTypeCheck = {
 
@@ -283,17 +284,12 @@ export const WordTypeCheck = {
         const container = document.querySelector('.question-container');
         if (!container) return;
 
+        // Dùng khối ví dụ CHUNG: câu + nút Dịch + nút Nghe + phiên âm.
+        //
+        // Trước đây mỗi chế độ tự dựng, và chỉ có nút loa — người học đọc được
+        // mặt chữ nhưng không hiểu nghĩa và không biết đọc thế nào, mà câu ví
+        // dụ vốn là chỗ dạy CÁCH DÙNG từ, tức chỗ cần hiểu nhất.
         const infoPanel = document.createElement('div');
-        infoPanel.className = 'word-info-panel';
-        infoPanel.innerHTML = `
-            <div class="word-info-example">
-                <i class="fas fa-quote-left" style="color: var(--primary-color); margin-right: 6px;"></i>
-                <span>${word.example}</span>
-                <button class="btn-speak-mini" id="speak-example-btn" title="Nghe phát âm câu ví dụ">
-                    <i class="fas fa-volume-up"></i>
-                </button>
-            </div>
-        `;
         const prompt = container.querySelector('.question-prompt');
         if (prompt) {
             container.insertBefore(infoPanel, prompt);
@@ -301,12 +297,7 @@ export const WordTypeCheck = {
             container.appendChild(infoPanel);
         }
 
-        const speakBtn = document.getElementById('speak-example-btn');
-        if (speakBtn) {
-            speakBtn.addEventListener('click', () => {
-                GameLogic.speakWord(word.example, 'en-US');
-            });
-        }
+        chenViDu(infoPanel, word.example, { modeObj: this });
     },
 
     nextQuestion() {

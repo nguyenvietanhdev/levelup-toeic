@@ -8,6 +8,7 @@ import { PartSelector } from '@components/vocab/part/partSelector.js';
 import { afterAnswer } from '@components/practice/practiceNav.js';
 import { startQuestionTimer } from '@components/practice/questionTimer.js';
 import { timeoutQuestion } from '@components/practice/questionTimeout.js';
+import { htmlViDu, ganViDu } from '../exampleBlock.js';
 
 export const PhoneticQuiz = {
 
@@ -228,6 +229,9 @@ export const PhoneticQuiz = {
         if (!resultEl) return;
 
         const word = question.word;
+        // Khối câu ví dụ chung: câu + nút Dịch + nút Nghe + phiên âm.
+        const viDu = htmlViDu(word.example);
+
         resultEl.style.display = 'block';
         resultEl.innerHTML = `
             <div class="pq-result-header ${isCorrect ? 'correct' : 'wrong'}">
@@ -240,13 +244,11 @@ export const PhoneticQuiz = {
                 ${word.type ? `<span class="word-type-badge">${word.type}</span>` : ''}
             </div>
             <div class="pq-meaning">${word.vn}</div>
-            ${word.example ? `
-                <div class="dictation-example">
-                    <i class="fas fa-quote-left" style="color: var(--primary-color); margin-right: 6px;"></i>
-                    <em>${word.example}</em>
-                </div>
-            ` : ''}
+            ${viDu.html}
         `;
+
+        // Gắn SAU khi đã ghi HTML: nút chưa có trong cây thì không bám vào được.
+        ganViDu(viDu.id, word.example, { modeObj: this });
     },
 
     nextQuestion() {

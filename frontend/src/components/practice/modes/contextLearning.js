@@ -6,6 +6,7 @@ import { Notification } from '@ui/Toaster.jsx';
 import { EventBus, GameEvents } from '@game/eventBus.js';
 import { PartSelector } from '@components/vocab/part/partSelector.js';
 import { afterAnswer } from '../practiceNav.js';
+import { chenViDu } from '../exampleBlock.js';
 
 export const ContextLearning = {
 
@@ -240,6 +241,13 @@ export const ContextLearning = {
             </div>
         `;
         container.appendChild(infoPanel);
+
+        // Khối câu ví dụ CHUNG — chỉ thêm SAU khi đã trả lời, vì ở chế độ này
+        // câu ví dụ chính là ĐỀ BÀI (ẩn lúc đầu, nghe rồi đoán). Hiện nút dịch
+        // ngay từ đầu là đưa luôn đáp án.
+        const viDu = document.createElement('div');
+        container.appendChild(viDu);
+        chenViDu(viDu, word.example, { modeObj: this });
     },
 
     nextQuestion() {
