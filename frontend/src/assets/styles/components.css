@@ -9508,6 +9508,42 @@ mark {
   color: var(--text-secondary);
 }
 
+/* ── Hướng dẫn bằng thị giác trên lưới thẻ ───────────────────────────────
+   Bộ gợi ý đã biết nên luyện gì, nhưng thông tin đó nằm trên đầu trang và
+   không nối với lưới 16 thẻ bên dưới — đọc xong vẫn phải tự dò thẻ nào. */
+
+/* Thẻ NÊN CHƠI TIẾP: viền nhấp nháy. Chỉ MỘT thẻ mỗi lần — nhiều thẻ cùng
+   nháy thì không còn là hướng dẫn, chỉ là nhiễu và người dùng học cách phớt
+   lờ nó. */
+.game-mode-card.is-next {
+  /* Viền DÀY 2px và màu đặc, không phải màu nhạt: thẻ này phải nhìn ra ngay
+     giữa 15 thẻ khác — viền mờ thì nó lẫn vào và mất tác dụng hướng dẫn. */
+  border: 2px solid var(--accent-color);
+  animation: nextPulse 1.8s ease-in-out infinite;
+}
+
+@keyframes nextPulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(139, 92, 246, 0.75); }
+  50%      { box-shadow: 0 0 0 9px rgba(139, 92, 246, 0); }
+}
+
+/* Cả VÒNG đang tập trung: sáng nhẹ, không nháy. Đủ để thấy nhóm nào liên
+   quan mà không tranh chỗ với thẻ đang nháy — nếu nó cũng đậm thì cả năm thẻ
+   nổi lên như nhau và không còn chỉ được vào đâu. */
+.game-mode-card.is-focus:not(.is-next) {
+  border-color: rgba(139, 92, 246, 0.45);
+}
+
+/* Người bật "giảm chuyển động" trong hệ điều hành: giữ nguyên viền để vẫn
+   nhận ra thẻ, chỉ bỏ nhấp nháy. Chuyển động lặp vô hạn là thứ gây khó chịu
+   thật với một số người — nhưng bỏ luôn cả dấu hiệu thì họ mất hướng dẫn. */
+@media (prefers-reduced-motion: reduce) {
+  .game-mode-card.is-next {
+    animation: none;
+    box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.45);
+  }
+}
+
 /* ── Gợi ý luyện tập ("hôm nay nên luyện gì") ─────────────────────────── */
 
 .coach-panel {

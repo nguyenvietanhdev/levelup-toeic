@@ -178,11 +178,15 @@ describe('dựng danh sách gợi ý', () => {
         expect(yeu.tieuDe).not.toContain('speed-quiz');
     });
 
-    test('người dùng mới (chưa có gì) vẫn ra gợi ý', () => {
-        // Màn trống cho người mới là lúc họ cần hướng dẫn nhất.
+    test('người dùng mới nhận gợi ý LỘ TRÌNH, bắt đầu từ vòng 1', () => {
+        // Màn trống cho người mới là lúc họ cần hướng dẫn nhất — và hướng dẫn
+        // phải là "bước tiếp theo của bạn", không phải một chế độ ngẫu nhiên
+        // chưa thử.
         const r = dungGoiY({ modeStats: {}, dueTotal: 0 });
         expect(r.length).toBeGreaterThan(0);
-        expect(r[0].key).toBe('untried');
+        expect(r[0].key).toBe('path');
+        expect(r[0].tieuDe).toMatch(/Vòng 1/);
+        expect(r[0].mode).toBe('flashcard');
     });
 
     test('sắp theo ưu tiên TĂNG DẦN, ổn định giữa các lần gọi', () => {
@@ -225,5 +229,104 @@ describe('KHÔNG gọi AI', () => {
         const { join } = require('node:path');
         const src = readFileSync(join(__dirname, '..', 'services', 'coachAdvisor.js'), 'utf8');
         expect(src).not.toMatch(/chatCompletion|config\/openai/);
+    });
+});
+
+describe('lộ trình 4 vòng', () => {
+    const { LO_TRINH, vongCua, vongNenTapTrung } = require('../services/coachAdvisor');
+
+    test('bốn vòng, đi từ nhận ra tới dùng được', () => {
+        expect(LO_TRINH.map((v) => v.vong)).toEqual([1, 2, 3, 4]);
+        // Flashcard mở đầu (gặp mặt), Xếp câu ở cuối (dùng trong ngữ cảnh).
+        expect(LO_TRINH[0].modes).toContain('flashcard');
+        expect(LO_TRINH[3].modes).toContain('sentence-builder');
+    });
+
+    test('chế độ NHẬN RA đứng trước chế độ NHỚ LẠI', () => {
+        // `retrieval practice`: cố nhớ lại củng cố trí nhớ mạnh hơn đọc lại, nên
+        // phải đi từ có-đáp-án-trong-tầm-mắt sang không-gợi-ý-gì.
+        expect(vongCua('multiple-choice')).toBeLessThan(vongCua('fill-blank'));
+        expect(vongCua('matching')).toBeLessThan(vongCua('dictation'));
+    });
+
+    test('Tốc độ KHÔNG nằm trong lộ trình', () => {
+        // Nó không kiểm tra trí nhớ mà kiểm tra TỐC ĐỘ TRUY XUẤT — thứ chỉ đến
+        // sau khi đã thuộc. Gợi ý nó cho người ở vòng 2 là tạo áp lực vô ích.
+        expect(vongCua('speed-quiz')).toBe(0);
+    });
+
+    test('mỗi chế độ thuộc ĐÚNG một vòng', () => {
+        // Nằm hai vòng thì `vongCua` trả cái đầu tiên gặp và thứ tự thành ngẫu
+        // nhiên theo cách khai báo.
+        const tatCa = LO_TRINH.flatMap((v) => v.modes);
+        expect(new Set(tatCa).size).toBe(tatCa.length);
+    });
+
+    test('người mới đứng ở vòng 1', () => {
+        expect(vongNenTapTrung(phanTichCheDo({}))?.vong).toBe(1);
+    });
+
+    test('vững vòng 1 thì chuyển sang vòng 2', () => {
+        const v1 = { flashcard: { played: 10, correct: 90, total: 100 } };
+        expect(vongNenTapTrung(phanTichCheDo(v1))?.vong).toBe(2);
+    });
+
+    test('KHÔNG nhảy cóc khi vòng dưới còn yếu', () => {
+        // Đẩy người chưa thuộc từ lên vòng 4 không phải là thử thách, chỉ là
+        // thất bại liên tục.
+        //
+        // Phải chơi ĐỦ mọi chế độ vòng 2 rồi mới cô lập được điều kiện `acc`:
+        // thiếu một chế độ thì nó dừng ở vòng 2 vì "chưa thử", và ca test không
+        // chứng minh được gì về ngưỡng yếu.
+        const day = (modes, acc) => Object.fromEntries(
+            modes.map((m) => [m, { played: 10, correct: acc, total: 100 }])
+        );
+        const lech = {
+            ...day(LO_TRINH[0].modes, 90),
+            ...day(LO_TRINH[1].modes, 90),
+            // Một chế độ vòng 2 YẾU — đủ để giữ người học lại.
+            'multiple-choice': { played: 10, correct: 40, total: 100 },
+            ...day(LO_TRINH[3].modes, 95),
+        };
+        const r = vongNenTapTrung(phanTichCheDo(lech));
+        expect(r?.vong).toBe(2);
+        // Và đúng chế độ yếu đó được gợi ý, vì mọi chế độ khác đã vững.
+        expect(r?.goiY).toBe('multiple-choice');
+    });
+
+    test('ưu tiên chế độ CHƯA THỬ trước chế độ đã chơi mà yếu', () => {
+        // Mở rộng trước, đào sâu sau: người chưa thử Nghe và chọn bao giờ thì
+        // nên thử, chứ không phải cày lại Trắc nghiệm.
+        const st = {
+            flashcard: { played: 10, correct: 90, total: 100 },
+            'multiple-choice': { played: 10, correct: 40, total: 100 },  // đã chơi, yếu
+        };
+        const r = vongNenTapTrung(phanTichCheDo(st));
+        expect(r.vong).toBe(2);
+        expect(r.goiY).not.toBe('multiple-choice');
+    });
+
+    test('vững cả bốn vòng thì KHÔNG ép nữa', () => {
+        const het = {};
+        for (const v of LO_TRINH) {
+            for (const m of v.modes) het[m] = { played: 10, correct: 90, total: 100 };
+        }
+        expect(vongNenTapTrung(phanTichCheDo(het))).toBeNull();
+    });
+
+    test('gợi ý lộ trình đứng TRÊN gợi ý chế độ yếu', () => {
+        // "Bước tiếp theo của bạn là gì" là câu hỏi lớn hơn "chỗ nào tôi kém".
+        const r = dungGoiY({ modeStats: THAT, dueTotal: 0 });
+        const iPath = r.findIndex((x) => x.key === 'path');
+        const iWeak = r.findIndex((x) => x.key === 'weak-mode');
+        expect(iPath).toBeGreaterThan(-1);
+        expect(iPath).toBeLessThan(iWeak);
+    });
+
+    test('gợi ý lộ trình nói rõ VÒNG và tên chế độ tiếng Việt', () => {
+        const r = dungGoiY({ modeStats: {}, dueTotal: 0 });
+        const p = r.find((x) => x.key === 'path');
+        expect(p.tieuDe).toMatch(/Vòng \d/);
+        expect(p.tieuDe).toContain('Flashcard');
     });
 });

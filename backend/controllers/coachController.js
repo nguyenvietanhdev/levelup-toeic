@@ -3,7 +3,7 @@ const UserProfile = require('../models/UserProfile');
 const WrongWord = require('../models/WrongWord');
 const Translation = require('../models/Translation');
 const Essay = require('../models/Essay');
-const { dungGoiY } = require('../services/coachAdvisor');
+const { dungGoiY, phanTichCheDo, vongNenTapTrung, vongCua } = require('../services/coachAdvisor');
 const { thongKe } = require('../services/errorTaxonomy');
 
 /**
@@ -61,7 +61,29 @@ exports.suggestions = async (req, res, next) => {
             loiHayMac: loi,
         });
 
-        res.json({ success: true, data: { items } });
+        // Trả thêm LỘ TRÌNH để lưới thẻ ở trang chủ tô sáng đúng chỗ.
+        //
+        // Không để client tự suy: nó phải lặp lại toàn bộ luật (vòng nào, ngưỡng
+        // bao nhiêu, chế độ nào thuộc vòng nào) và hai bản sao thì lệch nhau —
+        // gợi ý nói một đằng, thẻ sáng một nẻo.
+        const ds = phanTichCheDo(stats?.modeStats);
+        const vong = vongNenTapTrung(ds);
+        const goiYMode = items.find((x) => x.mode)?.mode || null;
+
+        res.json({
+            success: true,
+            data: {
+                items,
+                // `next` = chế độ NÊN chơi ngay bây giờ (thẻ sẽ nhấp nháy).
+                next: goiYMode,
+                // `vong` = vòng đang tập trung; `modes` để tô nhạt cả nhóm.
+                vong: vong ? { so: vong.vong, ten: vong.ten, modes: vong.modes } : null,
+                // Vòng của TỪNG chế độ — thẻ hiện nhãn "Vòng 3" chẳng hạn.
+                vongTheoMode: Object.fromEntries(
+                    ds.map((x) => [x.mode, vongCua(x.mode)]).filter(([, v]) => v > 0)
+                ),
+            },
+        });
     } catch (error) {
         next(error);
     }

@@ -31,4 +31,25 @@ export const CoachAPI = {
             return [];
         }
     },
+
+    /**
+     * Toàn bộ dữ liệu gợi ý, gồm cả LỘ TRÌNH — dùng cho lưới thẻ ở trang chủ.
+     *
+     * Tách khỏi `suggestions()` (chỉ trả mảng) để không phá nơi gọi cũ. Cùng
+     * một endpoint nên không tốn thêm request.
+     */
+    async plan() {
+        try {
+            const d = unwrap(await Http.get('/coach/suggestions'));
+            return {
+                next: d?.next || null,
+                vong: d?.vong || null,
+                vongTheoMode: d?.vongTheoMode || {},
+            };
+        } catch {
+            // Hỏng thì trả rỗng — lưới thẻ vẫn hiện bình thường, chỉ không có
+            // hướng dẫn. Đây là thứ TĂNG THÊM, không được chặn việc luyện tập.
+            return { next: null, vong: null, vongTheoMode: {} };
+        }
+    },
 };

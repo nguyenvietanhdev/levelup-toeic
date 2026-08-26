@@ -16,6 +16,7 @@ import { loadUnlocks, lockInfo } from '@game/featureUnlocks.js';
 import { Storage } from '@lib/storage.js';
 import { getVocabLang } from '@api/vocabulary.js';
 import CoachPanel from './CoachPanel.jsx';
+import { CoachAPI } from '@api/coach.js';
 
 // 4 tầng ĐỘ KHÓ (màu = độ khó): 🟢 Dễ < 🔵 Trung bình < 🟣 Khó < 🔴 Thử thách.
 // Trong mỗi tầng, sắp theo cost (dễ → khó).
@@ -188,6 +189,21 @@ export default function HomeScreen({ active }) {
     // Số lượt đã chơi từng chế độ. Đọc từ GameState (đồng bộ với server qua
     // `progress.modeStats`) chứ không gọi API riêng — dữ liệu đã có sẵn.
     const [playCounts, setPlayCounts] = useState({});
+
+    /**
+     * Lộ trình học: chế độ nên chơi tiếp và vòng đang tập trung.
+     *
+     * Dùng để HƯỚNG DẪN bằng thị giác — thẻ nên chơi tiếp nhấp nháy viền, cả
+     * vòng hiện tại sáng nhẹ. Bộ gợi ý ở đầu trang đã biết nên luyện gì, nhưng
+     * thông tin đó không nối với lưới 16 thẻ bên dưới: người dùng đọc xong vẫn
+     * phải tự dò xem thẻ đó nằm đâu.
+     */
+    const [plan, setPlan] = useState({ next: null, vong: null, vongTheoMode: {} });
+    useEffect(() => {
+        let huy = false;
+        CoachAPI.plan().then((p) => { if (!huy) setPlan(p); });
+        return () => { huy = true; };
+    }, []);
     const [userRank, setUserRank] = useState(null);
     // Độ chính xác TOEIC trung bình (mọi lần thi) + số lần thi — cho vòng tiến độ thứ 4.
     const [toeicStats, setToeicStats] = useState({ averageAccuracy: 0, totalAttempts: 0 });
@@ -631,7 +647,19 @@ export default function HomeScreen({ active }) {
                                 return (
                                 <div
                                     key={m.mode}
-                                    className={`game-mode-card${locked ? ' game-mode-card--locked' : ''}`}
+                                    className={[
+                                        'game-mode-card',
+                                        locked ? 'game-mode-card--locked' : '',
+                                        // Thẻ NÊN CHƠI TIẾP: viền nhấp nháy. Chỉ
+                                        // MỘT thẻ mỗi lần — nhiều thẻ cùng nháy
+                                        // thì không còn là hướng dẫn, chỉ là
+                                        // nhiễu và người dùng học cách phớt lờ.
+                                        (!locked && plan.next === m.mode) ? 'is-next' : '',
+                                        // Cả vòng đang tập trung: sáng NHẸ, đủ để
+                                        // thấy nhóm nào liên quan mà không tranh
+                                        // chỗ với thẻ đang nháy.
+                                        (!locked && plan.vong?.modes?.includes(m.mode)) ? 'is-focus' : '',
+                                    ].filter(Boolean).join(' ')}
                                     data-mode={m.mode}
                                     onClick={() => handleModeClick(m.mode)}
                                 >

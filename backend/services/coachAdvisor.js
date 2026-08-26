@@ -59,6 +59,84 @@ const TEN_CHE_DO = {
 
 const tenCheDo = (m) => TEN_CHE_DO[m] || m;
 
+/**
+ * LỘ TRÌNH 4 VÒNG — đi từ nhận ra tới nhớ lại tới dùng được.
+ *
+ * Dựa trên `retrieval practice` (Roediger & Karpicke 2006): CỐ NHỚ LẠI củng cố
+ * trí nhớ mạnh hơn nhiều so với ĐỌC LẠI — dù người học thấy đọc lại "dễ vào"
+ * hơn. Nên thứ tự phải đi từ chế độ có sẵn đáp án trong tầm mắt (nhận ra) sang
+ * chế độ không gợi ý gì (nhớ lại), và phải chuyển SỚM hơn cảm giác thoải mái.
+ *
+ * Số liệu thật xác nhận người học kẹt ở vòng 2: Trắc nghiệm 76 lượt / đúng 88%,
+ * trong khi Điền từ 15 lượt / 66% và Tốc độ 8 lượt / 28%. Càng khó càng bị né,
+ * mà đó chính là chỗ trí nhớ được xây.
+ *
+ * `speed-quiz` KHÔNG nằm trong lộ trình: nó không kiểm tra trí nhớ mà kiểm tra
+ * TỐC ĐỘ TRUY XUẤT — thứ chỉ đến sau khi đã thuộc. Gợi ý nó cho người đang ở
+ * vòng 2 là tạo áp lực vô ích.
+ */
+const LO_TRINH = [
+    {
+        vong: 1,
+        ten: 'Gặp mặt',
+        modes: ['flashcard'],
+        yNghia: 'Biết từ đó tồn tại. Chưa cần thuộc.',
+    },
+    {
+        vong: 2,
+        ten: 'Nhận ra',
+        modes: ['multiple-choice', 'matching', 'listening', 'word-type-check'],
+        yNghia: 'Đáp án nằm trong tầm mắt — dễ nhất, và là chỗ ai cũng ở lại quá lâu.',
+    },
+    {
+        vong: 3,
+        ten: 'Nhớ lại',
+        modes: ['fill-blank', 'dictation', 'pronunciation', 'phonetic-quiz', 'hanzi-writing'],
+        yNghia: 'Không gợi ý gì. Đây là nơi trí nhớ thật sự được xây.',
+    },
+    {
+        vong: 4,
+        ten: 'Dùng được',
+        modes: ['example-fill-blank', 'sentence-builder', 'context-learning', 'synonym-check'],
+        yNghia: 'Từ trong ngữ cảnh — biến "biết nghĩa" thành "dùng được".',
+    },
+];
+
+/** Vòng của một chế độ. `0` = ngoài lộ trình (Tốc độ, Ôn từ sai). */
+function vongCua(mode) {
+    const v = LO_TRINH.find((x) => x.modes.includes(mode));
+    return v ? v.vong : 0;
+}
+
+/**
+ * Vòng người học NÊN tập trung, và chế độ nên chơi tiếp trong vòng đó.
+ *
+ * Quy tắc: đứng ở vòng thấp nhất CHƯA VỮNG. Vững = đã chơi đủ lượt tin cậy và
+ * đúng trên ngưỡng. Nhảy cóc lên vòng 4 khi chưa thuộc từ thì không phải là
+ * thử thách, chỉ là thất bại liên tục.
+ */
+function vongNenTapTrung(danhSach) {
+    const theoMode = new Map(danhSach.map((x) => [x.mode, x]));
+
+    for (const v of LO_TRINH) {
+        // Chế độ trong vòng này mà CHƯA đủ dữ liệu tin cậy → còn phải làm.
+        const chuaVung = v.modes.filter((m) => {
+            const x = theoMode.get(m);
+            if (!x || x.played < TOI_THIEU_LUOT) return true;
+            return x.acc !== null && x.acc < NGUONG_YEU;
+        });
+        if (chuaVung.length) {
+            // Ưu tiên chế độ CHƯA CHƠI trước chế độ đã chơi mà còn yếu: mở rộng
+            // trước, đào sâu sau — người chưa thử Chép chính tả bao giờ thì nên
+            // thử, chứ không phải cày lại Điền từ.
+            const chuaThu = chuaVung.find((m) => !(theoMode.get(m)?.played > 0));
+            return { ...v, goiY: chuaThu || chuaVung[0] };
+        }
+    }
+    // Vững cả bốn vòng → không ép nữa.
+    return null;
+}
+
 /** `modeStats` có thể là Map (Mongoose) hoặc object thuần (sau `.lean()`). */
 function doiSangObject(ms) {
     if (!ms) return {};
@@ -170,11 +248,24 @@ function dungGoiY({ modeStats, dueTotal = 0, loiHayMac = null, bayGio = Date.now
         });
     }
 
+    // Gợi ý theo LỘ TRÌNH — đứng trước "chế độ yếu" vì nó trả lời câu hỏi lớn
+    // hơn: không phải "chỗ nào tôi kém" mà "bước tiếp theo của tôi là gì".
+    const vong = vongNenTapTrung(ds);
+    if (vong?.goiY) {
+        out.push({
+            key: 'path',
+            uuTien: 3,
+            tieuDe: `Vòng ${vong.vong} — ${vong.ten}: ${tenCheDo(vong.goiY)}`,
+            lyDo: vong.yNghia,
+            mode: vong.goiY,
+        });
+    }
+
     const yeu = diemYeu(ds);
     if (yeu) {
         out.push({
             key: 'weak-mode',
-            uuTien: 3,
+            uuTien: 4,
             tieuDe: `${yeu.ten} — đúng ${Math.round(yeu.acc * 100)}%`,
             lyDo: 'Đây là chế độ bạn làm kém nhất. Chỗ khó thường là chỗ bị né, mà cũng là chỗ tiến bộ nhanh nhất khi luyện.',
             mode: yeu.mode,
@@ -185,7 +276,7 @@ function dungGoiY({ modeStats, dueTotal = 0, loiHayMac = null, bayGio = Date.now
     if (quen) {
         out.push({
             key: 'forgotten',
-            uuTien: 4,
+            uuTien: 5,
             tieuDe: `${quen.ten} — ${quen.ngay} ngày chưa động`,
             lyDo: 'Kỹ năng không dùng thì mờ đi. Một lượt là đủ để lấy lại nhịp.',
             mode: quen.mode,
@@ -196,7 +287,7 @@ function dungGoiY({ modeStats, dueTotal = 0, loiHayMac = null, bayGio = Date.now
     if (moi) {
         out.push({
             key: 'untried',
-            uuTien: 5,
+            uuTien: 6,
             tieuDe: `Chưa thử ${moi.ten}`,
             lyDo: 'Mỗi chế độ kiểm tra một cách nhớ khác nhau — nhận ra, nhớ lại, hay nghe hiểu.',
             mode: moi.mode,
@@ -208,6 +299,9 @@ function dungGoiY({ modeStats, dueTotal = 0, loiHayMac = null, bayGio = Date.now
 
 module.exports = {
     dungGoiY,
+    LO_TRINH,
+    vongCua,
+    vongNenTapTrung,
     phanTichCheDo,
     diemYeu,
     chuaThu,
