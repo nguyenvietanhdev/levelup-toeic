@@ -68,6 +68,26 @@ const userStatsSchema = new mongoose.Schema(
             default: () => new Map(),
         },
 
+        // NHIỆM VỤ ĐANG GIAO — chế độ mà trang chủ đang nhấp nháy chỉ vào.
+        //
+        // Phải LƯU chứ không tính lại mỗi lần mở trang: bộ gợi ý xếp hạng theo
+        // ưu tiên, mà ưu tiên đổi theo thời gian dù người dùng không làm gì —
+        // chỉ cần vài từ tới hạn ôn là thẻ nhấp nháy nhảy sang chỗ khác giữa
+        // hai lần F5. Nháy chỗ này rồi chỗ kia thì không còn là dẫn đường.
+        //
+        // Đã giao thì giữ nguyên cho tới khi họ CHƠI XONG đúng chế độ đó.
+        nhiemVu: {
+            mode: { type: String, default: null },
+            // Giao lúc nào — để biết nhiệm vụ đã cũ quá thì bỏ.
+            giaoLuc: { type: Date, default: null },
+            // Vòng của lộ trình lúc giao, giữ để hiện nhãn mà không tính lại.
+            vong: { type: Number, default: null },
+            // Số lượt của chế độ đó NGAY LÚC GIAO. Có mốc này mới phân biệt
+            // được "đã chơi từ trước" với "vừa chơi xong nhiệm vụ" — thiếu nó
+            // thì chế độ nào từng chơi rồi sẽ bị coi là hoàn thành ngay lập tức.
+            luotLucGiao: { type: Number, default: 0 },
+        },
+
         // Active boosts
         xpBoostActive: { type: Boolean, default: false },
         xpBoostMultiplier: { type: Number, default: 1 },

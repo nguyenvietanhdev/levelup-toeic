@@ -129,8 +129,23 @@ function vongNenTapTrung(danhSach) {
             // Ưu tiên chế độ CHƯA CHƠI trước chế độ đã chơi mà còn yếu: mở rộng
             // trước, đào sâu sau — người chưa thử Chép chính tả bao giờ thì nên
             // thử, chứ không phải cày lại Điền từ.
-            const chuaThu = chuaVung.find((m) => !(theoMode.get(m)?.played > 0));
-            return { ...v, goiY: chuaThu || chuaVung[0] };
+            // Trong số còn lại, lấy cái ÍT LƯỢT NHẤT.
+            //
+            // Lấy cái đầu danh sách thì nhiệm vụ nhảy qua nhảy lại giữa hai chế
+            // độ: chơi một lượt chưa chạm ngưỡng tin cậy nên nó vẫn "chưa vững"
+            // và lại thắng ở lần giao sau. Đi từ ít lượt nhất thì quét đều cả
+            // vòng — vừa là thứ tự tự nhiên (chưa chơi đứng trước đã chơi), vừa
+            // không kẹt ở một chỗ.
+            // Lấy chế độ ÍT LƯỢT NHẤT trong số chưa vững.
+            //
+            // Kết quả là hai ba chế độ cùng vòng được giao xen kẽ, mỗi cái nhích
+            // lên một lượt — KHÔNG phải lỗi bập bênh mà đúng thứ cần: xen kẽ
+            // các kiểu truy xuất khác nhau nhớ lâu hơn là cày liền một chế độ.
+            // Khi cả nhóm đủ lượt tin cậy thì mới sang vòng sau.
+            const goiY = [...chuaVung].sort(
+                (m1, m2) => (theoMode.get(m1)?.played || 0) - (theoMode.get(m2)?.played || 0)
+            )[0];
+            return { ...v, goiY };
         }
     }
     // Vững cả bốn vòng → không ép nữa.
@@ -297,8 +312,116 @@ function dungGoiY({ modeStats, dueTotal = 0, loiHayMac = null, bayGio = Date.now
     return out.sort((a, b) => a.uuTien - b.uuTien);
 }
 
+
+/**
+ * Chọn chế độ khác `tru` để giao tiếp sau khi vừa hoàn thành nó.
+ *
+ * Đi theo đúng lộ trình: lấy chế độ chưa vững sớm nhất KHÔNG phải cái vừa chơi.
+ * Hết cách thì trả `null` — không có nhiệm vụ còn hơn giao bừa.
+ */
+function keTiepKhac(tru, modeStats) {
+    // Loại HẲN `tru` khỏi lựa chọn (không chỉ xếp cuối): đây là lúc vừa chơi
+    // xong nó, giao lại ngay thì người dùng tưởng hệ thống hỏng.
+    const theoMode = new Map(phanTichCheDo(modeStats).map((x) => [x.mode, x]));
+    for (const v of LO_TRINH) {
+        const chuaVung = v.modes.filter((m) => {
+            if (m === tru) return false;
+            const x = theoMode.get(m);
+            if (!x || x.played < TOI_THIEU_LUOT) return true;
+            return x.acc !== null && x.acc < NGUONG_YEU;
+        });
+        if (chuaVung.length) {
+            return [...chuaVung].sort(
+                (m1, m2) => (theoMode.get(m1)?.played || 0) - (theoMode.get(m2)?.played || 0)
+            )[0];
+        }
+    }
+    return null;
+}
+
+/**
+ * Nhiệm vụ cũ bao lâu thì bỏ (ngày).
+ *
+ * Không phải để giục. Người bỏ app hai tuần rồi quay lại thì trình độ đã khác,
+ * giao lại cho đúng còn hơn bắt họ làm tiếp việc của nửa tháng trước.
+ */
+const NGAY_NHIEM_VU_CU = 14;
+
+/**
+ * Chốt xem trang chủ nên nhấp nháy vào chế độ nào.
+ *
+ * Quy tắc: ĐÃ GIAO THÌ GIỮ. Chỉ giao cái mới khi nhiệm vụ cũ đã xong, đã cũ,
+ * hoặc chưa từng giao. F5 bao nhiêu lần cũng ra đúng một kết quả — vì kết quả
+ * đọc từ DB chứ không tính lại theo thứ hạng ưu tiên (thứ hạng đổi theo thời
+ * gian dù người dùng không làm gì).
+ *
+ * @param dangGiao   `nhiemVu` đang lưu trong UserStats (có thể rỗng)
+ * @param modeStats  thống kê hiện tại, để biết đã chơi xong chưa
+ * @param deXuat     chế độ bộ gợi ý đề xuất, dùng khi cần giao mới
+ * @returns {{ mode, vong, giaoLuc, xong }} — `xong` = vừa hoàn thành nhiệm vụ cũ
+ */
+function chotNhiemVu({ dangGiao, modeStats, deXuat, bayGio = new Date() }) {
+    const cu = dangGiao || {};
+    const luotHienTai = (m) => Number(doiSangObject(modeStats)[m]?.played) || 0;
+
+    if (cu.mode) {
+        // ĐÃ CHƠI XONG CHƯA: so lượt chơi bây giờ với lượt lúc giao. Dùng mốc
+        // lưu sẵn chứ không so với 0 — chế độ họ từng chơi rồi vẫn giao lại
+        // được (chơi 15 lượt mà đúng 66% thì vẫn phải luyện thêm).
+        const xong = luotHienTai(cu.mode) > (cu.luotLucGiao || 0);
+        if (xong) {
+            // Vừa chơi xong thì KHÔNG giao lại chính nó, dù bộ gợi ý vẫn đang
+            // nói tên nó. Một lượt chưa đủ lấp khoảng trống nên đề xuất chưa
+            // đổi ý, nhưng giao lại ngay cái vừa làm thì người dùng tưởng hệ
+            // thống hỏng — và họ mất luôn lý do để tin những lần giao sau.
+            // `deXuat` cũng phải khác cái vừa chơi: bộ gợi ý dùng cùng luật
+            // "chưa đủ lượt thì chưa vững" nên nó vẫn đang gọi tên cái đó.
+            const ke = deXuat && deXuat !== cu.mode
+                ? deXuat
+                : keTiepKhac(cu.mode, modeStats);
+            return { ...giaoMoi(ke, modeStats, bayGio), xong: true };
+        }
+
+        const qua = cu.giaoLuc
+            && (bayGio - new Date(cu.giaoLuc)) > NGAY_NHIEM_VU_CU * 86400000;
+        if (qua) return { ...giaoMoi(deXuat, modeStats, bayGio), xong: false };
+
+        // Còn hiệu lực — giữ NGUYÊN, kể cả khi bộ gợi ý đang muốn nói chuyện
+        // khác. Đây chính là chỗ chống việc thẻ nháy nhảy lung tung.
+        return {
+            mode: cu.mode,
+            vong: cu.vong ?? vongCua(cu.mode),
+            giaoLuc: cu.giaoLuc,
+            luotLucGiao: cu.luotLucGiao || 0,
+            xong: false,
+        };
+    }
+
+    // `deXuat` rỗng vẫn phải giao được: bộ gợi ý có thể im lặng (chưa có từ
+    // tới hạn, chưa có bài AI nào), nhưng LỘ TRÌNH thì luôn còn chỗ chưa vững.
+    // Không có nhánh này thì trang chủ mất hẳn thẻ chỉ định trong đúng lúc
+    // người mới cần nó nhất — lúc chưa có dữ liệu gì.
+    const chon = deXuat || keTiepKhac(null, modeStats);
+    return { ...giaoMoi(chon, modeStats, bayGio), xong: false };
+}
+
+/** Dựng một nhiệm vụ mới quanh `mode`. `null` thì coi như không có gì để giao. */
+function giaoMoi(mode, modeStats, bayGio) {
+    if (!mode) return { mode: null, vong: null, giaoLuc: null, luotLucGiao: 0 };
+    return {
+        mode,
+        vong: vongCua(mode) || null,
+        giaoLuc: bayGio,
+        // Chốt mốc lượt chơi NGAY LÚC GIAO: có mốc này mới phân biệt được
+        // "đã chơi từ trước" với "vừa chơi để hoàn thành nhiệm vụ".
+        luotLucGiao: Number(doiSangObject(modeStats)[mode]?.played) || 0,
+    };
+}
+
 module.exports = {
     dungGoiY,
+    chotNhiemVu,
+    NGAY_NHIEM_VU_CU,
     LO_TRINH,
     vongCua,
     vongNenTapTrung,

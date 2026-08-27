@@ -330,3 +330,279 @@ describe('lộ trình 4 vòng', () => {
         expect(p.tieuDe).toContain('Flashcard');
     });
 });
+
+/**
+ * NHIỆM VỤ ĐANG GIAO — thẻ nhấp nháy phải ĐỨNG YÊN.
+ *
+ * Người dùng nói rõ: mỗi lần về trang chủ chỉ MỘT chế độ được chỉ định, và F5
+ * cũng không được làm nó đổi, cho tới khi họ chịu luyện đúng chế độ đó.
+ *
+ * Chỗ hỏng thật (đã đo): với cùng một bộ thống kê, `dungGoiY` trả `listening`
+ * khi không có từ tới hạn, nhưng trả `review-mistakes` khi có 5 từ tới hạn — mà
+ * từ tới hạn thì tự đến theo đồng hồ, người dùng không làm gì cả.
+ */
+describe('chotNhiemVu — giữ nguyên qua F5', () => {
+    const { chotNhiemVu, NGAY_NHIEM_VU_CU } = require('../services/coachAdvisor');
+
+    test('chưa có nhiệm vụ thì giao theo đề xuất', () => {
+        const nv = chotNhiemVu({ dangGiao: null, modeStats: {}, deXuat: 'listening' });
+        expect(nv.mode).toBe('listening');
+        expect(nv.giaoLuc).toBeInstanceOf(Date);
+    });
+
+    test('ĐÃ GIAO thì giữ nguyên, kể cả khi đề xuất đổi ý', () => {
+        // Đây là cả mục đích của hàm này.
+        const nv = chotNhiemVu({
+            dangGiao: { mode: 'listening', giaoLuc: new Date(), luotLucGiao: 0, vong: 2 },
+            modeStats: {},
+            deXuat: 'review-mistakes',
+        });
+        expect(nv.mode).toBe('listening');
+    });
+
+    test('F5 mười lần vẫn ra đúng một chế độ', () => {
+        const dangGiao = { mode: 'listening', giaoLuc: new Date(), luotLucGiao: 0, vong: 2 };
+        // Mỗi lần một đề xuất khác nhau, mô phỏng ưu tiên đảo theo thời gian.
+        const deXuats = ['review-mistakes', 'fill-blank', 'speed-quiz', 'matching'];
+        const ra = deXuats.map((d) => chotNhiemVu({ dangGiao, modeStats: {}, deXuat: d }).mode);
+        expect(new Set(ra).size).toBe(1);
+        expect(ra[0]).toBe('listening');
+    });
+
+    test('chơi XONG thì mới giao cái mới', () => {
+        const nv = chotNhiemVu({
+            dangGiao: { mode: 'listening', giaoLuc: new Date(), luotLucGiao: 4, vong: 2 },
+            modeStats: { listening: { played: 5 } },   // 4 -> 5 = vừa chơi
+            deXuat: 'fill-blank',
+        });
+        expect(nv.mode).toBe('fill-blank');
+        expect(nv.xong).toBe(true);
+    });
+
+    test('chế độ TỪNG CHƠI vẫn giao được, không tính là xong ngay', () => {
+        // Không có mốc `luotLucGiao` thì `played: 15 > 0` là "xong" ngay lập
+        // tức, và nhiệm vụ bị nhảy qua trước khi người dùng kịp chơi.
+        const nv = chotNhiemVu({
+            dangGiao: { mode: 'fill-blank', giaoLuc: new Date(), luotLucGiao: 15, vong: 3 },
+            modeStats: { 'fill-blank': { played: 15 } },
+            deXuat: 'matching',
+        });
+        expect(nv.mode).toBe('fill-blank');
+        expect(nv.xong).toBe(false);
+    });
+
+    test('nhiệm vụ quá cũ thì bỏ, giao lại', () => {
+        const lau = new Date(Date.now() - (NGAY_NHIEM_VU_CU + 1) * 86400000);
+        const nv = chotNhiemVu({
+            dangGiao: { mode: 'listening', giaoLuc: lau, luotLucGiao: 0, vong: 2 },
+            modeStats: {},
+            deXuat: 'matching',
+        });
+        expect(nv.mode).toBe('matching');
+    });
+
+    test('chưa tới hạn cũ thì VẪN giữ', () => {
+        const gan = new Date(Date.now() - (NGAY_NHIEM_VU_CU - 1) * 86400000);
+        const nv = chotNhiemVu({
+            dangGiao: { mode: 'listening', giaoLuc: gan, luotLucGiao: 0, vong: 2 },
+            modeStats: {},
+            deXuat: 'matching',
+        });
+        expect(nv.mode).toBe('listening');
+    });
+
+    test('bộ gợi ý im lặng thì LỘ TRÌNH vẫn giao được', () => {
+        // Người mới chưa có dữ liệu gì: `dungGoiY` không có từ tới hạn hay bài
+        // AI nào để nói, nhưng lộ trình luôn còn chỗ chưa vững. Trả `null` ở
+        // đây là mất thẻ chỉ định đúng lúc người dùng cần nó nhất.
+        const nv = chotNhiemVu({ dangGiao: null, modeStats: {}, deXuat: null });
+        expect(nv.mode).toBe('flashcard');
+        expect(nv.vong).toBe(1);
+    });
+
+    test('đọc được `modeStats` dạng Map của Mongoose', () => {
+        // `.lean()` có chỗ trả Map, có chỗ trả object thường.
+        const nv = chotNhiemVu({
+            dangGiao: { mode: 'listening', giaoLuc: new Date(), luotLucGiao: 2, vong: 2 },
+            modeStats: new Map([['listening', { played: 3 }]]),
+            deXuat: 'matching',
+        });
+        expect(nv.xong).toBe(true);
+    });
+
+    test('nhiệm vụ mới chốt mốc lượt HIỆN TẠI, không phải 0', () => {
+        const nv = chotNhiemVu({
+            dangGiao: null,
+            modeStats: { matching: { played: 18 } },
+            deXuat: 'matching',
+        });
+        expect(nv.luotLucGiao).toBe(18);
+    });
+
+    test('vòng được lưu kèm để khỏi tính lại', () => {
+        const nv = chotNhiemVu({ dangGiao: null, modeStats: {}, deXuat: 'fill-blank' });
+        expect(nv.vong).toBe(3);
+    });
+});
+
+describe('không giao đi giao lại một chỗ', () => {
+    const {
+        chotNhiemVu, vongNenTapTrung, phanTichCheDo,
+    } = require('../services/coachAdvisor');
+
+    test('trong vòng, chọn chế độ ÍT LƯỢT NHẤT', () => {
+        // Chọn theo thứ tự khai báo thì nhiệm vụ nhảy qua nhảy lại: chơi 1 lượt
+        // chưa chạm ngưỡng tin cậy nên vẫn "chưa vững" và lại thắng lần sau.
+        const ds = phanTichCheDo({
+            flashcard: { played: 9, correct: 90, total: 100 },
+            'multiple-choice': { played: 9, correct: 90, total: 100 },
+            matching: { played: 9, correct: 90, total: 100 },
+            listening: { played: 2, correct: 18, total: 20 },
+            'word-type-check': { played: 0, correct: 0, total: 0 },
+        });
+        // `listening` đứng trước `word-type-check` trong khai báo vòng 2, nhưng
+        // `word-type-check` chưa chơi lần nào nên phải được chọn.
+        expect(vongNenTapTrung(ds).goiY).toBe('word-type-check');
+    });
+
+    test('vừa chơi xong thì KHÔNG giao lại chính nó', () => {
+        // Một lượt chưa lấp được khoảng trống nên bộ gợi ý vẫn nói tên nó —
+        // nhưng giao lại ngay cái vừa làm thì người dùng tưởng hệ thống hỏng.
+        const nv = chotNhiemVu({
+            dangGiao: { mode: 'listening', giaoLuc: new Date(), luotLucGiao: 0, vong: 2 },
+            modeStats: {
+                flashcard: { played: 9, correct: 90, total: 100 },
+                listening: { played: 1, correct: 8, total: 10 },
+            },
+            deXuat: 'listening',
+        });
+        expect(nv.xong).toBe(true);
+        expect(nv.mode).not.toBe('listening');
+        expect(nv.mode).toBeTruthy();
+    });
+
+    test('chuỗi nhiệm vụ không lặp vô hạn hai chế độ', () => {
+        // Mô phỏng người dùng làm xong lần lượt: phải QUÉT được nhiều chế độ,
+        // không kẹt bập bênh giữa đúng hai cái.
+        let stats = {
+            flashcard: { played: 31, correct: 92, total: 100 },
+            'multiple-choice': { played: 76, correct: 88, total: 100 },
+            matching: { played: 18, correct: 86, total: 100 },
+        };
+        let luu = null;
+        const chuoi = [];
+        for (let i = 0; i < 8; i += 1) {
+            const nv = chotNhiemVu({ dangGiao: luu, modeStats: stats, deXuat: null });
+            if (!nv.mode) break;
+            chuoi.push(nv.mode);
+            luu = {
+                mode: nv.mode, giaoLuc: nv.giaoLuc,
+                vong: nv.vong, luotLucGiao: nv.luotLucGiao,
+            };
+            const cu = stats[nv.mode] || { played: 0, correct: 0, total: 0 };
+            stats = { ...stats, [nv.mode]: {
+                played: cu.played + 1, correct: cu.correct + 8, total: cu.total + 10,
+            } };
+        }
+        // Bập bênh giữa 2 chế độ thì `size` chỉ là 2 — phải nhiều hơn thế.
+        expect(new Set(chuoi).size).toBeGreaterThan(2);
+    });
+
+    test('hết chế độ để giao thì trả `null`, không giao bừa', () => {
+        // Vững cả bốn vòng: không ép nữa còn hơn giao đại một cái.
+        const { LO_TRINH } = require('../services/coachAdvisor');
+        const vung = {};
+        for (const v of LO_TRINH) {
+            for (const m of v.modes) vung[m] = { played: 20, correct: 95, total: 100 };
+        }
+        const nv = chotNhiemVu({ dangGiao: null, modeStats: vung, deXuat: null });
+        expect(nv.mode).toBeNull();
+    });
+});
+
+describe('xen kẽ trong vòng là CỐ Ý, không phải bập bênh', () => {
+    const { chotNhiemVu, TOI_THIEU_LUOT } = require('../services/coachAdvisor');
+
+    /** Chơi xong nhiệm vụ rồi xin cái tiếp theo, `n` lần. */
+    function chuoiNhiemVu(n, batDau) {
+        let stats = { ...batDau };
+        let luu = null;
+        const ra = [];
+        for (let i = 0; i < n; i += 1) {
+            const nv = chotNhiemVu({ dangGiao: luu, modeStats: stats, deXuat: null });
+            if (!nv.mode) break;
+            ra.push(nv.mode);
+            luu = {
+                mode: nv.mode, giaoLuc: nv.giaoLuc,
+                vong: nv.vong, luotLucGiao: nv.luotLucGiao,
+            };
+            const cu = stats[nv.mode] || { played: 0, correct: 0, total: 0 };
+            stats = { ...stats, [nv.mode]: {
+                played: cu.played + 1, correct: cu.correct + 8, total: cu.total + 10,
+            } };
+        }
+        return { chuoi: ra, stats };
+    }
+
+    const vong1Xong = {
+        flashcard: { played: 31, correct: 92, total: 100 },
+        'multiple-choice': { played: 76, correct: 88, total: 100 },
+        matching: { played: 18, correct: 86, total: 100 },
+    };
+
+    test('không cày liền một chế độ ba lượt', () => {
+        // Xen kẽ các kiểu truy xuất khác nhau nhớ lâu hơn cày liền một kiểu.
+        const { chuoi } = chuoiNhiemVu(4, vong1Xong);
+        expect(chuoi[0]).not.toBe(chuoi[1]);
+    });
+
+    test('các chế độ cùng vòng nhích lên ĐỀU nhau', () => {
+        // Đây mới là thứ phân biệt "xen kẽ có chủ đích" với "bập bênh vì lỗi":
+        // số lượt phải chênh nhau nhiều nhất 1.
+        const { stats } = chuoiNhiemVu(6, vong1Xong);
+        const luot = ['listening', 'word-type-check'].map((m) => stats[m]?.played || 0);
+        expect(Math.max(...luot) - Math.min(...luot)).toBeLessThanOrEqual(1);
+    });
+
+    test('đủ lượt tin cậy thì SANG vòng sau, không kẹt lại', () => {
+        // Bập bênh thật thì mắc kẹt mãi ở hai chế độ. Phải thoát ra được.
+        const { chuoi } = chuoiNhiemVu(12, vong1Xong);
+        expect(new Set(chuoi).size).toBeGreaterThan(3);
+        // Và phải chạm tới vòng 3 (Nhớ lại) — nơi trí nhớ thật sự được xây.
+        expect(chuoi).toContain('dictation');
+    });
+
+    test('mỗi chế độ vòng 2 được chơi đủ ngưỡng trước khi sang vòng 3', () => {
+        const { chuoi, stats } = chuoiNhiemVu(12, vong1Xong);
+        const iVong3 = chuoi.findIndex((m) => m === 'dictation');
+        expect(iVong3).toBeGreaterThan(-1);
+        // Tới lúc sang vòng 3 thì listening/word-type-check phải đủ lượt.
+        for (const m of ['listening', 'word-type-check']) {
+            expect(stats[m]?.played || 0).toBeGreaterThanOrEqual(TOI_THIEU_LUOT);
+        }
+    });
+});
+
+describe('vừa chơi xong thì không giao lại chính nó', () => {
+    const { chotNhiemVu } = require('../services/coachAdvisor');
+
+    test('kể cả khi nó là ứng viên DUY NHẤT còn chưa vững trong vòng', () => {
+        // Ở đây `listening` là chế độ vòng 2 duy nhất chưa đủ lượt, nên luật
+        // "ít lượt nhất" sẽ chọn lại chính nó. Phải bước sang vòng sau thay vì
+        // bắt người dùng làm lại đúng cái vừa xong.
+        const stats = {
+            flashcard: { played: 9, correct: 90, total: 100 },
+            'multiple-choice': { played: 9, correct: 90, total: 100 },
+            matching: { played: 9, correct: 90, total: 100 },
+            'word-type-check': { played: 9, correct: 90, total: 100 },
+            listening: { played: 1, correct: 8, total: 10 },
+        };
+        const nv = chotNhiemVu({
+            dangGiao: { mode: 'listening', giaoLuc: new Date(), luotLucGiao: 0, vong: 2 },
+            modeStats: stats,
+            deXuat: null,
+        });
+        expect(nv.xong).toBe(true);
+        expect(nv.mode).not.toBe('listening');
+    });
+});

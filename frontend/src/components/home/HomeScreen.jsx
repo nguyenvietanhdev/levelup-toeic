@@ -668,6 +668,17 @@ export default function HomeScreen({ active }) {
                                     </div>
                                     <h3>{m.label}</h3>
                                     <p>{m.desc}</p>
+                                    {/*
+                                      Viền nháy nói "thẻ này khác", nhưng không
+                                      nói PHẢI LÀM GÌ. Thêm một dòng chữ để
+                                      người dùng khỏi phải đoán ý màu sắc —
+                                      họ chỉ cần bấm, không cần hiểu hệ thống.
+                                    */}
+                                    {!locked && plan.next === m.mode && (
+                                        <div className="mode-next-badge">
+                                            <i className="fas fa-play"></i> Luyện cái này
+                                        </div>
+                                    )}
                                     {guestLocked ? (
                                         <div className="mode-level-badge" title="Đăng nhập để mở khoá">
                                             <i className="fas fa-lock"></i> Đăng nhập để mở

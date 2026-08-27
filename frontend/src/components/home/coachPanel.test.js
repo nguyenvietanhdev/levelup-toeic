@@ -171,3 +171,40 @@ describe('hướng dẫn bằng thị giác trên lưới thẻ', () => {
         expect(truoc).toMatch(/let huy = false/);
     });
 });
+
+describe('thẻ được chỉ định KHÔNG đổi khi F5', () => {
+    test('client KHÔNG tự chọn — chỉ đọc `next` từ server', () => {
+        // Client tự chọn thì mỗi lần mở trang là một kết quả khác. Chốt nằm ở
+        // server và được LƯU, nên F5 bao nhiêu lần cũng ra đúng một thẻ.
+        expect(home).not.toMatch(/Math\.random|shuffle|sort\(\)/);
+        expect(home).toMatch(/plan\.next === m\.mode/);
+    });
+
+    test('không lưu lựa chọn ở localStorage', () => {
+        // localStorage chỉ là backup khi server chết; để nó quyết thì hai
+        // thiết bị của cùng một người sẽ được giao hai nhiệm vụ khác nhau.
+        const i = home.indexOf('CoachAPI.plan()');
+        expect(home.slice(Math.max(0, i - 300), i + 300)).not.toMatch(/localStorage/);
+    });
+
+    test('có nhãn chữ, không bắt đoán ý màu sắc', () => {
+        // Viền nháy nói "thẻ này khác" nhưng không nói phải làm gì.
+        expect(home).toMatch(/mode-next-badge/);
+        expect(home).toMatch(/Luyện cái này/);
+    });
+
+    test('nhãn chỉ hiện trên thẻ được chỉ định và KHÔNG bị khoá', () => {
+        const i = home.indexOf('mode-next-badge');
+        const truoc = home.slice(Math.max(0, i - 200), i);
+        expect(truoc).toMatch(/!locked && plan\.next === m\.mode/);
+    });
+
+    test('nhãn mời khác màu nhãn khoá', () => {
+        // Nhãn khoá (hổ phách) là thứ CHẶN; nhãn này là thứ MỜI. Cùng màu thì
+        // người dùng đọc lướt sẽ tưởng thẻ đang bị khoá.
+        const i = css.indexOf('.mode-next-badge {');
+        const rule = css.slice(i, css.indexOf('}', i));
+        expect(rule).toMatch(/139,92,246/);
+        expect(rule).not.toMatch(/245,158,11/);
+    });
+});

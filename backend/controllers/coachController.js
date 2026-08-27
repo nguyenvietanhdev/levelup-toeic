@@ -3,7 +3,9 @@ const UserProfile = require('../models/UserProfile');
 const WrongWord = require('../models/WrongWord');
 const Translation = require('../models/Translation');
 const Essay = require('../models/Essay');
-const { dungGoiY, phanTichCheDo, vongNenTapTrung, vongCua } = require('../services/coachAdvisor');
+const {
+    dungGoiY, phanTichCheDo, vongNenTapTrung, vongCua, chotNhiemVu,
+} = require('../services/coachAdvisor');
 const { thongKe } = require('../services/errorTaxonomy');
 
 /**
@@ -46,7 +48,7 @@ exports.suggestions = async (req, res, next) => {
         const lang = profile?.settings?.vocabLang === 'zh' ? 'zh' : 'en';
 
         const [stats, dueTotal, loi] = await Promise.all([
-            UserStats.findOne({ userId }).select('modeStats').lean(),
+            UserStats.findOne({ userId }).select('modeStats nhiemVu').lean(),
             WrongWord.countDocuments({
                 userId, status: 'active',
                 nextReviewDate: { $lte: new Date() },
@@ -68,14 +70,44 @@ exports.suggestions = async (req, res, next) => {
         // gợi ý nói một đằng, thẻ sáng một nẻo.
         const ds = phanTichCheDo(stats?.modeStats);
         const vong = vongNenTapTrung(ds);
-        const goiYMode = items.find((x) => x.mode)?.mode || null;
+        const deXuat = items.find((x) => x.mode)?.mode || null;
+
+        // CHỐT nhiệm vụ rồi LƯU, thay vì lấy thẳng đề xuất.
+        //
+        // Đề xuất xếp theo ưu tiên, mà ưu tiên đổi theo thời gian dù người dùng
+        // không làm gì: vài từ tới hạn ôn là thứ hạng đảo, thẻ nhấp nháy nhảy
+        // sang chỗ khác giữa hai lần F5. Đã giao thì giữ tới khi họ chơi xong.
+        const nv = chotNhiemVu({
+            dangGiao: stats?.nhiemVu,
+            modeStats: stats?.modeStats,
+            deXuat,
+        });
+
+        // Chỉ ghi khi thực sự đổi — mỗi lần mở trang chủ đều ghi DB là lãng phí.
+        const cu = stats?.nhiemVu || {};
+        if (cu.mode !== nv.mode || (nv.mode && !cu.giaoLuc)) {
+            await UserStats.updateOne(
+                { userId },
+                { $set: {
+                    'nhiemVu.mode': nv.mode,
+                    'nhiemVu.vong': nv.vong,
+                    'nhiemVu.giaoLuc': nv.giaoLuc,
+                    'nhiemVu.luotLucGiao': nv.luotLucGiao,
+                } }
+            );
+        }
+
+        const goiYMode = nv.mode;
 
         res.json({
             success: true,
             data: {
                 items,
                 // `next` = chế độ NÊN chơi ngay bây giờ (thẻ sẽ nhấp nháy).
+                // Đọc từ nhiệm vụ đã lưu nên F5 bao nhiêu lần cũng như nhau.
                 next: goiYMode,
+                // Vừa hoàn thành nhiệm vụ trước — client mừng một câu.
+                vuaXong: nv.xong || false,
                 // `vong` = vòng đang tập trung; `modes` để tô nhạt cả nhóm.
                 vong: vong ? { so: vong.vong, ten: vong.ten, modes: vong.modes } : null,
                 // Vòng của TỪNG chế độ — thẻ hiện nhãn "Vòng 3" chẳng hạn.

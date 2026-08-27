@@ -45,11 +45,12 @@ export const CoachAPI = {
                 next: d?.next || null,
                 vong: d?.vong || null,
                 vongTheoMode: d?.vongTheoMode || {},
+                vuaXong: d?.vuaXong || false,
             };
         } catch {
             // Hỏng thì trả rỗng — lưới thẻ vẫn hiện bình thường, chỉ không có
             // hướng dẫn. Đây là thứ TĂNG THÊM, không được chặn việc luyện tập.
-            return { next: null, vong: null, vongTheoMode: {} };
+            return { next: null, vong: null, vongTheoMode: {}, vuaXong: false };
         }
     },
 };
