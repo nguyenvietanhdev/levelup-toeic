@@ -817,6 +817,9 @@
 }
 
 /* Gộp thanh điểm vào header thành 1 hàng (tiết kiệm chiều cao) */
+/* `position` ở đây bị rule sticky phía dưới ghi đè — giữ lại vì `sticky` cũng
+   tạo containing block như `relative`, và thanh nhịp (.practice-pace-bar,
+   position:absolute) neo vào nó. Bỏ cả hai thì thanh nhịp rơi ra ngoài header. */
 .practice-header { gap: 12px; position: relative; }
 /* Tên chế độ + badge + số câu nằm CÙNG MỘT HÀNG.
    Xếp hai dòng thì header cao thêm ~22px mà dòng dưới chỉ có một cái badge và
@@ -10747,4 +10750,35 @@ mark {
     font-weight: 900;
     font-size: 11px;
   }
+}
+
+/* ── Làm gọn phần nhìn ───────────────────────────────────────────────────── */
+.practice-header {
+  /* Viền mảnh + bóng nhạt thay bóng đổ dày: header nằm sát ngay dưới thanh
+     điều hướng, hai lớp bóng chồng nhau thành một vệt xám dày trông như lỗi. */
+  border: 1px solid var(--border-color);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+  background-color: var(--bg-primary);
+  /* Khoảng cách xuống nội dung: `md` (16px) là dư cho hai khối liền nhau đã có
+     đệm trong riêng. Cắt còn `sm` để câu hỏi lên cao hơn một nhịp. */
+  margin-bottom: var(--spacing-sm);
+}
+
+/* Ba con số ⭐✓✗ gom thành một cụm có nền riêng, tách khỏi tên chế độ bên
+   trái — trước đây chúng trôi lửng giữa hàng, không rõ thuộc về nhóm nào. */
+.practice-header .practice-score-bar {
+  padding: 4px 10px;
+  border-radius: 20px;
+  background: var(--bg-secondary);
+}
+
+/* Đồng hồ: bỏ nền đặc màu, chỉ giữ chữ đậm + viền. Một khối màu lớn trên
+   header kéo mắt về phía nó suốt buổi học, trong khi thời gian chỉ là thông
+   tin phụ — trừ lúc sắp hết giờ, và lúc đó đã có thanh nhịp báo đỏ. */
+.practice-header .practice-timer {
+  background-color: transparent;
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+  padding: 4px 10px;
+  border-radius: 20px;
 }

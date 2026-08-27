@@ -266,10 +266,21 @@
     transition: transform 0.25s ease, opacity 0.25s ease;
 }
 
+/* Ẩn theo CUỘN: chỉ trượt đi, GIỮ chỗ.
+   Thanh sẽ quay lại ngay khi lăn ngược, nên bỏ chỗ rồi trả lại làm nội dung
+   nhảy lên nhảy xuống theo từng cú cuộn. */
 .status-bar--hidden {
     transform: translateY(-100%);
     opacity: 0;
     pointer-events: none;
+}
+
+/* Ẩn HẲN khi đang luyện tập — khác hẳn ẩn theo cuộn ở trên.
+   Ở đây thanh sẽ không quay lại cho tới khi rời màn, nên giữ chỗ là để thừa
+   một dải trống 33px (32px + viền) ngay dưới thanh điều hướng suốt buổi học.
+   Đó chính là khoảng cách "khá xa" giữa nav và header luyện tập. */
+.status-bar--an-han {
+    display: none;
 }
 
 .status-bar-left {

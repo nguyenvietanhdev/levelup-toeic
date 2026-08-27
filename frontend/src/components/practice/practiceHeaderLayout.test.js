@@ -122,7 +122,9 @@ describe('không còn luật chết', () => {
 
 describe('markup khớp với giả định của CSS', () => {
     test('bốn nhóm là anh em trong .practice-header', () => {
-        const i = jsx.indexOf('className="practice-header"');
+        // Neo vào TÊN LỚP chứ không phải cả thuộc tính: className giờ là
+        // template (thêm `da-an` khi ẩn theo cuộn), nên chuỗi cứng trượt.
+        const i = jsx.indexOf('practice-header');
         const header = jsx.slice(i, jsx.indexOf('practice-pace-bar', i));
         for (const c of ['practice-info', 'practice-score-bar', 'practice-timer']) {
             expect(header).toContain(c);

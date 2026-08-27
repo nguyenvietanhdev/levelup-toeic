@@ -17,7 +17,7 @@ function computeSessionLabel() {
 }
 
 export default function StatusBar() {
-    const { user, resources } = useGame();
+    const { user, resources, currentScreen } = useGame();
     const [sessionLabel, setSessionLabel] = useState(computeSessionLabel);
     // Part đang chọn — do REACT giữ, không để vanilla JS sờ vào DOM.
     //
@@ -28,7 +28,31 @@ export default function StatusBar() {
     // vào một thẻ chưa tồn tại rồi thôi.
     const [selectedPart, setSelectedPart] = useState(
         () => GameState.state?.settings?.selectedPart || null);
-    const hidden = useHideOnScrollDown();
+    const anTheoCuon = useHideOnScrollDown();
+
+    // ẨN HẲN khi đang ở màn luyện tập.
+    //
+    // Thanh này là thông tin NGOÀI buổi học: XP, xu, năng lượng, streak. Giữa
+    // lúc làm bài không ai đọc nó, mà nó lại chiếm nguyên một dải trên đầu —
+    // cộng với thanh điều hướng và header luyện tập thành ba tầng chồng nhau,
+    // đẩy câu hỏi xuống dưới mép màn hình.
+    //
+    // Về trang chủ thì hiện lại: ở đó XP và năng lượng mới là thứ người dùng
+    // nhìn để quyết định chơi tiếp hay nghỉ.
+    //
+    // KHÔNG bao gồm màn thi TOEIC: bài thi chạy BÊN TRONG `toeic-screen` cùng
+    // với màn chọn đề, nên `currentScreen` không phân biệt được "đang thi" với
+    // "đang chọn đề" — ẩn theo nó là ẩn luôn ở chỗ người dùng cần xem năng
+    // lượng để quyết định có vào thi hay không.
+    const dangLuyenTap = currentScreen === 'practice-screen';
+
+    // Hai kiểu ẩn KHÁC NHAU, không gộp làm một:
+    //
+    //   ẩn theo cuộn  → trượt đi nhưng GIỮ chỗ, vì lăn ngược một cái là nó về
+    //                   ngay; bỏ chỗ rồi trả lại làm nội dung nhảy liên tục.
+    //   ẩn khi luyện  → bỏ HẲN khỏi luồng, vì nó không quay lại cho tới khi rời
+    //                   màn; giữ chỗ là để thừa một dải trống suốt buổi học.
+    const hidden = anTheoCuon || dangLuyenTap;
 
     const refreshSessionLabel = useCallback(() => {
         setSessionLabel(computeSessionLabel());
@@ -68,7 +92,11 @@ export default function StatusBar() {
         // inert khi ẩn: thanh chỉ trượt ra ngoài chứ không display:none, nên
         // không chặn thì Tab vẫn lọt vào hai ô chọn đang vô hình.
         <div
-            className={`status-bar${hidden ? ' status-bar--hidden' : ''}`}
+            className={[
+                'status-bar',
+                dangLuyenTap ? 'status-bar--an-han' : '',
+                anTheoCuon ? 'status-bar--hidden' : '',
+            ].filter(Boolean).join(' ')}
             id="status-bar"
             inert={hidden}
         >
