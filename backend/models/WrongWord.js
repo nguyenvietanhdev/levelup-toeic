@@ -64,7 +64,11 @@ const WrongWordSchema = new mongoose.Schema({
      */
     lang: {
         type: String,
-        enum: ['en', 'zh'],
+        // `bi` = kho song ngữ (Trung + Anh trong một bản ghi). Phải là giá trị
+        // RIÊNG chứ không mượn 'zh': `langFilter` phân loại bản ghi cũ bằng
+        // regex chữ Hán, nên từ song ngữ mặt Hán sẽ lẫn vào danh sách ôn của
+        // kho tiếng Trung — mở ra thấy từ của bộ khác hẳn.
+        enum: ['en', 'zh', 'bi'],
         default: 'en',
         index: true
     },
@@ -315,9 +319,17 @@ WrongWordSchema.statics.getWordsToReview = async function(userId, limit = 10) {
  */
 WrongWordSchema.statics.langFilter = function(lang) {
     const HAN = '[\u4e00-\u9fff\u3400-\u4dbf]';
+    // Kho song ngữ khớp CHÍNH XÁC, không đoán bằng regex: từ mặt Hán của nó
+    // trông y hệt từ của kho tiếng Trung, đoán là lẫn.
+    if (lang === 'bi') return { lang: 'bi' };
+
+    // Hai kho cũ: bản ghi thiếu `lang` là dữ liệu có trước trường này nên phải
+    // đoán bằng chữ Hán. Loại hẳn `bi` ra, nếu không từ song ngữ lọt vào cả hai
+    // nhóm — mặt Hán vào nhóm zh, mặt Latin vào nhóm en.
+    const khongPhaiBi = { lang: { $ne: 'bi' } };
     return lang === 'zh'
-        ? { $or: [{ lang: 'zh' }, { lang: { $exists: false }, en: { $regex: HAN } }] }
-        : { $or: [{ lang: 'en' }, { lang: { $exists: false }, en: { $not: { $regex: HAN } } }] };
+        ? { $and: [khongPhaiBi, { $or: [{ lang: 'zh' }, { lang: { $exists: false }, en: { $regex: HAN } }] }] }
+        : { $and: [khongPhaiBi, { $or: [{ lang: 'en' }, { lang: { $exists: false }, en: { $not: { $regex: HAN } } }] }] };
 };
 
 WrongWordSchema.statics.getActiveWords = async function(userId, limit = 100, lang = null) {

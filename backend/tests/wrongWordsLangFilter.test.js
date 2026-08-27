@@ -53,8 +53,14 @@ const run = async (query = {}) => {
     return res;
 };
 
-/** Gom mọi nhánh `$or` của bộ lọc thành chuỗi để soi. */
-const orText = () => JSON.stringify(spy.filter.$or || []);
+/**
+ * Gom phần lọc ngôn ngữ của bộ lọc thành chuỗi để soi.
+ *
+ * Soi CẢ `$and` lẫn `$or`: từ khi có kho song ngữ, `langFilter` bọc điều kiện
+ * trong `$and` để loại `bi` ra khỏi hai kho cũ, nên `$or` không còn nằm ở tầng
+ * ngoài cùng. Chỉ đọc `filter.$or` thì test xanh giả khi bộ lọc biến mất.
+ */
+const orText = () => JSON.stringify(spy.filter.$and || spy.filter.$or || []);
 
 describe('lọc theo ngôn ngữ của HỒ SƠ', () => {
     test('vocabLang = zh → chỉ lấy từ tiếng Trung', async () => {
@@ -75,7 +81,7 @@ describe('lọc theo ngôn ngữ của HỒ SƠ', () => {
         // Bỏ lọc là quay lại đúng lỗi đang sửa.
         withLang(null);
         await run();
-        expect(spy.filter.$or).toBeDefined();
+        expect(spy.filter.$and || spy.filter.$or).toBeDefined();
         expect(orText()).toContain('"lang":"en"');
     });
 
@@ -127,7 +133,7 @@ describe('dueTotal lọc CÙNG điều kiện', () => {
         withLang('zh');
         await run();
         const f = countSpy.mock.calls[0][0];
-        expect(JSON.stringify(f.$or)).toContain('"lang":"zh"');
+        expect(JSON.stringify(f.$and || f.$or)).toContain('"lang":"zh"');
         expect(f.nextReviewDate.$lte).toBeInstanceOf(Date);
     });
 
@@ -135,7 +141,8 @@ describe('dueTotal lọc CÙNG điều kiện', () => {
         withLang('zh');
         await run({ all: '1' });
         expect(orText()).toContain('"lang":"zh"');
-        expect(JSON.stringify(countSpy.mock.calls[0][0].$or)).toContain('"lang":"zh"');
+        const fCount = countSpy.mock.calls[0][0];
+        expect(JSON.stringify(fCount.$and || fCount.$or)).toContain('"lang":"zh"');
         // all=1 bỏ lọc HẠN nhưng không được bỏ lọc NGÔN NGỮ.
         expect(spy.filter.nextReviewDate).toBeUndefined();
     });
@@ -150,11 +157,15 @@ describe('phản hồi trả về lang', () => {
 });
 
 describe('model — trường lang', () => {
-    test('có trong schema, enum en/zh, mặc định en', () => {
+    test('có trong schema, enum en/zh/bi, mặc định en', () => {
         // Mongoose `strict` xoá âm thầm trường không khai.
+        //
+        // `bi` = kho song ngữ. Phải là giá trị RIÊNG chứ không mượn 'zh': bộ
+        // lọc phân loại bản ghi cũ bằng regex chữ Hán, nên từ song ngữ mặt Hán
+        // sẽ lẫn vào danh sách ôn của kho tiếng Trung.
         const path = WrongWord.schema.path('lang');
         expect(path).toBeDefined();
-        expect(path.options.enum).toEqual(['en', 'zh']);
+        expect(path.options.enum).toEqual(['en', 'zh', 'bi']);
         expect(path.defaultValue).toBe('en');
     });
 });
