@@ -94,3 +94,42 @@ describe('Flashcard bỏ thanh lặp', () => {
         expect(css).not.toMatch(/\[data-theme="dark"\] \.flashcard-progress/);
     });
 });
+
+describe('chiều cao header', () => {
+    /** Mọi khối `.practice-header { … }` theo thứ tự trong file. */
+    const cacKhoi = () =>
+        [...css.matchAll(/\.practice-header \{([^}]*)\}/g)].map((m) => m[1]);
+
+    test('padding dọc cắt xuống `sm`, không còn `md`', () => {
+        // Khai báo SAU thắng trong CSS — phải là khối cuối cùng có `padding`.
+        const coPadding = cacKhoi().filter((k) => /padding:/.test(k));
+        expect(coPadding.length).toBeGreaterThan(0);
+        const cuoi = coPadding[coPadding.length - 1];
+        expect(cuoi).toMatch(/padding: var\(--spacing-sm\) var\(--spacing-md\)/);
+    });
+
+    test('nút quay lại nhỏ lại TRONG header này thôi', () => {
+        // `.icon-btn` dùng chung toàn app (thanh điều hướng, popup) — sửa ở gốc
+        // là đổi luôn những chỗ chưa ai than phiền.
+        const i = css.indexOf('.practice-header .icon-btn {');
+        expect(i).toBeGreaterThan(-1);
+        const rule = css.slice(css.indexOf('{', i), css.indexOf('}', i));
+        expect(rule).toMatch(/height: 34px/);
+    });
+
+    test('KHÔNG sửa `.icon-btn` gốc', () => {
+        const base = readFileSync(
+            join(__dirname, '..', '..', 'assets', 'styles', 'base.css'), 'utf8');
+        const i = base.indexOf('.icon-btn {');
+        const rule = base.slice(base.indexOf('{', i), base.indexOf('}', i));
+        expect(rule).toMatch(/height: 40px/);
+    });
+
+    test('vẫn trên ngưỡng chạm tối thiểu', () => {
+        // Dưới 32px là quá nhỏ để bấm chắc tay trên màn cảm ứng.
+        const i = css.indexOf('.practice-header .icon-btn {');
+        const rule = css.slice(css.indexOf('{', i), css.indexOf('}', i));
+        const px = Number((rule.match(/height: (\d+)px/) || [])[1]);
+        expect(px).toBeGreaterThanOrEqual(32);
+    });
+});

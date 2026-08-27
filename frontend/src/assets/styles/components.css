@@ -10762,6 +10762,24 @@ mark {
   /* Khoảng cách xuống nội dung: `md` (16px) là dư cho hai khối liền nhau đã có
      đệm trong riêng. Cắt còn `sm` để câu hỏi lên cao hơn một nhịp. */
   margin-bottom: var(--spacing-sm);
+
+  /* ── CHIỀU CAO ────────────────────────────────────────────────────────────
+     Header cũ cao ~72px: padding 16px trên/dưới (32px) + nút quay lại 40px.
+     Cắt cả hai vế mới có tác dụng — chỉ giảm padding thì nút vẫn giữ 40px và
+     header chỉ hạ được vài pixel.
+
+     Đây là hàng thông tin phụ (tên chế độ, tiến độ, điểm) nằm trên đầu suốt
+     buổi học; mỗi pixel ở đây là một pixel câu hỏi bị đẩy xuống. */
+  padding: var(--spacing-sm) var(--spacing-md);
+}
+
+/* Nút quay lại nhỏ lại TRONG header này thôi.
+   `.icon-btn` dùng chung toàn app (thanh điều hướng, các popup) — sửa ở gốc là
+   đổi luôn những chỗ chưa ai than phiền. 34px vẫn trên ngưỡng chạm tối thiểu
+   cho vùng bấm phụ, và nút nằm sát mép trái nên không dễ bấm nhầm. */
+.practice-header .icon-btn {
+  width: 34px;
+  height: 34px;
 }
 
 /* Ba con số ⭐✓✗ gom thành một cụm có nền riêng, tách khỏi tên chế độ bên
