@@ -2,6 +2,49 @@
 // 5. USER MANAGEMENT FUNCTIONS
 // ===================================
 
+/**
+ * Đồng bộ NHÃN + ví dụ của hai ô từ/nghĩa theo kho đang chọn.
+ *
+ * Dùng chung cho cả THÊM và SỬA — hai đường mở cùng một modal, mà chép rời thì
+ * một bên sửa một bên quên (đã xảy ra thật: đường sửa vẫn thiếu kho song ngữ).
+ *
+ * Lỗi cũ: selector tìm `label[for="word-en"]` nhưng HTML không khai `for` nào,
+ * nên biến nhãn luôn `null` và `if` nuốt luôn — nhãn kẹt ở "Tiếng Anh" ngay
+ * trên ô có ví dụ chữ Hán, mà không có lỗi nào báo.
+ */
+const NHAN_O_TU = {
+    en: { tu: 'Tiếng Anh', vd: 'ex: developer', nghia: 'Tiếng Việt', vdNghia: 'người cung cấp đồ ăn' },
+    zh: { tu: 'Từ Tiếng Trung (ZH)', vd: 'vd: 男朋友', nghia: 'Tiếng Việt', vdNghia: 'bạn trai' },
+    // Kho song ngữ học Trung ↔ Anh: ô thứ hai là nghĩa TIẾNG ANH, không phải
+    // tiếng Việt. Để nhãn "Tiếng Việt" ở đó là người nhập gõ nhầm ngôn ngữ vào
+    // đúng ô làm đáp án.
+    bi: { tu: 'Từ Tiếng Trung (ZH)', vd: 'vd: 你好', nghia: 'Nghĩa Tiếng Anh', vdNghia: 'ex: hello' },
+};
+
+function dongBoNhanOTu(modal, lang) {
+    const nhan = NHAN_O_TU[lang] || NHAN_O_TU.en;
+    const batBuoc = ' <span style="color:#ef4444">*</span>';
+
+    const oTu = modal.querySelector('label[for="word-en"]');
+    if (oTu) oTu.innerHTML = nhan.tu + batBuoc;
+    const inTu = document.getElementById('word-en');
+    if (inTu) inTu.placeholder = nhan.vd;
+
+    const oNghia = modal.querySelector('label[for="word-vn"]');
+    if (oNghia) oNghia.innerHTML = nhan.nghia + batBuoc;
+    const inNghia = document.getElementById('word-vn');
+    if (inNghia) inNghia.placeholder = nhan.vdNghia;
+}
+
+/** Huy hiệu ngôn ngữ trên tiêu đề modal. Dùng chung THÊM và SỬA. */
+function huyHieuNgonNgu(lang) {
+    const ve = (nen, chu, vien, nhan) =>
+        `<span style="margin-left:8px;font-size:11px;padding:2px 8px;border-radius:12px;background:${nen};color:${chu};border:1px solid ${vien};font-weight:700">${nhan}</span>`;
+    if (lang === 'zh') return ve('#f0fdf4', '#16a34a', '#bbf7d0', '🇨🇳 Chinese');
+    if (lang === 'bi') return ve('#faf5ff', '#7c3aed', '#e9d5ff', '🀄 Trung–Anh');
+    return ve('#eff6ff', '#2563eb', '#bfdbfe', '🇬🇧 English');
+}
+
 let userEditMode = false;
 
 function hideUsersModal() {
@@ -356,19 +399,12 @@ document.addEventListener("DOMContentLoaded", () => {
         delete modal.dataset.editMode;
         delete modal.dataset.originalEn;
         const lang = typeof vocabCurrentLang !== "undefined" ? vocabCurrentLang : "en";
-        const langBadge = lang === 'zh'
-          ? '<span style="margin-left:8px;font-size:11px;padding:2px 8px;border-radius:12px;background:#f0fdf4;color:#16a34a;border:1px solid #bbf7d0;font-weight:700">🇨🇳 Chinese</span>'
-          : '<span style="margin-left:8px;font-size:11px;padding:2px 8px;border-radius:12px;background:#eff6ff;color:#2563eb;border:1px solid #bfdbfe;font-weight:700">🇬🇧 English</span>';
-        modal.querySelector("h3").innerHTML = "+ Add New Word " + langBadge;
+        modal.querySelector("h3").innerHTML = "+ Add New Word " + huyHieuNgonNgu(lang);
         modal.querySelector('button[type="submit"]').textContent = "Add Word";
         if (typeof switchWordModalTab === "function")
           switchWordModalTab("manual");
 
-        const wordLabel = modal.querySelector('label[for="word-en"]');
-        if (wordLabel) {
-            wordLabel.innerHTML = lang === 'zh' ? 'Từ Tiếng Trung (ZH) <span style="color:#ef4444">*</span>' : 'English Word (EN) <span style="color:#ef4444">*</span>';
-        }
-        document.getElementById("word-en").placeholder = lang === 'zh' ? "vd: 男朋友" : "ex: developer";
+        dongBoNhanOTu(modal, lang);
 
         modal.style.display = "flex";
       }

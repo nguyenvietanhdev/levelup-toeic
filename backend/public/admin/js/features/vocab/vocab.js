@@ -1270,17 +1270,15 @@ function openEditWordModal(wordData) {
     const submitBtn = modal.querySelector('button[type="submit"]');
     const currentLang = typeof vocabCurrentLang !== 'undefined' ? vocabCurrentLang : 'en';
 
-    const langBadge = currentLang === 'zh'
-        ? '<span style="margin-left:8px;font-size:11px;padding:2px 8px;border-radius:12px;background:#f0fdf4;color:#16a34a;border:1px solid #bbf7d0;font-weight:700">🇨🇳 Chinese</span>'
-        : '<span style="margin-left:8px;font-size:11px;padding:2px 8px;border-radius:12px;background:#eff6ff;color:#2563eb;border:1px solid #bfdbfe;font-weight:700">🇬🇧 English</span>';
-    modalTitle.innerHTML = '✏️ Edit Word ' + langBadge;
+    modalTitle.innerHTML = '✏️ Edit Word ' + huyHieuNgonNgu(currentLang);
     submitBtn.textContent = 'Update Word';
 
-    // Cập nhật nhãn input chính
-    const wordLabel = modal.querySelector('label[for="word-en"]');
-    if (wordLabel) {
-        wordLabel.innerHTML = currentLang === 'zh' ? 'Từ Tiếng Trung (ZH) <span style="color:#ef4444">*</span>' : 'English Word (EN) <span style="color:#ef4444">*</span>';
-    }
+    // Nhãn hai ô từ/nghĩa — DÙNG CHUNG với đường thêm mới.
+    //
+    // Trước đây chép rời và chỉ đổi ô đầu, lại thiếu hẳn kho song ngữ: mở một
+    // từ song ngữ ra sửa thì ô nghĩa ghi "Tiếng Việt" trong khi nội dung là
+    // tiếng Anh.
+    dongBoNhanOTu(modal, currentLang);
 
     // Điền dữ liệu vào form
     document.getElementById("word-en").value = wordData.en || wordData.zh || '';

@@ -176,11 +176,15 @@
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
             <!-- EN + VN -->
             <div>
-              <label style="display:block;font-size:12px;font-weight:600;margin-bottom:4px;color:var(--text-primary)">Tiếng Anh <span style="color:#ef4444">*</span></label>
+              <!-- `for` BẮT BUỘC: JS đổi nhãn theo kho bằng
+                   `label[for="word-en"]`. Thiếu nó thì selector không khớp,
+                   `if (wordLabel)` nuốt luôn, và nhãn kẹt ở "Tiếng Anh" trong
+                   khi placeholder đã là chữ Hán. -->
+              <label for="word-en" style="display:block;font-size:12px;font-weight:600;margin-bottom:4px;color:var(--text-primary)">Tiếng Anh <span style="color:#ef4444">*</span></label>
               <input type="text" id="word-en" required placeholder="caterer" style="width:100%;padding:8px 10px;border:1px solid var(--border-color);border-radius:6px;font-size:13px;background:var(--bg-secondary);color:var(--text-primary);text-transform:lowercase">
             </div>
             <div>
-              <label style="display:block;font-size:12px;font-weight:600;margin-bottom:4px;color:var(--text-primary)">Tiếng Việt <span style="color:#ef4444">*</span></label>
+              <label for="word-vn" style="display:block;font-size:12px;font-weight:600;margin-bottom:4px;color:var(--text-primary)">Tiếng Việt <span style="color:#ef4444">*</span></label>
               <input type="text" id="word-vn" required placeholder="người cung cấp đồ ăn" style="width:100%;padding:8px 10px;border:1px solid var(--border-color);border-radius:6px;font-size:13px;background:var(--bg-secondary);color:var(--text-primary);text-transform:lowercase">
             </div>
 

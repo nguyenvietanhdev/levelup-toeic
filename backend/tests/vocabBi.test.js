@@ -612,3 +612,68 @@ describe('sửa từ riêng không làm mất dữ liệu song ngữ', () => {
         expect(thanUpdate()).toMatch(/if \(enMeaning !== undefined\)/);
     });
 });
+
+describe('modal thêm/sửa từ: nhãn khớp ngôn ngữ', () => {
+    const { readFileSync } = require('node:fs');
+    const { join } = require('node:path');
+    const A = (...p) => readFileSync(join(__dirname, '..', 'public', 'admin', ...p), 'utf8');
+    const html = A('partials', 'modals', 'add-word-modal.html');
+    const users = A('js', 'features', 'users', 'users.js');
+    const vocab = A('js', 'features', 'vocab', 'vocab.js');
+
+    test('label khai `for` — thiếu là selector không khớp', () => {
+        // Đây là NGUYÊN NHÂN gốc: JS tìm `label[for="word-en"]` nhưng HTML
+        // không khai `for` nào, nên biến nhãn luôn `null` và `if` nuốt luôn.
+        // Nhãn kẹt ở "Tiếng Anh" ngay trên ô có ví dụ chữ Hán.
+        expect(html).toMatch(/<label for="word-en"/);
+        expect(html).toMatch(/<label for="word-vn"/);
+    });
+
+    test('cả hai ô đều đổi nhãn, không chỉ ô đầu', () => {
+        const i = users.indexOf('function dongBoNhanOTu');
+        const t = users.slice(i, users.indexOf('\n}', i));
+        expect(t).toMatch(/label\[for="word-en"\]/);
+        expect(t).toMatch(/label\[for="word-vn"\]/);
+    });
+
+    test('kho song ngữ: ô thứ hai là nghĩa TIẾNG ANH', () => {
+        // Học Trung ↔ Anh, không qua tiếng Việt. Để nhãn "Tiếng Việt" ở đó là
+        // người nhập gõ nhầm ngôn ngữ vào đúng ô làm đáp án.
+        const i = users.indexOf('const NHAN_O_TU');
+        const t = users.slice(i, users.indexOf('};', i));
+        expect(t).toMatch(/bi: \{[^}]*nghia: 'Nghĩa Tiếng Anh'/);
+        expect(t).toMatch(/bi: \{[^}]*tu: 'Từ Tiếng Trung/);
+    });
+
+    test('hai kho cũ giữ nhãn cũ', () => {
+        const i = users.indexOf('const NHAN_O_TU');
+        const t = users.slice(i, users.indexOf('};', i));
+        expect(t).toMatch(/en: \{[^}]*nghia: 'Tiếng Việt'/);
+        expect(t).toMatch(/zh: \{[^}]*nghia: 'Tiếng Việt'/);
+    });
+
+    test('giá trị lạ rơi về tiếng Anh, không vỡ', () => {
+        const i = users.indexOf('function dongBoNhanOTu');
+        expect(users.slice(i, i + 200)).toMatch(/NHAN_O_TU\[lang\] \|\| NHAN_O_TU\.en/);
+    });
+
+    test('huy hiệu có nhánh kho song ngữ', () => {
+        const i = users.indexOf('function huyHieuNgonNgu');
+        const t = users.slice(i, users.indexOf('\n}', i));
+        expect(t).toMatch(/lang === 'bi'/);
+    });
+
+    test('đường SỬA dùng chung hàm, không chép rời', () => {
+        // Chép rời thì một bên sửa một bên quên — đã xảy ra thật: đường sửa
+        // vẫn thiếu kho song ngữ.
+        expect(vocab).toMatch(/dongBoNhanOTu\(modal, currentLang\)/);
+        expect(vocab).toMatch(/huyHieuNgonNgu\(currentLang\)/);
+        // Và không còn bản chép cũ.
+        expect(vocab).not.toMatch(/wordLabel\.innerHTML = currentLang === 'zh'/);
+    });
+
+    test('đường THÊM cũng dùng chung hàm đó', () => {
+        expect(users).toMatch(/dongBoNhanOTu\(modal, lang\)/);
+        expect(users).toMatch(/huyHieuNgonNgu\(lang\)/);
+    });
+});
