@@ -327,3 +327,33 @@ describe('gợi ý xếp hộ phần mở đầu', () => {
         expect(src.slice(i, src.indexOf('\n    },', i))).toMatch(/!b\.disabled/);
     });
 });
+
+describe('ẩn kho cụm từ khi đã có kết quả', () => {
+    test('ẩn khi hiện kết quả', () => {
+        // Xếp xong thì mọi ô đều disabled, bấm không tác dụng — chỉ còn chiếm
+        // chỗ và đẩy hai nút "Câu trước / Câu tiếp" xuống dưới khung nhìn.
+        const i = src.indexOf("sentenceArea.classList.add('has-result')");
+        expect(i).toBeGreaterThan(-1);
+        expect(src.slice(i, i + 600)).toMatch(/words-pool-container'\)\?\.classList\.add\('an-khi-xong'\)/);
+    });
+
+    test('HIỆN LẠI khi sang câu mới', () => {
+        // Quên bỏ lớp ẩn thì câu sau không có gì để bấm — kẹt hẳn.
+        const i = src.indexOf("sentenceArea.classList.remove('has-result')");
+        expect(i).toBeGreaterThan(-1);
+        expect(src.slice(i, i + 400)).toMatch(/classList\.remove\('an-khi-xong'\)/);
+    });
+
+    test('CSS dùng `display:none`, không phải `visibility`', () => {
+        // `visibility:hidden` và `opacity:0` vẫn giữ nguyên chiều cao — tức là
+        // không giải quyết gì, vì vấn đề là CHỖ chứ không phải nhìn thấy.
+        const i = css.indexOf('.words-pool-container.an-khi-xong');
+        expect(i).toBeGreaterThan(-1);
+        // Cắt từ dấu `{` để không nuốt cả selector, và soi ĐÚNG khối này.
+        const rule = css.slice(css.indexOf('{', i), css.indexOf('}', i));
+        expect(rule).toMatch(/display:\s*none/);
+        // `visibility:hidden` / `opacity:0` vẫn giữ nguyên chiều cao — không
+        // giải quyết gì, vì vấn đề là CHỖ chứ không phải nhìn thấy hay không.
+        expect(rule).not.toMatch(/visibility|opacity/);
+    });
+});

@@ -130,18 +130,8 @@ export default function AchievementsScreen({ active }) {
 
         setClaimingAll(true);
 
-        // GOM TỔNG thưởng + đánh dấu TẤT CẢ mở khóa → cập nhật giao diện 1 LẦN
-        // (thay vì credit + render mỗi thành tích → hết delay nhảy số dồn dập).
-        const rewardOf = (a) => ({
-            coins: a.rewardCoins || a.reward?.coins || 0,
-            xp:    a.rewardXp    || a.reward?.xp    || 0,
-            gems:  a.rewardGems  || a.reward?.gems  || 0,
-        });
-        const total = toClaim.reduce((s, a) => {
-            const r = rewardOf(a);
-            return { coins: s.coins + r.coins, xp: s.xp + r.xp, gems: s.gems + r.gems };
-        }, { coins: 0, xp: 0, gems: 0 });
-        const ids = new Set(toClaim.map(a => a.id || a._id));
+        // Tổng thưởng lấy từ SERVER, không tự cộng ở client: hai bên tính lệch
+        // nhau thì số hiện trên màn hình khác số thật trong DB.
         const now = new Date().toISOString();
 
         const markUnlocked = (idSet, unlock) => {
@@ -154,31 +144,40 @@ export default function AchievementsScreen({ active }) {
             });
         };
 
-        markUnlocked(ids, true);
-        GameState.creditServerRewards(total);
+        // GỌI SERVER TRƯỚC, đổi giao diện SAU.
+        //
+        // Trước đây làm ngược: đánh dấu mở khoá + cộng thưởng ngay rồi mới gửi
+        // 30 request tuần tự. Người dùng bấm là thấy toàn bộ số biến mất tức
+        // thì, trong khi server còn chạy 8,2 giây — và nếu hỏng giữa chừng thì
+        // số lại nhảy ngược về. Đổi lạc quan chỉ hợp khi thao tác gần như chắc
+        // thành công và gần như tức thì; đây không phải cả hai.
+        //
+        // Một request cho cả mẻ nên chờ là chuyện của vài trăm ms, đủ nhanh để
+        // không cần đoán trước kết quả.
+        const kq = await AchievementsAPI.claimAll(toClaim.map(a => a.id || a._id));
+
+        if (!kq?.success) {
+            Notification.error('Nhận thưởng thất bại, chưa có gì thay đổi');
+            setClaimingAll(false);
+            return;
+        }
+
+        // Chỉ đánh dấu những cái server THỰC SỰ phát thưởng: cái nào chưa đạt
+        // điều kiện thì nó bỏ qua, đánh dấu hết là nói dối người dùng.
+        const nhanDuoc = new Set((kq.data?.claimed || []).map(x => x.id));
+        if (nhanDuoc.size === 0) {
+            Notification.info('Không có thành tích nào đủ điều kiện nhận');
+            setClaimingAll(false);
+            return;
+        }
+
+        markUnlocked(nhanDuoc, true);
+        GameState.creditServerRewards(kq.data?.rewards || { coins: 0, xp: 0, gems: 0 });
         Utils.playSound(Config.sounds.achievement, 0.6, { ignoreSettings: true });
         EventBus.emit(GameEvents.ACHIEVEMENT_UNLOCKED, { bulk: true });
-        Notification.success(`Đã nhận thưởng ${toClaim.length} thành tích!`);
+        Notification.success(`Đã nhận thưởng ${nhanDuoc.size} thành tích!`);
         syncFromState();
 
-        // Server chạy NỀN (tuần tự); cái nào lỗi → hoàn tác phần thưởng + khóa lại.
-        const failed = [];
-        for (const a of toClaim) {
-            let ok = false;
-            try { ok = !!(await AchievementsAPI.claim(a.id || a._id)).success; } catch { ok = false; }
-            if (!ok) failed.push(a);
-        }
-
-        if (failed.length > 0) {
-            const back = failed.reduce((s, a) => {
-                const r = rewardOf(a);
-                return { coins: s.coins - r.coins, xp: s.xp - r.xp, gems: s.gems - r.gems };
-            }, { coins: 0, xp: 0, gems: 0 });
-            GameState.creditServerRewards(back);
-            markUnlocked(new Set(failed.map(a => a.id || a._id)), false);
-            Notification.error(`${failed.length} thành tích nhận thất bại, đã hoàn lại`);
-            syncFromState();
-        }
         setClaimingAll(false);
     }
 

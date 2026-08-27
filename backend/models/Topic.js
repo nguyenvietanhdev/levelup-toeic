@@ -42,7 +42,9 @@ const topicSchema = new mongoose.Schema(
         },
         lang: {
             type: String,
-            enum: ['en', 'zh'],
+            // `bi` = kho song ngữ (Trung ↔ Anh). Thiếu nó ở enum thì Mongoose
+            // từ chối lúc lưu và đề của kho đó không tạo được.
+            enum: ['en', 'zh', 'bi'],
             default: 'en',
         },
     },

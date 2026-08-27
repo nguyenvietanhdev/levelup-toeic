@@ -350,6 +350,120 @@ exports.unlockAchievement = async (req, res, next) => {
     }
 };
 
+/**
+ * @desc    Nhận thưởng NHIỀU thành tích trong một request
+ * @route   POST /api/user/achievements/claim-all
+ *
+ * Vì sao cần: client cũ gọi `/achievement` lần lượt cho từng cái. Mỗi request
+ * làm ~7 lượt chạm DB, đo thật là 273ms — nhân 30 thành tích thành 8,2 GIÂY.
+ * Người dùng bấm "Nhận tất cả" rồi thấy số nhảy lùi dần như treo máy.
+ *
+ * Ở đây tải dữ liệu dùng chung ĐÚNG MỘT LẦN (stats, profile, định nghĩa, danh
+ * sách đã mở) rồi duyệt trong bộ nhớ, cuối cùng ghi một lượt.
+ *
+ * Kiểm điều kiện cho TỪNG cái y như đường đơn lẻ — gộp request không phải là
+ * cớ để bỏ kiểm, nếu không đây thành cửa sau phát thưởng miễn phí.
+ */
+exports.claimAllAchievements = async (req, res, next) => {
+    try {
+        const userId = req.user.id;
+        const xin = Array.isArray(req.body?.ids) ? req.body.ids.filter(Boolean) : null;
+
+        const [stats, profile] = await Promise.all([
+            UserStats.findOne({ userId }),
+            UserProfile.findOne({ userId }),
+        ]);
+        if (!stats) return res.status(404).json({ success: false, message: 'User not found' });
+
+        // Chỉ xét thành tích CHƯA mở. Lọc ở DB chứ không tải hết rồi lọc ở đây.
+        const daMo = new Set(
+            (await UserAchievement.find({ userId }).select('code').lean()).map((x) => x.code)
+        );
+        const dks = await AchievementDefinition.find({
+            isActive: true,
+            ...(xin ? { code: { $in: xin } } : {}),
+        }).lean();
+
+        const dat = [];
+        const truot = [];
+        for (const def of dks) {
+            if (daMo.has(def.code)) continue;
+            const check = checkAchievementCondition(def, stats, profile);
+            if (check.ok) dat.push(def);
+            else truot.push({ code: def.code, reason: check.reason });
+        }
+
+        if (!dat.length) {
+            return res.json({
+                success: true,
+                data: { claimed: [], rewards: { coins: 0, xp: 0, gems: 0 }, skipped: truot.length },
+            });
+        }
+
+        // Cộng thưởng trên BẢN GHI ĐANG GIỮ, chưa lưu — lưu một lần ở cuối.
+        const tong = { coins: 0, xp: 0, gems: 0 };
+        for (const def of dat) {
+            if (def.rewardCoins) { stats.coins += def.rewardCoins; tong.coins += def.rewardCoins; }
+            if (def.rewardXp && profile) { awardXp(profile, stats, def.rewardXp); tong.xp += def.rewardXp; }
+            if (def.rewardGems) { stats.gems += def.rewardGems; tong.gems += def.rewardGems; }
+        }
+
+        // Vật phẩm vẫn phải cấp từng cái (`Inventory.grant` gộp theo itemId).
+        for (const def of dat) {
+            for (const it of (Array.isArray(def.rewardItems) ? def.rewardItems : [])) {
+                if (it?.itemId) await Inventory.grant(userId, it.itemId, Number(it.quantity) || 1, { source: 'achievement' });
+            }
+        }
+
+        for (const def of dat) {
+            if (def.rewardCoins) logTxn(userId, { type: 'achievement', direction: 'in', name: `Thành tích: ${def.name}`, amount: def.rewardCoins, currency: 'coins', balanceAfter: stats.coins });
+            if (def.rewardGems)  logTxn(userId, { type: 'achievement', direction: 'in', name: `Thành tích: ${def.name}`, amount: def.rewardGems, currency: 'gems', balanceAfter: stats.gems });
+        }
+
+        // `insertMany` + `ordered: false`: một cái trùng (bấm hai lần, hai tab)
+        // không được kéo đổ cả mẻ. Index unique là (userId, achievementDefinitionId)
+        // nên bản ghi trùng bị DB chặn, không phải dựa vào lượt đọc ở trên.
+        try {
+            await UserAchievement.insertMany(
+                dat.map((def) => ({
+                    userId,
+                    achievementDefinitionId: def._id,
+                    code: def.code,
+                    claimedRewards: { xp: def.rewardXp, coins: def.rewardCoins, gems: def.rewardGems, items: def.rewardItems || [] },
+                })),
+                { ordered: false }
+            );
+        } catch (e) {
+            // Lỗi trùng khoá (11000) là bình thường ở đây và đã bị chặn đúng chỗ.
+            if (e?.code !== 11000 && !e?.writeErrors?.every((w) => w.err?.code === 11000)) throw e;
+        }
+
+        await Promise.all([
+            stats.save(),
+            profile?.save(),
+            Notification.create({
+                userId,
+                type: 'achievement',
+                title: `Đã nhận ${dat.length} thành tích`,
+                body: dat.map((d) => d.name).slice(0, 5).join(', ') + (dat.length > 5 ? '…' : ''),
+                data: { bulk: true, count: dat.length },
+            }),
+        ]);
+
+        res.json({
+            success: true,
+            data: {
+                claimed: dat.map((d) => ({ id: d.code, name: d.name, icon: d.icon })),
+                rewards: tong,
+                skipped: truot.length,
+            },
+        });
+    } catch (error) {
+        logger.error('Error in claimAllAchievements:', error);
+        next(error);
+    }
+};
+
 exports.updateQuests = async (req, res, next) => {
     try {
         const { daily, lastResetDate } = req.body;

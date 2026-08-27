@@ -183,6 +183,16 @@ function _setupTopicsSearch() {
     });
 }
 
+/**
+ * Nhãn ngôn ngữ của đề. Tra bảng thay vì `zh ? : en` — nhị phân thì đề song
+ * ngữ hiện "🇬🇧 EN", sai mà không báo lỗi gì.
+ */
+const NHAN_NGON_NGU = {
+  en: { chu: "🇬🇧 EN", mau: "#2563eb" },
+  zh: { chu: "🇨🇳 ZH", mau: "#dc2626" },
+  bi: { chu: "🀄 BI", mau: "#7c3aed" },
+};
+
 function renderTopicsTable(topics) {
   const tbody = document.getElementById("topics-tbody");
   if (!topics.length) {
@@ -202,8 +212,8 @@ function renderTopicsTable(topics) {
             <td><strong>${(t.wordCount || 0).toLocaleString()}</strong> từ</td>
             <td style="text-align:center;">${t.order}</td>
             <td style="text-align:center;">
-                <span class="badge" style="background:${(t.lang || "en") === "zh" ? "#dc2626" : "#2563eb"};color:#fff;">
-                    ${(t.lang || "en") === "zh" ? "🇨🇳 ZH" : "🇬🇧 EN"}
+                <span class="badge" style="background:${NHAN_NGON_NGU[t.lang || "en"]?.mau || "#2563eb"};color:#fff;">
+                    ${NHAN_NGON_NGU[t.lang || "en"]?.chu || "🇬🇧 EN"}
                 </span>
             </td>
             <td style="text-align:center;">
@@ -277,6 +287,7 @@ function showTopicModal(topic) {
                         <select id="ti-lang" style="width:100%;padding:9px 12px;background:#0f172a;border:1px solid #334155;border-radius:8px;color:#e2e8f0;">
                             <option value="en" ${(topic?.lang || "en") === "en" ? "selected" : ""}>🇬🇧 Tiếng Anh (EN)</option>
                             <option value="zh" ${topic?.lang === "zh" ? "selected" : ""}>🇨🇳 Tiếng Trung (ZH)</option>
+                            <option value="bi" ${topic?.lang === "bi" ? "selected" : ""}>🀄 Song ngữ (Trung–Anh)</option>
                         </select>
                     </div>
                 </div>

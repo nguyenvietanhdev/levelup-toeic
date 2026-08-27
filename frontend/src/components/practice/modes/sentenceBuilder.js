@@ -296,6 +296,9 @@ export const SentenceBuilder = {
         // cụm từ. Không gỡ thì khung kẹt ở dạng dọc và các cụm từ đang xếp bị
         // đổ thành một cột — mỗi cụm một dòng, không còn nhìn ra câu.
         sentenceArea.classList.remove('has-result');
+        // Hiện lại kho cụm từ: hàm này chạy khi bấm "Làm lại" hoặc sang câu
+        // mới. Quên bỏ lớp ẩn thì câu sau không có gì để bấm.
+        document.querySelector('.words-pool-container')?.classList.remove('an-khi-xong');
 
         if (this.selectedWords.length === 0) {
             sentenceArea.innerHTML = `
@@ -415,11 +418,19 @@ export const SentenceBuilder = {
             // cụm từ ghép thành câu), nhưng kết quả là hai câu để so sánh —
             // cạnh nhau thì trên điện thoại bị bóp thành hai cột chữ dựng đứng.
             sentenceArea.classList.add('has-result');
-            // Hai nút CHỈ gắn vào câu ĐÚNG, không gắn vào câu sai.
+
+            // ẨN kho cụm từ khi đã có kết quả.
             //
-            // Câu sai là thứ người học vừa tự ghép ra — nghe lại nó là học
-            // thuộc cái sai, còn dịch nó thì ra một câu tiếng Việt lộn xộn
-            // không giúp gì. Câu đúng mới là thứ đáng nghe và đáng hiểu.
+            // Xếp xong rồi thì mấy ô đó không bấm được nữa (đều đã disabled),
+            // chỉ còn chiếm chỗ — mà chỗ đó đang đẩy hai nút "Câu trước / Câu
+            // tiếp" xuống dưới khung nhìn, phải cuộn mới thấy. Ẩn đi thì cả
+            // kết quả lẫn nút điều hướng nằm gọn trong một màn hình.
+            document.querySelector('.words-pool-container')?.classList.add('an-khi-xong');
+
+            // Nút DỊCH chỉ gắn vào câu ĐÚNG. Dịch câu sai ra tiếng Việt thì
+            // được một câu tiếng Việt cũng sai — học nhầm. Nút LOA thì cả hai
+            // câu đều có: nghe câu mình sai ngay cạnh câu đúng mới thấy sai ở
+            // đâu.
             //
             // Nút DỊCH trước nút LOA, cùng thứ tự với Flashcard và Trắc nghiệm.
             const nutHoTro = `

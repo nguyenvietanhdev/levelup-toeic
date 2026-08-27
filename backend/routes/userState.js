@@ -10,6 +10,7 @@ const {
     updateProgress,
     addXp,
     unlockAchievement,
+    claimAllAchievements,
     updateQuests,
 } = require('../controllers/userStateController');
 
@@ -88,6 +89,9 @@ router.patch('/progress', updateProgress);
 router.patch('/quests', updateQuests);
 router.post('/xp', addXp);
 router.post('/achievement', unlockAchievement);
+// Nhận NHIỀU thành tích một lượt. Gọi `/achievement` 30 lần mất 8,2 giây đo
+// thật — người dùng thấy số nhảy lùi dần như treo máy.
+router.post('/achievements/claim-all', claimAllAchievements);
 
 // Lịch sử giao dịch (collection riêng, mới nhất trước).
 router.get('/transactions', async (req, res, next) => {

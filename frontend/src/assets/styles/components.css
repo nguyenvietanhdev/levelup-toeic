@@ -6401,6 +6401,16 @@ mark {
     box-shadow: var(--shadow-small);
 }
 
+/* Xếp xong rồi thì kho cụm từ chỉ còn chiếm chỗ: mọi ô đều đã disabled, bấm
+   không có tác dụng. Mà chỗ đó đang đẩy hai nút "Câu trước / Câu tiếp" xuống
+   dưới mép màn hình, phải cuộn mới thấy.
+
+   `display: none` chứ không phải `visibility: hidden` hay `opacity: 0`: hai
+   cái sau vẫn giữ nguyên chiều cao, tức là không giải quyết gì. */
+.words-pool-container.an-khi-xong {
+    display: none;
+}
+
 .words-pool {
     display: flex;
     flex-wrap: wrap;

@@ -362,3 +362,126 @@ describe('app luyện tập: lựa chọn ngôn ngữ thứ ba', () => {
         expect(adm).toMatch(/raw=1/);
     });
 });
+
+describe('bộ đề: chọn đúng bảng cho kho song ngữ', () => {
+    const { readFileSync } = require('node:fs');
+    const { join } = require('node:path');
+    const Topic = require('../models/Topic');
+    const topicCtrl = readFileSync(
+        join(__dirname, '..', 'controllers', 'topicController.js'), 'utf8');
+    const html = readFileSync(
+        join(__dirname, '..', 'public', 'admin', 'partials', 'tabs', 'topics.html'), 'utf8');
+    const tabs = readFileSync(
+        join(__dirname, '..', 'public', 'admin', 'js', 'core', 'tabs.js'), 'utf8');
+
+    test('`Topic.lang` nhận `bi`', () => {
+        // Thiếu ở enum thì Mongoose từ chối lúc lưu và đề không tạo được.
+        expect(Topic.schema.path('lang').enumValues).toContain('bi');
+    });
+
+    test('đếm từ tra ĐÚNG bảng', () => {
+        // Đếm nhầm bảng thì đề song ngữ báo "0 từ" dù có dữ liệu, và người
+        // dùng tưởng bộ đề hỏng.
+        const i = topicCtrl.indexOf('function getVocabularyModelByLang');
+        const t = topicCtrl.slice(i, topicCtrl.indexOf('\n}', i));
+        expect(t).toMatch(/lang === "bi"/);
+        expect(t).toMatch(/VocabularyBi/);
+    });
+
+    test('bộ lọc ngôn ngữ có lựa chọn thứ ba', () => {
+        expect(html).toMatch(/<option value="bi">/);
+    });
+
+    test('form thêm/sửa đề chọn được song ngữ', () => {
+        expect(tabs).toMatch(/value="bi".*ti-lang|topic\?\.lang === "bi"/);
+    });
+
+    test('nhãn ngôn ngữ tra BẢNG, không phải `zh ? :`', () => {
+        // Nhị phân thì đề song ngữ hiện "🇬🇧 EN" — sai mà không báo lỗi gì.
+        expect(tabs).toMatch(/NHAN_NGON_NGU/);
+        const i = tabs.indexOf('const NHAN_NGON_NGU');
+        expect(tabs.slice(i, i + 250)).toMatch(/bi:/);
+    });
+
+    test('bảng nhãn khai TRƯỚC chỗ dùng', () => {
+        // Dùng trước khi khai với `const` là ReferenceError lúc chạy, mà build
+        // KHÔNG bắt được.
+        expect(tabs.indexOf('const NHAN_NGON_NGU'))
+            .toBeLessThan(tabs.indexOf('NHAN_NGON_NGU[t.lang'));
+    });
+});
+
+describe('nhận thưởng hàng loạt', () => {
+    const { readFileSync } = require('node:fs');
+    const { join } = require('node:path');
+    const ctrl = readFileSync(
+        join(__dirname, '..', 'controllers', 'userStateController.js'), 'utf8');
+    const routes = readFileSync(
+        join(__dirname, '..', 'routes', 'userState.js'), 'utf8');
+
+    const than = () => {
+        const i = ctrl.indexOf('exports.claimAllAchievements');
+        expect(i).toBeGreaterThan(-1);
+        return ctrl.slice(i, ctrl.indexOf('\n};', i));
+    };
+
+    test('có route riêng', () => {
+        expect(routes).toMatch(/achievements\/claim-all/);
+        expect(routes).toMatch(/claimAllAchievements/);
+    });
+
+    test('tải dữ liệu dùng chung MỘT LẦN, không lặp trong vòng', () => {
+        // Cả điểm mấu chốt của endpoint này: 30 request tuần tự mất 8,2 giây.
+        const t = than();
+        const iVong = t.indexOf('for (const def of dks)');
+        expect(iVong).toBeGreaterThan(-1);
+        // Không truy vấn stats/profile bên trong vòng duyệt điều kiện.
+        const vong = t.slice(iVong, t.indexOf('}', t.indexOf('else truot.push')));
+        expect(vong).not.toMatch(/await UserStats\.findOne|await UserProfile\.findOne/);
+    });
+
+    test('VẪN kiểm điều kiện từng cái', () => {
+        // Gộp request không phải cớ để bỏ kiểm — bỏ là thành cửa sau phát
+        // thưởng miễn phí.
+        //
+        // Phải soi KẾT QUẢ được dùng, không chỉ "có gọi hàm": gọi rồi vứt đi
+        // (`dat.push(def)` vô điều kiện) thì test chỉ khớp tên hàm vẫn xanh.
+        const t = than();
+        expect(t).toMatch(/const check = checkAchievementCondition\(def, stats, profile\)/);
+        expect(t).toMatch(/if \(check\.ok\) dat\.push\(def\)/);
+        expect(t).toMatch(/else truot\.push/);
+    });
+
+    test('bỏ qua thành tích ĐÃ nhận', () => {
+        expect(than()).toMatch(/daMo\.has\(def\.code\)\) continue/);
+    });
+
+    test('`insertMany` không đổ cả mẻ khi một cái trùng', () => {
+        // Bấm hai lần hoặc mở hai tab thì trùng là bình thường.
+        //
+        // Soi ĐỐI SỐ thật của `insertMany`, không phải chuỗi "ordered: false"
+        // ở đâu đó trong hàm — comment giải thích cũng chứa chuỗi đó.
+        const t = than();
+        const i = t.indexOf('UserAchievement.insertMany(');
+        expect(i).toBeGreaterThan(-1);
+        const loiGoi = t.slice(i, t.indexOf('catch', i));
+        expect(loiGoi).toMatch(/\{ ordered: false \}/);
+        expect(t).toMatch(/11000/);
+    });
+
+    test('lưu `stats` MỘT lần ở cuối, không lưu trong vòng', () => {
+        const t = than();
+        const iVongThuong = t.indexOf('for (const def of dat)');
+        const vong = t.slice(iVongThuong, t.indexOf('// Vật phẩm'));
+        expect(vong).not.toMatch(/stats\.save\(\)/);
+        expect(t).toMatch(/stats\.save\(\)/);
+    });
+
+    test('trả về danh sách ĐÃ nhận để client đánh dấu đúng', () => {
+        expect(than()).toMatch(/claimed: dat\.map/);
+    });
+
+    test('không có gì đủ điều kiện thì trả rỗng, không vỡ', () => {
+        expect(than()).toMatch(/if \(!dat\.length\)/);
+    });
+});
