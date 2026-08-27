@@ -6399,13 +6399,19 @@ mark {
     box-shadow: var(--shadow-small);
 }
 
-/* Xếp xong rồi thì kho cụm từ chỉ còn chiếm chỗ: mọi ô đều đã disabled, bấm
-   không có tác dụng. Mà chỗ đó đang đẩy hai nút "Câu trước / Câu tiếp" xuống
-   dưới mép màn hình, phải cuộn mới thấy.
+/* Chấm xong thì hai khối này chỉ còn chiếm chỗ:
+
+   - kho cụm từ  → mọi ô đã disabled, bấm không có tác dụng
+   - Làm lại / Kiểm tra → "Kiểm tra" đã bấm rồi, "Làm lại" không sửa được gì
+     vì câu đã chấm
+
+   Chỗ đó đang đẩy "Trước / Tiếp" — thứ DUY NHẤT còn dùng được ở bước này —
+   xuống dưới mép màn hình, phải cuộn mới thấy.
 
    `display: none` chứ không phải `visibility: hidden` hay `opacity: 0`: hai
    cái sau vẫn giữ nguyên chiều cao, tức là không giải quyết gì. */
-.words-pool-container.an-khi-xong {
+.words-pool-container.an-khi-xong,
+.sentence-actions.an-khi-xong {
     display: none;
 }
 

@@ -344,6 +344,30 @@ describe('ẩn kho cụm từ khi đã có kết quả', () => {
         expect(src.slice(i, i + 400)).toMatch(/classList\.remove\('an-khi-xong'\)/);
     });
 
+    test('ẩn luôn hai nút Làm lại / Kiểm tra', () => {
+        // "Kiểm tra" đã bấm rồi, "Làm lại" không sửa được gì vì câu đã chấm.
+        // Để lại là chiếm một hàng, đẩy "Trước / Tiếp" — thứ DUY NHẤT còn dùng
+        // được ở bước này — xuống dưới mép.
+        // Cắt tới HẾT nhánh hiện kết quả thay vì đếm ký tự: cửa sổ cố định
+        // hỏng ngay khi ai đó thêm một comment ở giữa.
+        const i = src.indexOf("sentenceArea.classList.add('has-result')");
+        expect(i).toBeGreaterThan(-1);
+        const nhanh = src.slice(i, src.indexOf('PracticeManager.recordAnswer', i));
+        expect(nhanh).toMatch(/sentence-actions'\)\?\.classList\.add\('an-khi-xong'\)/);
+    });
+
+    test('hiện lại hai nút đó khi làm lại', () => {
+        const i = src.indexOf("sentenceArea.classList.remove('has-result')");
+        expect(src.slice(i, i + 500)).toMatch(/sentence-actions'\)\?\.classList\.remove\('an-khi-xong'\)/);
+    });
+
+    test('CSS phủ CẢ HAI khối, không chỉ kho cụm từ', () => {
+        // Gắn cứng vào `.words-pool-container` thì thêm khối thứ hai là quên.
+        const i = css.indexOf('.words-pool-container.an-khi-xong');
+        const sel = css.slice(i, css.indexOf('{', i));
+        expect(sel).toMatch(/\.sentence-actions\.an-khi-xong/);
+    });
+
     test('CSS dùng `display:none`, không phải `visibility`', () => {
         // `visibility:hidden` và `opacity:0` vẫn giữ nguyên chiều cao — tức là
         // không giải quyết gì, vì vấn đề là CHỖ chứ không phải nhìn thấy.

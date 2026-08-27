@@ -299,6 +299,7 @@ export const SentenceBuilder = {
         // Hiện lại kho cụm từ: hàm này chạy khi bấm "Làm lại" hoặc sang câu
         // mới. Quên bỏ lớp ẩn thì câu sau không có gì để bấm.
         document.querySelector('.words-pool-container')?.classList.remove('an-khi-xong');
+        document.querySelector('.sentence-actions')?.classList.remove('an-khi-xong');
 
         if (this.selectedWords.length === 0) {
             sentenceArea.innerHTML = `
@@ -426,6 +427,14 @@ export const SentenceBuilder = {
             // tiếp" xuống dưới khung nhìn, phải cuộn mới thấy. Ẩn đi thì cả
             // kết quả lẫn nút điều hướng nằm gọn trong một màn hình.
             document.querySelector('.words-pool-container')?.classList.add('an-khi-xong');
+
+            // Ẩn luôn hai nút "Làm lại" / "Kiểm tra".
+            //
+            // Xếp xong rồi thì cả hai đều vô nghĩa: "Kiểm tra" đã bấm, còn
+            // "Làm lại" không sửa được gì vì câu đã chấm. Để lại là chiếm một
+            // hàng nữa, đẩy "Trước / Tiếp" — thứ DUY NHẤT còn dùng được ở bước
+            // này — xuống dưới mép màn hình.
+            document.querySelector('.sentence-actions')?.classList.add('an-khi-xong');
 
             // Nút DỊCH chỉ gắn vào câu ĐÚNG. Dịch câu sai ra tiếng Việt thì
             // được một câu tiếng Việt cũng sai — học nhầm. Nút LOA thì cả hai
