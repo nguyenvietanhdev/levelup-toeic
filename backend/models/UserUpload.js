@@ -19,9 +19,17 @@ const userUploadSchema = new mongoose.Schema(
         // Mặc định 'en' để 100% bản ghi cũ giữ nguyên hành vi; chỉ từ mới lưu từ
         // Dịch nhanh mới mang 'zh'. Từ cũ đã lẫn chữ Hán thì đoán bằng mặt chữ
         // (xem detectLang ở frontend), không cần backfill.
-        lang: { type: String, enum: ['en', 'zh'], default: 'en' },
+        // `bi` = bộ song ngữ. Thiếu ở enum thì Mongoose từ chối lúc lưu và
+        // bộ từ riêng song ngữ không nhập được.
+        lang: { type: String, enum: ['en', 'zh', 'bi'], default: 'en' },
         en: { type: String, required: true, trim: true },
         vn: { type: String, trim: true, default: '' },
+        // Nghĩa tiếng Anh — chỉ bộ `lang: 'bi'` dùng tới.
+        //
+        // Có trường này thì MỘT bộ từ luyện được cả Trung→Việt lẫn Trung→Anh:
+        // `vn` và `enMeaning` thay nhau đóng vai đáp án tuỳ chiều đang chọn.
+        // Không có thì phải nhập hai bộ cho cùng một danh sách từ.
+        enMeaning: { type: String, trim: true, default: '' },
         phonetic: { type: String, default: '' },
         part: { type: String, required: true, trim: true },
         synonyms: { type: String, default: '' },

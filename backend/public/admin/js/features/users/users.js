@@ -497,7 +497,37 @@ document.addEventListener("DOMContentLoaded", () => {
       const sourceVal = document.getElementById("word-sources")?.value.trim();
 
       let prompt;
-      if (lang === "zh") {
+      if (lang === "bi") {
+        // Kho song ngữ: KHÔNG có key `vn`. Học Trung ↔ Anh thì `en` chính là
+        // đáp án, nên prompt phải nói rõ — để AI tự thêm `vn` thì Mongoose
+        // lặng lẽ vứt đi (schema không khai) và người nhập không biết.
+        const hint = wordVal ? `Từ tiếng Trung: "${wordVal}". ` : "";
+        prompt = `${hint}Hãy tạo 5 object JSON từ vựng SONG NGỮ Trung–Anh theo định dạng sau.
+
+QUAN TRỌNG: Kho này học Trung ↔ Anh, KHÔNG qua tiếng Việt. TUYỆT ĐỐI không thêm key "vn".
+[
+  {
+    "zh": "汉字",
+    "en": "english meaning",
+    "phoneticZh": "pīnyīn có dấu thanh",
+    "phoneticEn": "/IPA/",
+    "exampleZh": "Câu ví dụ bằng tiếng Trung.",
+    "exampleEn": "English example sentence.",
+    "part": "${partVal || 'Chào hỏi'}",
+    "type": "名词",
+    "level": "HSK1",
+    "source": "${sourceVal || 'song_ngu'}"
+  }
+]
+Quy tắc:
+- "zh" → chữ Hán giản thể, giữ nguyên, KHÔNG phiên âm sang chữ Latin
+- "en" → nghĩa tiếng Anh (viết thường), đây là ĐÁP ÁN khi luyện tập
+- "phoneticZh" → pinyin CÓ DẤU THANH (nǐ hǎo), KHÔNG phải IPA
+- "phoneticEn" → phiên âm IPA của từ tiếng Anh
+- "level" → khung HSK (HSK1…HSK6, HSK7-9), KHÔNG dùng A1/B2
+- KHÔNG có key "vn", KHÔNG có key "phonetic", KHÔNG có key "example"
+Chỉ trả về JSON array, không giải thích thêm.`;
+      } else if (lang === "zh") {
         const hint = wordVal ? `Từ tiếng Trung: "${wordVal}". ` : "";
         prompt = `${hint}Hãy tạo 5 object JSON từ vựng tiếng Trung theo định dạng sau (KHÔNG có key "en", key "vn" là nghĩa tiếng Việt):
 [

@@ -20,7 +20,10 @@ const src = readFileSync(join(__dirname, 'openUploadModal.js'), 'utf8')
 
 describe('prompt theo ngôn ngữ', () => {
     test('rẽ nhánh theo getVocabLang, không cứng tiếng Anh', () => {
-        expect(src).toMatch(/getVocabLang\(\) === 'zh'/);
+        expect(src).toMatch(/const khoHienTai = getVocabLang\(\)/);
+        // Kho song ngữ dùng chữ Hán làm mặt chính nên mọi quy tắc về chữ Hán
+        // (pinyin, từ loại 名词, khung HSK) đều áp dụng cho nó.
+        expect(src).toMatch(/isZh = khoHienTai === 'zh' \|\| isBi/);
     });
 
     test('tiếng Trung yêu cầu PINYIN có dấu thanh, không phải IPA', () => {
@@ -86,7 +89,9 @@ describe('prompt theo ngôn ngữ', () => {
 
     test('prompt có trường `lang` và ghim đúng giá trị', () => {
         expect(src).toMatch(/"lang": "\$\{langValue\}"/);
-        expect(src).toMatch(/langValue = isZh \? 'zh' : 'en'/);
+        // Ba kho: `bi` phải là giá trị RIÊNG, không mượn 'zh' — gộp nhãn thì
+        // bộ từ riêng song ngữ lẫn vào danh sách của kho tiếng Trung.
+        expect(src).toMatch(/langValue = isBi \? 'bi' : \(isZh \? 'zh' : 'en'\)/);
     });
 });
 

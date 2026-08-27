@@ -10687,3 +10687,77 @@ mark {
   opacity: 0.85;
   white-space: nowrap;
 }
+
+/* ── ĐỔI CẶP HỌC trên thanh luyện tập ────────────────────────────────────────
+   Đổi chiều hỏi–đáp mà phải thoát ra vào Settings thì không ai đổi — người
+   dùng chịu đựng chiều sai cho hết lượt. Đặt ngay chỗ đang nhìn. */
+.lang-pair-switch {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.lang-pair-btn {
+  display: flex; align-items: center; gap: 6px;
+  padding: 5px 10px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 20px;
+  color: var(--text-primary);
+  font-size: 12px; font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.lang-pair-btn:hover { border-color: var(--accent-color); }
+.lang-pair-btn i { font-size: 9px; opacity: 0.6; }
+
+.lang-pair-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  /* Neo phải: nút nằm sát mép phải thanh, mở sang trái thì tràn khỏi màn hình
+     trên điện thoại. */
+  right: 0;
+  min-width: 160px;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+  /* Trên mọi thứ trong vùng chơi, kể cả khối kết quả có animation riêng. */
+  z-index: 60;
+  padding: 5px;
+  overflow: hidden;
+}
+
+.lang-pair-item {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  width: 100%;
+  padding: 8px 10px;
+  background: none; border: none;
+  border-radius: 7px;
+  color: var(--text-primary);
+  font-size: 13px; font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+}
+.lang-pair-item:hover { background: var(--bg-secondary); }
+.lang-pair-item.dang-chon { color: var(--accent-color); }
+.lang-pair-item i { font-size: 11px; }
+
+.lang-pair-note {
+  padding: 7px 10px 4px;
+  border-top: 1px solid var(--border-color);
+  margin-top: 4px;
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+
+/* Màn hẹp: nhãn dài đẩy cả hàng tiêu đề xuống dòng. Bỏ chữ, giữ mũi tên —
+   vẫn bấm được, chỉ mất phần đọc nhanh trạng thái. */
+@media (max-width: 560px) {
+  .lang-pair-label { display: none; }
+  .lang-pair-btn::before {
+    content: '\f362';               /* fa-arrow-right-arrow-left */
+    font-family: 'Font Awesome 6 Free';
+    font-weight: 900;
+    font-size: 11px;
+  }
+}

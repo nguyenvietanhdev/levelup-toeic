@@ -348,7 +348,11 @@ export function buildUploadContent({ tab } = {}) {
             document.getElementById('json-copy-prompt-btn')?.addEventListener('click', () => {
                 const source = (document.getElementById('json-source')?.value.trim() || 'ets2026').toLowerCase();
                 const part   = (document.getElementById('json-part')?.value.trim() || 'PART').toUpperCase();
-                const isZh = getVocabLang() === 'zh';
+                const khoHienTai = getVocabLang();
+                const isBi = khoHienTai === 'bi';
+                // Kho song ngữ dùng chữ Hán làm mặt chính nên mọi quy tắc về
+                // chữ Hán (pinyin, từ loại 名词, khung HSK) đều áp dụng.
+                const isZh = khoHienTai === 'zh' || isBi;
                 const withImage = document.getElementById('json-with-image')?.checked;
 
                 // Prompt phải theo ĐÚNG ngôn ngữ đang học.
@@ -377,7 +381,10 @@ export function buildUploadContent({ tab } = {}) {
                 const levelLabel = isZh
                     ? 'HSK1 / HSK2 / HSK3 / HSK4 / HSK5 / HSK6 / HSK7-9'
                     : 'A1 / A2 / B1 / B2 / C1 / C2';
-                const langValue = isZh ? 'zh' : 'en';
+                // `lang` quyết định giọng đọc (models/UserUpload.js). Kho song
+                // ngữ phải là 'bi' chứ không mượn 'zh': hai kho hiển thị khác
+                // nhau, gộp nhãn là bộ từ riêng lẫn vào danh sách của kho kia.
+                const langValue = isBi ? 'bi' : (isZh ? 'zh' : 'en');
 
                 // TỪ LOẠI cũng theo ngôn ngữ. Kho tiếng Trung lưu `名词`/`动词`
                 // (11.783/12.266 từ), không phải `noun`/`verb` — để AI trả nhãn
@@ -404,7 +411,7 @@ export function buildUploadContent({ tab } = {}) {
 
 Mỗi từ có cấu trúc:
 {
-  "en": "${wordLabel}",
+  "en": "${wordLabel}",${isBi ? '\n  "enMeaning": "nghĩa tiếng Anh (viết thường) — ĐÁP ÁN khi luyện Trung→Anh",' : ''}
   "vn": "nghĩa tiếng việt (viết thường)",
   "phonetic": "${phoneticLabel}",
   "part": "${part}",
@@ -417,7 +424,10 @@ Mỗi từ có cấu trúc:
 }
 
 Quy tắc:
-- "vn", "source" → viết thường${isZh
+- "vn", "source" → viết thường${isBi
+    ? '\n- "enMeaning" → BẮT BUỘC có, là nghĩa tiếng Anh của từ (vd: 你好 → hello)'
+      + '\n- "vn" → vẫn ghi nghĩa tiếng Việt: bộ từ này luyện được cả Trung→Việt lẫn Trung→Anh'
+    : ''}${isZh
     ? '\n- "en" → giữ nguyên chữ Hán, KHÔNG phiên âm sang chữ Latin'
       + '\n- "phonetic" → pinyin có dấu thanh (nǐ hǎo), KHÔNG phải IPA'
       + '\n- "synonyms" → viết BẰNG CHỮ HÁN (vd: 否, 不是), KHÔNG dùng pinyin hay tiếng Việt'

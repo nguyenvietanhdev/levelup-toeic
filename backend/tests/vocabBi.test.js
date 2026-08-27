@@ -485,3 +485,98 @@ describe('nhận thưởng hàng loạt', () => {
         expect(than()).toMatch(/if \(!dat\.length\)/);
     });
 });
+
+describe('prompt AI biết kho song ngữ', () => {
+    const { readFileSync } = require('node:fs');
+    const { join } = require('node:path');
+    const users = readFileSync(join(
+        __dirname, '..', 'public', 'admin', 'js', 'features', 'users', 'users.js'), 'utf8');
+    const monitor = readFileSync(join(
+        __dirname, '..', 'public', 'admin', 'js', 'features', 'monitor', 'monitor.js'), 'utf8');
+    const upload = readFileSync(join(
+        __dirname, '..', '..', 'frontend', 'src', 'components', 'vocab', 'upload',
+        'openUploadModal.js'), 'utf8');
+
+    test('admin: có nhánh prompt riêng cho `bi`', () => {
+        expect(users).toMatch(/if \(lang === "bi"\)/);
+    });
+
+    test('admin: prompt CẤM key `vn`', () => {
+        // Kho song ngữ không khai `vn`; AI tự thêm thì Mongoose vứt im lặng và
+        // người nhập không biết mình mất dữ liệu.
+        const i = users.indexOf('if (lang === "bi")');
+        const t = users.slice(i, users.indexOf('} else if (lang === "zh")', i));
+        expect(t).toMatch(/không thêm key "vn"/);
+        expect(t).toMatch(/phoneticZh/);
+        expect(t).toMatch(/phoneticEn/);
+    });
+
+    test('admin: prompt dùng khung HSK, không phải CEFR', () => {
+        const i = users.indexOf('if (lang === "bi")');
+        const t = users.slice(i, users.indexOf('} else if (lang === "zh")', i));
+        expect(t).toMatch(/HSK/);
+    });
+
+    test('admin: gợi ý key và ví dụ dán đúng kho', () => {
+        expect(monitor).toMatch(/if \(lang === 'bi'\)/);
+        const i = monitor.indexOf("if (lang === 'bi')");
+        const t = monitor.slice(i, monitor.indexOf("} else if (lang === 'zh')", i));
+        expect(t).toMatch(/zh, en, phoneticZh, phoneticEn/);
+        // Không được liệt kê `vn` — kho này không có.
+        expect(t).not.toMatch(/hint\.textContent = '[^']*\bvn\b/);
+    });
+
+    test('từ vựng riêng: kho song ngữ vẫn theo luật chữ Hán', () => {
+        // pinyin, từ loại 名词, khung HSK — mặt chính là chữ Hán.
+        expect(upload).toMatch(/const isZh = khoHienTai === 'zh' \|\| isBi/);
+    });
+
+    test('từ vựng riêng: `lang` là `bi`, không mượn `zh`', () => {
+        // Gộp nhãn thì bộ từ riêng song ngữ lẫn vào danh sách kho tiếng Trung.
+        expect(upload).toMatch(/langValue = isBi \? 'bi'/);
+    });
+
+    test('từ vựng riêng: prompt xin thêm nghĩa tiếng Anh', () => {
+        expect(upload).toMatch(/enMeaning/);
+    });
+});
+
+describe('từ vựng riêng lưu được 3 key', () => {
+    const UserUpload = require('../models/UserUpload');
+    const { readFileSync } = require('node:fs');
+    const { join } = require('node:path');
+    const ctrl = readFileSync(
+        join(__dirname, '..', 'controllers', 'uploadController.js'), 'utf8');
+
+    test('`lang` nhận `bi`', () => {
+        expect(UserUpload.schema.path('lang').enumValues).toContain('bi');
+    });
+
+    test('có trường `enMeaning`', () => {
+        // Có nó thì MỘT bộ từ luyện được cả Trung→Việt lẫn Trung→Anh.
+        expect(UserUpload.schema.path('enMeaning')).toBeDefined();
+    });
+
+    test('`bi` do client khai được TÔN TRỌNG trước suy đoán', () => {
+        // Bộ song ngữ cũng toàn chữ Hán nên `hasHan` sẽ ép thành 'zh' và bộ đó
+        // mất nhãn riêng — lẫn vào danh sách kho tiếng Trung.
+        const i = ctrl.indexOf('const resolveLang');
+        const than = ctrl.slice(ctrl.indexOf('{', i), ctrl.indexOf('\n};', i));
+        expect(than).toMatch(/if \(lang === 'bi'\) return 'bi';/);
+
+        // So thứ tự trên CODE, không tính comment: comment giải thích cũng
+        // nhắc `hasHan` và nó đứng trước, nên so trên văn bản thô luôn sai.
+        const code = than.replace(/\/\/[^\n]*/g, '');
+        expect(code.indexOf("lang === 'bi'")).toBeLessThan(code.indexOf('hasHan'));
+    });
+
+    test('`enMeaning` đi qua được cả hai đường ghi', () => {
+        // Mongoose `strict` vứt im lặng trường không liệt kê ở `$set`.
+        expect(ctrl).toMatch(/enMeaning: lower\(enMeaning\)/);
+        expect(ctrl).toMatch(/enMeaning: w\.enMeaning \|\| ''/);
+    });
+
+    test('`enMeaning` có trong destructure của body', () => {
+        expect(ctrl).toMatch(/en, vn, enMeaning, phonetic/);
+    });
+});

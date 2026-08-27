@@ -486,7 +486,26 @@ function switchWordModalTab(tab) {
     const lang = typeof vocabCurrentLang !== 'undefined' ? vocabCurrentLang : 'en';
     const hint = document.getElementById('json-keys-hint');
     const ta   = document.getElementById('word-json-input');
-    if (lang === 'zh') {
+    if (lang === 'bi') {
+        // Kho song ngữ KHÔNG có `vn` (học Trung ↔ Anh), và phiên âm/ví dụ tách
+        // đôi theo ngôn ngữ. Hiện danh sách key của kho khác thì người nhập
+        // dán `vn` vào và Mongoose lặng lẽ vứt đi.
+        if (hint) hint.textContent = 'zh, en, phoneticZh, phoneticEn, exampleZh, exampleEn, part, type, level, source';
+        if (ta && !ta.value) ta.placeholder = `[
+  {
+    "zh": "你好",
+    "en": "hello",
+    "phoneticZh": "nǐ hǎo",
+    "phoneticEn": "/həˈloʊ/",
+    "exampleZh": "你好，很高兴认识你。",
+    "exampleEn": "Hello, nice to meet you.",
+    "part": "Chào hỏi",
+    "type": "叹词",
+    "level": "HSK1",
+    "source": "song_ngu"
+  }
+]`;
+    } else if (lang === 'zh') {
         if (hint) hint.textContent = 'zh, vn, phonetic, part, type, level, synonyms, image, example, source';
         if (ta && !ta.value) ta.placeholder = `[
   {

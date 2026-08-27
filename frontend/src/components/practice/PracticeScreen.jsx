@@ -4,6 +4,7 @@ import { EventBus, GameEvents } from '@game/eventBus.js';
 import { PracticeManager } from '@components/practice/practiceManager.js';
 import { stopPracticeBgm } from '@game/uiSounds.js';
 import FavoriteButton from '@components/favorites/FavoriteButton.jsx';
+import { LangPairSwitch } from './LangPairSwitch.jsx';
 
 export default function PracticeScreen({ active }) {
     const { showScreen, syncFromState } = useGame();
@@ -127,6 +128,9 @@ export default function PracticeScreen({ active }) {
                         <span id="wrong-count">{wrongCount}</span>
                     </div>
                 </div>
+                {/* Đổi chiều hỏi–đáp ngay tại chỗ. Trước đây phải thoát ra vào
+                    Settings, mà đó là hai lựa chọn nằm hai chỗ khác nhau. */}
+                <LangPairSwitch />
                 <FavoriteButton />
                 {timerVisible && (
                     <div className="practice-timer">

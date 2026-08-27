@@ -48,6 +48,10 @@ const hasHan = (s) => /[一-鿿]/.test(String(s || ''));
  * pinyin, nên `lang: 'zh'` do client khai vẫn được tôn trọng.
  */
 const resolveLang = (lang, word) => {
+    // `bi` do client khai được TÔN TRỌNG trước mọi suy đoán: bộ song ngữ cũng
+    // toàn chữ Hán nên `hasHan` sẽ ép nó thành 'zh' và bộ đó mất nhãn riêng —
+    // lẫn vào danh sách của kho tiếng Trung.
+    if (lang === 'bi') return 'bi';
     if (hasHan(word)) return 'zh';
     return lang === 'zh' ? 'zh' : 'en';
 };
@@ -75,7 +79,7 @@ exports.uploadVocabulary = async (req, res, next) => {
     const userId = req.user.id;
     const email = req.user.email;
     const {
-      en, vn, phonetic, part, synonyms,
+      en, vn, enMeaning, phonetic, part, synonyms,
       type, image, example, level, source, retentionDays, lang
     } = req.body;
 
@@ -122,6 +126,9 @@ exports.uploadVocabulary = async (req, res, next) => {
           lang: resolveLang(lang, enL),
           en: enL,
           vn: lower(vn),
+          // Nghĩa tiếng Anh — bộ song ngữ dùng làm đáp án khi luyện Trung→Anh.
+          // Không liệt kê ở đây thì Mongoose `strict` vứt im lặng.
+          enMeaning: lower(enMeaning),
           phonetic: lower(phonetic),
           part: upper(part),
           synonyms: lower(synonyms),
@@ -939,7 +946,7 @@ exports.copySharedSource = async (req, res, next) => {
         filter: { ownerEmail: me, source: target, en: w.en },
         update: {
           $set: {
-            en: w.en, vn: w.vn, phonetic: w.phonetic, part: w.part,
+            en: w.en, vn: w.vn, enMeaning: w.enMeaning || '', phonetic: w.phonetic, part: w.part,
             synonyms: w.synonyms, type: w.type, image: w.image,
             example: w.example, level: w.level, lang: w.lang,
             source: target, ownerId: req.user.id, ownerEmail: me, expiresAt,
