@@ -228,7 +228,7 @@ export default function QuickSettings({ variant = 'bar' }) {
                     {zhBlocked ? `🔒 Tiếng Trung (Lv.${zhLock.requiredLevel})` : '🇨🇳 Tiếng Trung'}
                 </option>
                 <option value="bi">
-                    {zhBlocked ? `🔒 Trung–Anh (Lv.${zhLock.requiredLevel})` : '🀄 Trung–Anh'}
+                    {zhBlocked ? `🔒 Trung–Anh (Lv.${zhLock.requiredLevel})` : '🔀 Trung–Anh'}
                 </option>
             </select>
         </div>

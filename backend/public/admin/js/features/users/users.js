@@ -41,7 +41,7 @@ function huyHieuNgonNgu(lang) {
     const ve = (nen, chu, vien, nhan) =>
         `<span style="margin-left:8px;font-size:11px;padding:2px 8px;border-radius:12px;background:${nen};color:${chu};border:1px solid ${vien};font-weight:700">${nhan}</span>`;
     if (lang === 'zh') return ve('#f0fdf4', '#16a34a', '#bbf7d0', '🇨🇳 Chinese');
-    if (lang === 'bi') return ve('#faf5ff', '#7c3aed', '#e9d5ff', '🀄 Trung–Anh');
+    if (lang === 'bi') return ve('#faf5ff', '#7c3aed', '#e9d5ff', '🔀 Trung–Anh');
     return ve('#eff6ff', '#2563eb', '#bfdbfe', '🇬🇧 English');
 }
 

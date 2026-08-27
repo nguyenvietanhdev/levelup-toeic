@@ -443,8 +443,18 @@ router.get('/ai-usage', admin, async (req, res) => {
             ]),
         ]);
 
-        // Đính email cho recent calls
-        const userIds = [...new Set(recent.map(r => String(r.userId)).filter(Boolean))];
+        // Đính email cho recent calls.
+        //
+        // Lọc TRƯỚC khi đổi sang chuỗi: `String(null)` cho ra `"null"` —
+        // truthy, nên `.filter(Boolean)` để lọt, rồi Mongoose ném
+        // `Cast to ObjectId failed for value "null"` và cả tab trả 500.
+        //
+        // Không phải trường hợp hiếm: 95/201 log hiện tại có `userId: null` vì
+        // đó là tác vụ HỆ THỐNG (sinh phiên âm), không của người dùng nào —
+        // dòng dưới đã tính đến và hiện "(system)".
+        const userIds = [...new Set(
+            recent.map(r => r.userId).filter(Boolean).map(String)
+        )];
         const users = userIds.length ? await User.find({ _id: { $in: userIds } }).select('email').lean() : [];
         const userMap = new Map(users.map(u => [String(u._id), u.email]));
         const recentWithEmail = recent.map(r => ({

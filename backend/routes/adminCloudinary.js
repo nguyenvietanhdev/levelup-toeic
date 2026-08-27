@@ -198,8 +198,12 @@ router.get('/orphans', admin, requireCloud, async (req, res) => {
 // ── Xoá file trên cloud ─────────────────────────────────────────────────────
 router.post('/delete', admin, requireCloud, async (req, res) => {
     try {
+        // Lọc TRƯỚC khi đổi sang chuỗi: `String(null)` cho ra `"null"` —
+        // truthy, nên `.filter(Boolean)` để lọt và ta gửi Cloudinary đi xoá một
+        // file tên "null". Ở một route XOÁ thì đoán mò là thứ tệ nhất.
         const publicIds = (Array.isArray(req.body.publicIds) ? req.body.publicIds : [])
-            .map(String).filter(Boolean);
+            .filter((x) => typeof x === 'string' && x.trim())
+            .map((x) => x.trim());
         const resourceType = req.body.resourceType === 'video' ? 'video' : 'image';
         const force = req.body.force === true;
 

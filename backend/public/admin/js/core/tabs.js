@@ -190,7 +190,7 @@ function _setupTopicsSearch() {
 const NHAN_NGON_NGU = {
   en: { chu: "🇬🇧 EN", mau: "#2563eb" },
   zh: { chu: "🇨🇳 ZH", mau: "#dc2626" },
-  bi: { chu: "🀄 BI", mau: "#7c3aed" },
+  bi: { chu: "🔀 BI", mau: "#7c3aed" },
 };
 
 function renderTopicsTable(topics) {
@@ -287,7 +287,7 @@ function showTopicModal(topic) {
                         <select id="ti-lang" style="width:100%;padding:9px 12px;background:#0f172a;border:1px solid #334155;border-radius:8px;color:#e2e8f0;">
                             <option value="en" ${(topic?.lang || "en") === "en" ? "selected" : ""}>🇬🇧 Tiếng Anh (EN)</option>
                             <option value="zh" ${topic?.lang === "zh" ? "selected" : ""}>🇨🇳 Tiếng Trung (ZH)</option>
-                            <option value="bi" ${topic?.lang === "bi" ? "selected" : ""}>🀄 Song ngữ (Trung–Anh)</option>
+                            <option value="bi" ${topic?.lang === "bi" ? "selected" : ""}>🔀 Song ngữ (Trung–Anh)</option>
                         </select>
                     </div>
                 </div>
