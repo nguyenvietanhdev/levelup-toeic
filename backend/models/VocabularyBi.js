@@ -12,11 +12,17 @@ const mongoose = require('mongoose');
  * hai kho lệch hẳn chủ đề (zh là chào hỏi cơ bản, en là TOEIC thương mại). Ghép
  * tự động cho ra 0 cặp. Bảng riêng nạp tay là đường đi đúng.
  *
- * ── Vì sao `vn` PHẢI có ────────────────────────────────────────────────────
+ * ── Vì sao KHÔNG có `vn` ───────────────────────────────────────────────────
  *
- * `vn` không phải chú thích mà là ĐÁP ÁN: 13/16 chế độ đọc `word.vn`, và
- * `generateMultipleChoice` lấy thẳng nó làm đáp án đúng lẫn ba đáp án nhiễu.
- * Thiếu `vn` thì Trắc nghiệm hiện bốn ô rỗng.
+ * Kho này học Trung ↔ Anh, không qua tiếng Việt: hỏi 你好 thì đáp `hello`.
+ * `en` chính là đáp án, nên nghĩa tiếng Việt không ai đọc tới.
+ *
+ * 13/16 chế độ đọc `word.vn` làm đáp án, nhưng chúng không cần biết điều đó:
+ * `vocabBiMapper` đặt MẶT KIA vào ô `vn` khi phục vụ. Chế độ thấy một cặp
+ * (từ, nghĩa) như mọi khi — chỉ là "nghĩa" ở đây bằng tiếng Anh.
+ *
+ * Nghĩa tiếng Việt vẫn có chỗ của nó: kho "Từ vựng riêng" của người dùng lưu
+ * đủ cả ba key.
  *
  * ── Vì sao có `hienThi` thay vì thêm giá trị vào `vocabLang` ───────────────
  *
@@ -29,16 +35,18 @@ const mongoose = require('mongoose');
  */
 const vocabularyBiSchema = new mongoose.Schema(
     {
-        // ── Ba ngôn ngữ ────────────────────────────────────────────────────
+        // ── Hai ngôn ngữ ───────────────────────────────────────────────────
+        // Kho này học Trung ↔ Anh: hỏi 你好, đáp `hello`. `en` CHÍNH LÀ đáp
+        // án, nên không cần nghĩa tiếng Việt — lưu thêm một key không ai đọc
+        // là lãng phí.
         zh: { type: String, required: true, trim: true },
         en: { type: String, required: true, trim: true },
-        vn: { type: String, required: true, trim: true },
 
         /**
          * Mặt nào là "từ phải nhớ" khi luyện.
          *
-         * `zh` → hỏi 你好, đáp "Xin chào", loa đọc giọng Trung.
-         * `en` → hỏi hello, đáp "Xin chào", loa đọc giọng Anh.
+         * `zh` → hỏi 你好, đáp `hello`, loa đọc giọng Trung.
+         * `en` → hỏi `hello`, đáp 你好, loa đọc giọng Anh.
          *
          * Đọc sai giọng thì cả chế độ Nghe lẫn Phát âm đều vô dụng, nên đây là
          * trường bắt buộc chứ không đoán từ nội dung.
@@ -58,7 +66,6 @@ const vocabularyBiSchema = new mongoose.Schema(
         // ── Câu ví dụ ──────────────────────────────────────────────────────
         exampleZh: { type: String, default: '' },
         exampleEn: { type: String, default: '' },
-        exampleVn: { type: String, default: '' },
 
         // Phiên âm CỦA CÂU ví dụ. Sinh bằng AI lúc cần rồi lưu lại — câu ví dụ
         // là dữ liệu tĩnh nên phiên âm của nó vĩnh viễn đúng, tính lại mỗi lần

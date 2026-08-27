@@ -12,11 +12,10 @@ const WrongWord = require('../models/WrongWord');
 
 const MAU = {
     _id: 'x1',
-    zh: '你好', en: 'hello', vn: 'Xin chào',
+    zh: '你好', en: 'hello',
     hienThi: 'zh',
     phoneticZh: 'nǐ hǎo', phoneticEn: '/həˈloʊ/',
     exampleZh: '你好，很高兴认识你。', exampleEn: 'Hello, nice to meet you.',
-    exampleVn: 'Xin chào, rất vui được gặp bạn.',
     examplePhoneticZh: 'nǐ hǎo, hěn gāoxìng rènshi nǐ.',
     examplePhoneticEn: '/həˈloʊ naɪs tə miːt juː/',
     part: 'Chào hỏi', source: 'song_ngu',
@@ -30,12 +29,19 @@ describe('đổi hình về dạng 16 chế độ đã hiểu', () => {
         expect(doiHinh(MAU).en).toBe('你好');
     });
 
-    test('mặt kia nằm ở `doiChieu`, không đè lên ô đã có nghĩa', () => {
-        expect(doiHinh(MAU).doiChieu).toBe('hello');
+    test('MẶT KIA nằm ở ô `vn` — ô mà 13/16 chế độ đọc làm đáp án', () => {
+        // Kho này không có nghĩa tiếng Việt: học Trung ↔ Anh thì `en` chính là
+        // đáp án. Đặt nó vào `vn` để không chế độ nào phải sửa một dòng.
+        expect(doiHinh(MAU).vn).toBe('hello');
     });
 
-    test('`vn` giữ nguyên — đây là ĐÁP ÁN của 13/16 chế độ', () => {
-        expect(doiHinh(MAU).vn).toBe('Xin chào');
+    test('đảo mặt thì đáp án cũng đảo', () => {
+        expect(doiHinh({ ...MAU, hienThi: 'en' }).vn).toBe('你好');
+    });
+
+    test('phiên âm của đáp án đi kèm', () => {
+        expect(doiHinh(MAU).vnPhonetic).toBe('/həˈloʊ/');
+        expect(doiHinh({ ...MAU, hienThi: 'en' }).vnPhonetic).toBe('nǐ hǎo');
     });
 
     test('phiên âm đi theo ĐÚNG mặt đang hiện', () => {
@@ -48,6 +54,11 @@ describe('đổi hình về dạng 16 chế độ đã hiểu', () => {
         // Khác mặt thì loa đọc câu bằng giọng sai.
         expect(doiHinh(MAU).example).toBe('你好，很高兴认识你。');
         expect(doiHinh({ ...MAU, hienThi: 'en' }).example).toBe('Hello, nice to meet you.');
+    });
+
+    test('câu ví dụ mặt kia đóng vai "bản dịch"', () => {
+        expect(doiHinh(MAU).exampleVn).toBe('Hello, nice to meet you.');
+        expect(doiHinh({ ...MAU, hienThi: 'en' }).exampleVn).toBe('你好，很高兴认识你。');
     });
 
     test('phiên âm câu ví dụ cũng đi theo mặt', () => {
@@ -64,10 +75,10 @@ describe('đổi hình về dạng 16 chế độ đã hiểu', () => {
         expect(doiHinh({ ...MAU, hienThi: 'en' }).ttsLang).toBe('en-US');
     });
 
-    test('mặt `en`: `en` mang chữ tiếng Anh, `doiChieu` mang chữ Hán', () => {
+    test('mặt `en`: `en` mang chữ tiếng Anh, `vn` mang chữ Hán', () => {
         const d = doiHinh({ ...MAU, hienThi: 'en' });
         expect(d.en).toBe('hello');
-        expect(d.doiChieu).toBe('你好');
+        expect(d.vn).toBe('你好');
     });
 
     test('thiếu `hienThi` thì mặc định mặt Hán', () => {
@@ -130,11 +141,14 @@ describe('từ song ngữ KHÔNG lẫn vào hai kho cũ', () => {
 describe('schema kho song ngữ', () => {
     const VocabularyBi = require('../models/VocabularyBi');
 
-    test('ba ngôn ngữ đều BẮT BUỘC', () => {
-        // `vn` bắt buộc vì nó là đáp án, không phải chú thích.
-        for (const f of ['zh', 'en', 'vn']) {
+    test('hai ngôn ngữ BẮT BUỘC, KHÔNG lưu `vn`', () => {
+        // Học Trung ↔ Anh thì `en` chính là đáp án — lưu thêm nghĩa tiếng Việt
+        // là một key không ai đọc tới.
+        for (const f of ['zh', 'en']) {
             expect(VocabularyBi.schema.path(f).isRequired).toBe(true);
         }
+        expect(VocabularyBi.schema.path('vn')).toBeUndefined();
+        expect(VocabularyBi.schema.path('exampleVn')).toBeUndefined();
     });
 
     test('phiên âm TÁCH ĐÔI theo ngôn ngữ', () => {
@@ -214,11 +228,12 @@ describe('admin: tab thứ ba `lang=bi`', () => {
         expect(t).toMatch(/isBiRequest\(req\)/);
     });
 
-    test('trả NGUYÊN bản ghi, không đổi hình như lúc luyện tập', () => {
+    test('`raw=1` trả NGUYÊN bản ghi cho màn hình quản trị', () => {
         // `vocabBiMapper` giấu một mặt đi — dùng ở admin là làm mất dữ liệu
-        // ngay trên màn hình quản trị.
+        // ngay trên màn hình sửa. Mặc định thì đổi hình, vì bên gọi đông nhất
+        // là app luyện tập.
         const t = than(ctrl, 'function normalizeVocabDocForResponse');
-        expect(t).toMatch(/isBiRequest\(req\)\) return word/);
+        expect(t).toMatch(/raw === '1'\) return word/);
     });
 
     test('tìm kiếm soi cả chữ Hán', () => {
@@ -231,7 +246,7 @@ describe('admin: tab thứ ba `lang=bi`', () => {
     test('kiểm nhập: kho song ngữ cần đủ zh + en + vn', () => {
         const t = than(ctrl, 'function validateVocabularyPayloadForLang');
         expect(t).toMatch(/isBiRequest/);
-        expect(t).toMatch(/'zh', 'en', 'vn'/);
+        expect(t).toMatch(/'zh', 'en'/);
     });
 
     test('có nút tab thứ ba trong HTML', () => {
@@ -276,5 +291,74 @@ describe('admin: tab thứ ba `lang=bi`', () => {
         const i = vocabJs.indexOf('const phienAmChinh');
         expect(i).toBeGreaterThan(-1);
         expect(vocabJs.slice(i, i + 150)).toMatch(/phoneticZh/);
+    });
+});
+
+describe('app luyện tập: lựa chọn ngôn ngữ thứ ba', () => {
+    const { readFileSync } = require('node:fs');
+    const { join } = require('node:path');
+    const F = (...p) => readFileSync(join(__dirname, '..', '..', 'frontend', 'src', ...p), 'utf8');
+    const quick = F('layouts', 'QuickSettings.jsx');
+    const api = F('api', 'vocabulary.js');
+    const gl = F('game', 'gameLogic.js');
+    const ctrl = readFileSync(
+        join(__dirname, '..', 'controllers', 'vocabularyController.js'), 'utf8');
+
+    test('dropdown có lựa chọn thứ ba', () => {
+        expect(quick).toMatch(/<option value="bi">/);
+    });
+
+    test('đổi ngôn ngữ nhận ĐÍCH, không đảo hai chiều', () => {
+        // `en ↔ zh` cứng thì chọn `bi` sẽ nhảy sang `zh` — chọn một đằng ra
+        // một nẻo, mà không báo lỗi gì.
+        expect(quick).toMatch(/handleToggleVocabLang\(next\)/);
+        expect(quick).toMatch(/const next = dich \|\|/);
+    });
+
+    test('kho song ngữ chịu chung mốc Level với tiếng Trung', () => {
+        // Nó cũng có chữ Hán — mở ra khi chưa mở tiếng Trung là đi cửa sau.
+        expect(quick).toMatch(/next === 'zh' \|\| next === 'bi'/);
+    });
+
+    test('nhãn chiều luyện tập KHÔNG nói "Tiếng Việt" cho kho song ngữ', () => {
+        // Kho này học Trung ↔ Anh, không đi qua tiếng Việt.
+        const i = quick.indexOf('const tenChieu');
+        expect(i).toBeGreaterThan(-1);
+        const t = quick.slice(i, i + 300);
+        expect(t).toMatch(/vocabLang === 'bi'/);
+        expect(t).toMatch(/sang: 'Tiếng Anh'/);
+    });
+
+    test('`getVocabLang` cho `bi` đi qua', () => {
+        // Thiếu nó thì lựa chọn thứ ba âm thầm rơi về tiếng Anh.
+        const i = api.indexOf('const stored = localStorage.getItem');
+        expect(api.slice(i, i + 300)).toMatch(/stored === 'bi'/);
+    });
+
+    test('`ttsLang` quyết theo TỪNG TỪ, không theo cả kho', () => {
+        // Bộ song ngữ có cả chữ Hán lẫn chữ Latin — quyết theo kho là đọc sai
+        // một nửa số từ.
+        const i = gl.indexOf('export function ttsLang');
+        const t = gl.slice(i, gl.indexOf('\n}', i));
+        expect(t).toMatch(/word\?\.ttsLang/);
+    });
+
+    test('vẫn rơi về luật cũ khi không có `word`', () => {
+        const i = gl.indexOf('export function ttsLang');
+        const t = gl.slice(i, gl.indexOf('\n}', i));
+        expect(t).toMatch(/vocabLang\(\) === 'zh' \? 'zh-CN' : 'en-US'/);
+    });
+
+    test('API đổi hình cho app, trả nguyên bản cho admin', () => {
+        const i = ctrl.indexOf('function normalizeVocabDocForResponse');
+        const t = ctrl.slice(i, ctrl.indexOf('\n}', i));
+        expect(t).toMatch(/raw === '1'\) return word/);
+        expect(t).toMatch(/return doiHinh\(word\)/);
+    });
+
+    test('admin gửi `raw=1` để giữ nguyên bản ghi', () => {
+        const adm = readFileSync(join(
+            __dirname, '..', 'public', 'admin', 'js', 'features', 'vocab', 'vocab.js'), 'utf8');
+        expect(adm).toMatch(/raw=1/);
     });
 });

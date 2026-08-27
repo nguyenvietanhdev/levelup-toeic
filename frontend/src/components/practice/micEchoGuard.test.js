@@ -61,7 +61,10 @@ describe('chế độ Phát âm: khoá mic khi đang phát mẫu', () => {
     test('mở khoá khi phát XONG, không phải theo giờ đoán', () => {
         // `onEnd` bắn ở cả hai đường phát (Google TTS và giọng hệ điều hành).
         const body = ham(pron, 'speakSample(text) {');
-        expect(body).toMatch(/GameLogic\.speakWord\(text, ttsLang\(\), \(\) =>/);
+        // Không khoá cứng đối số của `ttsLang`: nó nhận thêm `word` để chọn
+        // giọng theo từng từ (kho song ngữ có cả chữ Hán lẫn chữ Latin). Điều
+        // test này bảo vệ là CALLBACK `onEnd`, không phải chữ ký hàm.
+        expect(body).toMatch(/GameLogic\.speakWord\(text, ttsLang\([^)]*\), \(\) =>/);
         expect(body).toMatch(/this\._speaking = false/);
     });
 

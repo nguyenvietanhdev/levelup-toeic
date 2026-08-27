@@ -4,12 +4,15 @@
 // 4. VOCABULARY MANAGEMENT FUNCTIONS (UPDATED)
 // ===================================
 
+// `raw=1`: admin cần NGUYÊN bản ghi để sửa được cả hai mặt của kho song ngữ.
+// Không có nó thì API đổi hình cho luyện tập (chọn một mặt, giấu mặt kia) và
+// màn hình quản trị mất dữ liệu.
 function vocabLangQuery(prefix = '?') {
-    return `${prefix}lang=${encodeURIComponent(vocabCurrentLang || 'en')}`;
+    return `${prefix}lang=${encodeURIComponent(vocabCurrentLang || 'en')}&raw=1`;
 }
 
 function withVocabLang(url) {
-    return `${url}${url.includes('?') ? '&' : '?'}lang=${encodeURIComponent(vocabCurrentLang || 'en')}`;
+    return `${url}${url.includes('?') ? '&' : '?'}lang=${encodeURIComponent(vocabCurrentLang || 'en')}&raw=1`;
 }
 
 /**
@@ -89,7 +92,8 @@ function displayVocabulary(words) {
             const wordSafe = primaryWord.replace(/"/g, '&quot;');
             // Phiên âm của kho song ngữ tách đôi theo ngôn ngữ.
             const phienAmChinh = laSongNgu ? (word.phoneticZh || '') : (word.phonetic || '');
-            const vn = word.vn || '';
+            // Kho song ngữ không có `vn`: cột "nghĩa" chính là mặt tiếng Anh.
+            const vn = laSongNgu ? '' : (word.vn || '');
             const type = word.type || '';
             const part = word.part || '';
             const sources = Array.isArray(word.sources) && word.sources.length

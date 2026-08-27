@@ -107,7 +107,14 @@ export default function QuickSettings({ variant = 'bar' }) {
             : `Cấp độ: ${bandLabel(val, vocabLang)} — chỉ lấy từ ${levels.join('/')}`);
     };
 
-    const handleToggleVocabLang = async () => {
+    /**
+     * Đổi ngôn ngữ học sang `dich`.
+     *
+     * Nhận ĐÍCH chứ không đảo: từ khi có kho thứ ba (song ngữ) thì "đảo" không
+     * còn nghĩa gì — chọn `bi` mà hàm tự nhảy sang `zh` là chọn một đằng ra
+     * một nẻo. Không truyền gì thì giữ hành vi cũ (đảo en ↔ zh) cho nơi gọi cũ.
+     */
+    const handleToggleVocabLang = async (dich) => {
         // Khách chưa login: đổi ngôn ngữ ghi vào settings + reload, mà khách
         // không có hồ sơ server → mời đăng nhập thay vì đổi.
         if (!isLoggedIn) {
@@ -115,10 +122,13 @@ export default function QuickSettings({ variant = 'bar' }) {
             setAuthModal('login');
             return;
         }
-        const next = vocabLang === 'en' ? 'zh' : 'en';
+        const next = dich || (vocabLang === 'en' ? 'zh' : 'en');
         // Chỉ khoá chiều SANG tiếng Trung — luôn cho quay về tiếng Anh
         // (tránh kẹt nếu đang ở 'zh' mà mốc bị nâng lên).
-        if (next === 'zh' && zhLock.locked) {
+        //
+        // Kho song ngữ cũng có chữ Hán nên chịu chung mốc Level: mở nó ra khi
+        // chưa mở tiếng Trung là đi cửa sau.
+        if ((next === 'zh' || next === 'bi') && zhLock.locked) {
             Notification.show({
                 type: 'warning',
                 title: `🔒 Cần Level ${zhLock.requiredLevel}`,
@@ -170,9 +180,17 @@ export default function QuickSettings({ variant = 'bar' }) {
     };
 
     const guestBlocked = !isLoggedIn;
-    const zhBlocked = vocabLang === 'en' && zhLock.locked;   // chỉ khoá chiều sang tiếng Trung
+    // Chỉ khoá chiều SANG chữ Hán (zh hoặc song ngữ). Đang ở đó rồi thì luôn
+    // cho quay về, tránh kẹt nếu mốc Level bị nâng lên sau.
+    const zhBlocked = vocabLang === 'en' && zhLock.locked;
     const blocked = guestBlocked || zhBlocked;
     const inMenu = variant === 'menu';
+
+    // Nhãn chiều luyện tập. Kho song ngữ KHÔNG đi qua tiếng Việt — hiện
+    // "Tiếng Trung → Tiếng Việt" ở đó là sai cả hai vế.
+    const tenChieu = vocabLang === 'bi'
+        ? { tu: 'Tiếng Trung', sang: 'Tiếng Anh' }
+        : { tu: vocabLang === 'en' ? 'Tiếng Anh' : 'Tiếng Trung', sang: 'Tiếng Việt' };
 
     // Ngôn ngữ học dùng <select> cho ĐỒNG BỘ với các lựa chọn nhanh còn lại
     // (số câu · độ khó · chiều luyện tập) — trước đây nó là nút bật/tắt duy nhất
@@ -186,8 +204,9 @@ export default function QuickSettings({ variant = 'bar' }) {
         const next = e.target.value;
         if (next === vocabLang) return;
         // Dùng lại đúng đường cũ: nó đã lo khách chưa đăng nhập, mốc Level,
-        // localStorage và reload.
-        handleToggleVocabLang();
+        // localStorage và reload. Truyền ĐÍCH vào — không truyền thì nó tự đảo
+        // en ↔ zh và lựa chọn thứ ba không bao giờ tới nơi.
+        handleToggleVocabLang(next);
     };
 
     const langBtn = (
@@ -207,6 +226,9 @@ export default function QuickSettings({ variant = 'bar' }) {
                 <option value="en">🇬🇧 Tiếng Anh</option>
                 <option value="zh">
                     {zhBlocked ? `🔒 Tiếng Trung (Lv.${zhLock.requiredLevel})` : '🇨🇳 Tiếng Trung'}
+                </option>
+                <option value="bi">
+                    {zhBlocked ? `🔒 Trung–Anh (Lv.${zhLock.requiredLevel})` : '🀄 Trung–Anh'}
                 </option>
             </select>
         </div>
@@ -262,10 +284,10 @@ export default function QuickSettings({ variant = 'bar' }) {
                                 onChange={(e) => handleReverse(e.target.value === 'reverse')}
                             >
                                 <option value="normal">
-                                    {vocabLang === 'en' ? 'Tiếng Anh' : 'Tiếng Trung'} → Tiếng Việt
+                                    {tenChieu.tu} → {tenChieu.sang}
                                 </option>
                                 <option value="reverse">
-                                    Tiếng Việt → {vocabLang === 'en' ? 'Tiếng Anh' : 'Tiếng Trung'}
+                                    {tenChieu.sang} → {tenChieu.tu}
                                 </option>
                             </select>
                         </div>

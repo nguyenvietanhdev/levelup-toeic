@@ -15,7 +15,18 @@ export function vocabLang() {
 export function wordPk(word) {
     return vocabLang() === 'zh' ? (word?.zh || word?.en || '') : (word?.en || '');
 }
-export function ttsLang() {
+/**
+ * Giọng đọc cho TTS.
+ *
+ * Nhận `word` tuỳ chọn: kho song ngữ (`vocabLang === 'bi'`) chứa cả chữ Hán
+ * lẫn chữ Latin trong một bộ, nên giọng phải quyết theo TỪNG TỪ chứ không theo
+ * cả kho. Server đã tính sẵn và gắn vào `word.ttsLang` — đọc lại rẻ hơn và
+ * chắc hơn là đoán ở client.
+ *
+ * Không có `word` thì rơi về luật cũ theo kho.
+ */
+export function ttsLang(word) {
+    if (word?.ttsLang) return word.ttsLang;
     return vocabLang() === 'zh' ? 'zh-CN' : 'en-US';
 }
 

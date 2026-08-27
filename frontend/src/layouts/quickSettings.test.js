@@ -62,9 +62,12 @@ describe('hành vi phải giữ nguyên sau khi tách', () => {
         expect(quick).toMatch(/levelsFor\(val, vocabLang\)/);
     });
 
-    test('chỉ khoá chiều SANG tiếng Trung, luôn cho quay về tiếng Anh', () => {
+    test('chỉ khoá chiều SANG chữ Hán, luôn cho quay về tiếng Anh', () => {
         // Khoá cả hai chiều thì ai đang ở 'zh' mà mốc bị nâng lên sẽ kẹt luôn.
-        expect(quick).toMatch(/next === 'zh' && zhLock\.locked/);
+        //
+        // Kho song ngữ cũng có chữ Hán nên chịu chung mốc: mở nó ra khi chưa
+        // mở tiếng Trung là đi cửa sau.
+        expect(quick).toMatch(/\(next === 'zh' \|\| next === 'bi'\) && zhLock\.locked/);
     });
 
     test('khách chưa đăng nhập thì mời đăng nhập, không đổi rồi reload', () => {
@@ -126,7 +129,9 @@ describe('chọn ngôn ngữ học dùng <select>', () => {
         // `handleToggleVocabLang` đã lo khách chưa đăng nhập, mốc Level,
         // localStorage và reload. Chép lại là hai bản sẽ lệch nhau.
         const i = quick.indexOf('const handleSelectLang');
-        expect(quick.slice(i, i + 400)).toMatch(/handleToggleVocabLang\(\)/);
+        // Truyền ĐÍCH vào: từ khi có kho thứ ba, gọi không đối số thì hàm tự
+        // đảo en ↔ zh và lựa chọn song ngữ không bao giờ tới nơi.
+        expect(quick.slice(i, i + 500)).toMatch(/handleToggleVocabLang\(next\)/);
     });
 });
 

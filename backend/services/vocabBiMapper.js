@@ -12,10 +12,14 @@
  *
  * Bản ghi song ngữ           →   Hình dạng chế độ hiểu
  *   { zh:'你好',                    { en: '你好',        ← từ phải nhớ
- *     en:'hello',                    vn: 'Xin chào',   ← đáp án
- *     vn:'Xin chào',                 phonetic:'nǐ hǎo',
- *     hienThi:'zh', … }              doiChieu:'hello', ← mặt kia, để hiển thị
+ *     en:'hello',                    vn: 'hello',      ← đáp án (mặt kia)
+ *     hienThi:'zh', … }              phonetic:'nǐ hǎo',
+ *                                    ttsLang:'zh-CN',  ← giọng đọc
  *                                    … }
+ *
+ * Kho này KHÔNG có nghĩa tiếng Việt — học Trung ↔ Anh thì `en` chính là đáp
+ * án. Đặt nó vào ô `vn` là mẹo quan trọng nhất ở đây: 13/16 chế độ đọc
+ * `word.vn` làm đáp án, và nhờ vậy không chế độ nào phải sửa một dòng.
  */
 
 /**
@@ -38,18 +42,20 @@ function doiHinh(doc) {
         en: laZh ? d.zh : d.en,
         phonetic: laZh ? d.phoneticZh : d.phoneticEn,
 
-        // Nghĩa — đáp án của phần lớn chế độ.
-        vn: d.vn,
-
-        // Mặt còn lại. Tên `doiChieu` chứ không phải `en`/`zh` để không đụng
-        // vào ô đã có nghĩa cố định ở trên.
-        doiChieu: laZh ? d.en : d.zh,
-        doiChieuPhonetic: laZh ? d.phoneticEn : d.phoneticZh,
+        // MẶT KIA nằm ở ô `vn` — ô mà 13/16 chế độ đọc làm đáp án.
+        //
+        // Kho này không có nghĩa tiếng Việt: học Trung ↔ Anh thì `en` chính là
+        // đáp án. Đặt nó vào `vn` để chế độ thấy một cặp (từ, nghĩa) như mọi
+        // khi, chỉ là "nghĩa" ở đây bằng tiếng Anh — không chế độ nào phải sửa.
+        vn: laZh ? d.en : d.zh,
+        // Phiên âm của mặt kia, để hiện cạnh đáp án khi cần.
+        vnPhonetic: laZh ? d.phoneticEn : d.phoneticZh,
 
         // Câu ví dụ cùng mặt với từ, để loa đọc đúng giọng.
         example: laZh ? d.exampleZh : d.exampleEn,
         examplePhonetic: laZh ? d.examplePhoneticZh : d.examplePhoneticEn,
-        exampleVn: d.exampleVn,
+        // Câu ví dụ mặt kia — đóng vai "bản dịch" của câu ví dụ.
+        exampleVn: laZh ? d.exampleEn : d.exampleZh,
 
         part: d.part,
         type: d.type,

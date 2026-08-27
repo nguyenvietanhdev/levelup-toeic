@@ -77,7 +77,7 @@ export const FillBlank = {
         // Phát âm từ ngay khi hiện câu mới (chỉ khi từ tiếng Anh đang hiển thị —
         // chiều EN→VN; chiều đảo VN→EN không đọc để khỏi lộ đáp án).
         if (GameState.state.settings.soundEnabled && !question.reversed) {
-            setTimeout(() => GameLogic.speakWord(wordPk(question.word), ttsLang()), 300);
+            setTimeout(() => GameLogic.speakWord(wordPk(question.word), ttsLang(question.word)), 300);
         }
 
         // Đếm ngược cho RIÊNG câu này; hết giờ → tính sai + chuyển/khoá.

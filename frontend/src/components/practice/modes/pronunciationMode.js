@@ -363,7 +363,10 @@ export const PronunciationMode = {
         // `onEnd` bắn ở CẢ hai đường phát (Google TTS và giọng hệ điều hành),
         // xem `gameLogic.speakWord`. Cộng thêm một khoảng đệm nhỏ: loa ngoài còn
         // vang một chút sau khi file kết thúc.
-        GameLogic.speakWord(text, ttsLang(), () => {
+        // Giọng đọc lấy theo TỪ đang luyện, không theo cả kho: bộ song ngữ có
+        // cả chữ Hán lẫn chữ Latin nên quyết theo kho là đọc sai một nửa.
+        const tuHienTai = this.questions?.[this.currentIndex]?.word;
+        GameLogic.speakWord(text, ttsLang(tuHienTai), () => {
             setTimeout(() => {
                 this._speaking = false;
                 this._syncMicDisabled();

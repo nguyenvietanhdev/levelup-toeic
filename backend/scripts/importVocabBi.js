@@ -1,5 +1,5 @@
 /**
- * Nhập kho từ SONG NGỮ (Trung + Anh + Việt) từ file CSV hoặc JSON.
+ * Nhập kho từ SONG NGỮ (Trung ↔ Anh) từ file CSV hoặc JSON.
  *
  *   node scripts/importVocabBi.js <file> [--source ten_bo] [--that]
  *
@@ -14,16 +14,18 @@
  *
  * ── Định dạng CSV ──────────────────────────────────────────────────────────
  *
- *   zh,en,vn,phoneticZh,phoneticEn,part
- *   你好,hello,Xin chào,nǐ hǎo,/həˈloʊ/,Chào hỏi
+ *   zh,en,phoneticZh,phoneticEn,part
+ *   你好,hello,nǐ hǎo,/həˈloʊ/,Chào hỏi
  *
- * Bắt buộc: `zh`, `en`, `vn`, `part`. Còn lại tuỳ chọn, thiếu thì để rỗng.
+ * Bắt buộc: `zh`, `en`, `part`. Còn lại tuỳ chọn, thiếu thì để rỗng.
+ *
+ * KHÔNG có cột `vn`: kho này học Trung ↔ Anh, `en` chính là đáp án.
  * Cột thừa bị bỏ qua chứ không báo lỗi — file của bạn muốn có cột ghi chú
  * riêng cũng được.
  *
  * ── Định dạng JSON ─────────────────────────────────────────────────────────
  *
- *   [ { "zh":"你好", "en":"hello", "vn":"Xin chào", "part":"Chào hỏi" }, … ]
+ *   [ { "zh":"你好", "en":"hello", "part":"Chào hỏi" }, … ]
  */
 require('dotenv').config({ quiet: true });
 const fs = require('fs');
@@ -31,13 +33,13 @@ const path = require('path');
 const mongoose = require('mongoose');
 const VocabularyBi = require('../models/VocabularyBi');
 
-const BAT_BUOC = ['zh', 'en', 'vn', 'part'];
+const BAT_BUOC = ['zh', 'en', 'part'];
 
 /**
  * Tách một dòng CSV, hiểu dấu ngoặc kép.
  *
- * Không dùng `split(',')`: nghĩa tiếng Việt rất hay có dấu phẩy
- * ("hợp đồng, thoả thuận") và tách thô sẽ đẩy nửa sau sang cột kế tiếp — hỏng
+ * Không dùng `split(',')`: câu ví dụ và nghĩa nhiều lớp hay có dấu phẩy
+ * ("contract, agreement") và tách thô sẽ đẩy nửa sau sang cột kế tiếp — hỏng
  * âm thầm, không báo lỗi gì.
  */
 function tachDong(dong) {
@@ -153,13 +155,11 @@ async function main() {
     const docs = hang.map((h) => ({
         zh: String(h.zh).trim(),
         en: String(h.en).trim(),
-        vn: String(h.vn).trim(),
         hienThi: h.hienThi === 'en' ? 'en' : 'zh',
         phoneticZh: String(h.phoneticZh || '').trim(),
         phoneticEn: String(h.phoneticEn || '').trim(),
         exampleZh: String(h.exampleZh || '').trim(),
         exampleEn: String(h.exampleEn || '').trim(),
-        exampleVn: String(h.exampleVn || '').trim(),
         part: String(h.part).trim(),
         type: String(h.type || '').trim(),
         level: String(h.level || '').trim(),

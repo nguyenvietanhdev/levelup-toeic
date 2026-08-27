@@ -5,7 +5,9 @@
 export function getVocabLang() {
     try {
         const stored = localStorage.getItem('vocabLang');
-        if (stored === 'en' || stored === 'zh') return stored;
+        // `bi` = kho song ngữ (Trung ↔ Anh). Thiếu nó ở danh sách này thì
+        // lựa chọn thứ ba âm thầm rơi về tiếng Anh — chọn một đằng học một nẻo.
+        if (stored === 'en' || stored === 'zh' || stored === 'bi') return stored;
         return window.GameState?.state?.settings?.vocabLang || 'en';
     } catch {
         return 'en';

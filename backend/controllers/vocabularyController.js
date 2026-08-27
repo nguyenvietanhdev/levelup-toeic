@@ -7,6 +7,7 @@ const activityLogger = require('../utils/activityLogger');
 const Vocabulary = require('../models/Vocabulary');
 const VocabularyZh = require('../models/VocabularyZh');
 const VocabularyBi = require('../models/VocabularyBi');
+const { doiHinh } = require('../services/vocabBiMapper');
 
 const escapeRegex = (str) => str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
@@ -62,9 +63,9 @@ function validateVocabularyPayloadForLang(req, word) {
     // Kho song ngữ cần CẢ HAI, nên hai phép kiểm dưới (vốn để bắt nhầm kho)
     // không áp dụng — thiếu bên nào thì nói rõ bên đó.
     if (isBiRequest(req)) {
-        const thieu = ['zh', 'en', 'vn'].filter((k) => !String(word[k] || '').trim());
+        const thieu = ['zh', 'en'].filter((k) => !String(word[k] || '').trim());
         return thieu.length
-            ? `Kho song ngữ cần đủ ${thieu.join(', ')}. Đây là kho một bản ghi mang cả tiếng Trung lẫn tiếng Anh.`
+            ? `Kho song ngữ cần đủ ${thieu.join(', ')}. Đây là kho học Trung ↔ Anh, không qua tiếng Việt.`
             : null;
     }
     if (isZhRequest(req) && word.en !== undefined && word.zh === undefined) {
@@ -128,12 +129,17 @@ function getReadableVocabFilter(req) {
 }
 
 function normalizeVocabDocForResponse(req, word) {
-    // Kho song ngữ trả NGUYÊN bản ghi, không đổi hình.
-    //
-    // `vocabBiMapper` chỉ dùng cho luyện tập: nó chọn một mặt rồi giấu mặt kia
-    // đi. Admin phải sửa được cả hai, nên đổi hình ở đây là làm mất dữ liệu
-    // ngay trên màn hình quản trị.
-    if (isBiRequest(req)) return word;
+    if (isBiRequest(req)) {
+        // `?raw=1` → trả NGUYÊN bản ghi, cho màn hình quản trị.
+        //
+        // Admin phải sửa được cả hai mặt, mà `doiHinh` chọn một mặt rồi giấu
+        // mặt kia đi — dùng ở đó là làm mất dữ liệu ngay trên màn hình sửa.
+        //
+        // Mặc định thì ĐỔI HÌNH, vì bên gọi đông nhất là app luyện tập: nó cần
+        // hình dạng `{en, vn, phonetic}` mà 16 chế độ đã biết đọc.
+        if (req.query.raw === '1') return word;
+        return doiHinh(word);
+    }
 
     if (isZhRequest(req) && (!word.en || !String(word.en).trim()) && word.zh) {
         return { ...word, en: word.zh };
