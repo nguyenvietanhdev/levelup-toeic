@@ -818,15 +818,35 @@
 
 /* Gộp thanh điểm vào header thành 1 hàng (tiết kiệm chiều cao) */
 .practice-header { gap: 12px; position: relative; }
-.practice-info { text-align: left; min-width: 0; }
+/* Tên chế độ + badge + số câu nằm CÙNG MỘT HÀNG.
+   Xếp hai dòng thì header cao thêm ~22px mà dòng dưới chỉ có một cái badge và
+   hai con số — không đáng một dòng riêng, trong khi chiều cao đó lấy mất chỗ
+   của vùng chơi. */
+.practice-info {
+  text-align: left;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
 .practice-info h2 {
   margin: 0;
   font-size: 1.15rem;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  /* Co lại trước badge và số câu khi tên dài: cắt bớt tên chế độ vẫn đọc được,
+     còn "2 / 19" mà mất chữ số thì thành vô nghĩa. */
+  min-width: 0;
+  flex-shrink: 1;
 }
-.practice-meta { justify-content: flex-start; }
+.practice-meta {
+  justify-content: flex-start;
+  /* Không cho co: badge và số câu đều là nội dung ngắn, ép chúng xuống dòng
+     hoặc cắt đi thì mất chính thứ vừa gộp lên đây. */
+  flex-shrink: 0;
+}
 /* Thanh điểm ⭐✓✗.
    TRƯỚC ĐÂY căn giữa bằng position:absolute + left:50%. Nhìn cân, nhưng nó bị
    lấy KHỎI LUỒNG trong khi .practice-info bên trái lại có `flex: 1` — tức phần
@@ -4943,39 +4963,10 @@ mark {
   min-height: auto;
 }
 
-.flashcard-progress {
-  width: 100%;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: var(--spacing-md);
-  background: var(--bg-secondary);
-  border-radius: var(--radius-md);
-}
-
-.progress-indicator {
-  font-size: 1.5rem;
-  font-weight: bold;
-  color: var(--primary-color);
-}
-
-.progress-separator {
-  margin: 0 0.5rem;
-  color: var(--text-muted);
-}
-
-.progress-stats {
-  display: flex;
-  gap: var(--spacing-md);
-}
-
-.stat-known {
-  color: var(--success-color);
-}
-
-.stat-unknown {
-  color: var(--error-color);
-}
+/* `.flashcard-progress` và các lớp con (`.progress-indicator`,
+   `.progress-stats`, `.stat-known`, `.stat-unknown`) đã bỏ cùng khối HTML của
+   chúng: thanh đó lặp lại đúng số câu và Known/Unknown mà thanh trên đầu màn
+   luyện tập đã hiện. */
 
 /* Card + actions side by side */
 .flashcard-stage {
@@ -5774,10 +5765,6 @@ mark {
 [data-theme="dark"] .flashcard-btn {
   background: var(--bg-tertiary);
   border-color: var(--border-color);
-}
-
-[data-theme="dark"] .flashcard-progress {
-  background: var(--bg-tertiary);
 }
 
 /* Responsive */

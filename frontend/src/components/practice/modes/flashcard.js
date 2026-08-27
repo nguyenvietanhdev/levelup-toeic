@@ -145,22 +145,12 @@ export const Flashcard = {
 
         container.innerHTML = `
             <div class="flashcard-container">
-                <div class="flashcard-progress">
-                    <div class="progress-indicator">
-                        <span class="progress-current">${this.currentIndex + 1}</span>
-                        <span class="progress-separator">/</span>
-                        <span class="progress-total">${this.words.length}</span>
-                    </div>
-                    <div class="progress-stats">
-                        <span class="stat-known">
-                            Known ${this.knownWords.length}
-                        </span>
-                        <span class="stat-unknown">
-                            Unknown ${this.unknownWords.length}
-                        </span>
-                    </div>
-                </div>
-
+                <!-- KHÔNG lặp lại số câu và Known/Unknown ở đây.
+                     Thanh trên đầu màn luyện tập đã hiện đúng cùng những con số
+                     đó: updateProgress đẩy số câu lên, còn markAsKnown /
+                     markAsUnknown đều gọi recordAnswer nên ✓/✗ trên đó chính là
+                     Known/Unknown. Hiện hai lần chỉ tốn chiều cao và đẩy thẻ
+                     xuống dưới mép màn hình. -->
                 <div class="flashcard-stage">
                 <div class="flashcard" id="flashcard">
                     <div class="flashcard-inner" id="flashcard-inner">
