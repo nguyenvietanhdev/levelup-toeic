@@ -1,7 +1,36 @@
 // ============================================================
 // NAV GROUP TOGGLE (collapsible sidebar sections)
 // ============================================================
+/** Khoá localStorage giữ nhóm nào đang đóng. */
+const KHOA_NHOM_DONG = 'admin-nav-groups-closed';
+
+/**
+ * Đọc danh sách nhóm người dùng đã tự ĐÓNG.
+ *
+ * Lưu nhóm ĐÓNG chứ không lưu nhóm mở: mặc định trong HTML mới là ý định của
+ * thiết kế (Từ vựng và Đề thi TOEIC mở sẵn vì là hai mảng làm việc chính).
+ * Lưu nhóm mở thì thêm một nhóm mặc-định-mở sau này sẽ không có tác dụng với
+ * ai đã dùng app — danh sách cũ ghi đè mất.
+ */
+function nhomDaDong() {
+    try { return new Set(JSON.parse(localStorage.getItem(KHOA_NHOM_DONG) || '[]')); }
+    catch { return new Set(); }
+}
+
+function luuNhomDong(tap) {
+    try { localStorage.setItem(KHOA_NHOM_DONG, JSON.stringify([...tap])); } catch {}
+}
+
 function initNavGroups() {
+    // Áp trạng thái đã lưu TRƯỚC khi gắn sự kiện.
+    const dong = nhomDaDong();
+    document.querySelectorAll('.nav-group-toggle').forEach(toggle => {
+        const group = toggle.dataset.group;
+        if (!dong.has(group)) return;
+        toggle.classList.remove('open');
+        document.getElementById('nav-group-' + group)?.classList.remove('open');
+    });
+
     document.querySelectorAll('.nav-group-toggle').forEach(toggle => {
         toggle.addEventListener('click', () => {
             const group = toggle.dataset.group;
@@ -9,6 +38,12 @@ function initNavGroups() {
             const isOpen = toggle.classList.contains('open');
             toggle.classList.toggle('open', !isOpen);
             items.classList.toggle('open', !isOpen);
+
+            // Nhớ lựa chọn: đóng một nhóm rồi F5 mà nó bật lại là thao tác
+            // thừa lặp mỗi lần tải trang.
+            const tap = nhomDaDong();
+            if (isOpen) tap.add(group); else tap.delete(group);
+            luuNhomDong(tap);
         });
     });
 }
