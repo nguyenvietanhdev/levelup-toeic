@@ -88,6 +88,21 @@ export function buildUploadContent({ tab } = {}) {
                     style="width:100%;padding:8px 10px;border:1px solid var(--border-color);border-radius:6px;font-size:13px;background:var(--bg-tertiary,var(--bg-secondary));color:var(--text-primary);text-transform:${transform}">
             </div>`;
 
+        // Nhãn ô "từ chính" theo KHO đang dùng.
+        //
+        // Trước đây cứng là "English", nên người học tiếng Trung gõ chữ Hán vào
+        // ô ghi "English" — đúng chỗ (backend lưu từ chính ở trường `en` cho
+        // mọi ngôn ngữ) nhưng nhìn thì như nhập sai.
+        //
+        // `text-transform` cũng phải bỏ với chữ Hán: `lowercase` vô nghĩa ở đó,
+        // mà lại hạ chữ thường mất phần Latin lẫn trong câu (tên riêng).
+        const khoForm = getVocabLang();
+        const nhanTuChinh = khoForm === 'en' ? 'English'
+            : khoForm === 'bi' ? 'Tiếng Trung (chữ Hán)'
+            : 'Tiếng Trung';
+        const viDuTuChinh = khoForm === 'en' ? 'caterer' : '你好';
+        const bienDoiTuChinh = khoForm === 'en' ? 'lowercase' : 'none';
+
         const addTabHtml = () => `
             <div id="vocab-edit-bar" style="display:none;align-items:center;gap:8px;margin-bottom:10px;padding:6px 10px;border:1px solid var(--border-color);border-radius:8px;background:var(--bg-secondary)"></div>
             <p style="margin:0 0 14px;font-size:13px;color:var(--text-secondary)">
@@ -95,9 +110,13 @@ export function buildUploadContent({ tab } = {}) {
                 <small>• <code>part</code> và <code>level</code> sẽ viết HOA. Các trường khác viết thường. <code>example</code> tự viết hoa chữ cái đầu.</small>
             </p>
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
-                ${fieldHtml('en', 'English', 'caterer', true, 'lowercase')}
+                ${fieldHtml('en', nhanTuChinh, viDuTuChinh, true, bienDoiTuChinh)}
                 ${fieldHtml('vn', 'Vietnamese', 'người cung cấp đồ ăn', false, 'lowercase')}
             </div>
+            ${khoForm === 'bi' ? `
+            <div style="margin-bottom:10px">
+                ${fieldHtml('enMeaning', 'English (đáp án khi luyện Trung → Anh)', 'hello', true, 'lowercase')}
+            </div>` : ''}
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
                 ${fieldHtml('part', 'Part', 'ETS26T10-RC', true, 'uppercase')}
                 ${fieldHtml('source', 'Source', 'ets2026', true, 'lowercase')}
@@ -211,6 +230,9 @@ export function buildUploadContent({ tab } = {}) {
             const set = (id, v) => { const el = document.getElementById(id); if (el) el.value = v ?? ''; };
             set('vocab-en', _editing.en);
             set('vocab-vn', _editing.vn);
+            // Không đổ lại thì mở ra sửa một chữ rồi lưu là mất nghĩa tiếng Anh
+            // — ô rỗng ghi đè giá trị cũ, im lặng.
+            set('vocab-enMeaning', _editing.enMeaning);
             set('vocab-part', _editing.part);
             set('vocab-source', _editing.source);
             set('vocab-level', _editing.level);
@@ -265,7 +287,7 @@ export function buildUploadContent({ tab } = {}) {
         const exitEditMode = () => {
             _editing = null;
             _onEditSaved = null;
-            ['vocab-en','vocab-vn','vocab-level','vocab-phonetic','vocab-example','vocab-synonyms','vocab-image']
+            ['vocab-en','vocab-vn','vocab-enMeaning','vocab-level','vocab-phonetic','vocab-example','vocab-synonyms','vocab-image']
                 .forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
             ['vocab-source','vocab-part'].forEach(id => {
                 const el = document.getElementById(id);
@@ -304,12 +326,21 @@ export function buildUploadContent({ tab } = {}) {
                 const source = document.getElementById('vocab-source')?.value.trim();
                 const resultDiv = document.getElementById('upload-form-result');
                 if (!en || !part || !source) {
-                    resultDiv.innerHTML = resultHtml('error', 'English, Part và Source là bắt buộc');
+                    resultDiv.innerHTML = resultHtml('error', `${nhanTuChinh}, Part và Source là bắt buộc`);
+                    return;
+                }
+                // Kho song ngữ: thiếu nghĩa tiếng Anh thì từ đó KHÔNG luyện
+                // được chiều Trung → Anh — nửa công dụng của bộ từ biến mất mà
+                // không có lỗi nào. Chặn ngay lúc nhập.
+                const enMeaning = document.getElementById('vocab-enMeaning')?.value.trim() || '';
+                if (khoForm === 'bi' && !enMeaning) {
+                    resultDiv.innerHTML = resultHtml('error',
+                        'Bộ song ngữ cần nghĩa tiếng Anh — đó là đáp án khi luyện Trung → Anh');
                     return;
                 }
                 const type1 = t1?.value; const type2 = t2?.value;
                 if (type1 && type2) { resultDiv.innerHTML = resultHtml('error', 'Chỉ chọn 1 trong 2 cột Type'); return; }
-                const payload = normalizeVocabItem({ en, vn: document.getElementById('vocab-vn')?.value, part, source,
+                const payload = normalizeVocabItem({ en, vn: document.getElementById('vocab-vn')?.value, enMeaning, part, source,
                     type: type1 || type2, level: document.getElementById('vocab-level')?.value,
                     phonetic: document.getElementById('vocab-phonetic')?.value,
                     example: document.getElementById('vocab-example')?.value,
@@ -335,7 +366,7 @@ export function buildUploadContent({ tab } = {}) {
                     const res = await UploadVocabAPI.create({ ...payload, retentionDays: readRetention() });
                     if (!res.success) throw new Error(res.message);
                     resultDiv.innerHTML = resultHtml('success', `Đã lưu "${payload.en}" vào source "${payload.source}"`);
-                    ['vocab-en','vocab-vn','vocab-example','vocab-phonetic','vocab-synonyms','vocab-image'].forEach(id => {
+                    ['vocab-en','vocab-vn','vocab-enMeaning','vocab-example','vocab-phonetic','vocab-synonyms','vocab-image'].forEach(id => {
                         const el = document.getElementById(id); if (el) el.value = '';
                     });
                     document.getElementById('vocab-en')?.focus();

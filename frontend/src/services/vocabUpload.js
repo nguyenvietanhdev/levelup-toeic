@@ -24,11 +24,17 @@ export function normalizeVocabItem(obj) {
         //
         // Không có `lang` thì ĐOÁN theo mặt chữ, đừng mặc định 'en': file JSON cũ
         // (viết trước khi có trường này) vẫn phải đọc đúng giọng.
-        lang: obj.lang === 'zh' || obj.lang === 'en'
+        // `bi` (bộ song ngữ) cũng là giá trị hợp lệ. Thiếu nó ở đây thì bộ song
+        // ngữ rơi xuống nhánh đoán, mà nó toàn chữ Hán nên bị ép thành 'zh' —
+        // mất nhãn riêng và lẫn vào danh sách bộ tiếng Trung.
+        lang: ['zh', 'en', 'bi'].includes(obj.lang)
             ? obj.lang
             : (/[一-鿿]/.test(String(obj.en || '')) ? 'zh' : 'en'),
         en: lower(obj.en),
         vn: lower(obj.vn),
+        // Nghĩa tiếng Anh — bộ song ngữ dùng làm đáp án khi luyện Trung → Anh.
+        // Không liệt kê ở đây thì nó bị lọc mất trước cả khi tới server.
+        enMeaning: lower(obj.enMeaning),
         part: upper(obj.part),
         source: lower(obj.source),
         type: lower(obj.type),

@@ -133,3 +133,71 @@ describe('đường nhập JSON giữ lại `lang`', () => {
         expect(normalizeVocabItem({}).lang).toBe('en');
     });
 });
+
+describe('form nhập tay theo đúng kho', () => {
+    const form = readFileSync(join(__dirname, 'openUploadModal.js'), 'utf8');
+
+    test('nhãn ô từ chính đổi theo kho, không cứng "English"', () => {
+        // Người học tiếng Trung gõ chữ Hán vào ô ghi "English" — đúng chỗ
+        // (backend lưu từ chính ở `en` cho mọi ngôn ngữ) nhưng nhìn như sai.
+        expect(form).toMatch(/const nhanTuChinh = khoForm === 'en' \? 'English'/);
+        expect(form).toMatch(/fieldHtml\('en', nhanTuChinh/);
+    });
+
+    test('bỏ `lowercase` với chữ Hán', () => {
+        // `lowercase` vô nghĩa với chữ Hán, mà lại hạ chữ thường mất phần Latin
+        // lẫn trong câu.
+        expect(form).toMatch(/bienDoiTuChinh = khoForm === 'en' \? 'lowercase' : 'none'/);
+    });
+
+    test('kho song ngữ có thêm ô nghĩa tiếng Anh', () => {
+        expect(form).toMatch(/khoForm === 'bi' \?[\s\S]{0,200}fieldHtml\('enMeaning'/);
+    });
+
+    test('ô đó KHÔNG hiện ở hai kho cũ', () => {
+        // Hiện thừa một ô bắt buộc mà kho đó không dùng là chặn người ta lưu.
+        const i = form.indexOf("fieldHtml('enMeaning'");
+        const truoc = form.slice(Math.max(0, i - 250), i);
+        expect(truoc).toMatch(/khoForm === 'bi'/);
+    });
+
+    test('CHẶN lưu khi bộ song ngữ thiếu nghĩa tiếng Anh', () => {
+        // Thiếu thì từ đó không luyện được chiều Trung → Anh — nửa công dụng
+        // biến mất mà không có lỗi nào.
+        expect(form).toMatch(/khoForm === 'bi' && !enMeaning/);
+    });
+
+    test('gửi `enMeaning` lên server', () => {
+        expect(form).toMatch(/normalizeVocabItem\(\{ en, vn:[^}]*enMeaning/);
+    });
+
+    test('SỬA từ thì đổ lại `enMeaning` vào ô', () => {
+        // Không đổ lại thì mở ra sửa một chữ rồi lưu là ô rỗng ghi đè giá trị
+        // cũ, im lặng.
+        expect(form).toMatch(/set\('vocab-enMeaning', _editing\.enMeaning\)/);
+    });
+
+    test('dọn ô `enMeaning` cùng các ô khác', () => {
+        // Sót lại thì từ sau thừa nghĩa của từ trước.
+        const soLan = (form.match(/'vocab-enMeaning'/g) || []).length;
+        expect(soLan).toBeGreaterThanOrEqual(4);   // khai + đọc + prefill + 2 chỗ dọn
+    });
+});
+
+describe('`normalizeVocabItem` không nuốt dữ liệu kho song ngữ', () => {
+    test('giữ `enMeaning`', () => {
+        // Không liệt kê thì nó bị lọc mất trước cả khi tới server.
+        expect(normalizeVocabItem({ en: '你好', enMeaning: 'Hello' }).enMeaning).toBe('hello');
+    });
+
+    test('`lang: bi` được giữ, KHÔNG bị đoán lại thành `zh`', () => {
+        // Bộ song ngữ toàn chữ Hán nên nhánh đoán sẽ ép thành 'zh' — mất nhãn
+        // riêng và lẫn vào danh sách bộ tiếng Trung.
+        expect(normalizeVocabItem({ en: '你好', lang: 'bi' }).lang).toBe('bi');
+    });
+
+    test('vẫn đoán đúng khi KHÔNG có `lang`', () => {
+        expect(normalizeVocabItem({ en: '你好' }).lang).toBe('zh');
+        expect(normalizeVocabItem({ en: 'hello' }).lang).toBe('en');
+    });
+});

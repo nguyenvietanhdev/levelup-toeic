@@ -580,3 +580,35 @@ describe('từ vựng riêng lưu được 3 key', () => {
         expect(ctrl).toMatch(/en, vn, enMeaning, phonetic/);
     });
 });
+
+describe('sửa từ riêng không làm mất dữ liệu song ngữ', () => {
+    const { readFileSync } = require('node:fs');
+    const { join } = require('node:path');
+    const ctrl = readFileSync(
+        join(__dirname, '..', 'controllers', 'uploadController.js'), 'utf8');
+
+    const thanUpdate = () => {
+        const i = ctrl.indexOf('exports.updateMyWord');
+        expect(i).toBeGreaterThan(-1);
+        return ctrl.slice(i, ctrl.indexOf('\n};', i));
+    };
+
+    test('nhận `enMeaning` khi sửa', () => {
+        const t = thanUpdate();
+        expect(t).toMatch(/en, vn, enMeaning, phonetic/);
+        expect(t).toMatch(/word\.enMeaning = lower\(enMeaning\)/);
+    });
+
+    test('`lang: bi` KHÔNG bị ép về en/zh khi sửa', () => {
+        // Ép thì sửa một từ song ngữ là mất nhãn riêng, bộ đó lẫn vào danh sách
+        // kho tiếng Trung.
+        const t = thanUpdate();
+        expect(t).toMatch(/\['zh', 'en', 'bi'\]\.includes\(lang\)/);
+    });
+
+    test('chỉ ghi đè khi client THỰC SỰ gửi trường đó', () => {
+        // `!== undefined` chứ không phải truthy: gửi chuỗi rỗng để XOÁ nghĩa
+        // vẫn phải ăn, mà không gửi thì giữ nguyên giá trị cũ.
+        expect(thanUpdate()).toMatch(/if \(enMeaning !== undefined\)/);
+    });
+});

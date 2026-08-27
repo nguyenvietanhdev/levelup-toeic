@@ -290,7 +290,7 @@ exports.updateMyWord = async (req, res, next) => {
       return res.status(404).json({ success: false, message: 'Không tìm thấy từ hoặc bạn không có quyền sửa' });
     }
 
-    const { en, vn, phonetic, synonyms, type, example, level, lang } = req.body;
+    const { en, vn, enMeaning, phonetic, synonyms, type, example, level, lang } = req.body;
 
     if (en !== undefined) {
       if (!String(en).trim()) {
@@ -311,12 +311,15 @@ exports.updateMyWord = async (req, res, next) => {
     }
 
     if (vn !== undefined) word.vn = lower(vn);
+    if (enMeaning !== undefined) word.enMeaning = lower(enMeaning);
     if (phonetic !== undefined) word.phonetic = lower(phonetic);
     if (synonyms !== undefined) word.synonyms = lower(synonyms);
     if (type !== undefined) word.type = lower(type);
     if (example !== undefined) word.example = capFirst(example);
     if (level !== undefined) word.level = upper(level);
-    if (lang !== undefined) word.lang = lang === 'zh' ? 'zh' : 'en';
+    // `bi` phải nằm trong danh sách hợp lệ: ép về 'zh'/'en' thì sửa một từ
+    // song ngữ là mất nhãn riêng, bộ đó lẫn vào danh sách kho tiếng Trung.
+    if (lang !== undefined) word.lang = ['zh', 'en', 'bi'].includes(lang) ? lang : 'en';
 
     await word.save();
     res.json({ success: true, data: word, message: `Đã cập nhật "${word.en}"` });
