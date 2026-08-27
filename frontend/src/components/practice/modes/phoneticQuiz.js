@@ -152,13 +152,17 @@ export const PhoneticQuiz = {
                                <i class="fas fa-volume-up"></i>
                            </button>`
                     }
-                </div>
-
-                <div class="pq-instruction">
-                    ${isIpaMode
-                        ? '<i class="fas fa-search"></i> Từ tiếng Anh nào có phiên âm trên?'
-                        : '<i class="fas fa-headphones"></i> Nghe từ và chọn nghĩa đúng:'
-                    }
+                    <!-- Câu hỏi nằm TRONG khối kích thích, không phải một dòng
+                         riêng bên dưới. Nó gắn với phiên âm ở trên (đọc liền
+                         một mạch "phiên âm này — của từ nào?"), mà tách ra
+                         thành dòng riêng thì tốn nguyên một dòng chỉ để chứa
+                         một câu. -->
+                    <div class="pq-instruction">
+                        ${isIpaMode
+                            ? '<i class="fas fa-search"></i> Từ tiếng Anh nào có phiên âm trên?'
+                            : '<i class="fas fa-headphones"></i> Nghe từ và chọn nghĩa đúng:'
+                        }
+                    </div>
                 </div>
 
                 <div class="choices-container pq-options" id="pq-choices">

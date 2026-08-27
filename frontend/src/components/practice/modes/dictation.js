@@ -212,11 +212,15 @@ export const Dictation = {
                         <button class="btn btn-primary dictation-submit-btn" id="dictation-submit-btn">
                             <i class="fas fa-check"></i> Kiểm tra
                         </button>
+                        <!-- Kết quả nằm TRONG cột trả lời, ngay dưới ô vừa gõ.
+                             Trước đây nó ở ngoài lưới nên tràn hết chiều ngang
+                             và đẩy hai nút Trước/Tiếp xuống dưới mép — mắt vừa
+                             nhìn ô nhập lại phải nhảy xuống tận đáy để đọc
+                             đúng/sai. -->
+                        <div class="dictation-result" id="dictation-result" style="display:none;"></div>
                     </div>
 
                 </div>
-
-                <div class="dictation-result" id="dictation-result" style="display:none;"></div>
             </div>
         `;
 

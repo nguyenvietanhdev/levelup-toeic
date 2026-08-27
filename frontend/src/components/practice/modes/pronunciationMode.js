@@ -254,7 +254,7 @@ export const PronunciationMode = {
         const langFlag  = isZh ? '🇨🇳' : '🇬🇧';
 
         container.innerHTML = `
-            <div class="question-container pronunciation-container" style="display:flex;flex-direction:column;gap:16px;padding:16px 12px;">
+            <div class="question-container pronunciation-container" style="display:flex;flex-direction:column;gap:12px;padding:0;">
 
                 <!-- Word card + mic side by side.
                      Có class để responsive.css xếp dọc lại trên điện thoại.

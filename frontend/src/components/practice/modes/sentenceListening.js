@@ -116,10 +116,13 @@ export const SentenceListening = {
                         <div class="sl-listen-label">Nghe 3 từ được đọc lần lượt</div>
                         <div class="sl-listen-sub">Chọn đúng 3 từ trong lưới bên dưới</div>
                     </div>
-                </div>
-
-                <div class="sl-selected-count" id="sl-selected-count">
-                    Đã chọn: <strong>0</strong> / 3
+                    <!-- Bộ đếm nằm CÙNG HÀNG với khối nghe, dồn sang phải.
+                         Trước đây nó là một dòng riêng giữa khối nghe và lưới
+                         từ — một dòng chỉ để chứa năm chữ, mà chiều cao đó đẩy
+                         lưới và nút Xác nhận xuống dưới mép màn hình. -->
+                    <div class="sl-selected-count" id="sl-selected-count">
+                        Đã chọn: <strong>0</strong> / 3
+                    </div>
                 </div>
 
                 <div class="sl-word-grid" id="sl-word-grid">

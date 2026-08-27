@@ -59,8 +59,11 @@
 .dictation-two-col {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: var(--spacing-xl);
-  align-items: center;
+  /* `xl` (32px) giữa hai cột là rộng — chúng đã có nền riêng để phân tách. */
+  gap: var(--spacing-lg);
+  /* `start` thay `center`: khi hiện kết quả, cột phải cao hơn hẳn cột trái, và
+     căn giữa làm cả hai trôi lệch nhau mỗi lần trả lời. */
+  align-items: start;
   width: 100%;
 }
 
@@ -330,7 +333,10 @@
   display: flex;
   align-items: center;
   gap: var(--spacing-md);
-  padding: var(--spacing-lg) var(--spacing-xl);
+  /* `lg`/`xl` (24/32px) là đệm của một khối đứng riêng. Ở đây nó là hàng đầu
+     của vùng chơi, cắt còn `md` để lưới từ và nút Xác nhận lên trong khung
+     nhìn. */
+  padding: var(--spacing-md);
   background: var(--bg-secondary);
   border-radius: var(--border-radius-large);
   width: 100%;
@@ -371,11 +377,18 @@
   margin-top: 2px;
 }
 
+/* Bộ đếm dồn sang PHẢI trong hàng nghe, không còn là dòng riêng.
+   `margin-left: auto` đẩy nó ra mép; `flex-shrink: 0` giữ nó không bị bóp khi
+   dòng mô tả bên trái dài. */
 .sl-selected-count {
+  margin-left: auto;
+  flex-shrink: 0;
   font-size: var(--font-size-md);
   color: var(--text-secondary);
-  text-align: center;
-  padding: 4px 0;
+  padding: 4px 10px;
+  border-radius: 20px;
+  background: var(--bg-primary);
+  white-space: nowrap;
 }
 
 /* Word grid: 4 columns × 2 rows = 8 buttons */
@@ -549,8 +562,13 @@
 .pq-ipa-display {
   display: flex;
   align-items: center;
-  gap: var(--spacing-lg);
-  padding: var(--spacing-xl);
+  /* Câu hỏi là mục THỨ BA trong hàng này và phải xuống dòng riêng — `wrap` để
+     nó rớt xuống, `pq-instruction` bên dưới chiếm trọn bề ngang. */
+  flex-wrap: wrap;
+  gap: var(--spacing-md);
+  /* `xl` (32px) mỗi phía là đệm của một khối đứng riêng; ở đây nó là khối đầu
+     của cột trái nên `lg` đủ. */
+  padding: var(--spacing-lg);
   background: linear-gradient(135deg, rgba(var(--primary-rgb), 0.08), rgba(var(--secondary-rgb), 0.08));
   border: 2px solid rgba(var(--primary-rgb), 0.25);
   border-radius: var(--border-radius-large);
@@ -633,13 +651,18 @@
 .pq-play-btn:hover { transform: scale(1.1); }
 .pq-play-btn.playing { animation: pq-pulse-ring 0.8s ease infinite; }
 
+/* Nằm TRONG khối phiên âm, chiếm trọn hàng dưới. `flex-basis: 100%` buộc nó
+   xuống dòng riêng thay vì chen vào cạnh phiên âm. */
 .pq-instruction {
+  flex-basis: 100%;
   font-size: var(--font-size-md);
   color: var(--text-secondary);
-  text-align: center;
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 8px;
+  padding-top: var(--spacing-sm);
+  border-top: 1px solid rgba(var(--primary-rgb), 0.15);
 }
 
 .pq-options {

@@ -1266,10 +1266,12 @@
    PRACTICE MODE: EXAMPLE FILL BLANK
    =================================== */
 
+/* Rộng bằng khung chứa, thẳng lề với header.
+   `max-width: 800px` bó nội dung lại giữa màn hình trong khi header trải hết
+   bề ngang — hai mép lệch nhau nhìn như hai khối rời nhau. Khung ngoài
+   (`.main-content`) đã giới hạn 1200px rồi. */
 .example-fill-blank-container {
   text-align: center;
-  max-width: 800px;
-  margin: 0 auto;
 }
 
 .question-header {
@@ -1327,10 +1329,14 @@
 .practice-nav-btn:disabled { opacity: 0.4; cursor: default; }
 
 .sentence-with-blank {
-  font-size: 1.5rem;
-  line-height: 2;
-  margin: var(--spacing-xl) 0;
-  padding: var(--spacing-xl);
+  font-size: 1.35rem;
+  /* `2` là giãn dòng của văn bản dài nhiều đoạn. Ở đây thường chỉ MỘT dòng,
+     nên nó chỉ tạo khoảng trống trên/dưới chữ. */
+  line-height: 1.6;
+  /* 32px margin + 32px padding mỗi phía = 128px chiều cao thừa cho một câu
+     một dòng, đẩy bốn nút đáp án xuống dưới mép màn hình. */
+  margin: var(--spacing-md) 0;
+  padding: var(--spacing-md) var(--spacing-lg);
   background-color: var(--bg-secondary);
   border-radius: var(--border-radius);
   border-left: 4px solid var(--primary-color);
@@ -1360,15 +1366,17 @@
 .options-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: var(--spacing-md);
-  margin: var(--spacing-xl) 0;
+  gap: var(--spacing-sm);
+  /* `xl` trên/dưới cộng với margin của khối câu ngay trên thành khoảng trống
+     kép — hai khối liền nhau chỉ cần MỘT khoảng cách. */
+  margin: var(--spacing-md) auto;
   max-width: 600px;
-  margin-left: auto;
-  margin-right: auto;
 }
 
 .option-btn {
-  padding: var(--spacing-lg);
+  /* `lg` (24px) mỗi phía cho một nút chứa một từ là quá rộng: bốn nút thành
+     hai hàng cao ~200px. */
+  padding: var(--spacing-md);
   background-color: var(--bg-secondary);
   border: 2px solid var(--border-color);
   border-radius: var(--border-radius);
@@ -6526,18 +6534,23 @@ mark {
    PRONUNCIATION MODE STYLES
    =================================== */
 
+/* Xem ghi chú ở `.example-fill-blank-container`: thẳng lề với header. */
 .pronunciation-container {
-    max-width: 800px;
-    margin: 0 auto;
+    width: 100%;
 }
 
 /* Word Display */
 .pronunciation-word-display {
     background: linear-gradient(135deg, rgba(245, 158, 11, 0.1), rgba(239, 68, 68, 0.1));
-    border: 3px solid var(--warning-color);
+    /* Viền 3px là dày cho một khối đã có nền riêng — 2px vẫn nổi rõ mà bớt
+       nặng. */
+    border: 2px solid var(--warning-color);
     border-radius: var(--border-radius-large);
-    padding: var(--spacing-xl);
-    margin: var(--spacing-xl) 0;
+    padding: var(--spacing-lg);
+    /* `xl` trên/dưới (32px mỗi bên = 64px) là nguồn khoảng trống lớn xuống ba
+       nút Gợi ý / Dừng giờ / Bỏ qua. Khối này đã nằm trong hàng flex có `gap`
+       riêng nên margin dọc ở đây là cộng thêm lần hai. */
+    margin: 0;
     text-align: center;
 }
 
