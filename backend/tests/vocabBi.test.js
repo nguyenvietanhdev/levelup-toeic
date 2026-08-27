@@ -168,3 +168,113 @@ describe('schema kho song ngữ', () => {
         }
     });
 });
+
+describe('admin: tab thứ ba `lang=bi`', () => {
+    const { readFileSync } = require('node:fs');
+    const { join } = require('node:path');
+    const ctrl = readFileSync(
+        join(__dirname, '..', 'controllers', 'vocabularyController.js'), 'utf8');
+    const html = readFileSync(
+        join(__dirname, '..', 'public', 'admin', 'partials', 'tabs', 'vocabulary.html'), 'utf8');
+    const vocabJs = readFileSync(
+        join(__dirname, '..', 'public', 'admin', 'js', 'features', 'vocab', 'vocab.js'), 'utf8');
+    const coreJs = readFileSync(
+        join(__dirname, '..', 'public', 'admin', 'js', 'core', 'core.js'), 'utf8');
+
+    /** Thân một hàm, cắt tới dấu `}` ở đầu dòng. */
+    function than(nguon, ten) {
+        const i = nguon.indexOf(ten);
+        expect(i).toBeGreaterThan(-1);
+        return nguon.slice(i, nguon.indexOf('\n}', i));
+    }
+
+    test('`lang=bi` chọn đúng kho song ngữ', () => {
+        const t = than(ctrl, 'function getVocabModel');
+        expect(t).toMatch(/lang === 'bi'/);
+        expect(t).toMatch(/return VocabularyBi/);
+    });
+
+    test('giá trị lạ vẫn rơi về tiếng Anh, không vỡ', () => {
+        // Client cũ không gửi `lang` bao giờ.
+        const t = than(ctrl, 'function getVocabModel');
+        expect(t).toMatch(/return Vocabulary;/);
+    });
+
+    test('khoá chính của kho song ngữ là `zh`', () => {
+        // Lấy `en` làm khoá thì hai chữ Hán khác nhau dịch ra cùng một từ tiếng
+        // Anh sẽ chặn nhầm nhau khi nhập.
+        const t = than(ctrl, 'function pkField');
+        expect(t).toMatch(/isBiRequest\(req\)\) return 'zh'/);
+    });
+
+    test('KHÔNG viết hoa `part` cho kho song ngữ', () => {
+        // Chỉ kho tiếng Anh dùng PART viết hoa. Viết hoa "Chào hỏi" là lọc ra
+        // 0 từ.
+        const t = than(ctrl, 'function normalizePartForLang');
+        expect(t).toMatch(/isBiRequest\(req\)/);
+    });
+
+    test('trả NGUYÊN bản ghi, không đổi hình như lúc luyện tập', () => {
+        // `vocabBiMapper` giấu một mặt đi — dùng ở admin là làm mất dữ liệu
+        // ngay trên màn hình quản trị.
+        const t = than(ctrl, 'function normalizeVocabDocForResponse');
+        expect(t).toMatch(/isBiRequest\(req\)\) return word/);
+    });
+
+    test('tìm kiếm soi cả chữ Hán', () => {
+        // Gõ 你好 mà chỉ soi `en`/`vn` thì không ra gì, dù chữ đó nằm ngay
+        // trên màn hình.
+        const i = ctrl.indexOf('if (search) {');
+        expect(ctrl.slice(i, i + 400)).toMatch(/isBiRequest\(req\)[\s\S]*?\{ zh: re \}/);
+    });
+
+    test('kiểm nhập: kho song ngữ cần đủ zh + en + vn', () => {
+        const t = than(ctrl, 'function validateVocabularyPayloadForLang');
+        expect(t).toMatch(/isBiRequest/);
+        expect(t).toMatch(/'zh', 'en', 'vn'/);
+    });
+
+    test('có nút tab thứ ba trong HTML', () => {
+        expect(html).toMatch(/data-vocab-lang="bi"/);
+    });
+
+    test('bảng có cột phụ cho mặt còn lại', () => {
+        expect(html).toMatch(/id="vocab-col-alt"/);
+        // Ẩn mặc định: hai kho cũ chỉ có một từ mỗi bản ghi.
+        const i = html.indexOf('id="vocab-col-alt"');
+        expect(html.slice(i, i + 120)).toMatch(/display:none/);
+    });
+
+    test('đổi tiêu đề cột khi sang tab song ngữ', () => {
+        // Để nguyên "Tiếng Anh" thì admin nhìn chữ Hán dưới tiêu đề sai.
+        const t = than(coreJs, 'function capNhatCotTuVung');
+        expect(t).toMatch(/lang === "bi"/);
+        expect(t).toMatch(/Tiếng Trung/);
+    });
+
+    test('gọi đổi tiêu đề ngay khi bấm tab', () => {
+        const i = coreJs.indexOf('vocabCurrentLang = btn.dataset.vocabLang');
+        expect(coreJs.slice(i, i + 200)).toMatch(/capNhatCotTuVung/);
+    });
+
+    test('cột chính hiện chữ HÁN, không phải chữ tiếng Anh', () => {
+        // `word.en || word.zh` chọn nhầm vì bản ghi song ngữ có CẢ HAI.
+        //
+        // Soi ĐÚNG nhánh song ngữ, không phải cả đoạn: kiểm "có chữ zh ở đâu
+        // đó gần đây" thì đổi nhánh thành `word.en` vẫn xanh, vì nhánh kia
+        // (`word.en || word.zh`) cũng chứa `word.zh`.
+        const i = vocabJs.indexOf('const primaryWord = laSongNgu');
+        expect(i).toBeGreaterThan(-1);
+        const nhanh = vocabJs.slice(i, vocabJs.indexOf(';', i));
+        // Dạng: laSongNgu ? (word.zh || '') : (word.en || word.zh || '')
+        const truocDauHai = nhanh.slice(0, nhanh.indexOf(':'));
+        expect(truocDauHai).toMatch(/word\.zh/);
+        expect(truocDauHai).not.toMatch(/word\.en/);
+    });
+
+    test('phiên âm hiện đúng theo ngôn ngữ của cột', () => {
+        const i = vocabJs.indexOf('const phienAmChinh');
+        expect(i).toBeGreaterThan(-1);
+        expect(vocabJs.slice(i, i + 150)).toMatch(/phoneticZh/);
+    });
+});

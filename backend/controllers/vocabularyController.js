@@ -6,6 +6,7 @@ const logger = require('../utils/logger');
 const activityLogger = require('../utils/activityLogger');
 const Vocabulary = require('../models/Vocabulary');
 const VocabularyZh = require('../models/VocabularyZh');
+const VocabularyBi = require('../models/VocabularyBi');
 
 const escapeRegex = (str) => str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
@@ -18,15 +19,38 @@ const escapeRegex = (str) => str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
  */
 const MAX_BULK_IMPORT = 2000;
 
+/**
+ * Kho ứng với `?lang=`.
+ *
+ * Ba kho tách biệt, KHÔNG phải nhị phân nữa: `bi` là kho song ngữ (Trung + Anh
+ * trong một bản ghi), nằm ở collection riêng và nạp tay.
+ *
+ * Giá trị lạ rơi về tiếng Anh chứ không báo lỗi — giữ nguyên hành vi cũ, vì
+ * client cũ không gửi `lang` bao giờ.
+ */
 function getVocabModel(req) {
-    return req.query.lang === 'zh' ? VocabularyZh : Vocabulary;
+    if (req.query.lang === 'zh') return VocabularyZh;
+    if (req.query.lang === 'bi') return VocabularyBi;
+    return Vocabulary;
 }
 
 function isZhRequest(req) {
     return req.query.lang === 'zh';
 }
 
+function isBiRequest(req) {
+    return req.query.lang === 'bi';
+}
+
+/**
+ * Trường khoá chính của kho đang thao tác.
+ *
+ * Kho song ngữ dùng `zh` làm khoá: bản ghi bắt buộc có cả `zh` lẫn `en`, nhưng
+ * chống trùng theo `zh` (index unique là `source + zh`). Lấy `en` làm khoá thì
+ * hai chữ Hán khác nhau dịch ra cùng một từ tiếng Anh sẽ chặn nhầm nhau.
+ */
 function pkField(req) {
+    if (isBiRequest(req)) return 'zh';
     return isZhRequest(req) ? 'zh' : 'en';
 }
 
@@ -35,6 +59,14 @@ function primaryValue(req, word) {
 }
 
 function validateVocabularyPayloadForLang(req, word) {
+    // Kho song ngữ cần CẢ HAI, nên hai phép kiểm dưới (vốn để bắt nhầm kho)
+    // không áp dụng — thiếu bên nào thì nói rõ bên đó.
+    if (isBiRequest(req)) {
+        const thieu = ['zh', 'en', 'vn'].filter((k) => !String(word[k] || '').trim());
+        return thieu.length
+            ? `Kho song ngữ cần đủ ${thieu.join(', ')}. Đây là kho một bản ghi mang cả tiếng Trung lẫn tiếng Anh.`
+            : null;
+    }
     if (isZhRequest(req) && word.en !== undefined && word.zh === undefined) {
         return 'Bạn đang nhập vào collection Tiếng Trung, vui lòng dùng key "zh" thay vì "en".';
     }
@@ -45,7 +77,11 @@ function validateVocabularyPayloadForLang(req, word) {
 }
 
 function normalizePartForLang(req, part) {
-    return isZhRequest(req) ? part : String(part).toUpperCase();
+    // Chỉ kho tiếng Anh viết hoa `part` (CONTRACTS, MEETINGS…). Kho Trung và
+    // kho song ngữ đặt tên Part bằng chữ thường/chữ Hán nên viết hoa là lọc ra
+    // 0 từ.
+    if (isZhRequest(req) || isBiRequest(req)) return part;
+    return String(part).toUpperCase();
 }
 
 // ===================================
@@ -70,6 +106,12 @@ function normalizeWord(word) {
 const PUBLIC_FILTER = { scope: { $ne: 'private' } };
 
 function getReadableVocabFilter(req) {
+    // Kho song ngữ không có `scope`: nạp tay, toàn bộ công khai. Lọc theo
+    // `scope` thì `$ne: 'private'` vẫn khớp (trường không tồn tại), nhưng khai
+    // rõ ràng vẫn hơn dựa vào một sự trùng hợp.
+    if (isBiRequest(req)) {
+        return { zh: { $type: 'string', $ne: '' } };
+    }
     if (isZhRequest(req)) {
         return {
             ...PUBLIC_FILTER,
@@ -86,6 +128,13 @@ function getReadableVocabFilter(req) {
 }
 
 function normalizeVocabDocForResponse(req, word) {
+    // Kho song ngữ trả NGUYÊN bản ghi, không đổi hình.
+    //
+    // `vocabBiMapper` chỉ dùng cho luyện tập: nó chọn một mặt rồi giấu mặt kia
+    // đi. Admin phải sửa được cả hai, nên đổi hình ở đây là làm mất dữ liệu
+    // ngay trên màn hình quản trị.
+    if (isBiRequest(req)) return word;
+
     if (isZhRequest(req) && (!word.en || !String(word.en).trim()) && word.zh) {
         return { ...word, en: word.zh };
     }
@@ -121,10 +170,12 @@ exports.getAllVocabulary = async (req, res, next) => {
             query = query.where('source').equals(source.toLowerCase());
         }
         if (search) {
-            query = query.or([
-                { en: new RegExp(escapeRegex(search), 'i') },
-                { vn: new RegExp(escapeRegex(search), 'i') }
-            ]);
+            const re = new RegExp(escapeRegex(search), 'i');
+            // Kho song ngữ tìm cả `zh`: gõ 你好 mà chỉ soi `en`/`vn` thì không
+            // ra gì, dù chữ đó nằm ngay trên màn hình.
+            query = query.or(isBiRequest(req)
+                ? [{ zh: re }, { en: re }, { vn: re }]
+                : [{ en: re }, { vn: re }]);
         }
 
         const total = await Model.countDocuments(query.getFilter());

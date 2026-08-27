@@ -77,8 +77,18 @@ function displayVocabulary(words) {
 
     tbody.innerHTML = visibleWords
         .map((word) => {
-            const primaryWord = word.en || word.zh || '';
+            // Kho song ngữ: cột chính là chữ HÁN, không phải `en`.
+            //
+            // `word.en || word.zh` sẽ chọn chữ tiếng Anh vì bản ghi song ngữ có
+            // CẢ HAI — đặt nó dưới tiêu đề "Tiếng Trung" thì admin đọc nhầm
+            // ngay dòng đầu.
+            const laSongNgu = (typeof vocabCurrentLang !== 'undefined' ? vocabCurrentLang : 'en') === 'bi';
+            const primaryWord = laSongNgu
+                ? (word.zh || '')
+                : (word.en || word.zh || '');
             const wordSafe = primaryWord.replace(/"/g, '&quot;');
+            // Phiên âm của kho song ngữ tách đôi theo ngôn ngữ.
+            const phienAmChinh = laSongNgu ? (word.phoneticZh || '') : (word.phonetic || '');
             const vn = word.vn || '';
             const type = word.type || '';
             const part = word.part || '';
@@ -88,7 +98,8 @@ function displayVocabulary(words) {
             return `
         <tr>
             <td style="text-align:center;"><input type="checkbox" class="vocab-row-cb" data-word-en="${wordSafe}"></td>
-            <td><strong>${primaryWord}</strong> <span style="color:#888;font-size:12px;">${esc(word.phonetic || '')}</span></td>
+            <td><strong>${primaryWord}</strong> <span style="color:#888;font-size:12px;">${esc(phienAmChinh)}</span></td>
+            ${laSongNgu ? `<td>${esc(word.en || '')} <span style="color:#888;font-size:12px;">${esc(word.phoneticEn || '')}</span></td>` : ''}
             <td>${vn}</td>
             <td><span class="badge info">${type}</span></td>
             <td><span class="badge warning">${part}</span></td>

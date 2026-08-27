@@ -7,9 +7,13 @@
 
 const Vocabulary = require('../models/Vocabulary');
 const VocabularyZh = require('../models/VocabularyZh');
+const VocabularyBi = require('../models/VocabularyBi');
 
 function getVocabModel(req) {
-    return req.query.lang === 'zh' ? VocabularyZh : Vocabulary;
+    // Ba kho tách biệt: `bi` là kho song ngữ, collection riêng, nạp tay.
+    if (req.query.lang === 'zh') return VocabularyZh;
+    if (req.query.lang === 'bi') return VocabularyBi;
+    return Vocabulary;
 }
 
 /**

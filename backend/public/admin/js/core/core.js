@@ -564,7 +564,28 @@ async function initDashboard() {
       showToast("Đã tải lại dữ liệu từ vựng", "success");
     });
 
-  // Vocab lang sub-tabs (EN / ZH)
+/**
+ * Đổi tiêu đề cột theo kho đang xem.
+ *
+ * Kho song ngữ có HAI từ trên một bản ghi nên phải hiện thêm một cột — để
+ * nguyên "Tiếng Anh" thì admin nhìn chữ Hán dưới tiêu đề "Tiếng Anh".
+ */
+function capNhatCotTuVung(lang) {
+  const chinh = document.getElementById("vocab-col-word");
+  const phu = document.getElementById("vocab-col-alt");
+  if (!chinh || !phu) return;
+
+  if (lang === "bi") {
+    chinh.textContent = "Tiếng Trung";
+    phu.textContent = "Tiếng Anh";
+    phu.style.display = "";
+  } else {
+    chinh.textContent = lang === "zh" ? "Tiếng Trung" : "Tiếng Anh";
+    phu.style.display = "none";
+  }
+}
+
+// Vocab lang sub-tabs (EN / ZH)
   document.querySelectorAll("[data-vocab-lang]").forEach((btn) => {
     btn.addEventListener("click", () => {
       document
@@ -572,6 +593,7 @@ async function initDashboard() {
         .forEach((b) => b.classList.remove("active"));
       btn.classList.add("active");
       vocabCurrentLang = btn.dataset.vocabLang;
+      capNhatCotTuVung(vocabCurrentLang);
       vocabCurrentPage = 1;
       vocabCurrentPart = "";
       vocabCurrentSource = "";
