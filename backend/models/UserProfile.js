@@ -52,7 +52,11 @@ const settingsSchema = new mongoose.Schema(
 
         // Ngôn ngữ đang học — nặng nhất trong nhóm: sai là máy khác mở ra học
         // nhầm hẳn ngôn ngữ.
-        vocabLang: { type: String, enum: ['en', 'zh'], default: 'en' },
+        //
+        // `bi` = kho song ngữ (Trung ↔ Anh). Thiếu nó ở enum thì Mongoose TỪ
+        // CHỐI lưu, và người dùng chọn xong tải lại trang là thấy nhảy về
+        // `en` — không có lỗi nào hiện ra, vì `save()` thất bại lặng lẽ ở nền.
+        vocabLang: { type: String, enum: ['en', 'zh', 'bi'], default: 'en' },
 
         // Danh sách `level` ứng với mức độ khó đang chọn (['HSK1','HSK2']…).
         // Đi CẶP với `difficulty`: có cái này thiếu cái kia là lọc ra 0 từ.

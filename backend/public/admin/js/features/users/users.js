@@ -729,7 +729,7 @@ Chỉ trả về JSON array, không giải thích thêm.`;
     ?.addEventListener("click", async () => {
       try {
         const res = await fetch(
-          `${API_URL}/vocabulary?limit=10000&lang=${encodeURIComponent(vocabCurrentLang || "en")}`,
+          `${API_URL}/vocabulary?limit=10000&lang=${encodeURIComponent(vocabCurrentLang || "en")}&raw=1`,
         );
         const data = await res.json();
         if (data.success) {
@@ -756,7 +756,7 @@ Chỉ trả về JSON array, không giải thích thêm.`;
     ?.addEventListener("click", async () => {
       try {
         const vocabRes = await fetch(
-          `${API_URL}/vocabulary?limit=10000&lang=${encodeURIComponent(vocabCurrentLang || "en")}`,
+          `${API_URL}/vocabulary?limit=10000&lang=${encodeURIComponent(vocabCurrentLang || "en")}&raw=1`,
         );
         const vocabData = await vocabRes.json();
         const usersRes = await fetch(`${API_URL}/users`, {

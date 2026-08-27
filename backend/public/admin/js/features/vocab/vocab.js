@@ -32,7 +32,12 @@ async function loadVocabulary(page = vocabCurrentPage, part = vocabCurrentPart, 
     if (paginationControls) paginationControls.innerHTML = '';
 
     try {
-        const url = `${API_URL}/vocabulary?limit=${vocabCurrentLimit}&page=${page}&part=${part || ''}&source=${source || ''}&type=${encodeURIComponent(type || '')}&search=${encodeURIComponent(vocabSearchTerm)}&lang=${vocabCurrentLang}`;
+        // Qua `withVocabLang` chứ KHÔNG tự nối `&lang=`: hàm đó gắn thêm
+        // `raw=1`, thứ bảo API trả NGUYÊN bản ghi. Thiếu nó thì kho song ngữ bị
+        // đổi hình cho luyện tập — `zh` biến mất, `en` mang chữ Hán, `vn` mang
+        // nghĩa tiếng Anh — nên cột "Tiếng Anh" rỗng còn cột "Tiếng Việt" hiện
+        // nhầm tiếng Anh.
+        const url = withVocabLang(`${API_URL}/vocabulary?limit=${vocabCurrentLimit}&page=${page}&part=${part || ''}&source=${source || ''}&type=${encodeURIComponent(type || '')}&search=${encodeURIComponent(vocabSearchTerm)}`);
         const res = await fetch(url); // <-- API call to filter
         const data = await res.json();
 

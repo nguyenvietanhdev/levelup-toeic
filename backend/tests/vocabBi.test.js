@@ -677,3 +677,60 @@ describe('modal thêm/sửa từ: nhãn khớp ngôn ngữ', () => {
         expect(users).toMatch(/huyHieuNgonNgu\(lang\)/);
     });
 });
+
+describe('chọn kho song ngữ phải GIỮ được', () => {
+    const UserProfile = require('../models/UserProfile');
+
+    test('`vocabLang` nhận `bi`', () => {
+        // Thiếu ở enum thì Mongoose TỪ CHỐI lưu và người dùng chọn xong tải
+        // lại trang là thấy nhảy về `en` — không lỗi nào hiện ra, vì `save()`
+        // thất bại lặng lẽ ở nền.
+        expect(UserProfile.schema.path('settings').schema.path('vocabLang').enumValues)
+            .toEqual(['en', 'zh', 'bi']);
+    });
+
+    test('giá trị lạ vẫn bị chặn', () => {
+        const mongoose = require('mongoose');
+        const p = new UserProfile({
+            userId: new mongoose.Types.ObjectId(), username: 't',
+            settings: { vocabLang: 'xx' },
+        });
+        expect(p.validateSync()?.errors['settings.vocabLang']).toBeDefined();
+    });
+});
+
+describe('bảng admin phải xin dữ liệu GỐC', () => {
+    const { readFileSync } = require('node:fs');
+    const { join } = require('node:path');
+    const A = (...p) => readFileSync(join(__dirname, '..', 'public', 'admin', 'js', ...p), 'utf8');
+    const vocab = A('features', 'vocab', 'vocab.js');
+    const users = A('features', 'users', 'users.js');
+    const stats = A('features', 'vocab', 'vocab-stats.js');
+
+    test('danh sách đi qua `withVocabLang`, không tự nối `&lang=`', () => {
+        // Tự nối thì thiếu `raw=1`, API đổi hình cho luyện tập: `zh` biến mất,
+        // `en` mang chữ Hán, `vn` mang nghĩa tiếng Anh — cột "Tiếng Anh" rỗng
+        // còn cột "Tiếng Việt" hiện nhầm tiếng Anh.
+        const i = vocab.indexOf('const url = ');
+        const dong = vocab.slice(i, vocab.indexOf(';', i));
+        expect(dong).toMatch(/withVocabLang\(/);
+        expect(dong).not.toMatch(/lang=\$\{vocabCurrentLang\}/);
+    });
+
+    test('MỌI lời gọi `/vocabulary` của admin đều có `raw=1`', () => {
+        // Xuất file và xoá nhanh cũng cần bản gốc: xuất bản đã đổi hình là
+        // xuất sai, còn xoá thì đối chiếu nhầm từ.
+        //
+        // Hai cách đều hợp lệ: `raw=1` nối thẳng trong chuỗi, HOẶC bọc cả chuỗi
+        // trong `withVocabLang(...)` (hàm đó tự gắn). Nên soi cả ký tự đứng
+        // TRƯỚC lời gọi, không chỉ nội dung chuỗi.
+        for (const [ten, src] of [['vocab', vocab], ['users', users], ['stats', stats]]) {
+            for (const m of src.matchAll(/\$\{API_URL\}\/vocabulary\?[^`]*`/g)) {
+                const truoc = src.slice(Math.max(0, m.index - 40), m.index);
+                const daCo = /raw=1/.test(m[0]) || /withVocabLang\(\s*`?$/.test(truoc);
+                if (!daCo) throw new Error(`thiếu raw=1 — ${ten}: ${m[0].slice(0, 90)}`);
+                expect(daCo).toBe(true);
+            }
+        }
+    });
+});

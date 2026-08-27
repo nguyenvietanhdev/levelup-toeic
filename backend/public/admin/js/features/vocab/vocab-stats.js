@@ -22,7 +22,7 @@ async function startQuickDelete() {
     `;
 
     try {
-        const res = await fetch(`${API_URL}/vocabulary?limit=100000&lang=${encodeURIComponent(vocabCurrentLang || 'en')}`);
+        const res = await fetch(`${API_URL}/vocabulary?limit=100000&lang=${encodeURIComponent(vocabCurrentLang || 'en')}&raw=1`);
         const data = await res.json();
 
         if (data.success && Array.isArray(data.data)) {
