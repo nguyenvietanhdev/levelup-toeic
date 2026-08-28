@@ -20,15 +20,18 @@ const css = readFileSync(
 
 describe('nút dịch', () => {
     test('có ở CẢ HAI khối — ví dụ và từ đồng nghĩa', () => {
-        expect(src).toMatch(/data-tr="example"/);
-        expect(src).toMatch(/data-tr="synonyms"/);
+        // `data-tr` giờ mang THẲNG nội dung câu (kho song ngữ có hai bộ, tra
+        // theo tên khoá luôn ra bộ của mặt kia). Nên soi khối chứa nó.
+        expect(src).toMatch(/class="card-example"[\s\S]*?card-translate/);
+        expect(src).toMatch(/class="card-synonyms"[\s\S]*?card-translate/);
     });
 
     test('đứng TRƯỚC nút loa', () => {
         // Đọc hiểu rồi mới nghe. Cùng thứ tự với chế độ Trắc nghiệm — tay quen
         // một chỗ là quen mọi chỗ.
-        const i = src.indexOf('data-tr="example"');
-        const j = src.indexOf('data-speak="example"');
+        const i = src.indexOf('card-translate');
+        const j = src.indexOf('card-speak"');
+        expect(i).toBeGreaterThan(-1);
         expect(i).toBeLessThan(j);
     });
 
@@ -52,8 +55,10 @@ describe('nút dịch', () => {
 
 describe('phiên âm', () => {
     test('có chỗ hiện cho CẢ HAI khối', () => {
-        expect(src).toMatch(/id="fc-ph-example"/);
-        expect(src).toMatch(/id="fc-ph-synonyms"/);
+        // Id nay có hậu tố `-truoc`/`-sau` ở kho song ngữ (mỗi mặt một bộ), nên
+        // không neo vào tên đầy đủ nữa.
+        expect(src).toMatch(/id="fc-ph-example\$\{hau\}"/);
+        expect(src).toMatch(/id="fc-ph-synonyms\$\{hau\}"/);
     });
 
     test('KHÔNG `await` — không chặn việc hiện thẻ', () => {

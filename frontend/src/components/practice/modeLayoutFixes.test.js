@@ -81,8 +81,11 @@ describe('phát âm: không ép giọng tiếng Anh cho câu tiếng Trung', () 
 
 describe('Flashcard: nút loa cho ví dụ và từ đồng nghĩa', () => {
     test('có nút ở CẢ HAI khối', () => {
-        expect(fc).toMatch(/data-speak="example"/);
-        expect(fc).toMatch(/data-speak="synonyms"/);
+        // `data-speak` giờ mang THẲNG nội dung câu, không phải tên khoá: kho
+        // song ngữ có hai bộ (một cho mỗi mặt) nên tra theo khoá luôn ra bộ của
+        // mặt kia. Soi khối chứa nút thay vì giá trị thuộc tính.
+        expect(fc).toMatch(/class="card-example"[\s\S]*?card-speak/);
+        expect(fc).toMatch(/class="card-synonyms"[\s\S]*?card-speak/);
     });
 
     test('chặn nổi bọt — bấm nghe KHÔNG được lật thẻ', () => {

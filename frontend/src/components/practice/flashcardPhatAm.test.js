@@ -124,3 +124,69 @@ describe('nhãn góc thẻ theo cặp đang học', () => {
         expect(src).toMatch(/'Tiếng Trung': 'ZH'/);
     });
 });
+
+describe('kho song ngữ: mỗi mặt một bộ ĐẦY ĐỦ', () => {
+    test('mapper trả hai bộ riêng', () => {
+        const mapper = readFileSync(join(
+            __dirname, '..', '..', '..', '..', 'backend', 'services', 'vocabBiMapper.js'), 'utf8');
+        expect(mapper).toMatch(/matZh: \{/);
+        expect(mapper).toMatch(/matEn: \{/);
+        // Mỗi bộ đủ: từ + phiên âm + ví dụ + đồng nghĩa của CHÍNH ngôn ngữ đó.
+        const i = mapper.indexOf('matZh: {');
+        const t = mapper.slice(i, mapper.indexOf('},', i));
+        for (const f of ['tu:', 'phonetic:', 'example:', 'synonyms:']) expect(t).toContain(f);
+    });
+
+    test('các trường CŨ không đổi — 16 chế độ vẫn đọc được', () => {
+        const mapper = readFileSync(join(
+            __dirname, '..', '..', '..', '..', 'backend', 'services', 'vocabBiMapper.js'), 'utf8');
+        // Đây là dữ liệu THÊM, không phải thay thế.
+        expect(mapper).toMatch(/en: laZh \? d\.zh : d\.en/);
+        expect(mapper).toMatch(/vn: laZh \? d\.en : d\.zh/);
+    });
+
+    test('CHỈ áp dụng cho kho song ngữ', () => {
+        // Hai kho cũ giữ bố cục "từ ở trước, nghĩa + ví dụ ở sau": ví dụ ở đó
+        // chỉ có MỘT thứ tiếng nên tách đôi là chép thừa.
+        expect(src).toMatch(/const laSongNgu = !!word\.songNgu && !!word\.matZh && !!word\.matEn/);
+        expect(src).toMatch(/const phuTruoc = laSongNgu \?/);
+    });
+
+    test('đảo chiều thì hai bộ đổi chỗ', () => {
+        expect(src).toMatch(/boTruoc = laSongNgu \? \(reversed \? word\.matEn : word\.matZh\)/);
+        expect(src).toMatch(/boSau = laSongNgu \? \(reversed \? word\.matZh : word\.matEn\)/);
+    });
+
+    test('mặt TRƯỚC cũng có khối ví dụ/đồng nghĩa', () => {
+        // Trước đây chỉ mặt sau có.
+        expect(src).toMatch(/\$\{phuTruoc\}/);
+        expect(src).toMatch(/\$\{phuSau\}/);
+    });
+
+    test('hai mặt có id phiên âm RIÊNG', () => {
+        // Cùng id thì `napPhienAm` ghi vào phần tử đầu tiên tìm thấy — tức mặt
+        // kia, và một mặt mất phiên âm.
+        expect(src).toMatch(/khoiPhu\(boTruoc\.example, boTruoc\.synonyms, '-truoc'\)/);
+        expect(src).toMatch(/khoiPhu\(boSau\.example, boSau\.synonyms, '-sau'\)/);
+    });
+
+    test('nút loa đọc THẲNG nội dung, không tra lại theo khoá', () => {
+        // Kho song ngữ có hai bộ; tra `word.example` luôn ra bộ của mặt kia.
+        const i = src.indexOf(".card-speak')");
+        const t = src.slice(i, i + 500);
+        expect(t).toMatch(/const text = btn\.dataset\.speak;/);
+        expect(t).not.toMatch(/dataset\.speak === 'example'/);
+    });
+
+    test('phiên âm quét theo phần tử ĐANG CÓ, không gõ cứng hai khoá', () => {
+        // Song ngữ dựng 4 ô, hai kho cũ dựng 2 ô không hậu tố.
+        // Cắt XUÔI từ chỗ khai hàm: `pronounceText` nằm TRƯỚC `napPhienAm`
+        // trong file, nên lấy nó làm mốc kết thúc cho ra chuỗi rỗng và test
+        // xanh mà chẳng kiểm gì.
+        const i = src.indexOf('napPhienAm(word) {');
+        expect(i).toBeGreaterThan(-1);
+        const t = src.slice(i, src.indexOf('\n    },', i));
+        expect(t).toMatch(/querySelectorAll\('\[id\^="fc-ph-"\]'\)/);
+        expect(t).not.toMatch(/\['example', word\.example\]/);
+    });
+});

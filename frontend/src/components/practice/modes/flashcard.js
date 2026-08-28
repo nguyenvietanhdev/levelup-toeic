@@ -130,41 +130,68 @@ export const Flashcard = {
         const frontBadge = viTat[reversed ? nghia : tu] || 'EN';
         const backBadge = viTat[reversed ? tu : nghia] || 'VI';
 
-        const extrasHtml = `
-                                ${word.example ? `
+        // ── Kho SONG NGỮ: mỗi mặt một bộ ĐẦY ĐỦ ────────────────────────────
+        //
+        // Thẻ có hai mặt là hai NGÔN NGỮ (Trung / Anh), không phải từ và nghĩa.
+        // Nên mỗi mặt phải tự đủ: từ + ví dụ + đồng nghĩa của chính ngôn ngữ
+        // đó. Lật sang mặt Anh mà thấy ví dụ tiếng Trung thì mặt đó không dạy
+        // được gì.
+        //
+        // CHỈ áp dụng cho kho song ngữ. Hai kho cũ giữ nguyên bố cục "từ ở mặt
+        // trước, nghĩa + ví dụ ở mặt sau" — ở đó ví dụ chỉ có MỘT thứ tiếng nên
+        // tách đôi là chép thừa.
+        const laSongNgu = !!word.songNgu && !!word.matZh && !!word.matEn;
+        // Mặt trước = ngôn ngữ đang học; đảo chiều thì hai mặt đổi chỗ.
+        const boTruoc = laSongNgu ? (reversed ? word.matEn : word.matZh) : null;
+        const boSau = laSongNgu ? (reversed ? word.matZh : word.matEn) : null;
+
+        /**
+         * Khối "Ví dụ" + "Từ đồng nghĩa" cho MỘT mặt thẻ.
+         *
+         * `hau` để mỗi mặt có id phiên âm riêng — hai mặt cùng id thì
+         * `napPhienAm` ghi vào phần tử đầu tiên tìm thấy, tức là mặt kia.
+         */
+        const khoiPhu = (viDu, dongNghia, hau = '') => `
+                                ${viDu ? `
                                     <div class="card-example">
                                         <strong>Ví dụ:</strong>
                                         <div class="card-extra-row">
-                                            <p>${word.example}</p>
+                                            <p>${viDu}</p>
                                             <!-- Nút DỊCH đứng TRƯỚC nút loa: đọc hiểu rồi mới
                                                  nghe. Cùng thứ tự với chế độ Trắc nghiệm để
                                                  tay quen một chỗ là quen mọi chỗ. -->
-                                            <button class="btn-speak-mini card-translate" data-tr="example" title="Dịch cả câu">
+                                            <button class="btn-speak-mini card-translate" data-tr="${viDu}" title="Dịch cả câu">
                                                 <i class="fas fa-language"></i>
                                             </button>
-                                            <button class="btn-speak-mini card-speak" data-speak="example" title="Nghe câu ví dụ">
+                                            <button class="btn-speak-mini card-speak" data-speak="${viDu}" title="Nghe câu ví dụ">
                                                 <i class="fas fa-volume-up"></i>
                                             </button>
                                         </div>
-                                        <div class="card-extra-phonetic" id="fc-ph-example"></div>
+                                        <div class="card-extra-phonetic" id="fc-ph-example${hau}"></div>
                                     </div>
                                 ` : ''}
 
-                                ${word.synonyms ? `
+                                ${dongNghia ? `
                                     <div class="card-synonyms">
                                         <strong>Từ đồng nghĩa:</strong>
                                         <div class="card-extra-row">
-                                            <p>${word.synonyms}</p>
-                                            <button class="btn-speak-mini card-translate" data-tr="synonyms" title="Dịch từ đồng nghĩa">
+                                            <p>${dongNghia}</p>
+                                            <button class="btn-speak-mini card-translate" data-tr="${dongNghia}" title="Dịch từ đồng nghĩa">
                                                 <i class="fas fa-language"></i>
                                             </button>
-                                            <button class="btn-speak-mini card-speak" data-speak="synonyms" title="Nghe từ đồng nghĩa">
+                                            <button class="btn-speak-mini card-speak" data-speak="${dongNghia}" title="Nghe từ đồng nghĩa">
                                                 <i class="fas fa-volume-up"></i>
                                             </button>
                                         </div>
-                                        <div class="card-extra-phonetic" id="fc-ph-synonyms"></div>
+                                        <div class="card-extra-phonetic" id="fc-ph-synonyms${hau}"></div>
                                     </div>
                                 ` : ''}`;
+
+        // Kho song ngữ: mỗi mặt bộ riêng. Hai kho cũ: chỉ mặt sau có, như cũ.
+        const phuTruoc = laSongNgu ? khoiPhu(boTruoc.example, boTruoc.synonyms, '-truoc') : '';
+        const phuSau = laSongNgu
+            ? khoiPhu(boSau.example, boSau.synonyms, '-sau')
+            : khoiPhu(word.example, word.synonyms);
 
         container.innerHTML = `
             <div class="flashcard-container">
@@ -197,6 +224,7 @@ export const Flashcard = {
                                     </div>
                                 </div>
                             </div>
+                            ${phuTruoc}
                             <div class="card-hint">
                                 Click / Space để lật thẻ
                             </div>
@@ -211,7 +239,7 @@ export const Flashcard = {
                                 ` : `
                                     <h2 class="card-meaning">${meaning}</h2>
                                 `}
-                                ${extrasHtml}
+                                ${phuSau}
                             </div>
                         </div>
                     </div>
@@ -282,7 +310,10 @@ export const Flashcard = {
         document.querySelectorAll('.card-speak').forEach((btn) => {
             btn.addEventListener('click', (e) => {
                 e.stopPropagation();
-                const text = btn.dataset.speak === 'example' ? word.example : word.synonyms;
+                // Đọc THẲNG nội dung trong `data-speak`, không tra lại
+                // `word.example`/`word.synonyms`: kho song ngữ có HAI bộ (một
+                // cho mỗi mặt) nên tra theo tên khoá luôn ra bộ của mặt kia.
+                const text = btn.dataset.speak;
                 if (text) this.pronounceText(text);
             });
         });
@@ -292,7 +323,7 @@ export const Flashcard = {
         document.querySelectorAll('.card-translate').forEach((btn) => {
             btn.addEventListener('click', (e) => {
                 e.stopPropagation();
-                const text = btn.dataset.tr === 'example' ? word.example : word.synonyms;
+                const text = btn.dataset.tr;
                 if (text) EventBus.emit(GameEvents.TRANSLATE_REQUESTED, { text });
             });
         });
@@ -398,11 +429,22 @@ export const Flashcard = {
      */
     napPhienAm(word) {
         const idxLucGoi = this.currentIndex;
-        for (const [khoa, text] of [['example', word.example], ['synonyms', word.synonyms]]) {
+        // Quét theo phần tử ĐANG CÓ trên thẻ thay vì gõ cứng hai khoá.
+        //
+        // Kho song ngữ dựng bốn ô (`-truoc` / `-sau` × ví dụ / đồng nghĩa), hai
+        // kho cũ chỉ dựng hai ô không hậu tố. Gõ cứng thì hoặc bỏ sót hai mặt,
+        // hoặc tìm phần tử không tồn tại.
+        const oPhienAm = [...document.querySelectorAll('[id^="fc-ph-"]')].map((el) => {
+            // Text lấy từ chính khối chứa nó — đúng bộ của mặt đó.
+            const nut = el.closest('.card-example, .card-synonyms')?.querySelector('.card-speak');
+            return [el.id, nut?.dataset.speak || ''];
+        });
+
+        for (const [khoa, text] of oPhienAm) {
             if (!text) continue;
             layPhienAmCau(text).then((ph) => {
                 if (!ph || this.currentIndex !== idxLucGoi) return;
-                const el = document.getElementById(`fc-ph-${khoa}`);
+                const el = document.getElementById(khoa);
                 if (el) el.textContent = ph;
             });
         }

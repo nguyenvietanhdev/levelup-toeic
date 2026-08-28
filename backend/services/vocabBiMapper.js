@@ -70,6 +70,30 @@ function doiHinh(doc) {
         source: d.source,
         image: d.image,
 
+        // ── BỘ ĐẦY ĐỦ CỦA TỪNG MẶT ──────────────────────────────────────
+        //
+        // Flashcard cần cả hai: mặt trước hiện từ + ví dụ + đồng nghĩa của
+        // NGÔN NGỮ ĐÓ, mặt sau hiện đúng bộ của ngôn ngữ kia. Không có hai bộ
+        // này thì mặt sau phải mượn `example`/`synonyms` ở trên — mà chúng đã
+        // bị chọn theo `hienThi`, tức là cùng ngôn ngữ với mặt trước.
+        //
+        // Các trường ở trên KHÔNG đổi: 16 chế độ đang đọc chúng, đây chỉ là dữ
+        // liệu THÊM cho chế độ nào cần hai mặt riêng biệt.
+        matZh: {
+            tu: d.zh,
+            phonetic: d.phoneticZh || '',
+            example: d.exampleZh || '',
+            examplePhonetic: d.examplePhoneticZh || '',
+            synonyms: d.synonymsZh || '',
+        },
+        matEn: {
+            tu: d.en,
+            phonetic: d.phoneticEn || '',
+            example: d.exampleEn || '',
+            examplePhonetic: d.examplePhoneticEn || '',
+            synonyms: d.synonymsEn || '',
+        },
+
         // Cờ để client biết đây là từ song ngữ mà không phải đoán.
         songNgu: true,
         // Giọng đọc — `ttsLang()` ở client là nhị phân zh/en nên phải nói rõ.
