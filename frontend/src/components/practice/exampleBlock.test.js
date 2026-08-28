@@ -102,12 +102,16 @@ describe('các chế độ đã dùng khối chung', () => {
 
 describe('ngoại lệ có lý do', () => {
     /**
-     * Ba chế độ KHÔNG dùng khối chung, và lý do:
-     *   · `dictation`/`exampleFillBlank` — câu ví dụ là ĐỀ BÀI (che chỗ trống,
-     *     nghe rồi gõ lại). Thêm nút dịch là đưa luôn đáp án.
+     * Hai chế độ KHÔNG dùng khối chung, và lý do:
+     *   · `dictation` — câu ví dụ là ĐỀ BÀI (nghe rồi gõ lại). Thêm nút dịch
+     *     hay nút nghe là đưa luôn đáp án.
      *   · `pronunciationMode` — có phần đọc cả câu riêng với chấm từng từ.
+     *
+     * `exampleFillBlank` TỪNG được miễn vì cùng lý do "câu là đề bài". Nay nó
+     * dùng khối chung, nhưng chỉ ở nhánh CHẤM BÀI — lúc đó chỗ trống đã điền
+     * đáp án nên không còn gì để lộ. Ca dưới chốt đúng ràng buộc đó.
      */
-    const MIEN = ['dictation.js', 'exampleFillBlank.js', 'pronunciationMode.js'];
+    const MIEN = ['dictation.js', 'pronunciationMode.js'];
 
     for (const f of MIEN) {
         test(`${f.replace('.js', '')} KHÔNG thêm nút dịch cho đề bài`, () => {
@@ -116,13 +120,25 @@ describe('ngoại lệ có lý do', () => {
     }
 });
 
+describe('exampleFillBlank: nút nghe chỉ hiện SAU khi trả lời', () => {
+    test('chèn ở nhánh chấm bài, không phải lúc dựng đề', () => {
+        // Câu ví dụ ở chế độ này LÀ đề bài (có chỗ trống). Chèn nút nghe lúc
+        // dựng đề là đọc luôn đáp án ra loa.
+        const src = doc('exampleFillBlank.js');
+        const iDapAn = src.indexOf('filled-answer');
+        const iChen = src.indexOf('chenViDu(');
+        expect(iDapAn).toBeGreaterThan(-1);
+        expect(iChen).toBeGreaterThan(iDapAn);
+    });
+});
+
 describe('không bỏ sót chế độ nào', () => {
     test('mọi chế độ hiện câu ví dụ đều có dịch + phiên âm, hoặc được miễn', () => {
         // Chốt chặn cho chế độ THÊM SAU: hiện câu ví dụ mà quên nút thì ca này
         // đỏ ngay, thay vì đợi người dùng phát hiện.
         const MIEN = new Set([
             'dictation.js',           // câu là đề bài
-            'exampleFillBlank.js',    // câu là đề bài
+
             'pronunciationMode.js',   // có phần đọc câu riêng
             'flashcard.js',           // đã có bản riêng cho ví dụ + đồng nghĩa
             'multipleChoice.js',      // bản gốc, đầy đủ

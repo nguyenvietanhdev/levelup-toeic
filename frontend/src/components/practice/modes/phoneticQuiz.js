@@ -1,4 +1,5 @@
 import { GameLogic } from '@game/gameLogic.js';
+import { nhanCapHoc } from '../nhanNgonNgu.js';
 import { GameState } from '@game/state.js';
 import { Config } from '@game/config.js';
 import { Utils } from '@lib/utils.js';
@@ -159,7 +160,7 @@ export const PhoneticQuiz = {
                          một câu. -->
                     <div class="pq-instruction">
                         ${isIpaMode
-                            ? '<i class="fas fa-search"></i> Từ tiếng Anh nào có phiên âm trên?'
+                            ? `<i class="fas fa-search"></i> Từ ${nhanCapHoc().tu} nào có phiên âm trên?`
                             : '<i class="fas fa-headphones"></i> Nghe từ và chọn nghĩa đúng:'
                         }
                     </div>

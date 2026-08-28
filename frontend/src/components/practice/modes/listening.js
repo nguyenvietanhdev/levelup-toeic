@@ -1,4 +1,5 @@
 import { GameLogic } from '@game/gameLogic.js';
+import { nhanCapHoc } from '../nhanNgonNgu.js';
 import { GameState } from '@game/state.js';
 import { Config } from '@game/config.js';
 import { Utils } from '@lib/utils.js';
@@ -120,7 +121,7 @@ export const Listening = {
                         ${question.word.synonyms ? `
                             <div class="synonyms-label">Đồng nghĩa</div>
                             <div class="synonyms-list">${question.word.synonyms}</div>
-                        ` : `<div class="synonyms-prompt">${isReversed ? 'Chọn từ tiếng Anh tương ứng:' : 'Chọn nghĩa đúng của từ bạn vừa nghe:'}</div>`}
+                        ` : `<div class="synonyms-prompt">${isReversed ? `Chọn từ ${nhanCapHoc().tu} tương ứng:` : 'Chọn nghĩa đúng của từ bạn vừa nghe:'}</div>`}
                         ${viDu.html}
                     </div>
                     ${question.word.image ? `

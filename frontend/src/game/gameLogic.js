@@ -312,11 +312,20 @@ export const GameLogic = {
     },
 
     speakWord(text, lang = 'en-US', onEnd = null) {
+        // Ch\u1ecdn gi\u1ecdng theo CH\u00cdNH V\u0102N B\u1ea2N, kh\u00f4ng theo kho \u0111ang h\u1ecdc.
+        //
+        // Tr\u01b0\u1edbc \u0111\u00e2y quy\u1ebft \u0111\u1ecbnh b\u1eb1ng `getVocabLang() === 'zh'`. Kho song ng\u1eef tr\u1ea3
+        // `'bi'` n\u00ean r\u01a1i v\u00e0o nh\u00e1nh ti\u1ebfng Anh v\u00e0 \u0111\u1ecdc ch\u1eef H\u00e1n b\u1eb1ng gi\u1ecdng M\u1ef9 \u2014
+        // nghe kh\u00f4ng ra ch\u1eef n\u00e0o. M\u00e0 kho \u0111\u00f3 c\u00f3 C\u1ea2 HAI m\u1eb7t trong m\u1ed9t b\u1ea3n ghi, n\u00ean
+        // h\u1ecfi "kho n\u00e0y ng\u00f4n ng\u1eef g\u00ec" l\u00e0 c\u00e2u h\u1ecfi sai ngay t\u1eeb \u0111\u1ea7u; ph\u1ea3i h\u1ecfi "\u0111o\u1ea1n
+        // ch\u1eef n\u00e0y ng\u00f4n ng\u1eef g\u00ec".
+        //
+        // C\u0169ng \u0111\u00fang h\u01a1n cho hai kho c\u0169: m\u1ed9t t\u1eeb ti\u1ebfng Anh l\u1ecdt v\u00e0o b\u1ed9 ti\u1ebfng Trung
+        // (ho\u1eb7c ng\u01b0\u1ee3c l\u1ea1i) gi\u1edd v\u1eabn \u0111\u1ecdc \u0111\u00fang gi\u1ecdng.
         const isZhText = /[\u3400-\u9fff]/.test(String(text || ''));
-        if (getVocabLang() === 'zh' && isZhText) {
-            lang = 'zh-CN';
-        }
-        const isZhMode = getVocabLang() === 'zh';
+        if (isZhText) lang = 'zh-CN';
+
+        const isZhMode = isZhText;
         const voiceKey = isZhMode ? 'toeic_voice_zh' : 'toeic_voice_en';
         const savedVoiceName = localStorage.getItem(voiceKey)
             || localStorage.getItem('toeic_voice')  // backward compat
@@ -325,9 +334,16 @@ export const GameLogic = {
         this._replayCallback = () => this.speakWord(text, lang);
 
         if (savedVoiceName.startsWith('__gtts_')) {
-            // Nếu text là tiếng Trung nhưng giọng đang chọn là EN → tự động dùng ZH random
+            // Giọng phải khớp hệ chữ, CẢ HAI chiều.
+            //
+            // Chiều Hán→ZH đã có sẵn. Chiều ngược cũng cần từ khi có kho song
+            // ngữ: đang học mặt chữ Hán rồi bấm nghe câu ví dụ tiếng Anh thì
+            // `voiceKey` trỏ vào giọng Trung, và giọng đó đọc chữ Latin theo
+            // lối phiên âm tiếng Trung — sai hẳn.
             const isZhVoice = savedVoiceName.startsWith('__gtts_zh');
-            const effectiveVoice = (isZhText && !isZhVoice) ? '__gtts_zh_random__' : savedVoiceName;
+            let effectiveVoice = savedVoiceName;
+            if (isZhText && !isZhVoice) effectiveVoice = '__gtts_zh_random__';
+            else if (!isZhText && isZhVoice) effectiveVoice = '__gtts_random__';
             this._speakGoogleTTS(text, effectiveVoice, onEnd);
             return;
         }
@@ -361,7 +377,23 @@ export const GameLogic = {
             }
         } else if (savedVoiceName) {
             const selectedVoice = voices.find(v => v.name === savedVoiceName);
-            if (selectedVoice) utterance.voice = selectedVoice;
+            // Chỉ dùng giọng đã lưu khi nó KHỚP ngôn ngữ của đoạn chữ.
+            //
+            // Ở kho song ngữ, người dùng chọn cả giọng Anh lẫn giọng Trung là
+            // hợp lệ — nhưng gán giọng Anh cho một câu chữ Hán thì máy đọc
+            // từng ký tự như chữ cái, hoặc im hẳn.
+            const dungNgonNgu = selectedVoice
+                && selectedVoice.lang.startsWith(lang === 'zh-CN' ? 'zh' : 'en');
+            if (dungNgonNgu) {
+                utterance.voice = selectedVoice;
+            } else {
+                // Sai ngôn ngữ → lấy giọng bất kỳ đúng ngôn ngữ. Thà đọc bằng
+                // giọng mặc định còn hơn đọc sai hẳn hệ chữ.
+                const thayThe = voices.find(
+                    v => v.lang.startsWith(lang === 'zh-CN' ? 'zh' : 'en')
+                );
+                if (thayThe) utterance.voice = thayThe;
+            }
         }
 
         window.speechSynthesis.speak(utterance);

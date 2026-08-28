@@ -19,7 +19,14 @@ export default function SoundPanel({
     handleSpeechRate,
     vocabLang,
 }) {
+    // Kho song ngữ dùng CẢ HAI giọng: một bản ghi có chữ Hán lẫn chữ Latin, và
+    // giọng được chọn theo TỪNG văn bản chứ không theo cả kho. Nên ở `bi` thì
+    // không ô nào bị khoá.
+    const laSongNgu = vocabLang === 'bi';
     const isZh = vocabLang === 'zh';
+    // "Không dùng" chỉ đúng khi kho kia THẬT SỰ không phát giọng này.
+    const tatEn = isZh;
+    const tatZh = !isZh && !laSongNgu;
 
     return (
         <>
@@ -91,18 +98,18 @@ export default function SoundPanel({
                 <h3>Giọng đọc</h3>
 
                 {/* Tiếng Anh */}
-                <div className={`setting-item voice-select-row${isZh ? ' voice-select-inactive' : ''}`}
+                <div className={`setting-item voice-select-row${tatEn ? ' voice-select-inactive' : ''}`}
                     style={{ flexDirection: 'column', alignItems: 'flex-start', gap: 8 }}>
                     <div className="setting-info">
-                        <h4><FlagIcon lang="en" size={18} style={{ marginRight: 6 }} />Giọng Tiếng Anh {isZh && <span className="voice-inactive-badge">Không dùng</span>}</h4>
+                        <h4><FlagIcon lang="en" size={18} style={{ marginRight: 6 }} />Giọng Tiếng Anh {tatEn && <span className="voice-inactive-badge">Không dùng</span>}</h4>
                         <p>Áp dụng khi đang học chế độ Tiếng Anh</p>
                     </div>
                     <div style={{ display: 'flex', gap: 8, width: '100%' }}>
                         <select
                             value={selectedVoiceEn}
                             onChange={e => handleVoiceChangeEn(e.target.value)}
-                            disabled={isZh}
-                            style={{ flex: 1, opacity: isZh ? 0.45 : 1 }}
+                            disabled={tatEn}
+                            style={{ flex: 1, opacity: tatEn ? 0.45 : 1 }}
                         >
                             <optgroup label="Nữ">
                                 <option value="__gtts_random__">Tự động — Random nam+nữ</option>
@@ -118,25 +125,25 @@ export default function SoundPanel({
                                 <option value="__gtts_ca_m__">Liam — Canada (CA) 👨</option>
                             </optgroup>
                         </select>
-                        <button className="btn btn-secondary btn-sm" onClick={handleTestVoiceEn} disabled={isZh}>
+                        <button className="btn btn-secondary btn-sm" onClick={handleTestVoiceEn} disabled={tatEn}>
                             <i className="fas fa-volume-up"></i> Thử
                         </button>
                     </div>
                 </div>
 
                 {/* Tiếng Trung */}
-                <div className={`setting-item voice-select-row${!isZh ? ' voice-select-inactive' : ''}`}
+                <div className={`setting-item voice-select-row${tatZh ? ' voice-select-inactive' : ''}`}
                     style={{ flexDirection: 'column', alignItems: 'flex-start', gap: 8, marginTop: 12 }}>
                     <div className="setting-info">
-                        <h4><FlagIcon lang="zh" size={18} style={{ marginRight: 6 }} />Giọng Tiếng Trung {!isZh && <span className="voice-inactive-badge">Không dùng</span>}</h4>
+                        <h4><FlagIcon lang="zh" size={18} style={{ marginRight: 6 }} />Giọng Tiếng Trung {tatZh && <span className="voice-inactive-badge">Không dùng</span>}</h4>
                         <p>Áp dụng khi đang học chế độ Tiếng Trung</p>
                     </div>
                     <div style={{ display: 'flex', gap: 8, width: '100%' }}>
                         <select
                             value={selectedVoiceZh}
                             onChange={e => handleVoiceChangeZh(e.target.value)}
-                            disabled={!isZh}
-                            style={{ flex: 1, opacity: !isZh ? 0.45 : 1 }}
+                            disabled={tatZh}
+                            style={{ flex: 1, opacity: tatZh ? 0.45 : 1 }}
                         >
                             <optgroup label="Nữ">
                                 <option value="__gtts_zh_random__">Tự động — Random nam+nữ</option>
@@ -150,7 +157,7 @@ export default function SoundPanel({
                                 <option value="__gtts_zh_tw_m__">Yun Jhe — Đài Loan (TW) 👨</option>
                             </optgroup>
                         </select>
-                        <button className="btn btn-secondary btn-sm" onClick={handleTestVoiceZh} disabled={!isZh}>
+                        <button className="btn btn-secondary btn-sm" onClick={handleTestVoiceZh} disabled={tatZh}>
                             <i className="fas fa-volume-up"></i> Thử
                         </button>
                     </div>

@@ -1,4 +1,5 @@
 import { GameLogic } from '@game/gameLogic.js';
+import { nhanTheoChieu } from '../nhanNgonNgu.js';
 import { GameState } from '@game/state.js';
 import { Config } from '@game/config.js';
 import { Utils } from '@lib/utils.js';
@@ -80,11 +81,15 @@ export const Matching = {
                </div>`
             : '';
 
+        // Nhãn cột theo CẶP ĐANG HỌC, không viết cứng "Tiếng Anh / Tiếng Việt".
+        // Ở kho song ngữ hai vế là Trung–Anh, không có tiếng Việt nào.
+        const nhan = nhanTheoChieu(GameLogic.isReversed());
+
         container.innerHTML = `
             ${batchInfo}
             <div class="matching-container">
                 <div class="matching-column">
-                    <h4>Tiếng Anh</h4>
+                    <h4>${nhan.trai}</h4>
                     <div class="matching-items">
                         ${this.matchingData.leftColumn.map(item => `
                             <div class="matching-item" data-id="${item.id}" data-side="left">
@@ -95,7 +100,7 @@ export const Matching = {
                 </div>
 
                 <div class="matching-column">
-                    <h4>Tiếng Việt</h4>
+                    <h4>${nhan.phai}</h4>
                     <div class="matching-items">
                         ${this.matchingData.rightColumn.map(item => `
                             <div class="matching-item" data-id="${item.id}" data-side="right">

@@ -1,4 +1,5 @@
 import { GameLogic } from '@game/gameLogic.js';
+import { chenViDu } from '../exampleBlock.js';
 import { GameState } from '@game/state.js';
 import { Config } from '@game/config.js';
 import { Utils } from '@lib/utils.js';
@@ -233,9 +234,22 @@ export const ExampleFillBlank = {
         if (sentenceEl) {
             sentenceEl.classList.add('answered');
             sentenceEl.innerHTML = `${filled}
+                <div class="efb-vi-du-slot"></div>
                 <div class="sentence-translation" id="sentence-translation">
                     <i class="fas fa-spinner fa-spin"></i> Đang dịch...
                 </div>`;
+
+            // Nút NGHE + phiên âm cho chính câu vừa điền xong.
+            //
+            // Trước đây câu này chỉ có bản dịch — đọc hiểu được nghĩa nhưng
+            // không biết phát âm thế nào, mà câu ví dụ vốn là chỗ dạy CÁCH DÙNG
+            // từ. Dùng module chung `exampleBlock` thay vì tự dựng nút: mười
+            // chế độ khác đã đi qua nó, chép tay là thêm một chỗ để lệch.
+            chenViDu(
+                sentenceEl.querySelector('.efb-vi-du-slot'),
+                question.originalExample,
+                { modeObj: this }
+            );
         }
 
         // Feedback gọn: chỉ báo đúng/sai (câu đầy đủ đã nằm ở trên).

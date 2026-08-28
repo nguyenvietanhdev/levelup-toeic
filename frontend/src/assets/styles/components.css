@@ -1365,12 +1365,17 @@
 
 .options-grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  /* MỘT HÀNG bốn đáp án thay vì lưới 2×2: cắt được nửa chiều cao, mà đáp án ở
+     chế độ này chỉ là một từ nên không cần cả một dòng riêng.
+     `auto-fit` + `minmax`: màn hẹp thì tự rớt xuống hai hàng chứ không bóp chữ
+     đến mức không đọc được. */
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
   gap: var(--spacing-sm);
   /* `xl` trên/dưới cộng với margin của khối câu ngay trên thành khoảng trống
      kép — hai khối liền nhau chỉ cần MỘT khoảng cách. */
   margin: var(--spacing-md) auto;
-  max-width: 600px;
+  /* Bốn ô trên một hàng cần rộng hơn 600px. */
+  max-width: 900px;
 }
 
 .option-btn {
