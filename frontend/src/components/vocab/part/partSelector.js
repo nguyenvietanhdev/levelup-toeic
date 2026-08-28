@@ -1,4 +1,5 @@
 import { Storage } from '@lib/storage.js';
+import { dichTenDe } from '../dichTenDe.js';
 import { GameState } from '@game/state.js';
 import { Utils } from '@lib/utils.js';
 import { GameLogic } from '@game/gameLogic.js';
@@ -124,7 +125,13 @@ export const PartSelector = {
                 return `
                     <div class="topic-card ${isSelected ? 'selected' : ''} ${disabled ? 'part-card-disabled' : ''}"
                          data-part="${part}" style="cursor:${disabled ? 'not-allowed' : 'pointer'}">
-                        <div class="topic-icon"><i class="fas fa-layer-group"></i></div>
+                        <!-- Icon = nút DỊCH tên Part. Tên Part nhiều khi là
+                             chữ Hán (食物, 基本问候) hoặc tiếng Anh chuyên ngành,
+                             nhìn không đoán được nội dung. Bấm chỗ khác trên thẻ
+                             vẫn CHỌN như cũ. -->
+                        <div class="topic-icon" data-dich="${part}"
+                             title="Dịch &quot;${part}&quot;" role="button" tabindex="0"
+                             style="cursor:help"><i class="fas fa-layer-group"></i></div>
                         <div class="topic-info">
                             <h3 title="${part}">${part}</h3>
                             <div class="topic-meta">
@@ -369,6 +376,13 @@ export const PartSelector = {
                     const body = q('.modal-body');
                     if (body) { body.innerHTML = renderModal(); attachListeners(); }
                 });
+            });
+
+            // Icon dịch — gắn TRƯỚC listener chọn thẻ để `stopPropagation` kịp
+            // chặn: hai handler trên cùng một cây DOM chạy theo thứ tự nổi bọt,
+            // không theo thứ tự đăng ký, nhưng chặn ở con thì cha không nhận.
+            qa('.topic-icon[data-dich]').forEach((icon) => {
+                icon.addEventListener('click', (e) => dichTenDe(e, icon.dataset.dich));
             });
 
             qa('.topic-card[data-part]').forEach(card => {

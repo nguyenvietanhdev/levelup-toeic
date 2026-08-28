@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from "react";
+import { dichTenDe, thuocTinhIconDich } from '../dichTenDe.js';
 import { useEscapeToClose } from '@lib/useEscapeToClose.js';
 import { Notification } from "@ui/Toaster.jsx";
 import { useTopics } from "./useTopics.js";
@@ -347,7 +348,14 @@ export default function TopicModal({ open, mode = null, onClose, onSelected }) {
                           className={`topic-card ${isSelected ? "selected" : ""} ${isBusy ? "loading" : ""}`}
                           onClick={() => handleSelectShared(topic.id)}
                         >
-                          <div className="topic-icon">{topic.icon}</div>
+                          {/* Icon = nút DỊCH tên đề. Tên nhiều khi là chữ Hán
+                              hoặc tiếng Anh chuyên ngành, nhìn không đoán được
+                              nội dung. Bấm chỗ khác trên thẻ vẫn CHỌN như cũ. */}
+                          <div
+                            className="topic-icon"
+                            onClick={(e) => dichTenDe(e, topic.name)}
+                            {...thuocTinhIconDich(topic.name)}
+                          >{topic.icon}</div>
                           <div className="topic-details">
                             <h4 title={topic.name}>{topic.name}</h4>
                             {topic.description && (
@@ -456,7 +464,11 @@ export default function TopicModal({ open, mode = null, onClose, onSelected }) {
                             else handleSelectPersonal(t.source);
                           }}
                         >
-                          <div className="topic-icon">{t.isShared ? "🤝" : "📤"}</div>
+                          <div
+                            className="topic-icon"
+                            onClick={(e) => dichTenDe(e, t.source)}
+                            {...thuocTinhIconDich(t.source)}
+                          >{t.isShared ? "🤝" : "📤"}</div>
                           <div className="topic-details">
                             {/* Ghi rõ "(shared)" ngay trên tên: bộ được chia sẻ có
                                 thể TRÙNG TÊN với bộ của mình, hai thẻ cạnh nhau
@@ -576,7 +588,11 @@ export default function TopicModal({ open, mode = null, onClose, onSelected }) {
                           className={`topic-card ${isSelected ? "selected" : ""} ${isBusy ? "loading" : ""}`}
                           onClick={() => handleSelectWrong(g.source)}
                         >
-                          <div className="topic-icon">❌</div>
+                          <div
+                            className="topic-icon"
+                            onClick={(e) => dichTenDe(e, label)}
+                            {...thuocTinhIconDich(label)}
+                          >❌</div>
                           <div className="topic-details">
                             <h4 title={label}>{label}</h4>
                             <div className="topic-meta">

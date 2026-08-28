@@ -10824,3 +10824,11 @@ mark {
   padding: 4px 10px;
   border-radius: 20px;
 }
+
+/* Popup Dịch nhanh mở TỪ TRONG một modal khác (bấm icon để dịch tên đề trong
+   popup chọn đề) phải nổi lên trên modal đó.
+   `translate-layer` cố ý hạ một bậc để popup Yêu thích che được nó — luật đó
+   vẫn đúng cho trường hợp thường, nên thêm lớp riêng thay vì đổi nó. */
+#modal-container.translate-layer.translate-tren-cung {
+  z-index: calc(var(--z-modal) + 1);
+}

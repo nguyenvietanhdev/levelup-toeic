@@ -484,8 +484,17 @@ export default function TranslateModal({ text, onClose, editWord = null, onSaved
 
     const targetName = LANG_NAMES[targetLang] || targetLang;
 
+    // Popup này CỐ Ý thấp hơn modal một bậc (`translate-layer`) để popup Yêu
+    // thích / Từ riêng nổi lên trên nó. Nhưng khi nó được mở TỪ TRONG một modal
+    // khác — bấm icon để dịch tên đề trong popup chọn đề — thì thấp hơn nghĩa là
+    // nằm khuất phía sau, người dùng bấm mà tưởng không có gì xảy ra.
+    //
+    // Đo lúc render: có `#modal-container` nào khác đang mở không.
+    const chongLenModal = typeof document !== 'undefined'
+        && document.querySelectorAll('#modal-container.active').length > 0;
+
     return (
-        <div id="modal-container" className="active translate-layer">
+        <div id="modal-container" className={`active translate-layer${chongLenModal ? ' translate-tren-cung' : ''}`}>
             <div className="modal-backdrop" onClick={onClose}></div>
             <div className="modal translate-modal" style={{ maxWidth: 480, width: '92vw' }}>
                 <div className="modal-header">
