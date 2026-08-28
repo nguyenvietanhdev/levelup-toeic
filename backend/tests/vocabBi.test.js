@@ -791,3 +791,79 @@ describe('từ đồng nghĩa — thiếu là chế độ ra 0 câu', () => {
         expect(t).toMatch(/synonymsZh, synonymsEn/);
     });
 });
+
+describe('nhập JSON ở tab song ngữ', () => {
+    const { readFileSync } = require('node:fs');
+    const { join } = require('node:path');
+    const ctrl = readFileSync(
+        join(__dirname, '..', 'controllers', 'vocabularyController.js'), 'utf8');
+
+    /** Thân nhánh song ngữ trong `upsertVocabulary`. */
+    const nhanhBi = () => {
+        // Neo bằng chuỗi KHÔNG chứa `\n`: file lưu CRLF nên chuỗi có `\n` trần
+        // không bao giờ khớp.
+        const i = ctrl.indexOf('const chi = (k) => word[k] !== undefined');
+        expect(i).toBeGreaterThan(-1);
+        return ctrl.slice(i, ctrl.indexOf('const doc = {', i));
+    };
+
+    test('có nhánh riêng, không dùng bộ trường của kho cũ', () => {
+        // Nhánh chung liệt kê `phonetic`/`synonyms`/`example` số ít, mà kho này
+        // tách đôi theo ngôn ngữ — Mongoose `strict` vứt hết, im lặng.
+        const t = nhanhBi();
+        for (const f of ['phoneticZh', 'phoneticEn', 'synonymsZh', 'synonymsEn',
+                         'exampleZh', 'exampleEn']) {
+            expect(t).toContain(f);
+        }
+    });
+
+    test('KHÔNG đụng `scope` — kho này không có trường đó', () => {
+        // `$setOnInsert: { scope: 'public' }` ném thẳng "Path scope is not in
+        // schema", nên KHÔNG bản ghi nào vào được.
+        const t = nhanhBi();
+        expect(t).not.toMatch(/scope/);
+    });
+
+    test('`zh` chỉ ở `$setOnInsert`, không ở `$set`', () => {
+        // Mongo cấm một trường xuất hiện ở cả hai: "would create a conflict".
+        const t = nhanhBi();
+        expect(t).toMatch(/\$setOnInsert: \{ zh: value/);
+        expect(t).not.toMatch(/\.\.\.chi\('zh'\)/);
+    });
+
+    test('khoá upsert theo (source + zh) — đúng index unique', () => {
+        expect(nhanhBi()).toMatch(/\{ zh: value, \.\.\.\(word\.source && \{ source:/);
+    });
+
+    test('đếm được cả thêm mới lẫn cập nhật', () => {
+        const t = nhanhBi();
+        expect(t).toMatch(/upsertedCount > 0\) inserted\+\+/);
+        expect(t).toMatch(/matchedCount > 0\) updated\+\+/);
+    });
+});
+
+describe('Tổng quan không ném khi thiếu khối hoạt động', () => {
+    const { readFileSync } = require('node:fs');
+    const { join } = require('node:path');
+    const src = readFileSync(join(
+        __dirname, '..', 'public', 'admin', 'js', 'features', 'vocab', 'vocab-stats.js'), 'utf8');
+
+    test('`loadRecentActivities` thoát sớm khi không có chỗ vẽ', () => {
+        // Khối đó đã bị gỡ khỏi HTML nhưng hàm vẫn được gọi — `container` là
+        // null và ném "Cannot set properties of null" mỗi lần vào Tổng quan.
+        const i = src.indexOf('async function loadRecentActivities()');
+        const t = src.slice(i, src.indexOf('try {', i));
+        expect(t).toMatch(/if \(!container\) return;/);
+    });
+
+    test('phần tử đó thật sự KHÔNG còn trong HTML', () => {
+        // Nếu ai đó thêm lại thì guard vẫn đúng, nhưng ca này nhắc rằng lý do
+        // guard tồn tại đã thay đổi.
+        const { readdirSync } = require('node:fs');
+        const thuMuc = join(__dirname, '..', 'public', 'admin', 'partials');
+        const doc = (d) => readdirSync(d, { withFileTypes: true }).flatMap((e) =>
+            e.isDirectory() ? doc(join(d, e.name))
+                : [readFileSync(join(d, e.name), 'utf8')]);
+        expect(doc(thuMuc).join('')).not.toContain('recent-activity-container');
+    });
+});

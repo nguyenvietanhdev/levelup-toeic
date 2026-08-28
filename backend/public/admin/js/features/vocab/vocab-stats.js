@@ -319,6 +319,14 @@ function updateCurrentFileDisplay() {
 
 async function loadRecentActivities() {
     const container = document.getElementById('recent-activity-container');
+    // Khối "Hoạt động gần đây" đã bị gỡ khỏi HTML nhưng hàm vẫn được gọi từ
+    // `loadDashboard`. Không có chỗ vẽ thì thoát sớm — vừa khỏi ném
+    // "Cannot set properties of null" mỗi lần vào Tổng quan, vừa khỏi gọi API
+    // lấy dữ liệu không ai xem.
+    //
+    // `displayRecentActivities` bên dưới đã có đúng phép kiểm này; thiếu ở đây
+    // là chỗ duy nhất còn sót.
+    if (!container) return;
 
     try {
         const res = await fetch(`${API_URL}/activities?limit=15`);

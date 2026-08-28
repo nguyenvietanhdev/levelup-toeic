@@ -431,6 +431,43 @@ exports.upsertVocabulary = async (req, res, next) => {
             if (!value) { errors.push({ [pk]: null, message: `Missing "${pk}"` }); continue; }
             try {
                 const normalizedType = word.type ? validateAndNormalizeType(word.type) : 'noun';
+
+                // Kho SONG NGỮ có bộ trường riêng và KHÔNG có `scope`.
+                //
+                // Nhánh chung bên dưới liệt kê `phonetic`/`synonyms`/`example`
+                // số ít, mà kho này tách đôi theo ngôn ngữ — Mongoose `strict`
+                // vứt hết, im lặng. Và `$setOnInsert: { scope: 'public' }` thì
+                // ném thẳng "Path scope is not in schema", nên KHÔNG bản ghi
+                // nào vào được: nhập JSON ở tab song ngữ hỏng hoàn toàn.
+                if (isBiRequest(req)) {
+                    const chi = (k) => word[k] !== undefined && { [k]: word[k] };
+                    const docBi = {
+                        // KHÔNG đưa `zh` vào `$set`: nó đã nằm ở `$setOnInsert`
+                        // bên dưới, mà Mongo cấm một trường xuất hiện ở cả hai
+                        // ("would create a conflict at 'zh'"). Giá trị y hệt
+                        // nhau nên bỏ ở đây không mất gì.
+                        ...chi('en'), ...chi('hienThi'),
+                        ...chi('phoneticZh'), ...chi('phoneticEn'),
+                        ...chi('synonymsZh'), ...chi('synonymsEn'),
+                        ...chi('exampleZh'), ...chi('exampleEn'),
+                        ...chi('examplePhoneticZh'), ...chi('examplePhoneticEn'),
+                        ...(word.part !== undefined && { part: word.part }),
+                        ...(word.type !== undefined && { type: word.type }),
+                        ...chi('level'), ...chi('image'),
+                        ...(word.source !== undefined && { source: word.source.toLowerCase() }),
+                        updatedAt: new Date(),
+                    };
+                    // Khoá theo (source + zh) — đúng index unique của kho này.
+                    const rBi = await Model.updateOne(
+                        { zh: value, ...(word.source && { source: word.source.toLowerCase() }) },
+                        { $set: docBi, $setOnInsert: { zh: value, createdAt: new Date() } },
+                        { upsert: true }
+                    );
+                    if (rBi.upsertedCount > 0) inserted++;
+                    else if (rBi.matchedCount > 0) updated++;
+                    continue;
+                }
+
                 const doc = {
                     ...(pk !== 'en' && word.en !== undefined && { en: word.en }),
                     ...(pk !== 'zh' && word.zh !== undefined && { zh: word.zh }),
