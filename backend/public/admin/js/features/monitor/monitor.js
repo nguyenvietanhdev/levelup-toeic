@@ -490,13 +490,15 @@ function switchWordModalTab(tab) {
         // Kho song ngữ KHÔNG có `vn` (học Trung ↔ Anh), và phiên âm/ví dụ tách
         // đôi theo ngôn ngữ. Hiện danh sách key của kho khác thì người nhập
         // dán `vn` vào và Mongoose lặng lẽ vứt đi.
-        if (hint) hint.textContent = 'zh, en, phoneticZh, phoneticEn, exampleZh, exampleEn, part, type, level, source';
+        if (hint) hint.textContent = 'zh, en, phoneticZh, phoneticEn, synonymsZh, synonymsEn, exampleZh, exampleEn, part, type, level, source';
         if (ta && !ta.value) ta.placeholder = `[
   {
     "zh": "你好",
     "en": "hello",
     "phoneticZh": "nǐ hǎo",
     "phoneticEn": "/həˈloʊ/",
+    "synonymsZh": "您好, 嗨",
+    "synonymsEn": "hi, hey",
     "exampleZh": "你好，很高兴认识你。",
     "exampleEn": "Hello, nice to meet you.",
     "part": "Chào hỏi",

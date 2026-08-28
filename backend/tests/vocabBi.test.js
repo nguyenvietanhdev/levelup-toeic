@@ -734,3 +734,60 @@ describe('bảng admin phải xin dữ liệu GỐC', () => {
         }
     });
 });
+
+describe('từ đồng nghĩa — thiếu là chế độ ra 0 câu', () => {
+    const VocabularyBi = require('../models/VocabularyBi');
+    const { readFileSync } = require('node:fs');
+    const { join } = require('node:path');
+
+    test('schema TÁCH ĐÔI theo ngôn ngữ', () => {
+        // Đồng nghĩa của 你好 là 您好 (chữ Hán), của `hello` là `hi` (Latin).
+        // Dùng chung một ô thì nửa số từ hiện đồng nghĩa sai ngôn ngữ với mặt
+        // đang học.
+        expect(VocabularyBi.schema.path('synonymsZh')).toBeDefined();
+        expect(VocabularyBi.schema.path('synonymsEn')).toBeDefined();
+        expect(VocabularyBi.schema.path('synonyms')).toBeUndefined();
+    });
+
+    test('mapper trả `synonyms` ĐÚNG MẶT đang học', () => {
+        // Chế độ "Từ đồng nghĩa" lọc `if (!w.synonyms) continue` — không trả
+        // trường này thì kho song ngữ ra 0 câu, im lặng.
+        const mau = { ...MAU, synonymsZh: '您好, 嗨', synonymsEn: 'hi, hey' };
+        expect(doiHinh(mau).synonyms).toBe('您好, 嗨');
+        expect(doiHinh({ ...mau, hienThi: 'en' }).synonyms).toBe('hi, hey');
+    });
+
+    test('không có đồng nghĩa thì trả rỗng, không vỡ', () => {
+        expect(doiHinh(MAU).synonyms).toBeUndefined();
+    });
+
+    test('script nhập nhận cả hai trường', () => {
+        const src = readFileSync(join(__dirname, '..', 'scripts', 'importVocabBi.js'), 'utf8');
+        expect(src).toMatch(/synonymsZh: String\(h\.synonymsZh/);
+        expect(src).toMatch(/synonymsEn: String\(h\.synonymsEn/);
+    });
+
+    test('prompt AI xin đủ hai trường', () => {
+        const src = readFileSync(join(
+            __dirname, '..', 'public', 'admin', 'js', 'features', 'users', 'users.js'), 'utf8');
+        const i = src.indexOf('if (lang === "bi")');
+        const t = src.slice(i, src.indexOf('} else if (lang === "zh")', i));
+
+        // Soi KHỐI JSON MẪU, không phải cả prompt: phần quy tắc bên dưới cũng
+        // nhắc tên hai trường, nên xoá chúng khỏi mẫu mà test vẫn xanh — AI đọc
+        // mẫu để biết cần trả key nào.
+        // Cắt bằng CHỈ SỐ của `[` và `]`, không neo vào `\n`: file lưu CRLF
+        // nên chuỗi chứa `\n` trần không bao giờ khớp.
+        const mau = t.slice(t.indexOf('['), t.indexOf(']') + 1);
+        expect(mau).toMatch(/"synonymsZh":/);
+        expect(mau).toMatch(/"synonymsEn":/);
+    });
+
+    test('gợi ý key trong modal liệt kê đủ', () => {
+        const src = readFileSync(join(
+            __dirname, '..', 'public', 'admin', 'js', 'features', 'monitor', 'monitor.js'), 'utf8');
+        const i = src.indexOf("if (lang === 'bi')");
+        const t = src.slice(i, src.indexOf("} else if (lang === 'zh')", i));
+        expect(t).toMatch(/synonymsZh, synonymsEn/);
+    });
+});

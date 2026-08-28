@@ -14,10 +14,14 @@
  *
  * ── Định dạng CSV ──────────────────────────────────────────────────────────
  *
- *   zh,en,phoneticZh,phoneticEn,part
- *   你好,hello,nǐ hǎo,/həˈloʊ/,Chào hỏi
+ *   zh,en,phoneticZh,phoneticEn,synonymsZh,synonymsEn,part
+ *   你好,hello,nǐ hǎo,/həˈloʊ/,"您好, 嗨","hi, hey",Chào hỏi
  *
  * Bắt buộc: `zh`, `en`, `part`. Còn lại tuỳ chọn, thiếu thì để rỗng.
+ *
+ * Đồng nghĩa TÁCH ĐÔI (`synonymsZh` / `synonymsEn`) như phiên âm: đồng nghĩa
+ * của 你好 là 您好, còn của `hello` là `hi` — dùng chung một ô thì nửa số từ
+ * hiện đồng nghĩa sai ngôn ngữ với mặt đang học.
  *
  * KHÔNG có cột `vn`: kho này học Trung ↔ Anh, `en` chính là đáp án.
  * Cột thừa bị bỏ qua chứ không báo lỗi — file của bạn muốn có cột ghi chú
@@ -158,6 +162,8 @@ async function main() {
         hienThi: h.hienThi === 'en' ? 'en' : 'zh',
         phoneticZh: String(h.phoneticZh || '').trim(),
         phoneticEn: String(h.phoneticEn || '').trim(),
+        synonymsZh: String(h.synonymsZh || '').trim(),
+        synonymsEn: String(h.synonymsEn || '').trim(),
         exampleZh: String(h.exampleZh || '').trim(),
         exampleEn: String(h.exampleEn || '').trim(),
         part: String(h.part).trim(),

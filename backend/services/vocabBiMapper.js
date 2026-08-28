@@ -51,6 +51,13 @@ function doiHinh(doc) {
         // Phiên âm của mặt kia, để hiện cạnh đáp án khi cần.
         vnPhonetic: laZh ? d.phoneticEn : d.phoneticZh,
 
+        // Đồng nghĩa CÙNG MẶT với từ đang học.
+        //
+        // Chế độ "Từ đồng nghĩa" lọc `if (!w.synonyms) continue` — không trả
+        // trường này thì kho song ngữ ra 0 câu, im lặng. Và phải đúng mặt: học
+        // 你好 mà gợi ý đồng nghĩa `hi` thì chẳng liên quan gì tới chữ đang nhớ.
+        synonyms: laZh ? d.synonymsZh : d.synonymsEn,
+
         // Câu ví dụ cùng mặt với từ, để loa đọc đúng giọng.
         example: laZh ? d.exampleZh : d.exampleEn,
         examplePhonetic: laZh ? d.examplePhoneticZh : d.examplePhoneticEn,

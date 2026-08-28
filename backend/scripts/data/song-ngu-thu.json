@@ -8,7 +8,9 @@
     "exampleEn": "Hello, I am Vietnamese.",
     "part": "Chào hỏi",
     "type": "短语",
-    "level": "HSK1"
+    "level": "HSK1",
+    "synonymsZh": "您好, 嗨",
+    "synonymsEn": "hi, hey"
   },
   {
     "zh": "您好",
@@ -19,7 +21,9 @@
     "exampleEn": "Hello, teacher.",
     "part": "Chào hỏi",
     "type": "短语",
-    "level": "HSK1"
+    "level": "HSK1",
+    "synonymsZh": "你好",
+    "synonymsEn": "hello, greetings"
   },
   {
     "zh": "早上好",
@@ -30,7 +34,9 @@
     "exampleEn": "Good morning, have you had breakfast?",
     "part": "Chào hỏi",
     "type": "短语",
-    "level": "HSK1"
+    "level": "HSK1",
+    "synonymsZh": "早安",
+    "synonymsEn": "morning"
   },
   {
     "zh": "晚上好",
@@ -41,7 +47,9 @@
     "exampleEn": "Good evening, welcome.",
     "part": "Chào hỏi",
     "type": "短语",
-    "level": "HSK1"
+    "level": "HSK1",
+    "synonymsZh": "晚安",
+    "synonymsEn": "evening"
   },
   {
     "zh": "再见",
@@ -52,7 +60,9 @@
     "exampleEn": "Goodbye, see you tomorrow.",
     "part": "Chào hỏi",
     "type": "短语",
-    "level": "HSK1"
+    "level": "HSK1",
+    "synonymsZh": "拜拜",
+    "synonymsEn": "bye, farewell"
   },
   {
     "zh": "谢谢",
@@ -63,7 +73,9 @@
     "exampleEn": "Thank you for your help.",
     "part": "Chào hỏi",
     "type": "短语",
-    "level": "HSK1"
+    "level": "HSK1",
+    "synonymsZh": "多谢",
+    "synonymsEn": "thanks"
   },
   {
     "zh": "不客气",
@@ -74,7 +86,9 @@
     "exampleEn": "You are welcome, it was nothing.",
     "part": "Chào hỏi",
     "type": "短语",
-    "level": "HSK1"
+    "level": "HSK1",
+    "synonymsZh": "别客气",
+    "synonymsEn": "no worries, my pleasure"
   },
   {
     "zh": "对不起",
@@ -85,7 +99,9 @@
     "exampleEn": "Sorry, I am late.",
     "part": "Chào hỏi",
     "type": "短语",
-    "level": "HSK1"
+    "level": "HSK1",
+    "synonymsZh": "抱歉",
+    "synonymsEn": "excuse me, apologies"
   },
   {
     "zh": "没关系",
@@ -96,7 +112,9 @@
     "exampleEn": "No problem, be careful next time.",
     "part": "Chào hỏi",
     "type": "短语",
-    "level": "HSK1"
+    "level": "HSK1",
+    "synonymsZh": "不要紧",
+    "synonymsEn": "it is fine, never mind"
   },
   {
     "zh": "请",
@@ -107,7 +125,9 @@
     "exampleEn": "Please come in.",
     "part": "Chào hỏi",
     "type": "动词",
-    "level": "HSK1"
+    "level": "HSK1",
+    "synonymsZh": "麻烦",
+    "synonymsEn": "kindly"
   },
   {
     "zh": "爸爸",
@@ -118,7 +138,9 @@
     "exampleEn": "Father is cooking.",
     "part": "Gia đình",
     "type": "名词",
-    "level": "HSK1"
+    "level": "HSK1",
+    "synonymsZh": "父亲",
+    "synonymsEn": "dad, papa"
   },
   {
     "zh": "妈妈",
@@ -129,7 +151,9 @@
     "exampleEn": "Mother is very beautiful.",
     "part": "Gia đình",
     "type": "名词",
-    "level": "HSK1"
+    "level": "HSK1",
+    "synonymsZh": "母亲",
+    "synonymsEn": "mom, mum"
   },
   {
     "zh": "哥哥",
@@ -140,7 +164,9 @@
     "exampleEn": "My older brother is a teacher.",
     "part": "Gia đình",
     "type": "名词",
-    "level": "HSK1"
+    "level": "HSK1",
+    "synonymsZh": "兄长",
+    "synonymsEn": "big brother"
   },
   {
     "zh": "姐姐",
@@ -151,7 +177,9 @@
     "exampleEn": "Older sister is reading.",
     "part": "Gia đình",
     "type": "名词",
-    "level": "HSK1"
+    "level": "HSK1",
+    "synonymsZh": "姊姊",
+    "synonymsEn": "big sister"
   },
   {
     "zh": "老师",
@@ -162,7 +190,9 @@
     "exampleEn": "He is my Chinese teacher.",
     "part": "Nghề nghiệp",
     "type": "名词",
-    "level": "HSK1"
+    "level": "HSK1",
+    "synonymsZh": "教师",
+    "synonymsEn": "instructor, tutor"
   },
   {
     "zh": "学生",
@@ -173,7 +203,9 @@
     "exampleEn": "I am a university student.",
     "part": "Nghề nghiệp",
     "type": "名词",
-    "level": "HSK1"
+    "level": "HSK1",
+    "synonymsZh": "学员",
+    "synonymsEn": "pupil, learner"
   },
   {
     "zh": "医生",
@@ -184,7 +216,9 @@
     "exampleEn": "My father is a doctor.",
     "part": "Nghề nghiệp",
     "type": "名词",
-    "level": "HSK1"
+    "level": "HSK1",
+    "synonymsZh": "大夫",
+    "synonymsEn": "physician"
   },
   {
     "zh": "工作",
@@ -195,7 +229,9 @@
     "exampleEn": "I work in Beijing.",
     "part": "Nghề nghiệp",
     "type": "动词",
-    "level": "HSK1"
+    "level": "HSK1",
+    "synonymsZh": "上班",
+    "synonymsEn": "job, labor"
   },
   {
     "zh": "吃",
@@ -206,7 +242,9 @@
     "exampleEn": "I want to eat Chinese food.",
     "part": "Hoạt động",
     "type": "动词",
-    "level": "HSK1"
+    "level": "HSK1",
+    "synonymsZh": "食用",
+    "synonymsEn": "consume"
   },
   {
     "zh": "喝",
@@ -217,7 +255,9 @@
     "exampleEn": "I drink a cup of tea.",
     "part": "Hoạt động",
     "type": "动词",
-    "level": "HSK1"
+    "level": "HSK1",
+    "synonymsZh": "饮",
+    "synonymsEn": "sip"
   },
   {
     "zh": "看",
@@ -228,7 +268,9 @@
     "exampleEn": "He is watching television.",
     "part": "Hoạt động",
     "type": "动词",
-    "level": "HSK1"
+    "level": "HSK1",
+    "synonymsZh": "瞧",
+    "synonymsEn": "watch, see"
   },
   {
     "zh": "说",
@@ -239,7 +281,9 @@
     "exampleEn": "I can speak a little Chinese.",
     "part": "Hoạt động",
     "type": "动词",
-    "level": "HSK1"
+    "level": "HSK1",
+    "synonymsZh": "讲",
+    "synonymsEn": "talk, say"
   },
   {
     "zh": "水",
@@ -250,7 +294,9 @@
     "exampleEn": "Please give me a glass of water.",
     "part": "Đồ ăn thức uống",
     "type": "名词",
-    "level": "HSK1"
+    "level": "HSK1",
+    "synonymsZh": "清水",
+    "synonymsEn": "H2O"
   },
   {
     "zh": "茶",
@@ -261,7 +307,9 @@
     "exampleEn": "Chinese tea is very famous.",
     "part": "Đồ ăn thức uống",
     "type": "名词",
-    "level": "HSK1"
+    "level": "HSK1",
+    "synonymsZh": "茶水",
+    "synonymsEn": "brew"
   },
   {
     "zh": "饭",
@@ -272,6 +320,8 @@
     "exampleEn": "Let us eat together.",
     "part": "Đồ ăn thức uống",
     "type": "名词",
-    "level": "HSK1"
+    "level": "HSK1",
+    "synonymsZh": "米饭",
+    "synonymsEn": "meal, food"
   }
 ]

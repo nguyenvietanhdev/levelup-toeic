@@ -63,6 +63,17 @@ const vocabularyBiSchema = new mongoose.Schema(
         phoneticZh: { type: String, default: '' },
         phoneticEn: { type: String, default: '' },
 
+        // ── Từ đồng nghĩa: TÁCH ĐÔI như phiên âm ───────────────────────────
+        //
+        // Chế độ "Từ đồng nghĩa" lọc `if (!w.synonyms) continue` — thiếu trường
+        // này thì kho song ngữ ra 0 câu và người học tưởng bộ từ hỏng.
+        //
+        // Phải tách đôi vì đồng nghĩa của 你好 là 您好 (chữ Hán), còn của
+        // `hello` là `hi` (chữ Latin). Dùng chung một ô thì nửa số từ hiện
+        // đồng nghĩa sai ngôn ngữ với mặt đang học.
+        synonymsZh: { type: String, default: '' },
+        synonymsEn: { type: String, default: '' },
+
         // ── Câu ví dụ ──────────────────────────────────────────────────────
         exampleZh: { type: String, default: '' },
         exampleEn: { type: String, default: '' },

@@ -547,6 +547,8 @@ QUAN TRỌNG: Kho này học Trung ↔ Anh, KHÔNG qua tiếng Việt. TUYỆT �
     "en": "english meaning",
     "phoneticZh": "pīnyīn có dấu thanh",
     "phoneticEn": "/IPA/",
+    "synonymsZh": "同义词1, 同义词2",
+    "synonymsEn": "synonym1, synonym2",
     "exampleZh": "Câu ví dụ bằng tiếng Trung.",
     "exampleEn": "English example sentence.",
     "part": "${partVal || 'Chào hỏi'}",
@@ -561,7 +563,9 @@ Quy tắc:
 - "phoneticZh" → pinyin CÓ DẤU THANH (nǐ hǎo), KHÔNG phải IPA
 - "phoneticEn" → phiên âm IPA của từ tiếng Anh
 - "level" → khung HSK (HSK1…HSK6, HSK7-9), KHÔNG dùng A1/B2
-- KHÔNG có key "vn", KHÔNG có key "phonetic", KHÔNG có key "example"
+- "synonymsZh" → đồng nghĩa BẰNG CHỮ HÁN; "synonymsEn" → đồng nghĩa tiếng Anh.
+  Tách đôi vì đồng nghĩa phải cùng ngôn ngữ với mặt đang học. Không có thì để ""
+- KHÔNG có key "vn", KHÔNG có key "phonetic", "example", "synonyms" (dùng bản tách đôi)
 Chỉ trả về JSON array, không giải thích thêm.`;
       } else if (lang === "zh") {
         const hint = wordVal ? `Từ tiếng Trung: "${wordVal}". ` : "";
