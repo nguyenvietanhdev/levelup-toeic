@@ -38,6 +38,15 @@ const VOICE_MAP = {
     'zh-tw-m':        'zh-TW-YunJheNeural',
     // Chinese — Random
     'zh-cn-random':   null,
+    // Vietnamese — dùng khi ĐẢO CHIỀU (hỏi bằng nghĩa tiếng Việt).
+    //
+    // Trước đây đảo chiều là mất hẳn nút loa: mặt trước thành tiếng Việt mà hệ
+    // thống chỉ có giọng Anh/Trung, đọc ra thì sai hẳn. Có giọng Việt rồi thì
+    // chiều nào cũng nghe được.
+    'vi-vn-f':        'vi-VN-HoaiMyNeural',
+    'vi-vn-m':        'vi-VN-NamMinhNeural',
+    'vi-vn':          'vi-VN-HoaiMyNeural',
+    'vi-random':      null,
 };
 
 /**
@@ -55,6 +64,9 @@ router.get('/', async (req, res) => {
         if (lang === 'zh-cn-random') {
             const zhVoices = ['zh-CN-XiaoxiaoNeural', 'zh-CN-XiaoyiNeural', 'zh-CN-YunxiNeural', 'zh-CN-YunyangNeural'];
             voiceName = zhVoices[Math.floor(Math.random() * zhVoices.length)];
+        } else if (lang === 'vi-random') {
+            const viVoices = ['vi-VN-HoaiMyNeural', 'vi-VN-NamMinhNeural'];
+            voiceName = viVoices[Math.floor(Math.random() * viVoices.length)];
         } else if (lang === 'en-random') {
             const enVoices = [
                 'en-US-AriaNeural', 'en-US-GuyNeural',

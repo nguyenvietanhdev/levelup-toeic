@@ -322,14 +322,28 @@ export const GameLogic = {
         //
         // C\u0169ng \u0111\u00fang h\u01a1n cho hai kho c\u0169: m\u1ed9t t\u1eeb ti\u1ebfng Anh l\u1ecdt v\u00e0o b\u1ed9 ti\u1ebfng Trung
         // (ho\u1eb7c ng\u01b0\u1ee3c l\u1ea1i) gi\u1edd v\u1eabn \u0111\u1ecdc \u0111\u00fang gi\u1ecdng.
-        const isZhText = /[\u3400-\u9fff]/.test(String(text || ''));
+        const chu = String(text || '');
+        const isZhText = /[\u3400-\u9fff]/.test(chu);
+        // D\u1ea5u ti\u1ebfng Vi\u1ec7t \u2014 nh\u1eadn di\u1ec7n b\u1eb1ng k\u00fd t\u1ef1 KH\u00d4NG c\u00f3 trong ti\u1ebfng Anh.
+        //
+        // C\u1ea7n cho ch\u1ebf \u0111\u1ed9 \u0110\u1ea2O CHI\u1ec0U: m\u1eb7t h\u1ecfi l\u00e0 ngh\u0129a ti\u1ebfng Vi\u1ec7t, m\u00e0 tr\u01b0\u1edbc \u0111\u00e2y
+        // h\u1ec7 th\u1ed1ng ch\u1ec9 c\u00f3 gi\u1ecdng Anh/Trung n\u00ean n\u00fat loa b\u1ecb \u1ea9n h\u1eb3n. Gi\u1ecdng Anh \u0111\u1ecdc
+        // "ng\u01b0\u1eddi cung c\u1ea5p \u0111\u1ed3 \u0103n" ra m\u1ed9t tr\u00e0ng v\u00f4 ngh\u0129a.
+        const isViText = !isZhText
+            && /[\u0103\u00e2\u0111\u00ea\u00f4\u01a1\u01b0\u00e0\u00e1\u1ea3\u00e3\u1ea1\u1eb1\u1eaf\u1eb3\u1eb5\u1eb7\u1ea7\u1ea5\u1ea9\u1eab\u1ead\u00e8\u00e9\u1ebb\u1ebd\u1eb9\u1ec1\u1ebf\u1ec3\u1ec5\u1ec7\u00ec\u00ed\u1ec9\u0129\u1ecb\u00f2\u00f3\u1ecf\u00f5\u1ecd\u1ed3\u1ed1\u1ed5\u1ed7\u1ed9\u1edd\u1edb\u1edf\u1ee1\u1ee3\u00f9\u00fa\u1ee7\u0169\u1ee5\u1ef3\u00fd\u1ef7\u1ef9\u1ef5]/i.test(chu);
+
         if (isZhText) lang = 'zh-CN';
+        else if (isViText) lang = 'vi-VN';
 
         const isZhMode = isZhText;
-        const voiceKey = isZhMode ? 'toeic_voice_zh' : 'toeic_voice_en';
+        const voiceKey = isZhMode ? 'toeic_voice_zh'
+            : isViText ? 'toeic_voice_vi'
+            : 'toeic_voice_en';
         const savedVoiceName = localStorage.getItem(voiceKey)
             || localStorage.getItem('toeic_voice')  // backward compat
-            || (isZhMode ? '__gtts_zh_random__' : '__gtts_random__');
+            || (isZhMode ? '__gtts_zh_random__'
+                : isViText ? '__gtts_vi_random__'
+                : '__gtts_random__');
 
         this._replayCallback = () => this.speakWord(text, lang);
 
@@ -341,9 +355,11 @@ export const GameLogic = {
             // `voiceKey` trỏ vào giọng Trung, và giọng đó đọc chữ Latin theo
             // lối phiên âm tiếng Trung — sai hẳn.
             const isZhVoice = savedVoiceName.startsWith('__gtts_zh');
+            const isViVoice = savedVoiceName.startsWith('__gtts_vi');
             let effectiveVoice = savedVoiceName;
             if (isZhText && !isZhVoice) effectiveVoice = '__gtts_zh_random__';
-            else if (!isZhText && isZhVoice) effectiveVoice = '__gtts_random__';
+            else if (isViText && !isViVoice) effectiveVoice = '__gtts_vi_random__';
+            else if (!isZhText && !isViText && (isZhVoice || isViVoice)) effectiveVoice = '__gtts_random__';
             this._speakGoogleTTS(text, effectiveVoice, onEnd);
             return;
         }
@@ -366,11 +382,15 @@ export const GameLogic = {
         }
 
         const voices = window.speechSynthesis.getVoices();
+        // Tiền tố ngôn ngữ để lọc giọng — khai một lần, dùng ở cả ba nhánh dưới.
+        const tienToNgonNgu = lang === 'zh-CN' ? 'zh' : lang === 'vi-VN' ? 'vi' : 'en';
 
         if (savedVoiceName === '__random__' && voices.length > 0) {
-            const toeicAccents = lang === 'zh-CN' ? ['zh-CN', 'zh-Hans', 'zh'] : ['en-US', 'en-GB', 'en-AU', 'en-CA'];
+            const toeicAccents = lang === 'zh-CN' ? ['zh-CN', 'zh-Hans', 'zh']
+                : lang === 'vi-VN' ? ['vi-VN', 'vi']
+                : ['en-US', 'en-GB', 'en-AU', 'en-CA'];
             const toeicVoices = voices.filter(v => toeicAccents.some(a => v.lang.startsWith(a)));
-            const pool = toeicVoices.length > 0 ? toeicVoices : voices.filter(v => v.lang.startsWith(lang === 'zh-CN' ? 'zh' : 'en'));
+            const pool = toeicVoices.length > 0 ? toeicVoices : voices.filter(v => v.lang.startsWith(tienToNgonNgu));
             if (pool.length > 0) {
                 const picked = pool[Math.floor(Math.random() * pool.length)];
                 utterance.voice = picked;
@@ -382,16 +402,13 @@ export const GameLogic = {
             // Ở kho song ngữ, người dùng chọn cả giọng Anh lẫn giọng Trung là
             // hợp lệ — nhưng gán giọng Anh cho một câu chữ Hán thì máy đọc
             // từng ký tự như chữ cái, hoặc im hẳn.
-            const dungNgonNgu = selectedVoice
-                && selectedVoice.lang.startsWith(lang === 'zh-CN' ? 'zh' : 'en');
+            const dungNgonNgu = selectedVoice && selectedVoice.lang.startsWith(tienToNgonNgu);
             if (dungNgonNgu) {
                 utterance.voice = selectedVoice;
             } else {
                 // Sai ngôn ngữ → lấy giọng bất kỳ đúng ngôn ngữ. Thà đọc bằng
                 // giọng mặc định còn hơn đọc sai hẳn hệ chữ.
-                const thayThe = voices.find(
-                    v => v.lang.startsWith(lang === 'zh-CN' ? 'zh' : 'en')
-                );
+                const thayThe = voices.find((v) => v.lang.startsWith(tienToNgonNgu));
                 if (thayThe) utterance.voice = thayThe;
             }
         }
@@ -432,6 +449,10 @@ export const GameLogic = {
             '__gtts_zh_tw_m__':     'zh-tw-m',
             // Chinese random
             '__gtts_zh_random__':   'zh-cn-random',
+            // Vietnamese — cho chế độ đảo chiều (mặt hỏi là nghĩa tiếng Việt).
+            '__gtts_vi__':          'vi-vn-f',
+            '__gtts_vi_m__':        'vi-vn-m',
+            '__gtts_vi_random__':   'vi-random',
         };
 
         let lang = 'en-us';

@@ -57,7 +57,9 @@ describe('giọng chọn theo VĂN BẢN, không theo kho', () => {
         // mặt Hán rồi nghe câu ví dụ tiếng Anh thì `voiceKey` trỏ giọng Trung.
         const t = thanSpeak();
         expect(t).toMatch(/if \(isZhText && !isZhVoice\) effectiveVoice = '__gtts_zh_random__'/);
-        expect(t).toMatch(/else if \(!isZhText && isZhVoice\) effectiveVoice = '__gtts_random__'/);
+        // Điều kiện nới ra khi có thêm tiếng Việt: nay là "không phải Hán VÀ
+        // không phải Việt" mới quay về giọng Anh.
+        expect(t).toMatch(/!isZhText && !isViText && \(isZhVoice \|\| isViVoice\)\) effectiveVoice = '__gtts_random__'/);
     });
 });
 

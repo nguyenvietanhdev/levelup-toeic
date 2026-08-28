@@ -14,11 +14,20 @@
  * đặt khối này ở đâu — hàm này không đoán hộ.
  */
 import { GameLogic } from '@game/gameLogic.js';
+import { GameState } from '@game/state.js';
 import { EventBus, GameEvents } from '@game/eventBus.js';
 import { layPhienAmCau } from '@lib/sentencePinyin.js';
 
 /** Bộ đếm để mỗi khối có id riêng — một màn có thể hiện nhiều câu ví dụ. */
 let _dem = 0;
+
+/**
+ * Hoãn bao lâu trước khi tự đọc câu ví dụ (ms).
+ *
+ * Nơi gọi thường phát âm TỪ ngay khi hiện kết quả; đọc câu cùng lúc thì hai
+ * giọng chồng nhau. 900ms đủ cho một từ đơn đọc xong.
+ */
+const DOI_TRUOC_KHI_DOC = 900;
 
 /**
  * HTML của khối câu ví dụ.
@@ -79,12 +88,35 @@ export function ganViDu(id, cau, { modeObj = null, goc = document } = {}) {
         EventBus.emit(GameEvents.TRANSLATE_REQUESTED, { text });
     });
 
+    const idxLucGoiDoc = modeObj?.currentIndex;
+
     q(`#${id}-sp`)?.addEventListener('click', (e) => {
         e.stopPropagation();
         // KHÔNG truyền ngôn ngữ: `speakWord` tự nhận chữ Hán và đổi sang zh-CN.
         // Truyền cứng 'en-US' là đọc câu tiếng Trung bằng giọng tiếng Anh.
         GameLogic.speakWord(text);
     });
+
+    // TỰ ĐỘNG ĐỌC khi người dùng TẮT chuyển câu tự động.
+    //
+    // Hai chế độ dùng thời gian khác hẳn nhau:
+    //   · Bật tự chuyển → câu tự trôi sau vài giây. Đọc cả câu ví dụ ở đây là
+    //     tiếng nói bị cắt ngang giữa chừng, lần nào cũng vậy.
+    //   · Tắt tự chuyển → người học tự bấm "Tiếp" khi đã xong. Họ đang DỪNG
+    //     lại để đọc, đúng lúc để nghe câu mẫu mà không phải bấm thêm.
+    //
+    // `!== false` chứ không phải `=== true`: mặc định của cài đặt này là BẬT,
+    // và hồ sơ cũ chưa có trường đó thì `undefined` phải hiểu là bật.
+    const tuChuyen = GameState.state?.settings?.autoAdvance !== false;
+    if (!tuChuyen) {
+        // Hoãn một nhịp: nơi gọi thường phát âm TỪ ngay trước đó, hai giọng
+        // chồng lên nhau thì không nghe rõ cái nào.
+        setTimeout(() => {
+            // Bỏ nếu đã sang câu khác — người dùng bấm nhanh hơn khoảng hoãn.
+            if (modeObj && modeObj.currentIndex !== idxLucGoiDoc) return;
+            GameLogic.speakWord(text);
+        }, DOI_TRUOC_KHI_DOC);
+    }
 
     // Phiên âm nạp bất đồng bộ — KHÔNG `await`: đây là thông tin phụ trợ, chờ
     // nó là chặn cả câu hỏi.

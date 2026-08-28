@@ -210,6 +210,20 @@ export const TopicSelector = {
      * Định tuyến theo TIỀN TỐ của id, mỗi loại về đúng hàm nạp của nó.
      */
     async restoreLastTopic() {
+        // Nạp danh sách đề TRƯỚC.
+        //
+        // Nếu không, `availableTopics` còn rỗng khi tới nhánh kiểm ở dưới:
+        // `find()` trả undefined → rơi xuống đề mặc định → mất đề đã chọn sau
+        // mỗi lần F5. Mà `_loadDefaultTopic` cũng thoát ngay khi danh sách rỗng,
+        // nên kết quả là KHÔNG có đề nào cả.
+        //
+        // Bộ riêng / bộ chia sẻ / nhóm từ sai không nằm trong danh sách này nên
+        // ba nhánh đầu vẫn chạy được mà không cần chờ — nhưng gọi ở đây một lần
+        // đơn giản hơn là rải `await` vào từng nhánh.
+        if (this.availableTopics.length === 0) {
+            try { await this.loadAvailableTopics(); } catch { /* offline → dùng nhánh dưới */ }
+        }
+
         const lastTopicId = await Storage.get('selectedTopic');
         if (!lastTopicId) return this._loadDefaultTopic();
 

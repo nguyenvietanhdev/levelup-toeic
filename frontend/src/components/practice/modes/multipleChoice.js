@@ -98,9 +98,14 @@ export const MultipleChoice = {
                     <div class="question-text-col">
                         <div class="word-display">
                             ${question.question}
-                            ${!isReversed ? `<button class="btn-speak" id="speak-word-btn" title="Nghe phát âm">
+                            <!-- Nút loa hiện ở CẢ HAI chiều.
+                                 Trước đây ẩn khi đảo chiều vì mặt hỏi là nghĩa
+                                 tiếng Việt mà hệ thống chỉ có giọng Anh/Trung.
+                                 Nay speakWord nhận diện được tiếng Việt và có
+                                 giọng riêng, nên nghe được cả hai chiều. -->
+                            <button class="btn-speak" id="speak-word-btn" title="Nghe phát âm">
                                 <i class="fas fa-volume-up"></i>
-                            </button>` : ''}
+                            </button>
                         </div>
                         ${!isReversed && question.word.phonetic ? `<div class="word-phonetic">/${question.word.phonetic}/</div>` : ''}
                         <div class="word-type">${question.word.type}</div>
@@ -159,7 +164,15 @@ export const MultipleChoice = {
         if (speakBtn) {
             speakBtn.addEventListener('click', () => {
                 const q = this.questions[this.currentIndex];
-                if (q && q.word) GameLogic.speakWord(q.word.en, 'en-US');
+                if (!q?.word) return;
+                // Đọc thứ ĐANG HIỆN, không phải luôn luôn `word.en`.
+                //
+                // Đảo chiều thì mặt hỏi là nghĩa (tiếng Việt, hoặc tiếng Anh ở
+                // kho song ngữ) — đọc `en` là đọc mất đáp án ra loa.
+                //
+                // KHÔNG truyền cứng 'en-US': `speakWord` tự nhận diện hệ chữ và
+                // chọn giọng, truyền vào là ghi đè mất phần đó.
+                GameLogic.speakWord(q.question || q.word.en);
             });
         }
 
