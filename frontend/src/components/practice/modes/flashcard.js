@@ -1,4 +1,5 @@
 import { GameLogic } from '@game/gameLogic.js';
+import { nhanCapHoc } from '../nhanNgonNgu.js';
 import { GameState } from '@game/state.js';
 import { Config } from '@game/config.js';
 import { Utils } from '@lib/utils.js';
@@ -95,6 +96,20 @@ export const Flashcard = {
         this.render(word);
     },
 
+    /**
+     * Chữ đang hiện ở MỘT mặt của thẻ — thứ nút loa phải đọc.
+     *
+     * Không phải lúc nào cũng `word.en`. Đảo chiều thì mặt trước là nghĩa, mà
+     * đọc nghĩa lúc đang hỏi là đọc mất đáp án ra loa. Kho song ngữ còn đặt
+     * chữ HÁN vào `word.en`, nên "en" ở đây không có nghĩa là tiếng Anh.
+     */
+    chuMat(word, matSau = false) {
+        const dao = GameLogic.isReversed();
+        const nghia = word.vi || word.vn || '';
+        // Mặt trước: đảo chiều → nghĩa, thường → từ. Mặt sau ngược lại.
+        return (dao !== matSau) ? nghia : word.en;
+    },
+
     render(word) {
         const container = document.getElementById('practice-content');
         if (!container) return;
@@ -104,8 +119,16 @@ export const Flashcard = {
         const reversed = GameLogic.isReversed();
         const meaning = word.vi || word.vn || '';
         const frontMain = reversed ? meaning : word.en;
-        const frontBadge = reversed ? 'VI' : 'EN';
-        const backBadge = reversed ? 'EN' : 'VI';
+
+        // Nhãn góc thẻ theo CẶP ĐANG HỌC, không cứng EN/VI.
+        //
+        // Kho song ngữ học Trung ↔ Anh: mặt sau là tiếng Anh, không có tiếng
+        // Việt nào — mà nhãn vẫn ghi "VI". Kho tiếng Trung thì mặt trước là chữ
+        // Hán nhưng nhãn ghi "EN".
+        const { tu, nghia } = nhanCapHoc();
+        const viTat = { 'Tiếng Anh': 'EN', 'Tiếng Trung': 'ZH', 'Tiếng Việt': 'VI' };
+        const frontBadge = viTat[reversed ? nghia : tu] || 'EN';
+        const backBadge = viTat[reversed ? tu : nghia] || 'VI';
 
         const extrasHtml = `
                                 ${word.example ? `
@@ -217,12 +240,19 @@ export const Flashcard = {
 
         const inner = document.getElementById('flashcard-inner');
         if (inner && this.isFlipped) {
-            setTimeout(() => this.pronounce(word.en), 300);
+            // Đọc MẶT SAU — thứ vừa lật ra. Trước đây luôn đọc `word.en`, nên
+            // đảo chiều thì lật ra nghĩa mà loa lại đọc từ, còn ở kho song ngữ
+            // thì đọc chữ Hán bằng giọng Anh.
+            setTimeout(() => this.pronounce(this.chuMat(word, true)), 300);
         }
 
-        // Khi đảo chiều, mặt trước là tiếng Việt → không tự phát âm từ tiếng Anh ở đây.
-        if (!this.isFlipped && GameState.state.settings.autoPronunciation && !reversed) {
-            setTimeout(() => this.pronounce(word.en), 500);
+        // Tự phát âm mặt TRƯỚC khi vừa hiện thẻ.
+        //
+        // Trước đây bỏ hẳn khi đảo chiều vì mặt trước là tiếng Việt mà hệ thống
+        // chỉ có giọng Anh/Trung. Nay `speakWord` nhận diện được tiếng Việt và
+        // có giọng riêng, nên chiều nào cũng đọc được.
+        if (!this.isFlipped && GameState.state.settings.autoPronunciation) {
+            setTimeout(() => this.pronounce(this.chuMat(word)), 500);
         }
     },
 
@@ -240,7 +270,8 @@ export const Flashcard = {
         const pronounceBtn = document.getElementById('pronounce-btn');
         pronounceBtn?.addEventListener('click', (e) => {
             e.stopPropagation();
-            this.pronounce(word.en);
+            // Đọc mặt ĐANG hiện, không phải luôn `word.en`.
+            this.pronounce(this.chuMat(word, this.isFlipped));
         });
 
         // Nút loa cho câu ví dụ và từ đồng nghĩa.
@@ -299,7 +330,8 @@ export const Flashcard = {
         } else if (e.key === 'ArrowRight' || e.key === '2') {
             this.markAsKnown(this.words[this.currentIndex]);
         } else if (e.key === 'p' || e.key === 'P') {
-            this.pronounce(this.words[this.currentIndex].en);
+            // Phím P: đọc mặt ĐANG hiện.
+            this.pronounce(this.chuMat(this.words[this.currentIndex], this.isFlipped));
         }
     },
 
@@ -313,7 +345,10 @@ export const Flashcard = {
             inner.classList.add('flipped');
             const currentWord = this.words[this.currentIndex];
             setTimeout(() => {
-                this.pronounce(currentWord.en);
+                // Vừa lật → đọc MẶT SAU. Đây là chỗ chính người dùng nghe khi
+                // lật thẻ; đọc `en` cứng thì đảo chiều lật ra nghĩa mà loa đọc
+                // từ, còn kho song ngữ thì đọc chữ Hán bằng giọng Anh.
+                this.pronounce(this.chuMat(currentWord, true));
             }, 350);
             setTimeout(() => {
                 const chineseSection = document.querySelector('.card-chinese-section');
@@ -380,7 +415,11 @@ export const Flashcard = {
 
     pronounce(text) {
         if (!text) return;
-        GameLogic.speakWord(text, 'en-US');
+        // KHÔNG truyền ngôn ngữ: `speakWord` tự nhận diện hệ chữ (Hán / có dấu
+        // tiếng Việt / Latin) rồi chọn giọng. Truyền cứng 'en-US' là ghi đè mất
+        // phần đó — kho song ngữ đặt chữ Hán vào `word.en`, nên đọc bằng giọng
+        // Mỹ ra một tràng vô nghĩa.
+        GameLogic.speakWord(text);
 
         const btn = document.getElementById('pronounce-btn');
         if (btn) {
