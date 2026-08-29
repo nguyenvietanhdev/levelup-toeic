@@ -312,6 +312,27 @@ export const GameLogic = {
         this._replayCallback = () => this.speakWord(text, ttsLang());
     },
 
+    /**
+     * Dừng NGAY mọi tiếng đang phát.
+     *
+     * Có hai đường phát riêng (`/api/tts` qua thẻ `<audio>` và giọng hệ điều
+     * hành qua `speechSynthesis`), nên dừng một đường là chưa đủ — tiếng kia
+     * vẫn chạy tiếp.
+     *
+     * Dùng khi chuyển ngữ cảnh: lật thẻ, sang câu mới. Không dừng thì giọng
+     * mặt trước còn đang đọc mà mặt sau đã bắt đầu, hai tiếng chồng nhau.
+     */
+    stopSpeaking() {
+        // Tăng bộ đếm để kết quả fetch đang bay về bị bỏ qua — người dùng lật
+        // nhanh hơn mạng thì tiếng của thẻ trước vẫn phát sau khi đã lật.
+        this._gttsSpeak = (this._gttsSpeak || 0) + 1;
+        if (this._gttsAudio) {
+            try { this._gttsAudio.pause(); } catch { /* đã gỡ khỏi DOM */ }
+            this._gttsAudio = null;
+        }
+        try { window.speechSynthesis?.cancel(); } catch { /* không hỗ trợ */ }
+    },
+
     speakWord(text, lang = 'en-US', onEnd = null) {
         // Ch\u1ecdn gi\u1ecdng theo CH\u00cdNH V\u0102N B\u1ea2N, kh\u00f4ng theo kho \u0111ang h\u1ecdc.
         //

@@ -168,7 +168,10 @@ export const Flashcard = {
          * `hau` để mỗi mặt có id phiên âm riêng — hai mặt cùng id thì
          * `napPhienAm` ghi vào phần tử đầu tiên tìm thấy, tức là mặt kia.
          */
-        const khoiPhu = (viDu, dongNghia, hau = '') => `
+        const khoiPhu = (viDu, dongNghia, hau = '') => {
+            if (!viDu && !dongNghia) return '';
+            return `
+                            <div class="card-extras">
                                 ${viDu ? `
                                     <div class="card-example">
                                         <strong>Ví dụ:</strong>
@@ -202,7 +205,9 @@ export const Flashcard = {
                                         </div>
                                         <div class="card-extra-phonetic" id="fc-ph-synonyms${hau}"></div>
                                     </div>
-                                ` : ''}`;
+                                ` : ''}
+                            </div>`;
+        };
 
         // Kho song ngữ: mỗi mặt bộ riêng. Hai kho cũ: chỉ mặt sau có, như cũ.
         const phuTruoc = laSongNgu ? khoiPhu(boTruoc.example, boTruoc.synonyms, '-truoc') : '';
@@ -231,7 +236,11 @@ export const Flashcard = {
                                 </button>
                                 <div class="card-corner-badge">${frontBadge}</div>
                             </div>
-                            <div class="card-content card-content--split">
+                            <!-- Lớp --split là bố cục CÓ ẢNH (ảnh trái, chữ phải)
+                                 nên nó căn trái. Gắn vô điều kiện thì thẻ không
+                                 ảnh cũng bị đẩy lệch trái, trong khi mặt sau căn
+                                 giữa — hai mặt nhìn như hai kiểu khác nhau. -->
+                            <div class="card-content${word.image ? ' card-content--split' : ''}">
                                 ${word.image ? `
                                     <div class="card-image-col">
                                         <img src="${word.image}" class="card-image" alt="${word.en}"
@@ -414,23 +423,38 @@ export const Flashcard = {
 
         this.isFlipped = !this.isFlipped;
 
+        // NGẮT tiếng đang phát trước khi đọc mặt mới.
+        //
+        // Không ngắt thì giọng mặt cũ còn đang đọc mà mặt mới đã bắt đầu — hai
+        // tiếng chồng nhau, và lật nhanh vài lần là chồng ba bốn lớp.
+        GameLogic.stopSpeaking();
+
+        const currentWord = this.words[this.currentIndex];
+        const chineseSection = document.querySelector('.card-chinese-section');
+
+        inner.classList.toggle('flipped', this.isFlipped);
+        if (chineseSection) {
+            chineseSection.classList.remove('chinese-collapsed');
+        }
+
+        // Đọc mặt VỪA LẬT RA, ở CẢ HAI chiều lật.
+        //
+        // Trước đây chỉ đọc khi lật SANG mặt sau; lật về mặt trước thì im lặng,
+        // nên hành vi khác nhau tuỳ chiều mà không có lý do gì.
+        //
+        // Hoãn 350ms cho khớp hiệu ứng lật (`transition: transform 0.6s`): đọc
+        // ngay thì tiếng đi trước hình.
+        setTimeout(() => {
+            // Bỏ nếu người dùng đã lật tiếp hoặc sang thẻ khác trong lúc chờ.
+            if (this.words[this.currentIndex] !== currentWord) return;
+            this.pronounce(this.chuMat(currentWord, this.isFlipped));
+        }, 350);
+
         if (this.isFlipped) {
-            inner.classList.add('flipped');
-            const currentWord = this.words[this.currentIndex];
             setTimeout(() => {
-                // Vừa lật → đọc MẶT SAU. Đây là chỗ chính người dùng nghe khi
-                // lật thẻ; đọc `en` cứng thì đảo chiều lật ra nghĩa mà loa đọc
-                // từ, còn kho song ngữ thì đọc chữ Hán bằng giọng Anh.
-                this.pronounce(this.chuMat(currentWord, true));
-            }, 350);
-            setTimeout(() => {
-                const chineseSection = document.querySelector('.card-chinese-section');
-                if (chineseSection) chineseSection.classList.add('chinese-collapsed');
+                const cs = document.querySelector('.card-chinese-section');
+                if (cs) cs.classList.add('chinese-collapsed');
             }, 2000);
-        } else {
-            inner.classList.remove('flipped');
-            const chineseSection = document.querySelector('.card-chinese-section');
-            if (chineseSection) chineseSection.classList.remove('chinese-collapsed');
         }
     },
 

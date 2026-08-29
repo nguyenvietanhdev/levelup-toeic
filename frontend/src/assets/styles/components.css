@@ -5008,7 +5008,7 @@ mark {
      hai mặt là `position: absolute` nên không đẩy được chiều cao lên.
      `max-height` chặn ở 78% khung nhìn để thẻ dài không đẩy hai nút "Biết /
      Chưa biết" xuống dưới mép. */
-  min-height: 300px;
+  min-height: 320px;
   max-height: 78vh;
   perspective: 1000px;
   cursor: pointer;
@@ -5054,8 +5054,8 @@ mark {
 /* Nội dung NGẮN thì vẫn căn giữa cho cân — chỉ bỏ căn giữa khi tràn.
    `:has()` được mọi trình duyệt hiện hành hỗ trợ; trình cũ không hiểu thì rơi
    về `flex-start` ở trên, tức là vẫn đọc được, chỉ kém cân. */
-.flashcard-front:not(:has(.card-example)):not(:has(.card-synonyms)),
-.flashcard-back:not(:has(.card-example)):not(:has(.card-synonyms)) {
+.flashcard-front:not(:has(.card-extras)),
+.flashcard-back:not(:has(.card-extras)) {
   justify-content: center;
 }
 
@@ -5180,8 +5180,13 @@ mark {
   margin-bottom: 0;
 }
 
+/* Từ chính (mặt `zh` lẫn mặt `en`) căn TRÁI, thẳng cột với khối ví dụ + từ
+   đồng nghĩa ngay dưới nó. Căn giữa thì từ nằm lệch hẳn so với khối bên dưới,
+   mắt phải nhảy ngang mỗi lần đọc xuống. */
 .card-word,
 .card-meaning {
+  text-align: left;
+  width: 100%;
   font-size: 2rem;
   font-weight: bold;
   /* `md` (16px) là khoảng cách của một khối đứng riêng; ở đây ngay dưới là
@@ -5199,10 +5204,12 @@ mark {
 /* Phiên âm + loại từ trên MỘT hàng.
    Hai dòng riêng là hai dòng chỉ chứa vài chữ, mà chiều cao đó đẩy khối ví dụ
    xuống dưới mép thẻ. */
+/* Hàng phiên âm + loại từ. Bám trái theo từ chính ngay trên nó: hai dòng
+   thuộc về cùng một từ nên phải cùng một mép. */
 .card-meta-row {
   display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
   flex-wrap: wrap;
   gap: 10px;
   margin-bottom: var(--spacing-sm);
@@ -5265,14 +5272,27 @@ mark {
   box-shadow: var(--shadow-md);
 }
 
-.card-example,
-.card-synonyms {
-  /* Hai khối này nằm trong flex container đã có `gap` riêng — `margin-top` ở
-     đây là cộng khoảng cách lần hai. */
-  margin-top: 0;
+/* Ví dụ và Từ đồng nghĩa nằm trong MỘT khối liền, không phải hai hộp rời.
+   Hai nền riêng cách nhau một khoảng làm thẻ trông vụn; gộp lại thì phần phụ
+   đọc như một mạch và bớt được một lớp đệm. */
+.card-extras {
+  width: 100%;
   padding: var(--spacing-sm) var(--spacing-md);
   background: rgba(255, 255, 255, 0.2);
   border-radius: var(--radius-md);
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+/* Trong khối chung thì hai phần thôi làm hộp riêng — chỉ còn là hai đoạn. */
+.card-example,
+.card-synonyms {
+  margin-top: 0;
+  padding: 0;
+  background: none;
+  border-radius: 0;
   text-align: left;
 }
 

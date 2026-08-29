@@ -83,9 +83,11 @@ describe('không truyền cứng ngôn ngữ', () => {
 describe('mọi lối đọc đều qua `chuMat`', () => {
     const soLan = (re) => (src.match(re) || []).length;
 
-    test('lật thẻ đọc MẶT SAU', () => {
-        // Đây là chỗ chính người dùng nghe khi lật.
-        expect(src).toMatch(/this\.pronounce\(this\.chuMat\(currentWord, true\)\)/);
+    test('lật thẻ đọc mặt VỪA LẬT RA', () => {
+        // Đây là chỗ chính người dùng nghe khi lật. Theo `this.isFlipped` chứ
+        // không cứng `true`: lật về mặt trước cũng phải đọc — xem
+        // `flashcardLatThe.test.js`.
+        expect(src).toMatch(/this\.pronounce\(this\.chuMat\(currentWord, this\.isFlipped\)\)/);
     });
 
     test('tự phát âm lúc hiện thẻ đọc mặt TRƯỚC', () => {
@@ -213,7 +215,7 @@ describe('thẻ vừa khung nhìn, không che nội dung', () => {
         // 300px cố định đủ cho thẻ cũ, nhưng thẻ song ngữ có thêm phiên âm và
         // đồng nghĩa riêng cho mỗi mặt — nội dung vượt khung và bị cắt cụt.
         const r = ruleThe();
-        expect(r).toMatch(/min-height: 300px/);
+        expect(r).toMatch(/min-height: \d+px/);
         expect(r).not.toMatch(/^\s*height: 300px/m);
     });
 
@@ -231,7 +233,9 @@ describe('thẻ vừa khung nhìn, không che nội dung', () => {
     });
 
     test('nội dung NGẮN vẫn căn giữa cho cân', () => {
-        expect(css).toMatch(/\.flashcard-front:not\(:has\(\.card-example\)\)/);
+        // Neo vào `.card-extras` — khối bọc ví dụ + đồng nghĩa; `.card-example`
+        // là tên cũ, từ hồi hai khối còn tách rời.
+        expect(css).toMatch(/\.flashcard-front:not\(:has\(\.card-extras\)\)/);
         expect(css).toMatch(/justify-content: center/);
     });
 
