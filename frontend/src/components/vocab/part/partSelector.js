@@ -509,16 +509,62 @@ export const PartSelector = {
         const count = Math.min(limit, pool.length);
 
         if (isRandom) {
-            // Random already varies each session — offset is irrelevant.
+            // Ngẫu nhiên: thứ tự bốc không theo `offset`, nhưng SỐ TỪ ĐÃ HỌC thì
+            // có. Đi hết một lượt cả part rồi mà vẫn bốc tiếp là học lại chính
+            // part đó mãi — trả rỗng để chỗ gọi biết mà chuyển part.
+            //
+            // Chỉ áp dụng khi đang khoá vào một part. "Ngẫu nhiên tất cả" thì
+            // kho là một khối, không có part nào để chuyển sang, nên bốc mãi
+            // mới là đúng.
+            if (this.selectedPart && offset > 0 && offset >= pool.length) return [];
             return Utils.randomSample(pool, count);
         }
         // Sequential: serve the next `count` from `offset` so "Học tiếp"
-        // advances to the next batch instead of repeating. Wrap to the
-        // start once the dataset is exhausted.
+        // advances to the next batch instead of repeating.
+        //
+        // KHÔNG cuộn vòng về đầu: `offset % pool.length` khiến học hết part là
+        // quay lại từ đầu chính part đó, mãi mãi. Trả rỗng để chỗ gọi biết đã
+        // hết mà chuyển sang part kế — xem `sangPartKe`.
         if (pool.length === 0) return [];
-        const start = offset % pool.length;
-        const slice = pool.slice(start, start + count);
-        return slice.length > 0 ? slice : pool.slice(0, count);
+        if (offset >= pool.length) return [];
+        return pool.slice(offset, offset + count);
+    },
+
+    /**
+     * Chuyển sang part KẾ TIẾP khi học hết part hiện tại.
+     *
+     * Chỉ có nghĩa khi đang khoá vào MỘT part — tức chế độ `sequential` hoặc
+     * `random-part`. Ở `random-all` thì không có part nào để "kế tiếp": kho là
+     * một khối duy nhất, nên hàm trả `null` và chỗ gọi giữ nguyên hành vi cũ.
+     *
+     * @returns {Promise<string|null>} tên part vừa chuyển sang, hoặc `null` nếu
+     *   không chuyển (đang ở `random-all`, hoặc đây đã là part cuối).
+     */
+    async sangPartKe() {
+        const part = GameState.state?.settings?.selectedPart || null;
+        if (!part) return null;   // random-all — không khoá part nào
+
+        // `this.parts` chỉ được điền khi modal chọn part đã mở lần nào đó.
+        // Người dùng vào thẳng luyện tập từ trang chủ thì nó rỗng, và không có
+        // danh sách thì không biết part nào đứng sau part nào.
+        let ds = this.parts;
+        if (!ds || ds.length === 0) {
+            const vocab = GameLogic.vocabularyData || [];
+            ds = [...new Set(vocab.map((w) => w.part).filter(Boolean))].sort();
+        }
+
+        const i = ds.indexOf(part);
+        // Part cuối (hoặc không nằm trong danh sách) → dừng, không cuộn về đầu:
+        // học xong cả kho mà tự động quay lại part 1 là vòng lặp không lối ra.
+        if (i < 0 || i >= ds.length - 1) return null;
+
+        const ke = ds[i + 1];
+        this.selectedPart = ke;
+        GameState.state.settings.selectedPart = ke;
+        await Storage.set('selectedPart', ke);
+        await GameState.save();
+        this.updatePartBadge?.();
+        return ke;
     },
 
     reset() { this.clearPart(); },

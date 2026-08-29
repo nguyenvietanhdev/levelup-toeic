@@ -55,6 +55,28 @@ export const Flashcard = {
 
         await this.loadWords();
 
+        // Hết part hiện tại → tự sang part KẾ TIẾP thay vì báo "không tìm
+        // thấy từ vựng" rồi thoát. Người học bấm "Học tiếp" là muốn học tiếp,
+        // không phải muốn biết part này đã hết.
+        //
+        // `sangPartKe` trả `null` khi đang ở chế độ "ngẫu nhiên tất cả" (không
+        // khoá part nào) hoặc khi đây đã là part cuối — lúc đó giữ nguyên hành
+        // vi cũ.
+        if (this.words.length === 0) {
+            const partMoi = await PartSelector.sangPartKe();
+            if (partMoi) {
+                // Part mới bắt đầu từ đầu, không mang theo con trỏ của part cũ.
+                this.batchOffset = 0;
+                await this.loadWords();
+                if (this.words.length > 0) {
+                    Notification.show({
+                        type: 'info',
+                        message: `Đã học hết phần trước — chuyển sang ${partMoi}.`,
+                    });
+                }
+            }
+        }
+
         if (this.words.length === 0) {
             Notification.show({
                 type: 'warning',
