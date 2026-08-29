@@ -41,6 +41,24 @@ export const DEFAULT_SETTINGS = {
     soundVolume: 1.0,
     musicVolume: 0.7,
     vocabLang: 'en',
+
+    // ── Những trường dưới đây TỪNG THIẾU ở đây ────────────────────────────
+    //
+    // Chúng vẫn chạy đúng nhờ mọi chỗ đọc đều có giá trị lùi (`?? 15`,
+    // `!== false`, `=== true`), nhưng `resetSettings()` thay NGUYÊN
+    // `state.settings` bằng bảng này — thiếu tên nào thì "khôi phục mặc định"
+    // biến nó thành `undefined` thay vì đưa về giá trị đúng, và bản ghi gửi
+    // lên server cũng mất trường đó.
+    autoAdvance: true,          // tự sang câu kế sau khi trả lời
+    pronounceSentence: false,   // chế độ Phát âm: đọc cả câu thay vì một từ
+    dailyStudyGoalMin: 15,      // mục tiêu học mỗi ngày (phút)
+    toeicTargetScore: 0,        // 0 = chưa đặt mục tiêu điểm TOEIC
+    reverseMode: false,         // EN→VN (false) hay VN→EN (true)
+    // Kiểu hỏi ở "Ôn từ sai". `null` = CHƯA CHỌN → dùng tất cả; mảng rỗng
+    // cũng được hiểu như vậy (xem `kieuDuocPhep`).
+    reviewKinds: null,
+    // Part / đề đang chọn — `null` là "chưa chọn", đúng trạng thái đầu.
+    selectedPart: null,
 };
 
 export const GameState = {

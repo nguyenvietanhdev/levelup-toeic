@@ -388,7 +388,8 @@ export default function SettingsScreen({ active }) {
             title: '↩️ Khôi phục cài đặt mặc định',
             content: `
                 <p>Đưa <strong>toàn bộ cài đặt</strong> về mặc định: giao diện,
-                màu chủ đề, âm thanh, giọng đọc, luyện tập, đảo chiều…</p>
+                màu chủ đề, âm thanh, giọng đọc, luyện tập, đảo chiều, ngôn ngữ
+                từ vựng, part/đề đang chọn…</p>
                 <p style="color:var(--text-secondary);margin-top:8px">
                 Tiến độ học (từ vựng, điểm, coins) <strong>không bị ảnh hưởng</strong>.</p>`,
             buttons: [
