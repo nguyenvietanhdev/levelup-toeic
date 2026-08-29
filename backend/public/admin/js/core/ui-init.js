@@ -51,6 +51,7 @@ function initMainTabs() {
         economy:             'Bảng kinh tế (faucet / sink)',
         'game-config':       'Hằng số game (tinh chỉnh cân bằng)',
         'feature-unlocks':   'Mở khoá theo Level',
+        'mode-schedules':    'Khung giờ chạy chế độ',
         'answer-keys':       'Bộ đáp án đề thi',
         monitor:             'Giám sát hệ thống',
         broadcast:           'Gửi thông báo',
@@ -121,6 +122,8 @@ function initMainTabs() {
             window.loadGameConfig?.();
         } else if (tab === 'feature-unlocks') {
             window.loadFeatureUnlocks?.();
+        } else if (tab === 'mode-schedules') {
+            window.loadModeSchedules?.();
         } else if (tab === 'answer-keys') {
             window.loadAnswerKeysTab?.();
         } else if (tab === 'monitor') {

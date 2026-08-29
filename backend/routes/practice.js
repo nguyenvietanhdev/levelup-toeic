@@ -10,6 +10,7 @@ const {
 
 const { protect, authorize } = require('../middleware/auth');
 const { requireLevel } = require('../services/featureUnlock');
+const { requireInSchedule } = require('../services/modeSchedule');
 
 router.use(protect);
 
@@ -43,7 +44,14 @@ router.use(protect);
  *                   items:
  *                     $ref: '#/components/schemas/VocabularyItem'
  */
-router.post('/start', requireLevel(req => (req.body?.mode ? `mode:${req.body.mode}` : null)), startSession);
+// Hai chốt ĐỘC LẬP: Level (cày thêm là mở) và khung giờ (chỉ chờ mới mở).
+// Đặt cạnh nhau ở đây thay vì lồng nhau để mỗi cái trả đúng lời nhắc của nó.
+router.post(
+    '/start',
+    requireLevel(req => (req.body?.mode ? `mode:${req.body.mode}` : null)),
+    requireInSchedule(req => req.body?.mode || null),
+    startSession,
+);
 
 /**
  * @swagger

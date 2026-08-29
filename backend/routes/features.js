@@ -4,6 +4,8 @@ const FeatureUnlock = require('../models/FeatureUnlock');
 const UserProfile = require('../models/UserProfile');
 const { protect } = require('../middleware/auth');
 const { lockingEnabled } = require('../services/featureUnlock');
+const ModeSchedule = require('../models/ModeSchedule');
+const { dangMo, moTa } = require('../services/modeSchedule');
 
 /**
  * GET /api/features/unlocks — mốc mở khoá + level hiện tại của user.
@@ -36,6 +38,41 @@ router.get('/unlocks', protect, async (req, res, next) => {
                 bypass,
                 lockingEnabled: true,
                 unlocks: list.map(u => ({ ...u, unlocked: bypass || level >= u.requiredLevel })),
+            },
+        });
+    } catch (err) { next(err); }
+});
+
+/**
+ * GET /api/features/schedules — khung giờ của từng chế độ.
+ *
+ * Trả CẢ trạng thái `dangMo` tính ở server, không để client tự tính: client
+ * dùng giờ máy, mà máy người dùng có thể lệch múi giờ hoặc đơn giản là sai giờ.
+ * Hai bên tính khác nhau thì giao diện báo "đang mở" còn `/practice/start` từ
+ * chối — người dùng không hiểu chuyện gì.
+ *
+ * Kèm `moTa` để client khỏi chép lại luật dựng chuỗi "T2–T6 · 18:00–22:00".
+ */
+router.get('/schedules', protect, async (req, res, next) => {
+    try {
+        const list = await ModeSchedule.find({ isActive: true })
+            .select('mode label days start end').lean();
+
+        const bypass = req.user?.bypassFeatureLock === true;
+
+        res.json({
+            success: true,
+            data: {
+                bypass,
+                schedules: list.map(l => ({
+                    mode: l.mode,
+                    days: l.days || [],
+                    start: l.start,
+                    end: l.end,
+                    moTa: moTa(l),
+                    // Ngoại lệ thì luôn mở — khớp với `requireInSchedule`.
+                    dangMo: bypass || dangMo(l),
+                })),
             },
         });
     } catch (err) { next(err); }

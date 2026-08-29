@@ -11,6 +11,9 @@ const Category = require('../models/Category');
 const ChannelConfig = require('../models/ChannelConfig');
 const GameConfig = require('../models/GameConfig');
 const FeatureUnlock = require('../models/FeatureUnlock');
+const ModeSchedule = require('../models/ModeSchedule');
+const { PRACTICE_COSTS } = require('../utils/energyCosts');
+const { dangMo: lichDangMo } = require('../services/modeSchedule');
 const User = require('../models/User');
 const UserProfile = require('../models/UserProfile');
 const { clearUnlockCache } = require('../services/featureUnlock');
@@ -593,6 +596,75 @@ router.delete('/feature-unlocks/:id', admin, async (req, res) => {
         if (!data) return res.status(404).json({ success: false, message: 'Not found' });
         clearUnlockCache();
         res.json({ success: true, message: 'Đã xóa mốc mở khoá' });
+    } catch (err) { res.status(400).json({ success: false, message: err.message }); }
+});
+
+// ===== Khung giờ chạy của chế độ luyện tập (ModeSchedule) =====
+//
+// Không có POST/DELETE riêng: mỗi chế độ đúng MỘT bản ghi, khoá là `mode`. Dùng
+// upsert nên admin chỉnh ô nào cũng được mà không phải nghĩ xem bản ghi đã tồn
+// tại chưa — và không bao giờ đẻ ra hai lịch cho cùng một chế độ.
+router.get('/mode-schedules', admin, async (req, res) => {
+    try {
+        const data = await ModeSchedule.find().sort({ mode: 1 }).lean();
+
+        // Trả kèm DANH SÁCH CHẾ ĐỘ lấy từ `PRACTICE_COSTS` — nguồn duy nhất đã
+        // có sẵn. Để giao diện admin tự khai lại 17 id là chép tay: thêm chế độ
+        // mới thì bảng này thiếu một dòng, mà không có gì báo.
+        const modes = Object.keys(PRACTICE_COSTS).sort();
+
+        // `dangMo` tính ở SERVER: admin cần thấy ngay lịch mình vừa đặt có đang
+        // hiệu lực không, mà máy admin có thể khác múi giờ với người học.
+        res.json({
+            success: true,
+            data,
+            modes,
+            trangThai: Object.fromEntries(
+                modes.map(m => [m, lichDangMo(data.find(d => d.mode === m) || null)]),
+            ),
+        });
+    } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+});
+
+router.put('/mode-schedules/:mode', admin, async (req, res) => {
+    try {
+        const mode = String(req.params.mode || '').trim();
+        if (!mode) return res.status(400).json({ success: false, message: 'Thiếu mã chế độ' });
+
+        // Kẹp về khoảng hợp lệ ngay tại đây, không tin số client gửi lên.
+        //
+        // `start`/`end` vượt 1440 thì mọi phép so giờ đều lệch mà không có lỗi
+        // nào; `days` lạc ngoài 0–6 thì lịch im lặng không bao giờ khớp.
+        const soPhut = (v, macDinh) => {
+            const n = Number(v);
+            if (!Number.isFinite(n)) return macDinh;
+            return Math.min(1440, Math.max(0, Math.round(n)));
+        };
+        const fields = {
+            label: String(req.body.label || '').trim(),
+            days: Array.isArray(req.body.days)
+                ? [...new Set(req.body.days.map(Number).filter(d => Number.isInteger(d) && d >= 0 && d <= 6))]
+                : [],
+            start: soPhut(req.body.start, 0),
+            end: soPhut(req.body.end, 1440),
+            isActive: req.body.isActive !== false,
+            note: String(req.body.note || '').trim(),
+        };
+
+        const data = await ModeSchedule.findOneAndUpdate(
+            { mode },
+            { $set: fields, $setOnInsert: { mode } },
+            { new: true, upsert: true, runValidators: true },
+        );
+        res.json({ success: true, message: 'Đã lưu khung giờ', data });
+    } catch (err) { res.status(400).json({ success: false, message: err.message }); }
+});
+
+router.delete('/mode-schedules/:mode', admin, async (req, res) => {
+    try {
+        // Xoá = BỎ giới hạn (chế độ chạy mọi lúc), không phải chặn hẳn.
+        await ModeSchedule.deleteOne({ mode: String(req.params.mode || '').trim() });
+        res.json({ success: true, message: 'Đã bỏ khung giờ — chế độ chạy mọi lúc' });
     } catch (err) { res.status(400).json({ success: false, message: err.message }); }
 });
 

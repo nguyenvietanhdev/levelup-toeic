@@ -1,0 +1,35 @@
+          <!-- ===== KHUNG GIỜ CHẠY CHẾ ĐỘ TAB ===== -->
+          <div id="main-tab-mode-schedules" class="main-tab-content">
+            <div class="card">
+              <div class="card-header">
+                <h2><i class="fas fa-clock"></i> Khung giờ chạy chế độ</h2>
+                <div class="card-header-actions">
+                  <button class="btn btn-secondary btn-sm" id="btn-sched-reload"><i class="fas fa-rotate"></i> Tải lại</button>
+                </div>
+              </div>
+              <div style="padding:0 4px 12px;font-size:13px;color:var(--text-secondary)">
+                Đặt các <b>thứ</b> và <b>khoảng giờ</b> mà mỗi chế độ được phép chạy.
+                Bỏ trống thứ = mọi ngày; để 00:00 → 24:00 = cả ngày.
+                <b>Tắt</b> một dòng = bỏ giới hạn (chế độ chạy mọi lúc).
+                Giờ tính theo <b>múi giờ Việt Nam</b>, và server chặn thật — không bypass được từ client.
+                <br>
+                Khung <b>vắt qua nửa đêm</b> hợp lệ: 22:00 → 02:00 nghĩa là từ 22 giờ tối
+                tới 2 giờ sáng hôm sau (thứ tính theo ngày khung <i>bắt đầu</i>).
+              </div>
+              <div class="table-container">
+                <table class="data-table">
+                  <thead><tr>
+                    <th style="width:190px">Chế độ</th>
+                    <th style="width:250px">Thứ được phép</th>
+                    <th style="width:190px">Khoảng giờ</th>
+                    <th style="width:130px">Đang mở?</th>
+                    <th style="width:80px">Bật</th>
+                    <th style="width:130px">Thao tác</th>
+                  </tr></thead>
+                  <tbody id="sched-tbody">
+                    <tr><td colspan="6" class="loading"><i class="fas fa-spinner fa-spin"></i> Đang tải...</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>

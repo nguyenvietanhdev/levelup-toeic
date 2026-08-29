@@ -13,6 +13,7 @@ import { Utils } from '@lib/utils.js';
 import { Config } from '@game/config.js';
 import { Notification } from '@ui/Toaster.jsx';
 import { loadUnlocks, lockInfo } from '@game/featureUnlocks.js';
+import { loadSchedules, scheduleInfo } from '@game/modeSchedules.js';
 import { Storage } from '@lib/storage.js';
 import { getVocabLang } from '@api/vocabulary.js';
 import CoachPanel from './CoachPanel.jsx';
@@ -293,6 +294,10 @@ export default function HomeScreen({ active }) {
     useEffect(() => {
         if (!active) return;
         loadUnlocks(true).then(() => setUnlockTick(t => t + 1));
+        // Khung giờ nạp lại CÙNG lúc: nó đổi theo đồng hồ chứ không theo hành
+        // động của người dùng, nên mở lại Trang chủ là dịp duy nhất chắc chắn
+        // có để cập nhật. Dùng chung `unlockTick` để vẽ lại một lần.
+        loadSchedules(true).then(() => setUnlockTick(t => t + 1));
     }, [active]);
 
     // Đọc lại chế độ gần nhất MỖI LẦN vào Trang chủ — người dùng vừa luyện xong
@@ -368,6 +373,23 @@ export default function HomeScreen({ active }) {
         }
         if (modeConfig?.weekendOnly && !isWeekend()) {
             Notification.show({ type: 'warning', title: '🔒 Chế độ cuối tuần', message: 'Chế độ này chỉ mở vào Thứ 7 & Chủ Nhật. Hãy quay lại vào cuối tuần!', duration: 3500 });
+            return;
+        }
+        // Khung giờ do admin đặt. Chặn ở đây chứ không chỉ làm mờ thẻ: `onClick`
+        // vẫn gắn trên thẻ bị mờ, nên bấm vào là vào tới bước trừ năng lượng rồi
+        // mới bị server từ chối — mất lượt mà không hiểu vì sao.
+        const gio = scheduleInfo(mode);
+        if (gio.locked) {
+            Notification.show({
+                type: 'warning',
+                title: '⏰ Ngoài khung giờ',
+                // Nói RÕ giờ mở, không chỉ "đang khoá": đây là khoá người dùng
+                // không làm gì được ngoài chờ, nên phải biết chờ tới bao giờ.
+                message: gio.moTa
+                    ? `Chế độ này chỉ mở ${gio.moTa}. Hãy quay lại vào khung giờ đó!`
+                    : 'Chế độ này đang ngoài khung giờ cho phép.',
+                duration: 4000,
+            });
             return;
         }
         if (!TopicSelector.getCurrentTopic()) {
@@ -642,17 +664,23 @@ export default function HomeScreen({ active }) {
                                 <i className={`fas ${group.icon}`}></i> {group.group}
                             </div>
                             {group.modes.map(m => {
-                                // 4 loại khoá: khách chưa login, theo LEVEL, theo cuối
-                                // tuần, và theo NGÔN NGỮ đang học.
+                                // 5 loại khoá: khách chưa login, theo LEVEL, theo cuối
+                                // tuần, theo NGÔN NGỮ đang học, và theo KHUNG GIỜ.
                                 const guestLocked = !isLoggedIn && !GUEST_FREE_MODES.has(m.mode);
                                 const lv = lockInfo(`mode:${m.mode}`);
                                 const levelLocked = lv.locked;
                                 const weekendLocked = m.weekendOnly && !isWeekend();
+                                // Khung giờ do admin đặt (tab "Khung giờ chạy
+                                // chế độ"). HIỆN nhưng khoá, giống mọi khoá
+                                // khác — ẩn đi thì người học tưởng chế độ biến
+                                // mất và không biết bao giờ nó quay lại.
+                                const schedLocked = scheduleInfo(m.mode).locked;
                                 // `zhOnly` cần bộ từ CÓ CHỮ HÁN. HIỆN nhưng khoá,
                                 // không ẩn: ẩn thì người học tiếng Anh không bao
                                 // giờ biết app có chế độ này.
                                 const langLocked = m.zhOnly && !coChuHan(getVocabLang());
-                                const locked = guestLocked || levelLocked || weekendLocked || langLocked;
+                                const locked = guestLocked || levelLocked || weekendLocked
+                                    || langLocked || schedLocked;
                                 return (
                                 <div
                                     key={m.mode}
@@ -707,6 +735,20 @@ export default function HomeScreen({ active }) {
                                         // Level phải cày mới tới.
                                         <div className="mode-level-badge" title="Chế độ này cần bộ từ vựng tiếng Trung">
                                             <i className="fas fa-language"></i> Cần học <b>tiếng Trung</b>
+                                        </div>
+                                    ) : schedLocked ? (
+                                        // Ghi thẳng KHUNG GIỜ lên thẻ. Đây là khoá
+                                        // người dùng không làm gì được ngoài chờ, nên
+                                        // thứ duy nhất đáng hiện là "chờ tới bao giờ" —
+                                        // "bị khoá" không nói được gì.
+                                        <div className="mode-level-badge"
+                                             title={scheduleInfo(m.mode).moTa
+                                                 ? `Chế độ này chỉ mở ${scheduleInfo(m.mode).moTa}`
+                                                 : 'Chế độ này đang ngoài khung giờ cho phép'}>
+                                            <i className="fas fa-clock"></i>{' '}
+                                            {scheduleInfo(m.mode).moTa
+                                                ? <>Mở <b>{scheduleInfo(m.mode).moTa}</b></>
+                                                : <b>Ngoài khung giờ</b>}
                                         </div>
                                     ) : (
                                         /* Hai DÒNG riêng, không gộp một hàng: "N từ cần
