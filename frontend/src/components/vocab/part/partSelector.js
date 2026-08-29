@@ -18,6 +18,17 @@ export const PartSelector = {
     retryWords: null,
     pendingMode: null,
 
+    /**
+     * Con trỏ lô dùng CHUNG cho các chế độ có "Học tiếp".
+     *
+     * Flashcard tự giữ `batchOffset` riêng vì nó gọi `loadWords` thẳng. Sáu chế
+     * độ còn lại đi qua `PracticeManager.start()` và mỗi cái có
+     * `generateQuestions` riêng — sửa từng file là sáu chỗ phải nhớ đồng bộ.
+     * Để con trỏ ở đây thì chỉ một chỗ giữ, và `getWordsForPractice` tự dùng
+     * khi caller không truyền offset.
+     */
+    conTroLo: 0,
+
     async init() {
         await this.loadParts();
         this.updateSessionBadge();
@@ -423,6 +434,9 @@ export const PartSelector = {
     async selectPart(part) {
         this.selectedPart = part;
         GameState.state.settings.selectedPart = part;
+        // Người dùng TỰ chọn part → bắt đầu lại từ đầu part đó. Giữ con trỏ cũ
+        // là part mới bị bỏ qua mất mấy chục từ đầu mà không có gì báo.
+        this.conTroLo = 0;
         await Storage.set('selectedPart', part);
 
         const partWords = GameLogic.getWordsByPart(part) || [];
@@ -466,6 +480,7 @@ export const PartSelector = {
 
     async clearPart() {
         this.selectedPart = null;
+        this.conTroLo = 0;
         await Storage.remove('selectedPart');
         this.updatePartBadge();
         Notification.info('Đã xóa Part — Quay về chế độ ngẫu nhiên');
@@ -473,6 +488,7 @@ export const PartSelector = {
 
     clearSelection() {
         this.selectedPart = null;
+        this.conTroLo = 0;
         this.updatePartBadge();
         Storage.remove('selectedPart');
     },
@@ -481,7 +497,11 @@ export const PartSelector = {
         await this.loadParts();
     },
 
-    async getWordsForPractice(requestedCount, offset = 0) {
+    async getWordsForPractice(requestedCount, offset = null) {
+        // `null` = caller không quan tâm tới lô → dùng con trỏ chung. Flashcard
+        // truyền số thật (kể cả 0) vì nó tự quản con trỏ riêng.
+        if (offset === null) offset = this.conTroLo;
+
         if (this.retryWords?.length > 0) {
             const words = [...this.retryWords];
             this.retryWords = null;
@@ -560,6 +580,7 @@ export const PartSelector = {
 
         const ke = ds[i + 1];
         this.selectedPart = ke;
+        this.conTroLo = 0;   // part mới bắt đầu từ đầu
         GameState.state.settings.selectedPart = ke;
         await Storage.set('selectedPart', ke);
         await GameState.save();

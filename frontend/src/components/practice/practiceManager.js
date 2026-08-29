@@ -44,6 +44,32 @@ const MIN_WORDS_BY_MODE = {
     'matching': 3,
 };
 
+/**
+ * Các chế độ được phép "Học tiếp" — những chế độ KHÔNG cần 4 đáp án.
+ *
+ * Chính là những chế độ không khai `optionsCount` trong `Config.modes`: chúng
+ * hiện một từ (hoặc một câu) mỗi lượt, không phải dựng thêm đáp án nhiễu từ
+ * chính bộ đang luyện. Lô kế tiếp có ít từ cũng không sao.
+ *
+ * `speed-quiz` vẫn nằm trong danh sách: nó chỉ cần MỘT từ khác làm đáp án sai
+ * (đúng/sai), không phải bốn lựa chọn.
+ *
+ * Chế độ trắc nghiệm bị loại vì lô kế có thể còn quá ít từ để dựng đủ một đúng
+ * + ba nhiễu — bấm xong là hàng đáp án thiếu ô.
+ */
+const MODE_HOC_TIEP = new Set([
+    'flashcard',        // lật thẻ (tự quản con trỏ riêng, xem flashcard.js)
+    'fill-blank',       // gõ từ vào chỗ trống
+    'dictation',        // nghe rồi gõ lại
+    'pronunciation',    // đọc theo, chấm bằng micro
+    'hanzi-writing',    // tập viết chữ Hán
+    'sentence-builder', // xếp lại câu ví dụ của chính từ đó
+    'speed-quiz',       // đúng/sai, chỉ cần một từ khác
+]);
+
+/** Độ thuộc (%) tối thiểu để mở nút "Học tiếp". */
+const NGUONG_HOC_TIEP = 80;
+
 /** Ngưỡng tối thiểu của một chế độ. Mặc định 4 (các chế độ trắc nghiệm). */
 function minWordsFor(mode) {
     return MIN_WORDS_BY_MODE[mode] ?? 4;
@@ -749,13 +775,96 @@ export const PracticeManager = {
     },
 
     async complete() {
+        // Đọc TRƯỚC `finalizeSession()`: nó dọn session, sau đó không còn số
+        // đúng/sai để tính độ chính xác nữa.
+        const mode = this.currentSession?.mode;
+        const dung = this.currentSession?.correctAnswers || 0;
+        const sai = this.currentSession?.wrongAnswers || 0;
+
         const results = await this.finalizeSession();
         if (!results) return;
-        const { scoreData, xpReward, coinsReward, gemsBonus, isPerfect, totalQuestions } = results;
+        const { scoreData, xpReward, coinsReward, gemsBonus, isPerfect } = results;
 
-        this.showResults(scoreData, xpReward, coinsReward, isPerfect, gemsBonus, totalQuestions);
+        // Tham số thứ 6 là `opts`. Bản cũ truyền `totalQuestions` (một SỐ) vào
+        // đây — destructuring một số ra toàn `undefined` nên mọi mặc định vẫn
+        // áp dụng, lỗi im lặng mà vô hại. Giờ truyền đúng object.
+        this.showResults(scoreData, xpReward, coinsReward, isPerfect, gemsBonus, {
+            extraButtonsRight: this.nutHocTiep(mode, dung, sai),
+        });
 
         EventBus.emit(GameEvents.PRACTICE_COMPLETED, this.currentSession);
+    },
+
+    /**
+     * Nút "Học tiếp" cho các chế độ KHÔNG cần 4 đáp án.
+     *
+     * Chế độ trắc nghiệm bị loại vì lô kế tiếp có thể còn quá ít từ để dựng đủ
+     * một đúng + ba nhiễu — bấm xong là màn hình thiếu ô đáp án.
+     *
+     * Chỉ mở khi đạt `NGUONG_HOC_TIEP`: học tiếp với tỉ lệ đúng thấp là bỏ lại
+     * phần chưa thuộc rồi chồng thêm từ mới lên trên.
+     *
+     * @returns {Array} mảng nút cho `extraButtonsRight` — rỗng nghĩa là không hiện.
+     */
+    nutHocTiep(mode, dung, sai) {
+        if (!mode || !MODE_HOC_TIEP.has(mode)) return [];
+
+        const tong = dung + sai;
+        // Lượt rỗng thì không có gì để đánh giá — không mở, tránh bấm nhầm
+        // thành nhảy lô mà chưa học gì.
+        if (tong === 0) return [];
+        if ((dung / tong) * 100 < NGUONG_HOC_TIEP) return [];
+
+        return [{
+            text: 'Học tiếp',
+            className: 'btn-secondary',
+            onClick: async () => {
+                Modal.close();
+                await this.hocLoKeTiep(mode);
+            },
+        }];
+    },
+
+    /**
+     * Đẩy con trỏ sang lô kế rồi chạy lại chế độ đó.
+     *
+     * Hết part hiện tại thì tự sang part kế (giống Flashcard) — `sangPartKe`
+     * trả `null` ở chế độ "Ngẫu nhiên tất cả" và ở part cuối, lúc đó giữ nguyên
+     * con trỏ và để `start()` xử lý như thường.
+     */
+    async hocLoKeTiep(mode) {
+        const truoc = PartSelector.conTroLo;
+        PartSelector.conTroLo += this._soTuLoVua(mode);
+
+        // Hết part → sang part kế và bắt đầu lại từ đầu part mới.
+        const con = await PartSelector.getWordsForPractice(1, PartSelector.conTroLo);
+        if (!con || con.length === 0) {
+            const partMoi = await PartSelector.sangPartKe();
+            if (partMoi) {
+                PartSelector.conTroLo = 0;
+                Notification.show({
+                    type: 'info',
+                    message: `Đã học hết phần trước — chuyển sang ${partMoi}.`,
+                });
+            } else {
+                // Part cuối / ngẫu nhiên tất cả: trả con trỏ về chỗ cũ để lần
+                // sau không nhảy hụt qua phần chưa học.
+                PartSelector.conTroLo = truoc;
+            }
+        }
+
+        this.cleanupCurrentMode();
+        this.cleanupKeyboardShortcuts();
+        this.currentSession = null;
+        this.start(mode);
+    },
+
+    /** Số từ của lô vừa học — để biết đẩy con trỏ đi bao xa. */
+    _soTuLoVua(mode) {
+        const cfg = Config.modes?.[mode] || {};
+        const qps = GameState.state?.settings?.questionsPerSession;
+        if (typeof qps === 'number' && qps > 0) return qps;
+        return cfg.questionsPerRound || 10;
     },
 
     // Nạp xếp hạng "top ..% server" cho chế độ vừa chơi rồi chèn vào popup.
