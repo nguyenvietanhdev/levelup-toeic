@@ -95,6 +95,73 @@ describe('generateQuestions — một câu là trọn một từ', () => {
     test('nguồn từ hỏng trả mảng rỗng, không ném lỗi', async () => {
         expect(await gen(null)).toEqual([]);
     });
+
+    /**
+     * Kho SONG NGỮ (Trung–Anh) phải viết chữ Hán được như kho `zh`.
+     *
+     * Bản ghi song ngữ KHÔNG có key `zh` sau khi qua mapper — chữ Hán nằm ở
+     * `matZh.tu`, còn `en` đổi theo `hienThi` của từng bản ghi. Đọc mỗi
+     * `w.zh || w.word` thì mọi từ đều bị `chars.length === 0` bỏ qua và lượt
+     * luyện kết thúc ngay lúc bắt đầu — IM LẶNG, không lỗi nào báo.
+     */
+    describe('kho song ngữ Trung–Anh', () => {
+        /** Bản ghi như mapper backend trả về (hienThi mặc định 'zh'). */
+        const banGhiBi = {
+            en: '你好',                       // mặt đang học
+            vn: 'hello',                     // mặt kia — kho này không có tiếng Việt
+            phonetic: 'nǐ hǎo',
+            songNgu: true,
+            matZh: { tu: '你好', phonetic: 'nǐ hǎo' },
+            matEn: { tu: 'hello', phonetic: '/həˈloʊ/' },
+        };
+
+        test('sinh được câu hỏi từ `matZh.tu`', async () => {
+            const qs = await gen([banGhiBi]);
+            expect(qs).toHaveLength(1);
+            expect(qs[0].word).toBe('你好');
+            expect(qs[0].chars).toEqual(['你', '好']);
+        });
+
+        test('chiều ĐẢO (`hienThi: "en"`) vẫn ra chữ Hán', async () => {
+            // Đây là ca `w.en` KHÔNG phải chữ Hán — `matZh` mới cứu được.
+            const qs = await gen([{
+                ...banGhiBi,
+                en: 'hello',              // mặt đang học là tiếng Anh
+                vn: '你好',
+            }]);
+            expect(qs).toHaveLength(1);
+            expect(qs[0].word).toBe('你好');
+        });
+
+        test('pinyin lấy theo MẶT CHỮ HÁN, không theo chiều học', async () => {
+            // Đang viết 你好 mà hiện /həˈloʊ/ là chỉ dẫn sai hẳn.
+            const qs = await gen([{ ...banGhiBi, en: 'hello', phonetic: '/həˈloʊ/' }]);
+            expect(qs[0].pinyin).toBe('nǐ hǎo');
+        });
+
+        test('nghĩa lấy mặt tiếng Anh — kho này không có tiếng Việt', async () => {
+            const qs = await gen([banGhiBi]);
+            expect(qs[0].meaning).toBe('hello');
+        });
+
+        test('chiều ĐẢO: nghĩa vẫn là tiếng Anh, KHÔNG phải chữ Hán', async () => {
+            // Ca duy nhất phân biệt được `matEn.tu` với `vn`.
+            //
+            // Mapper đặt MẶT KIA vào ô `vn`, nên khi `hienThi: 'en'` thì
+            // `vn` chính là chữ Hán. Đọc `vn` là hiện 你好 làm "nghĩa" của
+            // 你好 — vô dụng, mà nhìn màn hình không thấy sai ở đâu.
+            const qs = await gen([{ ...banGhiBi, en: 'hello', vn: '你好' }]);
+            expect(qs[0].word).toBe('你好');
+            expect(qs[0].meaning).toBe('hello');
+        });
+
+        test('kho `zh` cũ KHÔNG bị ảnh hưởng', async () => {
+            const qs = await gen([{ zh: '谢谢', phonetic: 'xièxie', vn: 'Cảm ơn' }]);
+            expect(qs[0].word).toBe('谢谢');
+            expect(qs[0].pinyin).toBe('xièxie');
+            expect(qs[0].meaning).toBe('Cảm ơn');
+        });
+    });
 });
 
 /**

@@ -133,3 +133,61 @@ describe('phiên âm và nghĩa khớp MẶT chữ Hán', () => {
         expect(hanzi).toMatch(/w\.songNgu \? \(w\.matEn\?\.tu \|\| w\.vn \|\| ''\)/);
     });
 });
+
+describe('"Ôn từ sai": kiểu Viết chữ Hán cũng nhận kho song ngữ', () => {
+    const reviewSrc = readFileSync(
+        join(__dirname, 'modes', 'reviewMistakes.js'), 'utf8');
+
+    /** `locTheoTu` + phụ thuộc, dựng từ chính mã nguồn rồi gọi thật. */
+    const M = (() => {
+        const i = reviewSrc.indexOf('const KIEU_HOI');
+        const j = reviewSrc.indexOf('export const ReviewMistakes');
+        // Không có Web Speech API trong jsdom → `speak` tự bị lọc, không sao.
+        return new Function('GameState', 'window',
+            `${reviewSrc.slice(i, j)}; return { locTheoTu, chuHanCuaTu, KIEU_HOI };`
+        )({ state: { settings: {} } }, typeof window !== 'undefined' ? window : {});
+    })();
+
+    const duoc = (w) => M.locTheoTu([...M.KIEU_HOI], w);
+
+    test('chiều thường: chữ Hán ở `en` → viết được', () => {
+        expect(duoc({ en: '你好', vn: 'hello' })).toContain('hanzi');
+    });
+
+    test('chiều ĐẢO: chữ Hán ở `vn` → VẪN viết được', () => {
+        // Bản ghi `hienThi: "en"` để mặt tiếng Anh ở `en` và chữ Hán ở `vn`.
+        // Soi mỗi `en` là kiểu này bị lọc bỏ, dù bản ghi có chữ Hán hẳn hoi.
+        expect(duoc({ en: 'hello', vn: '你好' })).toContain('hanzi');
+    });
+
+    test('từ Latin thuần KHÔNG rơi vào viết chữ Hán', () => {
+        // Bắt viết "due" thì không có nét nào để tô.
+        expect(duoc({ en: 'due', vn: 'đến hạn' })).not.toContain('hanzi');
+    });
+
+    test('chiều ĐẢO vẫn xếp được chữ cái — không đánh đổi', () => {
+        // Hồi quy dễ mắc: gộp "bản ghi có chữ Hán" với "mặt đang hiện là chữ
+        // Hán" vào một biến thì `hello` mất luôn kiểu Xếp chữ cái.
+        expect(duoc({ en: 'hello', vn: '你好' })).toContain('scramble');
+    });
+
+    test('mặt hiện là chữ Hán thì KHÔNG xếp chữ cái', () => {
+        // Chữ Hán không tách được thành chữ cái.
+        expect(duoc({ en: '你好世界', vn: 'hello world' })).not.toContain('scramble');
+    });
+
+    test('`chuHanCuaTu` lấy chữ ở mặt nào cũng được', () => {
+        expect(M.chuHanCuaTu({ en: '你好', vn: 'hello' })).toBe('你');
+        expect(M.chuHanCuaTu({ en: 'hello', vn: '你好' })).toBe('你');
+        expect(M.chuHanCuaTu({ en: 'due', vn: 'đến hạn' })).toBe('');
+        expect(M.chuHanCuaTu(null)).toBe('');
+    });
+
+    test('câu hỏi lấy chữ qua `chuHanCuaTu`, không phải `word.en` trần', () => {
+        const i = reviewSrc.indexOf("if (kieu === 'hanzi')");
+        expect(i).toBeGreaterThan(-1);
+        const than = reviewSrc.slice(i, i + 400);
+        expect(than).toMatch(/chuCanViet: chuHanCuaTu\(word\)/);
+        expect(than).not.toMatch(/chuCanViet: chuHanDau\(word\.en\)/);
+    });
+});

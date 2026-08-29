@@ -54,6 +54,21 @@ function chuHanDau(text) {
     return m ? m[0] : '';
 }
 
+/**
+ * Chữ Hán của một từ, xét CẢ HAI mặt.
+ *
+ * Kho song ngữ để mặt đang học ở `en` và MẶT KIA ở `vn`, theo `hienThi` của
+ * từng bản ghi. Bản ghi `hienThi: 'en'` thì `en` là từ tiếng Anh còn chữ Hán
+ * nằm ở `vn` — soi mỗi `en` là kiểu "Viết chữ Hán" bị lọc bỏ, dù bản ghi có
+ * chữ Hán hẳn hoi.
+ *
+ * Không đọc `matZh` được ở đây: từ sai lấy từ bảng `user_wrongwords`, mà bản
+ * ghi đó chỉ lưu `en`/`vn`/`lang` — không có trường nào của kho song ngữ.
+ */
+function chuHanCuaTu(word) {
+    return chuHanDau(word?.en) || chuHanDau(word?.vn);
+}
+
 /** Nhãn hiện trên thẻ trạng thái, cho biết câu này đang hỏi kiểu gì. */
 const NHAN_KIEU = {
     flashcard: 'Lật thẻ',
@@ -126,7 +141,13 @@ function kieuDuocPhep() {
  */
 function locTheoTu(choPhep, word) {
     const mat = String(word?.en || '');
-    const coChuHan = !!chuHanDau(mat);
+    // HAI khái niệm khác nhau, đừng gộp:
+    //   `vietDuoc` — bản ghi CÓ chữ Hán ở đâu đó (mặt nào cũng được) → tô nét được;
+    //   `matLaHan` — MẶT ĐANG HIỆN là chữ Hán → không xé thành chữ cái được.
+    // Dùng chung một biến thì bản ghi song ngữ đảo chiều (`en: 'hello'`,
+    // `vn: '你好'`) mất luôn kiểu Xếp chữ cái, dù `hello` xếp được bình thường.
+    const vietDuoc = !!chuHanCuaTu(word);
+    const matLaHan = !!chuHanDau(mat);
     // Web Speech API chỉ có ở Chrome/Edge. Chế độ Phát âm riêng thoát cả lượt
     // được, nhưng ở đây các kiểu ĐAN XEN — một câu nói giữa lượt trên Firefox
     // là kẹt cứng, không có nút nào đi tiếp.
@@ -134,10 +155,10 @@ function locTheoTu(choPhep, word) {
         && ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window);
     // Xếp chữ cái chỉ có nghĩa với từ Latin đủ dài: chữ Hán không tách được
     // thành chữ cái, mà từ 1–2 ký tự thì xáo lên vẫn đoán ra ngay.
-    const xepDuoc = !coChuHan && mat.replace(/\s/g, '').length >= 4;
+    const xepDuoc = !matLaHan && mat.replace(/\s/g, '').length >= 4;
 
     const loc = choPhep.filter((k) => {
-        if (k === 'hanzi') return coChuHan;
+        if (k === 'hanzi') return vietDuoc;
         if (k === 'scramble') return xepDuoc;
         if (k === 'speak') return noiDuoc;
         return true;
@@ -289,7 +310,7 @@ export const ReviewMistakes = {
             if (kieu === 'hanzi') {
                 // Không có bộ sinh sẵn cho kiểu này — nó chỉ cần chữ để tô, và
                 // nghĩa để người học biết đang viết chữ nào.
-                return { word, kieu, chuCanViet: chuHanDau(word.en), correctAnswer: word.vn };
+                return { word, kieu, chuCanViet: chuHanCuaTu(word), correctAnswer: word.vn };
             }
             if (kieu === 'fill') {
                 return { ...GameLogic.generateFillBlank(word), kieu };
