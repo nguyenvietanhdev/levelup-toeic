@@ -175,8 +175,11 @@ describe('chấm điểm và dọn mic', () => {
 
     test('dừng mic khi sang câu khác và khi rời chế độ', () => {
         // Bỏ chạy thì nó còn nghe sang câu sau, đèn mic trình duyệt vẫn sáng.
+        // Cắt tới hết THÂN HÀM thay vì đếm ký tự: cửa sổ cố định gãy ngay
+        // khi có gì đó chèn vào đầu hàm (vd khối chặn chấm hai lần).
         const iKt = src.indexOf('ketThucCau(dung, question, dapAn) {');
-        expect(src.slice(iKt, iKt + 500)).toMatch(/this\._dungNghe\(\)/);
+        expect(src.slice(iKt, src.indexOf('\n    },', iKt)))
+            .toMatch(/this\._dungNghe\(\)/);
 
         const iCl = src.indexOf('cleanup() {');
         expect(src.slice(iCl, iCl + 400)).toMatch(/this\._dungNghe\(\)/);

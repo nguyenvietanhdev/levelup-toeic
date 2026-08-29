@@ -359,8 +359,11 @@ describe('viết chữ Hán — dọn dẹp đúng chỗ', () => {
     test('huỷ ô vẽ trước khi sang câu kế', () => {
         // Thư viện giữ listener trên SVG; để lại thì mỗi câu chữ Hán cộng thêm
         // một bộ và nét tô của câu cũ vẫn ăn.
+        // Cắt tới hết THÂN HÀM thay vì đếm 300 ký tự: cửa sổ cố định gãy
+        // ngay khi có gì đó chèn vào đầu hàm (vd khối chặn chấm hai lần).
         const i = src.indexOf('ketThucCau(dung, question, dapAn) {');
-        expect(src.slice(i, i + 300)).toMatch(/this\.huyOVe\(\)/);
+        const than = src.slice(i, src.indexOf('\n    },', i));
+        expect(than).toMatch(/this\.huyOVe\(\)/);
     });
 
     test('huỷ cả khi rời chế độ', () => {

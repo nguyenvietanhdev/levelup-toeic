@@ -603,7 +603,31 @@ export const ReviewMistakes = {
         const trangThai = document.getElementById('rm-mic-status');
         const oNghe = document.getElementById('rm-heard');
 
-        document.getElementById('rm-speak-skip')?.addEventListener('click', () => {
+        const nutBoQua = document.getElementById('rm-speak-skip');
+
+        /**
+         * Câu này đã chấm xong chưa.
+         *
+         * Cờ đặt trên `this`, KHÔNG phải biến cục bộ trong `bat()`: mỗi lần bấm
+         * mic là một lần gọi `bat()` mới, nên biến cục bộ chỉ chặn được trùng
+         * trong CÙNG một lượt nghe — chấm xong bấm mic lần nữa là chấm lại từ
+         * đầu, ăn thêm một lần cộng/trừ điểm cho cùng một câu.
+         *
+         * Đặt lại ở đây (không phải chỉ khi chấm) vì mỗi câu gọi `ganPhatAm`
+         * một lần: câu mới phải bắt đầu với cờ sạch.
+         */
+        this._daChamNoi = false;
+
+        /** Khoá mọi điều khiển sau khi đã chấm — không cho làm lại. */
+        const khoaLai = () => {
+            this._daChamNoi = true;
+            if (nut) { nut.disabled = true; nut.classList.add('is-done'); }
+            if (nutBoQua) nutBoQua.disabled = true;
+        };
+
+        nutBoQua?.addEventListener('click', () => {
+            if (this._daChamNoi) return;
+            khoaLai();
             this._dungNghe();
             this.ketThucCau(false, question, tu);
         });
@@ -621,7 +645,8 @@ export const ReviewMistakes = {
         setTimeout(() => GameLogic.speakWord(tu), 300);
 
         const bat = () => {
-            if (this._rec) return;   // đang nghe rồi
+            if (this._rec) return;         // đang nghe rồi
+            if (this._daChamNoi) return;   // đã chấm — một câu chỉ chấm MỘT lần
 
             const rec = new SR();
             rec.lang = laZh ? 'zh-CN' : 'en-US';
@@ -629,7 +654,6 @@ export const ReviewMistakes = {
             rec.interimResults = true;
             rec.maxAlternatives = 5;
 
-            let daCham = false;
 
             rec.onstart = () => {
                 nut.classList.add('is-listening');
@@ -637,7 +661,7 @@ export const ReviewMistakes = {
             };
 
             rec.onresult = (e) => {
-                if (daCham) return;
+                if (this._daChamNoi) return;
                 const kq = e.results[e.resultIndex] ?? e.results[0];
                 if (!kq) return;
                 const chu = String(kq[0]?.transcript || '').trim();
@@ -649,7 +673,7 @@ export const ReviewMistakes = {
                     return;
                 }
 
-                daCham = true;
+                khoaLai();
                 if (oNghe) oNghe.textContent = chu;
                 const diem = scoreAttempt(chu, Array.from(kq), tu, laZh);
                 this._dungNghe();
@@ -663,7 +687,7 @@ export const ReviewMistakes = {
             rec.onend = () => {
                 this._rec = null;
                 nut.classList.remove('is-listening');
-                if (!daCham && trangThai) {
+                if (!this._daChamNoi && trangThai) {
                     trangThai.textContent = 'Chưa nghe thấy gì — bấm mic thử lại';
                 }
             };
@@ -671,7 +695,9 @@ export const ReviewMistakes = {
             rec.onerror = (e) => {
                 this._rec = null;
                 nut.classList.remove('is-listening');
-                if (!trangThai) return;
+                // Đã chấm rồi thì giữ nguyên câu nhận xét — ghi đè bằng "chưa
+                // nghe thấy gì" là xoá mất kết quả người học vừa nhận được.
+                if (!trangThai || this._daChamNoi) return;
                 trangThai.textContent = e.error === 'not-allowed'
                     ? 'Chưa cho phép dùng micro'
                     : 'Chưa nghe thấy gì — bấm mic thử lại';
@@ -689,6 +715,17 @@ export const ReviewMistakes = {
         if (!this._rec) return;
         try { this._rec.abort(); } catch { /* đã dừng */ }
         this._rec = null;
+    },
+
+    /**
+     * Dọn cờ "đã chấm" khi rời câu.
+     *
+     * `ganPhatAm` đặt lại cờ mỗi lần dựng câu NÓI, nhưng câu kế có thể là kiểu
+     * khác — cờ bật còn treo lại thì không sao (không ai đọc), song để sạch cho
+     * lần sau quay lại kiểu nói vẫn hơn.
+     */
+    _donCoNoi() {
+        this._daChamNoi = false;
     },
 
     /**
@@ -905,12 +942,36 @@ export const ReviewMistakes = {
      * sửa luật tính điểm chỉ phải sửa một nơi.
      */
     ketThucCau(dung, question, dapAn) {
+        // MỘT CÂU CHỈ CHẤM MỘT LẦN.
+        //
+        // Chặn ở đây chứ không ở từng kiểu: đây là điểm chung DUY NHẤT mà tám
+        // kiểu đều đi qua, nên một chỗ là đủ cho cả tám — và cho mọi kiểu thêm
+        // về sau. Vá từng kiểu thì lần nào cũng phải nhớ, mà đã có kiểu quên:
+        //
+        //   · `speak`  — chấm xong bấm mic lần nữa là chấm lại từ đầu;
+        //   · `hanzi`  — ba đường vào (tô xong / xem mẫu rồi tô / "Bỏ qua chữ
+        //                này") không chặn nhau, bấm Bỏ qua rồi tô nốt là hai lần;
+        //   · `flashcard` — nút bị vô hiệu hoá SAU khi chấm, hai cú bấm thật
+        //                nhanh vẫn lọt cả hai.
+        //
+        // Chấm hai lần không chỉ sai điểm: `recordAnswer` đẩy `masteryLevel`
+        // của từ đi hai bậc, nên từ vừa ôn bị coi là thuộc hơn thực tế và lịch
+        // ôn giãn ra sai.
+        //
+        // Cờ đặt trên CHÍNH câu hỏi, không phải trên `this`: đối tượng câu hỏi
+        // sống đúng bằng một câu nên không phải nhớ dọn ở đâu cả.
+        if (question?._daCham) return;
+        if (question) question._daCham = true;
+
         // Huỷ ô vẽ trước khi sang câu kế: thư viện giữ listener trên SVG, để lại
         // thì mỗi câu chữ Hán cộng thêm một bộ và nét tô của câu cũ vẫn ăn.
         this.huyOVe();
         // Cùng lý do với mic: bỏ chạy thì nó còn nghe sang câu sau và đèn mic
         // của trình duyệt vẫn sáng.
         this._dungNghe();
+        // KHÔNG dọn `_daChamNoi` ở đây: hàm này chạy NGAY KHI chấm xong, dọn
+        // lúc này là mở lại đường chấm lần hai — đúng thứ vừa chặn. Cờ được đặt
+        // lại ở đầu `ganPhatAm` cho câu kế, và ở `cleanup` khi rời chế độ.
 
         PracticeManager.recordAnswer(dung, question.word);
 
@@ -1053,6 +1114,7 @@ export const ReviewMistakes = {
         // Rời chế độ giữa lúc đang tô nét thì thư viện còn giữ listener trên SVG.
         this.huyOVe();
         this._dungNghe();
+        this._donCoNoi();
         this.questions = [];
         this.currentIndex = 0;
         this.selectedAnswer = null;
