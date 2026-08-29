@@ -574,16 +574,28 @@ Chỉ trả về JSON array, không giải thích thêm.`;
   {
     "zh": "汉字",
     "vn": "nghĩa tiếng việt",
-    "phonetic": "pīnyīn",
+    "phonetic": "pīnyīn có dấu thanh",
     "part": "${partVal || 'HSK1'}",
     "type": "名词",
-    "level": "A1",
-    "synonyms": "từ đồng nghĩa 1, từ đồng nghĩa 2",
+    "level": "HSK1",
+    "synonyms": "同义词1, 同义词2",
     "image": "images/pages/hsk1/tu.jpg",
     "example": "Câu ví dụ bằng tiếng Trung.",
     "source": "${sourceVal || 'hsk1'}"
   }
 ]
+Quy tắc:
+- "zh" → chữ Hán giản thể, giữ nguyên, KHÔNG phiên âm sang chữ Latin
+- "phonetic" → pinyin CÓ DẤU THANH (nǐ hǎo), KHÔNG phải IPA
+- "level" → BẮT BUỘC khung HSK, KHÔNG dùng A1/B2/C1. Chỉ nhận đúng 7 giá trị:
+  HSK1, HSK2, HSK3, HSK4, HSK5, HSK6, HSK7-9 — bậc 7·8·9 gộp thành MỘT giá trị
+  "HSK7-9", KHÔNG tách thành HSK7/HSK8/HSK9.
+  Quy đổi nếu chỉ biết khung châu Âu: A1→HSK1, A2→HSK2, B1→HSK3, B2→HSK4,
+  C1→HSK5 hoặc HSK6, C2→HSK7-9
+- "synonyms" → BẰNG CHỮ HÁN (vd: 否, 不是), KHÔNG dùng pinyin hay tiếng Việt.
+  Không có thì để ""
+- "type" → BẰNG CHỮ HÁN (名词, 动词, 形容词…), KHÔNG dùng noun/verb.
+  Từ mang nhiều loại thì nối bằng "/" không khoảng trắng: 名词/动词
 Chỉ trả về JSON array, không giải thích thêm.`;
       } else {
         const hint = wordVal ? `Word: "${wordVal}". ` : "";
