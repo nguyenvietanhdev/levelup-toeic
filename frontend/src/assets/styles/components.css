@@ -10661,6 +10661,30 @@ mark {
     display: block;
 }
 
+/* Thanh "Đang bật n/8" + nút chọn/bỏ tất cả, nằm trên danh sách ô tick. */
+.review-kinds-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 10px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.review-kinds-count {
+    font-size: 13px;
+    color: var(--text-secondary);
+}
+
+/* Nút nhỏ hơn nút thường: đây là thao tác phụ, không nên to ngang nút lưu. */
+.review-kinds-bar .btn-sm {
+    padding: 5px 12px;
+    font-size: 13px;
+    flex: 0 0 auto;
+}
+
 .review-kinds {
     display: flex;
     flex-direction: column;

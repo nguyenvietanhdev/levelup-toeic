@@ -40,6 +40,23 @@ export default function ReviewPanel({ s, updateSetting }) {
         updateSetting('reviewKinds', sau);
     };
 
+    const dangBatHet = kindsChon.length === REVIEW_KINDS.length;
+
+    /**
+     * Tick / bỏ tick tất cả.
+     *
+     * "Bỏ tất cả" lưu mảng RỖNG chứ không phải danh sách rỗng có ý nghĩa khác:
+     * `kieuDuocPhep()` hiểu rỗng là "không giới hạn", nên về mặt luyện tập nó
+     * giống hệt "chọn tất cả". Đó là chủ ý — một lượt không có câu nào thì
+     * không dùng được.
+     *
+     * Vẫn để hai chiều vì trạng thái Ô TICK khác nhau: bỏ hết rồi tick lại đúng
+     * vài kiểu mình muốn thì nhanh hơn là bỏ từng ô một.
+     */
+    const toggleAll = () => {
+        updateSetting('reviewKinds', dangBatHet ? [] : REVIEW_KINDS.map(k => k.key));
+    };
+
     return (
         <>
             {/* Chế độ này trộn nhiều kiểu trong CÙNG một lượt — câu này lật thẻ,
@@ -49,6 +66,21 @@ export default function ReviewPanel({ s, updateSetting }) {
                 <div className="setting-info">
                     <h4>Kiểu hỏi khi ôn từ sai</h4>
                     <p>Mỗi câu một kiểu, đan xen trong cùng một lượt. Bỏ tick để tắt kiểu không muốn gặp — bỏ hết = dùng tất cả.</p>
+                </div>
+                <div className="review-kinds-bar">
+                    {/* Đếm để người dùng thấy ngay đang bật mấy kiểu mà không
+                        phải rà từng ô — tám ô thì rà cũng mất công. */}
+                    <span className="review-kinds-count">
+                        Đang bật {kindsChon.length}/{REVIEW_KINDS.length}
+                    </span>
+                    <button
+                        type="button"
+                        className="btn btn-secondary btn-sm"
+                        onClick={toggleAll}
+                    >
+                        <i className={`fas fa-${dangBatHet ? 'square' : 'square-check'}`}></i>
+                        {' '}{dangBatHet ? 'Bỏ chọn tất cả' : 'Chọn tất cả'}
+                    </button>
                 </div>
                 <div className="review-kinds">
                     {REVIEW_KINDS.map(k => {
