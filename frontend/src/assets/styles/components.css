@@ -5002,7 +5002,14 @@ mark {
 /* Flashcard */
 .flashcard {
   width: 100%;
-  height: 300px;
+  /* `min-height` thay `height` cố định.
+     300px đủ cho thẻ cũ (từ + nghĩa + ví dụ), nhưng thẻ SONG NGỮ có thêm phiên
+     âm và đồng nghĩa của riêng mặt đó — nội dung vượt khung và bị cắt cụt, vì
+     hai mặt là `position: absolute` nên không đẩy được chiều cao lên.
+     `max-height` chặn ở 78% khung nhìn để thẻ dài không đẩy hai nút "Biết /
+     Chưa biết" xuống dưới mép. */
+  min-height: 300px;
+  max-height: 78vh;
   perspective: 1000px;
   cursor: pointer;
 }
@@ -5010,7 +5017,10 @@ mark {
 .flashcard-inner {
   position: relative;
   width: 100%;
+  /* Cao BẰNG mặt cao nhất, không phải 100% của khung cố định — nếu không thì
+     `min-height` ở trên vô nghĩa. */
   height: 100%;
+  min-height: inherit;
   transition: transform 0.6s;
   transform-style: preserve-3d;
 }
@@ -5032,8 +5042,21 @@ mark {
   justify-content: center;
   align-items: center;
   box-shadow: var(--shadow-xl);
-  overflow-y: auto; /* 👈 bật cuộn dọc */
+  overflow-y: auto;
   overflow-x: hidden;
+  /* `center` dồn nội dung ra giữa, nên khi nội dung CAO HƠN khung thì phần trên
+     bị đẩy lên khỏi vùng cuộn và không kéo lại được — đúng thứ trong ảnh (chữ
+     ở trên bị khuất). `flex-start` giữ nó bám mép trên rồi cuộn bình thường. */
+  justify-content: flex-start;
+  gap: var(--spacing-sm);
+}
+
+/* Nội dung NGẮN thì vẫn căn giữa cho cân — chỉ bỏ căn giữa khi tràn.
+   `:has()` được mọi trình duyệt hiện hành hỗ trợ; trình cũ không hiểu thì rơi
+   về `flex-start` ở trên, tức là vẫn đọc được, chỉ kém cân. */
+.flashcard-front:not(:has(.card-example)):not(:has(.card-synonyms)),
+.flashcard-back:not(:has(.card-example)):not(:has(.card-synonyms)) {
+  justify-content: center;
 }
 
 .flashcard-front {
@@ -5053,6 +5076,27 @@ mark {
   );
   color: white;
   transform: rotateY(180deg);
+}
+
+/* Cụm điều khiển ở GÓC: nút tim + badge ngôn ngữ.
+   Cả hai đều là điều khiển phụ, gom vào một chỗ thì thân thẻ dành trọn cho nội
+   dung — trước đây nút tim nằm giữa thân, chiếm nguyên một hàng. */
+.card-corner-group {
+  position: absolute;
+  top: var(--spacing-md);
+  right: var(--spacing-md);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  /* Trên lớp nội dung để bấm được khi thẻ dài và có cuộn. */
+  z-index: 2;
+}
+
+/* Trong cụm thì badge thôi vị trí tuyệt đối — cụm đã lo chỗ đứng. */
+.card-corner-group .card-corner-badge {
+  position: static;
+  top: auto;
+  right: auto;
 }
 
 .card-corner-badge {
@@ -5140,7 +5184,9 @@ mark {
 .card-meaning {
   font-size: 2rem;
   font-weight: bold;
-  margin-bottom: var(--spacing-md);
+  /* `md` (16px) là khoảng cách của một khối đứng riêng; ở đây ngay dưới là
+     hàng phiên âm cùng thuộc về từ đó, nên `sm` đủ. */
+  margin-bottom: var(--spacing-sm);
   text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
@@ -5148,6 +5194,23 @@ mark {
   font-size: 1.25rem;
   opacity: 0.9;
   margin-bottom: var(--spacing-sm);
+}
+
+/* Phiên âm + loại từ trên MỘT hàng.
+   Hai dòng riêng là hai dòng chỉ chứa vài chữ, mà chiều cao đó đẩy khối ví dụ
+   xuống dưới mép thẻ. */
+.card-meta-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: var(--spacing-sm);
+}
+
+/* Trong hàng meta, phiên âm thôi làm khối riêng. */
+.card-meta-row .card-phonetic {
+  margin-bottom: 0;
 }
 
 .card-type-row {
@@ -5204,8 +5267,10 @@ mark {
 
 .card-example,
 .card-synonyms {
-  margin-top: var(--spacing-md);
-  padding: var(--spacing-md);
+  /* Hai khối này nằm trong flex container đã có `gap` riêng — `margin-top` ở
+     đây là cộng khoảng cách lần hai. */
+  margin-top: 0;
+  padding: var(--spacing-sm) var(--spacing-md);
   background: rgba(255, 255, 255, 0.2);
   border-radius: var(--radius-md);
   text-align: left;
@@ -5422,13 +5487,10 @@ mark {
   font-style: italic;
 }
 
-.card-hint {
-  position: absolute;
-  bottom: var(--spacing-md);
-  font-size: 0.875rem;
-  opacity: 0.8;
-  animation: bounce 2s infinite;
-}
+/* `.card-hint` ("Click / Space để lật thẻ") đã bỏ cùng khối HTML của nó.
+   Nó là `position: absolute; bottom` nên ĐÈ LÊN nội dung — ở thẻ song ngữ,
+   chỗ đó là khối "Từ đồng nghĩa" và chữ chồng lên nhau không đọc được.
+   Cách lật thẻ cũng đã có nút "Lật thẻ" riêng nói rõ hơn. */
 
 @keyframes bounce {
   0%,

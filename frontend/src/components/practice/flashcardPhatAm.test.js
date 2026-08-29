@@ -190,3 +190,189 @@ describe('kho song ngữ: mỗi mặt một bộ ĐẦY ĐỦ', () => {
         expect(t).not.toMatch(/\['example', word\.example\]/);
     });
 });
+
+describe('thẻ vừa khung nhìn, không che nội dung', () => {
+    const css = readFileSync(join(
+        __dirname, '..', '..', 'assets', 'styles', 'components.css'), 'utf8');
+    const rule = (sel) => {
+        const i = css.indexOf(sel);
+        expect(i).toBeGreaterThan(-1);
+        return css.slice(css.indexOf('{', i), css.indexOf('}', i));
+    };
+
+    // `.flashcard {` khớp trúng `.flashcard-stage .flashcard {` đứng trước nó.
+    // Neo bằng `perspective` — thuộc tính chỉ rule này có, và không phụ thuộc
+    // kiểu xuống dòng (file lưu CRLF nên chuỗi chứa `\n` trần không khớp).
+    const ruleThe = () => {
+        const i = css.indexOf('perspective: 1000px');
+        expect(i).toBeGreaterThan(-1);
+        return css.slice(css.lastIndexOf('{', i), css.indexOf('}', i));
+    };
+
+    test('chiều cao CO GIÃN theo nội dung', () => {
+        // 300px cố định đủ cho thẻ cũ, nhưng thẻ song ngữ có thêm phiên âm và
+        // đồng nghĩa riêng cho mỗi mặt — nội dung vượt khung và bị cắt cụt.
+        const r = ruleThe();
+        expect(r).toMatch(/min-height: 300px/);
+        expect(r).not.toMatch(/^\s*height: 300px/m);
+    });
+
+    test('có TRẦN để không đẩy nút xuống dưới mép', () => {
+        expect(ruleThe()).toMatch(/max-height: 78vh/);
+    });
+
+    test('nội dung bám mép TRÊN khi tràn', () => {
+        // `center` dồn ra giữa, nên phần trên bị đẩy khỏi vùng cuộn và không
+        // kéo lại được — đúng thứ người dùng thấy (chữ ở trên bị khuất).
+        const i = css.indexOf('.flashcard-front,');
+        const r = css.slice(css.indexOf('{', i), css.indexOf('}', i));
+        expect(r).toMatch(/justify-content: flex-start/);
+        expect(r).toMatch(/overflow-y: auto/);
+    });
+
+    test('nội dung NGẮN vẫn căn giữa cho cân', () => {
+        expect(css).toMatch(/\.flashcard-front:not\(:has\(\.card-example\)\)/);
+        expect(css).toMatch(/justify-content: center/);
+    });
+
+    test('bỏ dòng "Click / Space" — nó ĐÈ lên nội dung', () => {
+        // `position: absolute; bottom` nên nó nằm đúng chỗ khối "Từ đồng
+        // nghĩa", chữ chồng lên nhau không đọc được.
+        expect(src).not.toMatch(/Click \/ Space/);
+        expect(css).not.toMatch(/^\.card-hint \{/m);
+    });
+});
+
+describe('phiên âm hiện ở CẢ HAI mặt', () => {
+    test('mặt sau không còn phụ thuộc `reversed`', () => {
+        // Trước đây chỉ hiện khi đảo chiều — nên ở kho song ngữ chiều thường,
+        // mặt EN không có phiên âm nào dù dữ liệu có sẵn.
+        expect(src).not.toMatch(/\$\{reversed \? `[\s\S]{0,120}card-phonetic/);
+    });
+
+    test('lấy phiên âm từ bộ của CHÍNH mặt đó', () => {
+        // `word.phonetic` đã bị chọn theo `hienThi`; đảo chiều là nó thuộc mặt
+        // kia, hiện lên là phiên âm không khớp chữ đang nhìn.
+        expect(src).toMatch(/laSongNgu\s*\?\s*boSau\.phonetic/);
+        expect(src).toMatch(/laSongNgu\s*\?\s*boTruoc\.phonetic/);
+    });
+
+    test('hai kho cũ giữ hành vi cũ', () => {
+        // Kho en/zh chỉ có một phiên âm, và mặt sau là nghĩa nên không hiện.
+        expect(src).toMatch(/: \(reversed \? word\.phonetic : ''\)/);
+        expect(src).toMatch(/: \(!reversed \? \(word\.phonetic \|\| ''\) : ''\)/);
+    });
+});
+
+describe('gọn thẻ: nút tim lên góc, phiên âm cùng hàng loại từ', () => {
+    const css2 = readFileSync(join(
+        __dirname, '..', '..', 'assets', 'styles', 'components.css'), 'utf8');
+    const rule2 = (sel) => {
+        const i = css2.indexOf(sel);
+        expect(i).toBeGreaterThan(-1);
+        return css2.slice(css2.indexOf('{', i), css2.indexOf('}', i));
+    };
+
+    test('nút tim nằm CẠNH badge, không giữa thân thẻ', () => {
+        // Trước đây nó chiếm nguyên một hàng giữa thẻ.
+        const i = src.indexOf('card-corner-group');
+        expect(i).toBeGreaterThan(-1);
+        const cum = src.slice(i, src.indexOf('</div>', src.indexOf('card-corner-badge', i)));
+        expect(cum).toContain('card-fav-btn');
+        expect(cum).toContain('card-corner-badge');
+    });
+
+    test('badge trong cụm thôi vị trí tuyệt đối', () => {
+        // Cụm đã lo chỗ đứng; để `absolute` thì hai thứ chồng lên nhau.
+        expect(rule2('.card-corner-group .card-corner-badge {')).toMatch(/position: static/);
+    });
+
+    test('mặt SAU cũng dùng cụm góc', () => {
+        // Đổi từ badge độc lập sang cụm: nút tim nay có ở CẢ HAI mặt, lật sang
+        // mặt kia vẫn đánh dấu được mà không phải lật về.
+        // Cắt tới HẾT mặt sau thay vì đếm ký tự: cửa sổ cố định hỏng ngay khi
+        // ai đó thêm một dòng comment ở giữa.
+        const i = src.indexOf('flashcard-back');
+        const t = src.slice(i, src.indexOf('card-content', i));
+        expect(t).toMatch(/card-corner-group/);
+        expect(t).toMatch(/class="card-corner-badge">\$\{backBadge\}/);
+    });
+
+    test('phiên âm và loại từ trên MỘT hàng', () => {
+        expect(src).toMatch(/card-meta-row/);
+        const i = src.indexOf('card-meta-row');
+        const t = src.slice(i - 400, i + 300);
+        expect(t).toMatch(/card-phonetic/);
+        expect(t).toMatch(/card-type/);
+    });
+
+    test('hàng đó ẩn hẳn khi không có gì', () => {
+        // Chừa một dải trống không hiểu vì sao lại có.
+        expect(src).toMatch(/if \(!ph && !loai\) return ''/);
+    });
+
+    test('khoảng cách các dòng bớt rộng', () => {
+        // Từ → phiên âm là cùng một cụm thông tin, không cần khoảng cách của
+        // hai khối riêng.
+        const i = css2.indexOf('.card-word,');
+        expect(css2.slice(css2.indexOf('{', i), css2.indexOf('}', i)))
+            .toMatch(/margin-bottom: var\(--spacing-sm\)/);
+    });
+
+    test('khối ví dụ không cộng khoảng cách hai lần', () => {
+        // Container đã có `gap`; thêm `margin-top` là cộng lần hai.
+        const i = css2.indexOf('.card-example,');
+        expect(css2.slice(css2.indexOf('{', i), css2.indexOf('}', i)))
+            .toMatch(/margin-top: 0/);
+    });
+});
+
+describe('hai mặt trình bày GIỐNG nhau', () => {
+    test('cùng dùng một hàm dựng hàng meta', () => {
+        // Trước đây mặt sau không có hàng này nên hai mặt nhìn lệch hẳn — mà
+        // mặt sau mới là bố cục người dùng thấy gọn.
+        expect(src).toMatch(/const hangMeta = \(ph, loai\) =>/);
+        expect((src.match(/\$\{hangMeta\(/g) || []).length).toBe(2);
+    });
+
+    test('loại từ ở mặt sau CHỈ khi là kho song ngữ', () => {
+        // Hai mặt song ngữ đều là TỪ nên đều có loại. Ở hai kho cũ mặt sau là
+        // NGHĨA, gắn loại từ vào đó là sai.
+        expect(src).toMatch(/laSongNgu \? \(word\.type \|\| ''\) : ''/);
+    });
+});
+
+describe('nút tim có ở CẢ HAI mặt', () => {
+    test('mặt sau cũng có cụm góc + nút tim', () => {
+        const i = src.indexOf('flashcard-back');
+        const t = src.slice(i, i + 700);
+        expect(t).toMatch(/card-corner-group/);
+        expect(t).toMatch(/card-fav-btn/);
+    });
+
+    test('gắn sự kiện theo CLASS, không theo id', () => {
+        // `getElementById` chỉ trả về MỘT — mặt sau bấm sẽ không có tác dụng.
+        expect(src).toMatch(/querySelectorAll\('\.card-fav-btn'\)\.forEach/);
+        const code = src.replace(/\/\/[^\n]*/g, '');
+        expect(code).not.toMatch(/getElementById\('fav-btn'\)/);
+    });
+
+    test('cập nhật CẢ HAI nút sau khi bấm', () => {
+        // Chỉ sửa một cái thì lật sang mặt kia thấy tim rỗng dù đã đánh dấu —
+        // và bấm lần nữa là bỏ mất luôn.
+        const i = src.indexOf('const nowFav = !isFav');
+        expect(i).toBeGreaterThan(-1);
+        expect(src.slice(i, i + 400)).toMatch(/querySelectorAll\('\.card-fav-btn'\)\.forEach/);
+    });
+
+    test('chặn nổi bọt — bấm tim không làm lật thẻ', () => {
+        const i = src.indexOf("querySelectorAll('.card-fav-btn').forEach");
+        expect(src.slice(i, i + 300)).toMatch(/e\.stopPropagation\(\)/);
+    });
+
+    test('hai nút có id KHÁC nhau', () => {
+        // Trùng id là HTML sai, và `getElementById` ở nơi khác sẽ bắt nhầm.
+        expect(src).toMatch(/id="fav-btn"/);
+        expect(src).toMatch(/id="fav-btn-sau"/);
+    });
+});

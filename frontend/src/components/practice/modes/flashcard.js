@@ -146,6 +146,23 @@ export const Flashcard = {
         const boSau = laSongNgu ? (reversed ? word.matZh : word.matEn) : null;
 
         /**
+         * Hàng phiên âm + loại từ của MỘT mặt.
+         *
+         * Dùng chung cho cả hai mặt để chúng trình bày y hệt nhau: từ lớn →
+         * hàng meta → khối ví dụ. Trước đây mặt sau không có hàng này nên hai
+         * mặt nhìn lệch hẳn, mà mặt sau mới là bố cục người dùng thấy gọn.
+         *
+         * Ẩn hẳn khi rỗng — chừa một dải trống không hiểu vì sao lại có.
+         */
+        const hangMeta = (ph, loai) => {
+            if (!ph && !loai) return '';
+            return `<div class="card-meta-row">
+                ${ph ? `<span class="card-phonetic">${ph}</span>` : ''}
+                ${loai ? `<span class="card-type">${loai}</span>` : ''}
+            </div>`;
+        };
+
+        /**
          * Khối "Ví dụ" + "Từ đồng nghĩa" cho MỘT mặt thẻ.
          *
          * `hau` để mỗi mặt có id phiên âm riêng — hai mặt cùng id thì
@@ -205,7 +222,15 @@ export const Flashcard = {
                 <div class="flashcard" id="flashcard">
                     <div class="flashcard-inner" id="flashcard-inner">
                         <div class="flashcard-front">
-                            <div class="card-corner-badge">${frontBadge}</div>
+                            <!-- Nút tim nằm CẠNH badge ngôn ngữ, không phải giữa
+                                 thân thẻ: cả hai đều là điều khiển ở góc, gom
+                                 lại thì thân thẻ dành trọn cho nội dung. -->
+                            <div class="card-corner-group">
+                                <button class="card-fav-btn${this._isFavorite(word.en) ? ' active' : ''}" id="fav-btn" title="${this._isFavorite(word.en) ? 'Bỏ yêu thích' : 'Thêm yêu thích'}">
+                                    <i class="${this._isFavorite(word.en) ? 'fas' : 'far'} fa-heart"></i>
+                                </button>
+                                <div class="card-corner-badge">${frontBadge}</div>
+                            </div>
                             <div class="card-content card-content--split">
                                 ${word.image ? `
                                     <div class="card-image-col">
@@ -215,30 +240,43 @@ export const Flashcard = {
                                 ` : ''}
                                 <div class="card-text-col">
                                     <h2 class="card-word">${frontMain}</h2>
-                                    ${!reversed ? `<p class="card-phonetic">${word.phonetic || ''}</p>` : ''}
-                                    <div class="card-type-row">
-                                        <span class="card-type">${word.type || ''}</span>
-                                        <button class="card-fav-btn${this._isFavorite(word.en) ? ' active' : ''}" id="fav-btn" title="${this._isFavorite(word.en) ? 'Bỏ yêu thích' : 'Thêm yêu thích'}">
-                                            <i class="${this._isFavorite(word.en) ? 'fas' : 'far'} fa-heart"></i>
-                                        </button>
-                                    </div>
+                                    ${hangMeta(
+                                        // Kho song ngữ lấy phiên âm của CHÍNH mặt
+                                        // trước: `word.phonetic` đã bị chọn theo
+                                        // `hienThi`, đảo chiều là nó thuộc mặt kia.
+                                        laSongNgu
+                                            ? boTruoc.phonetic
+                                            : (!reversed ? (word.phonetic || '') : ''),
+                                        word.type || ''
+                                    )}
                                 </div>
                             </div>
                             ${phuTruoc}
-                            <div class="card-hint">
-                                Click / Space để lật thẻ
-                            </div>
                         </div>
 
                         <div class="flashcard-back">
-                            <div class="card-corner-badge">${backBadge}</div>
+                            <!-- Cùng cụm góc như mặt trước: nút tim có ở CẢ HAI
+                                 mặt, người dùng lật sang mặt kia vẫn đánh dấu
+                                 được mà không phải lật về. -->
+                            <div class="card-corner-group">
+                                <button class="card-fav-btn${this._isFavorite(word.en) ? ' active' : ''}" id="fav-btn-sau" title="${this._isFavorite(word.en) ? 'Bỏ yêu thích' : 'Thêm yêu thích'}">
+                                    <i class="${this._isFavorite(word.en) ? 'fas' : 'far'} fa-heart"></i>
+                                </button>
+                                <div class="card-corner-badge">${backBadge}</div>
+                            </div>
                             <div class="card-content">
-                                ${reversed ? `
-                                    <h2 class="card-meaning">${word.en}</h2>
-                                    ${word.phonetic ? `<p class="card-phonetic">${word.phonetic}</p>` : ''}
-                                ` : `
-                                    <h2 class="card-meaning">${meaning}</h2>
-                                `}
+                                <h2 class="card-meaning">${reversed ? word.en : meaning}</h2>
+                                ${hangMeta(
+                                    // Phiên âm của MẶT SAU, ở cả hai chiều.
+                                    // Trước đây chỉ hiện khi `reversed` — nên ở kho
+                                    // song ngữ chiều thường, mặt EN không có phiên
+                                    // âm nào dù dữ liệu có sẵn.
+                                    laSongNgu ? boSau.phonetic : (reversed ? word.phonetic : ''),
+                                    // Loại từ chỉ hiện ở mặt sau khi là kho song ngữ:
+                                    // hai mặt đều là TỪ nên đều có loại. Ở hai kho cũ
+                                    // mặt sau là NGHĨA, gắn loại từ vào đó là sai.
+                                    laSongNgu ? (word.type || '') : ''
+                                )}
                                 ${phuSau}
                             </div>
                         </div>
@@ -340,10 +378,14 @@ export const Flashcard = {
             this.markAsUnknown(word);
         });
 
-        const favBtn = document.getElementById('fav-btn');
-        favBtn?.addEventListener('click', (e) => {
-            e.stopPropagation();
-            this._toggleFavorite(word);
+        // Gắn theo CLASS, không theo id: nút tim có ở cả hai mặt thẻ, mà
+        // `getElementById` chỉ trả về một — mặt sau bấm sẽ không có tác dụng.
+        document.querySelectorAll('.card-fav-btn').forEach((btn) => {
+            btn.addEventListener('click', (e) => {
+                // Cả thẻ là nút lật; không chặn thì bấm tim là thẻ lật một cái.
+                e.stopPropagation();
+                this._toggleFavorite(word);
+            });
         });
 
         if (!this.boundKeyboardHandler) {
@@ -596,14 +638,17 @@ export const Flashcard = {
             FavoritesAPI.add(entry).catch(() => {});
         }
         GameState.save?.();
-        // Cập nhật trạng thái nút mà không re-render toàn bộ card
-        const btn = document.getElementById('fav-btn');
-        if (btn) {
-            const nowFav = !isFav;
+        // Cập nhật CẢ HAI nút mà không re-render toàn bộ thẻ.
+        //
+        // Chỉ sửa một cái thì lật sang mặt kia sẽ thấy trái tim rỗng dù từ đã
+        // được đánh dấu — và bấm lần nữa là bỏ mất luôn.
+        const nowFav = !isFav;
+        document.querySelectorAll('.card-fav-btn').forEach((btn) => {
             btn.classList.toggle('active', nowFav);
             btn.title = nowFav ? 'Bỏ yêu thích' : 'Thêm yêu thích';
-            btn.querySelector('i').className = nowFav ? 'fas fa-heart' : 'far fa-heart';
-        }
+            const icon = btn.querySelector('i');
+            if (icon) icon.className = nowFav ? 'fas fa-heart' : 'far fa-heart';
+        });
         Notification.show({ type: isFav ? 'info' : 'success', message: isFav ? `Đã bỏ "${word.en}" khỏi yêu thích` : `Đã thêm "${word.en}" vào yêu thích`, duration: 1500 });
     },
 
