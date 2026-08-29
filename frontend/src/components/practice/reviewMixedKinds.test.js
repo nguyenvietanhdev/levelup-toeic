@@ -46,19 +46,21 @@ describe('xoay vòng đủ BA kiểu theo vị trí câu', () => {
         // khác. Không phải làm hết một kiểu rồi mới sang kiểu khác.
         const cp = M.kieuDuocPhep();
         const w = { masteryLevel: 0, en: '多少' };
-        const r = [0, 1, 2, 3, 4, 5, 6].map(i => M.chonKieu(w, cp, i));
+        const r = [0, 1, 2, 3, 4, 5, 6, 7].map(i => M.chonKieu(w, cp, i));
         expect(r[0]).toBe('flashcard');
         expect(r[1]).toBe('choice');
         expect(r[2]).toBe('truefalse');
         expect(r[3]).toBe('listen');
-        expect(r[6]).toBe('hanzi');
-        // Ít nhất năm kiểu KHÁC NHAU trong bảy câu — đó mới là "hỗn hợp".
+        expect(r[7]).toBe('hanzi');
+        // Ít nhất năm kiểu KHÁC NHAU trong tám câu — đó mới là "hỗn hợp".
         expect(new Set(r).size).toBeGreaterThanOrEqual(5);
     });
 
     test('từ Latin ĐỦ DÀI được xếp chữ cái', () => {
         const cp = M.kieuDuocPhep();
-        expect(M.chonKieu({ en: 'meticulously' }, cp, 4)).toBe('scramble');
+        // Vị trí 5, không phải 4: `speak` chèn vào giữa đã đẩy `scramble` lùi
+        // một bậc trong vòng xoay.
+        expect(M.chonKieu({ en: 'meticulously' }, cp, 5)).toBe('scramble');
     });
 
     test('từ Latin QUÁ NGẮN bỏ qua xếp chữ cái', () => {
@@ -116,10 +118,10 @@ describe('xoay vòng đủ BA kiểu theo vị trí câu', () => {
         expect(src).not.toMatch(/Math\.random\(\)/);
     });
 
-    test('bảy kiểu xếp theo độ khó TĂNG DẦN', () => {
+    test('tám kiểu xếp theo độ khó TĂNG DẦN', () => {
         // Thứ tự này quyết định thứ tự xoay vòng: dễ trước để người học vào nhịp.
         // Cũng là thứ tự ưu tiên khi `chonKieu` lùi về kiểu dễ hơn.
-        expect(M.KIEU_HOI).toEqual(['flashcard', 'choice', 'truefalse', 'listen', 'scramble', 'fill', 'hanzi']);
+        expect(M.KIEU_HOI).toEqual(['flashcard', 'choice', 'truefalse', 'listen', 'speak', 'scramble', 'fill', 'hanzi']);
     });
 
     test('lật thẻ đứng ĐẦU — dễ nhất, không phải chọn cũng không phải gõ', () => {
@@ -134,7 +136,7 @@ describe('người dùng tự chọn kiểu — cài đặt thắng SM-2', () =>
         const M = napBoChon({ reviewKinds: ['choice', 'truefalse'] });
         const cp = M.kieuDuocPhep();
         const w = { masteryLevel: 0 };
-        expect(M.chonKieu(w, cp, 5)).toBe('truefalse');   // vị trí 5 vốn là fill
+        expect(M.chonKieu(w, cp, 6)).toBe('truefalse');   // vị trí 6 vốn là fill
         expect(M.chonKieu(w, cp, 1)).toBe('choice');
         // Vị trí 0 vốn là `flashcard`, cũng đang tắt → lùi phải, vì không còn
         // kiểu nào bên trái. Không được trả `undefined`.
@@ -155,7 +157,7 @@ describe('người dùng tự chọn kiểu — cài đặt thắng SM-2', () =>
         // ôn không có câu nào — vô dụng, mà người dùng không hề muốn thế.
         for (const v of [[], undefined, null, ['xyz']]) {
             const M = napBoChon({ reviewKinds: v });
-            expect(M.kieuDuocPhep()).toEqual(['flashcard', 'choice', 'truefalse', 'listen', 'scramble', 'fill', 'hanzi']);
+            expect(M.kieuDuocPhep()).toEqual(['flashcard', 'choice', 'truefalse', 'listen', 'speak', 'scramble', 'fill', 'hanzi']);
         }
     });
 
@@ -442,7 +444,7 @@ describe('hai kiểu mới: nghe & xếp chữ cái', () => {
     test('cả bảy kiểu có ô chọn trong Cài đặt', () => {
         // Kiểu chạy được mà không có ô tắt thì người dùng gặp nó mà không có
         // cách nào bỏ.
-        for (const k of ['flashcard', 'choice', 'truefalse', 'listen', 'scramble', 'fill', 'hanzi']) {
+        for (const k of ['flashcard', 'choice', 'truefalse', 'listen', 'speak', 'scramble', 'fill', 'hanzi']) {
             expect(panel).toContain(`key: '${k}'`);
         }
     });
@@ -451,7 +453,7 @@ describe('hai kiểu mới: nghe & xếp chữ cái', () => {
         // Hai danh sách ở hai file; lệch nhau thì hoặc có kiểu không tắt được,
         // hoặc có ô tick chẳng điều khiển gì.
         const oPanel = [...panel.matchAll(/key: '([a-z]+)'/g)].map(m => m[1]);
-        expect(oPanel).toEqual(['flashcard', 'choice', 'truefalse', 'listen', 'scramble', 'fill', 'hanzi']);
+        expect(oPanel).toEqual(['flashcard', 'choice', 'truefalse', 'listen', 'speak', 'scramble', 'fill', 'hanzi']);
     });
 });
 

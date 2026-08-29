@@ -13,6 +13,9 @@ export const REVIEW_KINDS = [
     { key: 'choice',    label: 'Chọn nghĩa', desc: 'Chọn đáp án đúng trong 4 lựa chọn' },
     { key: 'truefalse', label: 'Đúng / Sai', desc: 'Xem một nghĩa và quyết định đúng hay sai' },
     { key: 'listen',    label: 'Nghe & chọn', desc: 'Che mặt chữ, nghe phát âm rồi chọn nghĩa' },
+    // Chỉ xuất hiện trên Chrome/Edge — trình duyệt không có Web Speech API thì
+    // tự bỏ qua kiểu này (Firefox), không để người học kẹt giữa lượt.
+    { key: 'speak',     label: 'Phát âm',    desc: 'Bấm mic và đọc to từ đó; cần Chrome hoặc Edge' },
     { key: 'scramble',  label: 'Xếp chữ cái', desc: 'Ghép các chữ cái xáo trộn thành từ đúng' },
     { key: 'fill',      label: 'Gõ từ',      desc: 'Tự gõ ra, không có gợi ý — khó nhất' },
     // Chỉ xuất hiện với từ CÓ chữ Hán — từ tiếng Anh tự bỏ qua kiểu này.

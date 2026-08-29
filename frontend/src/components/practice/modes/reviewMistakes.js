@@ -9,6 +9,9 @@ import { afterAnswer } from '@components/practice/practiceNav.js';
 import { startQuestionTimer } from '@components/practice/questionTimer.js';
 import { timeoutQuestion } from '@components/practice/questionTimeout.js';
 import { chenViDu } from '../exampleBlock.js';
+// Dùng lại bộ chấm của chế độ Phát âm: nó là logic thuần (vào chuỗi, ra điểm)
+// và đã xử lý những ca thật mà `===` bỏ sót — vd máy tự thêm trợ từ tiếng Trung.
+import { scoreAttempt, feedbackMessage } from './pronunciationScoring.js';
 
 /**
  * Ba kiểu hỏi, xếp theo ĐỘ KHÓ tăng dần.
@@ -38,7 +41,9 @@ async function ensureHanziWriter() {
 //
 // `flashcard` đứng đầu vì nó dễ nhất: không phải chọn, không phải gõ — chỉ lật
 // thẻ rồi tự đánh giá. Đó cũng là bước đầu tiên của việc học một từ vừa sai.
-const KIEU_HOI = ['flashcard', 'choice', 'truefalse', 'listen', 'scramble', 'fill', 'hanzi'];
+// `speak` xếp giữa `listen` và `scramble`: nói ra được là hơn nhận mặt chữ,
+// nhưng vẫn dễ hơn tự gõ đúng chính tả.
+const KIEU_HOI = ['flashcard', 'choice', 'truefalse', 'listen', 'speak', 'scramble', 'fill', 'hanzi'];
 
 /** Chữ Hán — dùng để biết một từ có viết được không. */
 const HAN_RE = /[\u4e00-\u9fff\u3400-\u4dbf]/;
@@ -55,6 +60,7 @@ const NHAN_KIEU = {
     choice: 'Chọn nghĩa',
     truefalse: 'Đúng / Sai',
     listen: 'Nghe & chọn',
+    speak: 'Phát âm',
     scramble: 'Xếp chữ cái',
     fill: 'Gõ từ',
     hanzi: 'Viết chữ Hán',
@@ -121,6 +127,11 @@ function kieuDuocPhep() {
 function locTheoTu(choPhep, word) {
     const mat = String(word?.en || '');
     const coChuHan = !!chuHanDau(mat);
+    // Web Speech API chỉ có ở Chrome/Edge. Chế độ Phát âm riêng thoát cả lượt
+    // được, nhưng ở đây các kiểu ĐAN XEN — một câu nói giữa lượt trên Firefox
+    // là kẹt cứng, không có nút nào đi tiếp.
+    const noiDuoc = typeof window !== 'undefined'
+        && ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window);
     // Xếp chữ cái chỉ có nghĩa với từ Latin đủ dài: chữ Hán không tách được
     // thành chữ cái, mà từ 1–2 ký tự thì xáo lên vẫn đoán ra ngay.
     const xepDuoc = !coChuHan && mat.replace(/\s/g, '').length >= 4;
@@ -128,6 +139,7 @@ function locTheoTu(choPhep, word) {
     const loc = choPhep.filter((k) => {
         if (k === 'hanzi') return coChuHan;
         if (k === 'scramble') return xepDuoc;
+        if (k === 'speak') return noiDuoc;
         return true;
     });
     // Không còn kiểu nào (người dùng chỉ bật `hanzi` mà từ lại là tiếng Anh) →
@@ -269,6 +281,10 @@ export const ReviewMistakes = {
             }
             if (kieu === 'scramble') {
                 return { ...GameLogic.generateWordScramble(word), kieu };
+            }
+            if (kieu === 'speak') {
+                // Không có bộ sinh: chỉ cần từ để đọc và nghĩa để đối chiếu.
+                return { word, kieu, correctAnswer: word.vn };
             }
             if (kieu === 'hanzi') {
                 // Không có bộ sinh sẵn cho kiểu này — nó chỉ cần chữ để tô, và
@@ -444,6 +460,23 @@ export const ReviewMistakes = {
                 </div>`;
         }
 
+        if (question.kieu === 'speak') {
+            return `
+                <p class="rm-prompt">Bấm mic rồi đọc to từ này</p>
+                <div class="rm-speak">
+                    <button class="rm-mic-btn" id="rm-mic">
+                        <i class="fas fa-microphone"></i>
+                    </button>
+                    <div class="rm-mic-status" id="rm-mic-status">Bấm để bắt đầu nói</div>
+                    <div class="rm-heard" id="rm-heard"></div>
+                </div>
+                <div class="rm-hanzi-actions">
+                    <button class="btn btn-secondary" id="rm-speak-skip">
+                        <i class="fas fa-forward"></i> Bỏ qua từ này
+                    </button>
+                </div>`;
+        }
+
         if (question.kieu === 'hanzi') {
             return `
                 <p class="rm-prompt">Viết lại chữ này theo nét mẫu</p>
@@ -509,6 +542,11 @@ export const ReviewMistakes = {
             return;
         }
 
+        if (question.kieu === 'speak') {
+            this.ganPhatAm(question);
+            return;
+        }
+
         if (question.kieu === 'hanzi') {
             this.dungOVe(question);
             return;
@@ -545,6 +583,112 @@ export const ReviewMistakes = {
         document.querySelectorAll('.rm-choices .choice-btn').forEach((btn, k) => {
             btn.addEventListener('click', () => this.selectAnswer(k));
         });
+    },
+
+    /**
+     * Câu PHÁT ÂM: bấm mic, đọc to, máy chấm bằng Web Speech API.
+     *
+     * Ngôn ngữ nhận dạng lấy theo CHÍNH CHỮ của từ, không theo cài đặt: lượt ôn
+     * trộn từ của mọi bộ, mà đặt `en-US` cho một từ chữ Hán thì máy nghe ra một
+     * tràng vô nghĩa và người học bị chấm sai dù đọc chuẩn.
+     *
+     * Không nghe được gì thì KHÔNG chấm sai — chỉ mời thử lại. Phạt phải dành
+     * cho lỗi phát âm, không phải cho việc mic chưa bắt được tiếng.
+     */
+    ganPhatAm(question) {
+        const tu = String(question.word?.en || '');
+        const laZh = HAN_RE.test(tu);
+
+        const nut = document.getElementById('rm-mic');
+        const trangThai = document.getElementById('rm-mic-status');
+        const oNghe = document.getElementById('rm-heard');
+
+        document.getElementById('rm-speak-skip')?.addEventListener('click', () => {
+            this._dungNghe();
+            this.ketThucCau(false, question, tu);
+        });
+
+        const SR = typeof window !== 'undefined'
+            && (window.SpeechRecognition || window.webkitSpeechRecognition);
+        if (!SR || !nut) {
+            // `locTheoTu` đã lọc kiểu này ra khi trình duyệt không hỗ trợ, nên
+            // tới đây là ngoài dự kiến — vẫn phải có lối thoát, không để kẹt.
+            if (trangThai) trangThai.textContent = 'Trình duyệt không hỗ trợ nhận dạng giọng nói';
+            return;
+        }
+
+        // Đọc mẫu một lần cho người học nghe trước khi nói.
+        setTimeout(() => GameLogic.speakWord(tu), 300);
+
+        const bat = () => {
+            if (this._rec) return;   // đang nghe rồi
+
+            const rec = new SR();
+            rec.lang = laZh ? 'zh-CN' : 'en-US';
+            rec.continuous = false;
+            rec.interimResults = true;
+            rec.maxAlternatives = 5;
+
+            let daCham = false;
+
+            rec.onstart = () => {
+                nut.classList.add('is-listening');
+                if (trangThai) trangThai.textContent = 'Đang nghe…';
+            };
+
+            rec.onresult = (e) => {
+                if (daCham) return;
+                const kq = e.results[e.resultIndex] ?? e.results[0];
+                if (!kq) return;
+                const chu = String(kq[0]?.transcript || '').trim();
+
+                if (!kq.isFinal) {
+                    // Bản tạm ĐỔI LIÊN TỤC trong lúc nói — chỉ hiện cho người
+                    // học thấy máy đang nghe được gì, tuyệt đối không chấm.
+                    if (oNghe) oNghe.textContent = chu;
+                    return;
+                }
+
+                daCham = true;
+                if (oNghe) oNghe.textContent = chu;
+                const diem = scoreAttempt(chu, Array.from(kq), tu, laZh);
+                this._dungNghe();
+                nut.classList.remove('is-listening');
+                if (trangThai) trangThai.textContent = feedbackMessage(diem, tu, laZh);
+                // `correct` đã bao gồm cả ca "gần đúng" (xem `scoreAttempt`:
+                // nhánh cuối trả `correct: near`), không cần kiểm `near` nữa.
+                this.ketThucCau(diem.correct, question, tu);
+            };
+
+            rec.onend = () => {
+                this._rec = null;
+                nut.classList.remove('is-listening');
+                if (!daCham && trangThai) {
+                    trangThai.textContent = 'Chưa nghe thấy gì — bấm mic thử lại';
+                }
+            };
+
+            rec.onerror = (e) => {
+                this._rec = null;
+                nut.classList.remove('is-listening');
+                if (!trangThai) return;
+                trangThai.textContent = e.error === 'not-allowed'
+                    ? 'Chưa cho phép dùng micro'
+                    : 'Chưa nghe thấy gì — bấm mic thử lại';
+            };
+
+            this._rec = rec;
+            try { rec.start(); } catch { this._rec = null; }
+        };
+
+        nut.addEventListener('click', bat);
+    },
+
+    /** Dừng nhận dạng đang chạy — gọi trước khi rời câu. */
+    _dungNghe() {
+        if (!this._rec) return;
+        try { this._rec.abort(); } catch { /* đã dừng */ }
+        this._rec = null;
     },
 
     /**
@@ -744,6 +888,9 @@ export const ReviewMistakes = {
         // Huỷ ô vẽ trước khi sang câu kế: thư viện giữ listener trên SVG, để lại
         // thì mỗi câu chữ Hán cộng thêm một bộ và nét tô của câu cũ vẫn ăn.
         this.huyOVe();
+        // Cùng lý do với mic: bỏ chạy thì nó còn nghe sang câu sau và đèn mic
+        // của trình duyệt vẫn sáng.
+        this._dungNghe();
 
         PracticeManager.recordAnswer(dung, question.word);
 
@@ -885,6 +1032,7 @@ export const ReviewMistakes = {
         this._onHint = null;
         // Rời chế độ giữa lúc đang tô nét thì thư viện còn giữ listener trên SVG.
         this.huyOVe();
+        this._dungNghe();
         this.questions = [];
         this.currentIndex = 0;
         this.selectedAnswer = null;

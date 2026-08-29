@@ -10726,6 +10726,60 @@ mark {
     padding: 6px 14px;
 }
 
+/* Câu PHÁT ÂM trong lượt ôn từ sai: nút mic tròn + dòng trạng thái + chữ máy
+   nghe được. Cùng khổ với ô tô nét chữ Hán để hai kiểu không nhảy chiều cao. */
+.rm-speak {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 0;
+}
+
+.rm-mic-btn {
+    width: 76px;
+    height: 76px;
+    border-radius: 50%;
+    border: none;
+    background: var(--primary-color);
+    color: #fff;
+    font-size: 28px;
+    cursor: pointer;
+    transition: transform 0.15s, background 0.15s;
+}
+
+.rm-mic-btn:hover { transform: scale(1.05); }
+
+/* Đang nghe: nhấp nháy để phân biệt rõ với trạng thái chờ — người học phải
+   biết chắc lúc nào máy đang thu, không thì nói vào khoảng không. */
+.rm-mic-btn.is-listening {
+    background: var(--error-color, #ef4444);
+    animation: rm-mic-pulse 1.2s ease-in-out infinite;
+}
+
+@keyframes rm-mic-pulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.5); }
+    50%      { box-shadow: 0 0 0 12px rgba(239, 68, 68, 0); }
+}
+
+.rm-mic-status {
+    font-size: 14px;
+    color: var(--text-secondary);
+    text-align: center;
+    /* Giữ chỗ sẵn một dòng: câu phản hồi dài ngắn khác nhau, không ghim thì
+       nút "Bỏ qua" nhảy lên xuống mỗi lần chấm. */
+    min-height: 20px;
+}
+
+/* Chữ máy nghe được. To và đậm hơn dòng trạng thái vì đây mới là thứ người
+   học cần đối chiếu với từ mình vừa đọc. */
+.rm-heard {
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--text-primary);
+    min-height: 24px;
+}
+
 /* Câu XẾP CHỮ CÁI trong lượt ôn từ sai. */
 .rm-scramble {
     display: flex;
