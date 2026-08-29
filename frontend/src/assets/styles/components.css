@@ -1622,10 +1622,12 @@
   background-color: var(--bg-tertiary);
 }
 
+/* ĐANG CHỌN: chỉ VIỀN, không tô nền.
+   Nền đặc ở đây trông y hệt trạng thái "đã nối đúng" (`.matched` bên dưới),
+   nên nhìn lướt qua là tưởng đã xong — trong khi cặp đó có thể sắp sai. Viền
+   đủ để biết mình vừa bấm ô nào; màu nền để dành báo KẾT QUẢ. */
 .matching-item.selected {
   border-color: var(--primary-color);
-  background-color: var(--primary-light);
-  color: var(--text-white);
 }
 
 .matching-item.matched {

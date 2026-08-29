@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { maGiongDaChon } from '@lib/giongDaChon.js';
 import { useEscapeToClose } from '@lib/useEscapeToClose.js';
 import { isSpeechSupported, speechLangFor, speechLangForSource, createSpeechInput } from '@lib/speechInput.js';
 import { createHoldGesture } from '@lib/holdGesture.js';
@@ -27,8 +28,11 @@ const SPEAK_LANG = {
 };
 const speakLangOf = (code) => SPEAK_LANG[code] || (code ? `${code}` : 'en-US');
 
-// Phát âm ĐÚNG ngôn ngữ (vi/en/zh...) — không dùng giọng en/zh của luyện tập.
-// Ưu tiên Google Translate TTS (giọng bản ngữ), lỗi thì dùng giọng hệ thống đúng lang.
+// Phát âm ĐÚNG ngôn ngữ (vi/en/zh...).
+//
+// Ba thứ tiếng app phục vụ (en/zh/vi) dùng ĐÚNG GIỌNG người dùng chọn trong
+// Cài đặt — xem `maGiongDaChon`. Các thứ tiếng khác (ja/ko/fr…) `/api/tts`
+// không có nên vẫn qua Google TTS, lỗi thì rơi về giọng hệ điều hành.
 function fallbackSpeak(text, code) {
     try {
         const u = new SpeechSynthesisUtterance(text);
@@ -82,8 +86,14 @@ function speakText(text, code) {
     //
     // Các thứ tiếng khác (ja/ko/fr/de…) `/api/tts` không phục vụ, nên vẫn dùng
     // Google TTS ở mức gốc.
-    if (tl === 'en' || tl === 'zh-CN') {
-        TtsAPI.synthesize(text.slice(0, 200), tl === 'en' ? 'en' : 'zh', 1)
+    if (tl === 'en' || tl === 'zh-CN' || tl === 'vi') {
+        // Dùng GIỌNG NGƯỜI DÙNG ĐÃ CHỌN trong Cài đặt, không phải mã chung.
+        //
+        // Trước đây truyền `'en'`/`'zh'` trần nên `/api/tts` luôn trả giọng mặc
+        // định — chọn Guy hay Yunxi ở Cài đặt cũng không đổi được gì ở đây, mà
+        // đó chính là chỗ người dùng nghe nhiều nhất sau luyện tập.
+        const heChu = tl === 'en' ? 'en' : tl === 'vi' ? 'vi' : 'zh';
+        TtsAPI.synthesize(text.slice(0, 200), maGiongDaChon(heChu), 1)
             .then((r) => {
                 if (!r?.url) throw new Error('tts');
                 // Thu hồi Object URL sau khi phát xong — không thu thì mỗi lần

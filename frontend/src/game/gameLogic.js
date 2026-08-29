@@ -8,6 +8,7 @@ import { Config } from '@game/config.js';
 import { Notification } from '@ui/Toaster.jsx';
 import { PartSelector } from '@components/vocab/part/partSelector.js';
 import { logger } from '@lib/logger.js';
+import { MA_GIONG } from '@lib/giongDaChon.js';
 
 export function vocabLang() {
     return GameState.state?.settings?.vocabLang || getVocabLang() || 'en';
@@ -428,32 +429,10 @@ export const GameLogic = {
 
         this._replayCallback = () => this._speakGoogleTTS(text, voiceKey, null);
 
-        const accentMap = {
-            // English female
-            '__gtts_us__':      'en-us-f',
-            '__gtts_uk__':      'en-gb-f',
-            '__gtts_au__':      'en-au-f',
-            '__gtts_ca__':      'en-ca-f',
-            // English male
-            '__gtts_us_m__':    'en-us-m',
-            '__gtts_uk_m__':    'en-gb-m',
-            '__gtts_au_m__':    'en-au-m',
-            '__gtts_ca_m__':    'en-ca-m',
-            // Chinese female
-            '__gtts_zh_xiaoxiao__': 'zh-cn-xiaoxiao',
-            '__gtts_zh_xiaoyi__':   'zh-cn-xiaoyi',
-            '__gtts_zh_tw__':       'zh-tw',
-            // Chinese male
-            '__gtts_zh_yunxi__':    'zh-cn-yunxi',
-            '__gtts_zh_yunyang__':  'zh-cn-yunyang',
-            '__gtts_zh_tw_m__':     'zh-tw-m',
-            // Chinese random
-            '__gtts_zh_random__':   'zh-cn-random',
-            // Vietnamese — cho chế độ đảo chiều (mặt hỏi là nghĩa tiếng Việt).
-            '__gtts_vi__':          'vi-vn-f',
-            '__gtts_vi_m__':        'vi-vn-m',
-            '__gtts_vi_random__':   'vi-random',
-        };
+        // Bảng ánh xạ dùng CHUNG với popup Dịch nhanh (`lib/giongDaChon.js`).
+        // Hai bản chép rời thì thêm một giọng mới ở Cài đặt phải nhớ sửa cả hai
+        // chỗ, mà không có gì nhắc.
+        const accentMap = MA_GIONG;
 
         let lang = 'en-us';
         if (voiceKey === '__gtts_random__') {

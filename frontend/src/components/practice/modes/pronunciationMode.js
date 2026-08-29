@@ -37,7 +37,16 @@ export const PronunciationMode = {
     _speakFallback: null,
 
     _isZh() {
-        return vocabLang() === 'zh';
+        // Quyết theo TỪ đang luyện, không theo kho.
+        //
+        // Kho song ngữ (`vocabLang === 'bi'`) có cả chữ Hán lẫn chữ Latin, nên
+        // hỏi "kho này ngôn ngữ gì" là câu hỏi sai. Và với hai kho cũ thì kết
+        // quả không đổi: từ trong kho zh vốn là chữ Hán.
+        const tu = this.questions?.[this.currentIndex]?.word;
+        const chu = String(tu?.en || '');
+        if (chu) return /[㐀-鿿]/.test(chu);
+        // Chưa có từ (lúc khởi tạo) thì tạm theo kho.
+        return vocabLang() === 'zh' || vocabLang() === 'bi';
     },
 
     _recogLang() {

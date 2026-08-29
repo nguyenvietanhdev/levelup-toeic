@@ -104,7 +104,7 @@ export const Matching = {
                     <div class="matching-items">
                         ${this.matchingData.rightColumn.map(item => `
                             <div class="matching-item" data-id="${item.id}" data-side="right">
-                                ${item.text}
+                                <span class="matching-word-text" data-word="${item.text}">${item.text}</span>
                             </div>
                         `).join('')}
                     </div>
@@ -123,10 +123,16 @@ export const Matching = {
                 const id = item.dataset.id;
                 const side = item.dataset.side;
 
-                if (side === 'left') {
-                    const wordEl = item.querySelector('.matching-word-text');
-                    if (wordEl) GameLogic.speakWord(wordEl.dataset.word, 'en-US');
-                }
+                // Đọc CẢ HAI cột, không riêng cột trái.
+                //
+                // Trò này là nối hai bên với nhau nên bên nào cũng đáng nghe —
+                // nhất là kho song ngữ, nơi cột phải là tiếng Anh chứ không
+                // phải nghĩa tiếng Việt.
+                //
+                // KHÔNG truyền cứng 'en-US': `speakWord` tự nhận diện hệ chữ.
+                // Truyền vào thì cột chữ Hán bị đọc bằng giọng Mỹ.
+                const wordEl = item.querySelector('.matching-word-text');
+                if (wordEl?.dataset.word) GameLogic.speakWord(wordEl.dataset.word);
 
                 this.selectItem(id, side, item);
             });
@@ -225,9 +231,21 @@ export const Matching = {
                 Utils.playSound(Config.sounds.wrong, 0.5);
             }
 
+            // Gỡ CẢ `selected` sau khi rung, không chỉ `animate-shake`.
+            //
+            // Thiếu vế này thì ô vừa chọn sai giữ dấu chọn vĩnh viễn — sau vài
+            // lần sai, nửa bảng sáng lên và không còn phân biệt được ô nào đang
+            // chọn với ô nào từng bấm nhầm.
+            //
+            // Bắt biến ra trước: `this.selectedLeft` bị đặt `null` ngay cuối
+            // hàm, nên khi callback chạy 400ms sau thì `?.` nuốt luôn và không
+            // gỡ được gì.
+            const oTrai = this.selectedLeft;
+            const oPhai = this.selectedRight;
             setTimeout(() => {
-                this.selectedLeft?.classList.remove('animate-shake');
-                this.selectedRight?.classList.remove('animate-shake');
+                for (const o of [oTrai, oPhai]) {
+                    o?.classList.remove('animate-shake', 'selected');
+                }
             }, 400);
         }
 

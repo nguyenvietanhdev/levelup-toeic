@@ -81,8 +81,13 @@ describe('phát âm tiếng Việt', () => {
     });
 
     test('gTTS có ánh xạ giọng Việt', () => {
-        expect(gl).toMatch(/'__gtts_vi_random__':\s*'vi-random'/);
-        expect(gl).toMatch(/'__gtts_vi__':\s*'vi-vn-f'/);
+        // Bảng ánh xạ nay nằm ở module dùng chung (`lib/giongDaChon.js`) —
+        // popup Dịch nhanh cũng cần nó, chép rời là hai bản sẽ lệch.
+        const bang = readFileSync(join(__dirname, '..', '..', 'lib', 'giongDaChon.js'), 'utf8');
+        expect(bang).toMatch(/'__gtts_vi_random__':\s*'vi-random'/);
+        expect(bang).toMatch(/'__gtts_vi__':\s*'vi-vn-f'/);
+        // Và `gameLogic` phải dùng chính bảng đó.
+        expect(gl).toMatch(/const accentMap = MA_GIONG;/);
     });
 
     test('giọng sai ngôn ngữ bị đổi sang giọng Việt', () => {

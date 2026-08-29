@@ -28,7 +28,13 @@ export function isSpeechSupported() {
 
 /** Mã ngôn ngữ cho bộ nhận dạng, theo ngôn ngữ từ vựng đang chọn. */
 export function speechLangFor(vocabLang) {
-    return vocabLang === 'zh' ? 'zh-CN' : 'en-US';
+    // `bi` = kho song ngữ, mặt phải NÓI là chữ Hán → nghe bằng tiếng Trung.
+    //
+    // Thiếu nhánh này thì nó rơi về 'en-US': người dùng đổi sang Trung–Anh, bấm
+    // Shift để nói 你好, mà bộ nhận diện đang nghe tiếng Anh nên ra một chuỗi
+    // Latin vô nghĩa — không có lỗi nào báo.
+    if (vocabLang === 'zh' || vocabLang === 'bi') return 'zh-CN';
+    return 'en-US';
 }
 
 // Mã ngôn ngữ Google Dịch (`zh-CN`, `vi`, `ja`…) → mã BCP-47 mà Web Speech nhận.
