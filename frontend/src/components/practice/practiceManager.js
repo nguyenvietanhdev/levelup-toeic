@@ -460,14 +460,18 @@ export const PracticeManager = {
                 await ReviewMistakes.start(config);
                 break;
             case 'hanzi-writing':
-                // Chỉ có nghĩa với bộ từ vựng tiếng Trung. Vào bằng tiếng Anh thì
-                // `splitHanzi` không tìm được chữ Hán nào và người dùng chỉ thấy
-                // màn hình rỗng — nói rõ lý do thay vì để họ tự đoán.
-                if (vocabLang() !== 'zh') {
+                // Cần bộ từ CÓ CHỮ HÁN. Vào bằng tiếng Anh thì `splitHanzi`
+                // không tìm được chữ nào và người dùng chỉ thấy màn hình rỗng —
+                // nói rõ lý do thay vì để họ tự đoán.
+                //
+                // Kho song ngữ (`bi`) mỗi bản ghi đều có chữ Hán nên chạy được
+                // y như kho `zh`; so `!== 'zh'` là khoá nhầm nó, mà lời nhắc còn
+                // bảo người đang ở kho đầy chữ Hán đi "đổi sang tiếng Trung".
+                if (vocabLang() !== 'zh' && vocabLang() !== 'bi') {
                     Notification.show({
                         type: 'warning',
-                        title: '🇨🇳 Cần bộ từ vựng tiếng Trung',
-                        message: 'Luyện viết chữ Hán chỉ dùng được khi Ngôn ngữ từ vựng là Tiếng Trung. Đổi trong Cài đặt → Luyện tập.',
+                        title: '🈶 Cần bộ từ có chữ Hán',
+                        message: 'Luyện viết chữ Hán dùng được với bộ Tiếng Trung hoặc Trung–Anh. Đổi trong Cài đặt → Luyện tập.',
                         duration: 4500,
                     });
                     return false;

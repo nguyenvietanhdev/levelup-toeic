@@ -23,6 +23,15 @@ import { CoachAPI } from '@api/coach.js';
 const C_EASY = '#10b981, #059669';   // xanh cây
 const C_MED  = '#3b82f6, #2563eb';   // xanh dương
 const C_HARD = '#8b5cf6, #7c3aed';   // tím
+/**
+ * Bộ từ đang học có chữ Hán không.
+ *
+ * `bi` (Trung–Anh) mỗi bản ghi đều có chữ Hán, nên chế độ `zhOnly` chạy được
+ * y như kho `zh`. So `!== 'zh'` là khoá nhầm nó — mà người dùng đang ở kho đầy
+ * chữ Hán lại được bảo "đổi sang tiếng Trung để dùng".
+ */
+const coChuHan = (lang) => lang === 'zh' || lang === 'bi';
+
 const C_MAX  = '#ef4444, #dc2626';   // đỏ
 
 // Chế độ khách (chưa đăng nhập) được dùng thử — 3 chế độ cơ bản nhất. Bấm chế
@@ -348,11 +357,11 @@ export default function HomeScreen({ active }) {
         // Chế độ chỉ chạy với bộ từ tiếng Trung. Chặn ở đây chứ không chỉ làm mờ
         // thẻ: `game-mode-card--locked` là CSS, mà `onClick` vẫn gắn trên thẻ —
         // bấm vào vẫn vào bài rồi mới vỡ ở chỗ không có chữ Hán nào để viết.
-        if (modeConfig?.zhOnly && getVocabLang() !== 'zh') {
+        if (modeConfig?.zhOnly && !coChuHan(getVocabLang())) {
             Notification.show({
                 type: 'info',
-                title: '🈶 Cần bộ từ tiếng Trung',
-                message: 'Chế độ này tô nét chữ Hán. Đổi ngôn ngữ học sang tiếng Trung ở Cài đặt để dùng.',
+                title: '🈶 Cần bộ từ có chữ Hán',
+                message: 'Chế độ này tô nét chữ Hán. Đổi ngôn ngữ học sang Tiếng Trung hoặc Trung–Anh ở Cài đặt để dùng.',
                 duration: 4000,
             });
             return;
@@ -639,10 +648,10 @@ export default function HomeScreen({ active }) {
                                 const lv = lockInfo(`mode:${m.mode}`);
                                 const levelLocked = lv.locked;
                                 const weekendLocked = m.weekendOnly && !isWeekend();
-                                // `zhOnly` chỉ chạy được với bộ từ tiếng Trung. HIỆN
-                                // nhưng khoá, không ẩn: ẩn thì người học tiếng Anh
-                                // không bao giờ biết app có chế độ này.
-                                const langLocked = m.zhOnly && getVocabLang() !== 'zh';
+                                // `zhOnly` cần bộ từ CÓ CHỮ HÁN. HIỆN nhưng khoá,
+                                // không ẩn: ẩn thì người học tiếng Anh không bao
+                                // giờ biết app có chế độ này.
+                                const langLocked = m.zhOnly && !coChuHan(getVocabLang());
                                 const locked = guestLocked || levelLocked || weekendLocked || langLocked;
                                 return (
                                 <div

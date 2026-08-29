@@ -107,15 +107,31 @@ export const HanziWriting = {
         // `好` ở hai lượt khác nhau là đủ. Sai về mặt học: người học thấy pinyin
         // "nǐ hǎo" và nghĩa "Xin chào" nhưng chỉ được viết một chữ — mất luôn mối
         // liên hệ giữa mặt chữ và từ. Viết trọn `你好` mới là thứ họ cần làm được.
+        // Kho SONG NGỮ để chữ Hán ở `matZh.tu`, không phải `zh`.
+        //
+        // Bản đầu chỉ đọc `w.zh || w.word` nên kho song ngữ ra 0 câu — im lặng,
+        // vì `chars.length === 0` bỏ qua từng từ một rồi lượt luyện kết thúc
+        // ngay lúc bắt đầu, không lỗi nào báo.
+        //
+        // `matZh.tu` đúng ở CẢ HAI chiều (`en` của mapper đổi theo chiều học,
+        // `matZh` thì không), nên nó là nguồn tin cậy; `w.en` chỉ là lối lùi cho
+        // trường hợp một từ chữ Hán lọt vào kho khác.
+        const chuHanCua = (w) =>
+            w?.matZh?.tu || w?.zh || w?.word || (w?.songNgu ? w?.en : '') || '';
+
         const out = [];
         for (const w of words) {
-            const chars = splitHanzi(w.zh || w.word);
+            const tu = chuHanCua(w);
+            const chars = splitHanzi(tu);
             if (chars.length === 0) continue;
             out.push({
-                word: w.zh || w.word,
+                word: tu,
                 chars,
-                pinyin: w.phonetic || '',
-                meaning: w.vn || '',
+                // Phiên âm và nghĩa phải khớp MẶT CHỮ HÁN, không theo chiều học:
+                // đang viết 你好 mà hiện phiên âm của `hello` là chỉ dẫn sai.
+                pinyin: w.matZh ? (w.matZh.phonetic || '') : (w.phonetic || ''),
+                // Kho song ngữ không có nghĩa tiếng Việt — mặt kia là tiếng Anh.
+                meaning: w.songNgu ? (w.matEn?.tu || w.vn || '') : (w.vn || ''),
             });
         }
         this.questions = out.slice(0, this.config?.questionsPerRound || 8);

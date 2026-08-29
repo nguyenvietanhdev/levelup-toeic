@@ -52,7 +52,13 @@ describe('hiện nhưng khoá khi học tiếng Anh', () => {
     });
 
     test('có trạng thái khoá riêng theo ngôn ngữ', () => {
-        expect(home).toMatch(/const langLocked = m\.zhOnly && getVocabLang\(\) !== 'zh'/);
+        expect(home).toMatch(/const langLocked = m\.zhOnly && !coChuHan\(getVocabLang\(\)\)/);
+    });
+
+    test('kho SONG NGỮ không bị khoá — nó cũng đầy chữ Hán', () => {
+        // So `!== 'zh'` trần thì khoá nhầm kho `bi`, mà người dùng đang ở kho
+        // đầy chữ Hán lại được bảo "đổi sang tiếng Trung để dùng".
+        expect(home).toMatch(/const coChuHan = \(lang\) => lang === 'zh' \|\| lang === 'bi'/);
     });
 
     test('`langLocked` gộp vào `locked` — thẻ hiện đúng dạng bị khoá', () => {
@@ -75,7 +81,7 @@ describe('chặn ở luồng bấm, không chỉ ở CSS', () => {
         // bị trừ.
         const i = home.indexOf('const handleModeClick');
         const than = home.slice(i, home.indexOf('\n    };', i));
-        expect(than).toMatch(/modeConfig\?\.zhOnly && getVocabLang\(\) !== 'zh'/);
+        expect(than).toMatch(/modeConfig\?\.zhOnly && !coChuHan\(getVocabLang\(\)\)/);
         // Và phải `return` chứ không chạy tiếp.
         const j = than.indexOf('zhOnly');
         expect(than.slice(j, j + 400)).toMatch(/return;/);
@@ -89,6 +95,8 @@ describe('chặn ở luồng bấm, không chỉ ở CSS', () => {
 
     test('thông báo chỉ ra cách mở, không chỉ báo lỗi', () => {
         const i = home.indexOf("modeConfig?.zhOnly");
-        expect(home.slice(i, i + 500)).toMatch(/Đổi ngôn ngữ học sang tiếng Trung/);
+        // Nêu CẢ HAI bộ dùng được: người ở kho `bi` mà chỉ được bảo "đổi sang
+        // tiếng Trung" thì không hiểu mình đang thiếu gì.
+        expect(home.slice(i, i + 500)).toMatch(/Tiếng Trung hoặc Trung–Anh/);
     });
 });
