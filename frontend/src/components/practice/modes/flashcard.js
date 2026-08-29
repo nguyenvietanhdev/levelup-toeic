@@ -10,6 +10,14 @@ import { FavoritesAPI } from '@api/favorites.js';
 import { EventBus, GameEvents } from '@game/eventBus.js';
 import { layPhienAmCau } from '@lib/sentencePinyin.js';
 
+/**
+ * Độ thuộc (%) tối thiểu để mở nút "Học tiếp".
+ *
+ * 80% — học 20 từ thì được sai tối đa 4. Đủ chặt để không trôi phần chưa
+ * thuộc, nhưng không bắt phải hoàn hảo mới đi tiếp được.
+ */
+const NGUONG_HOC_TIEP = 80;
+
 export const Flashcard = {
 
     config: null,
@@ -614,21 +622,43 @@ export const Flashcard = {
         this.showSummary(results);
     },
 
+    /**
+     * Đã thuộc đủ để sang lô mới chưa.
+     *
+     * Đếm theo `knownWords` / `unknownWords` của chính lô vừa học chứ không
+     * đọc `currentSession`: `finalizeSession()` chạy TRƯỚC `showSummary` và dọn
+     * session, nên tới đây số liệu ở đó có thể đã mất.
+     *
+     * Lô rỗng → cho qua: không có gì để thuộc thì chặn là kẹt cứng.
+     */
+    datNguongHocTiep() {
+        const tong = this.knownWords.length + this.unknownWords.length;
+        if (tong === 0) return true;
+        return (this.knownWords.length / tong) * 100 >= NGUONG_HOC_TIEP;
+    },
+
     // Dùng CHUNG popup kết quả của PracticeManager (đồng bộ với mọi chế độ khác),
     // chỉ đổi nhãn cho đúng ngữ nghĩa Flashcard + thêm nút riêng.
     showSummary(results) {
-        const extraButtons = [
-            ...(this.unknownWords.length > 0 ? [{
-                text: `Ôn lại ${this.unknownWords.length} từ chưa biết`,
-                className: 'btn-warning',
-                onClick: () => { Modal.close(); this.reviewUnknown(); },
-            }] : []),
-            {
-                text: 'Học tiếp',
-                className: 'btn-secondary',
-                onClick: () => { Modal.close(); this.continueNextBatch(); },
-            },
-        ];
+        const extraButtons = this.unknownWords.length > 0 ? [{
+            text: `Ôn lại ${this.unknownWords.length} từ chưa biết`,
+            className: 'btn-warning',
+            onClick: () => { Modal.close(); this.reviewUnknown(); },
+        }] : [];
+
+        // "Học tiếp" chỉ mở khi đã thuộc đủ NGUONG_HOC_TIEP.
+        //
+        // Học tiếp với độ thuộc thấp là bỏ lại phần chưa thuộc rồi chồng thêm
+        // từ mới lên trên — càng học càng nợ. Chưa đạt thì ẩn hẳn, để nút
+        // "Ôn lại từ chưa biết" thành việc rõ ràng cần làm.
+        //
+        // KHÔNG ảnh hưởng việc tự chọn part trên nav: đây chỉ là một nút trong
+        // popup kết quả, người dùng vẫn tự đổi part bất cứ lúc nào.
+        const extraButtonsRight = this.datNguongHocTiep() ? [{
+            text: 'Học tiếp',
+            className: 'btn-secondary',
+            onClick: () => { Modal.close(); this.continueNextBatch(); },
+        }] : [];
 
         const opts = {
             title: '🃏 Hoàn thành Flashcard!',
@@ -636,6 +666,9 @@ export const Flashcard = {
             wrongLabel: 'Chưa biết',
             accuracyLabel: 'Độ thuộc',
             extraButtons,
+            // Sang cụm PHẢI, cạnh "Xem lại câu sai" / "Chơi lại" — bên trái là
+            // xa tay khi nút này mới là hành động hay bấm nhất.
+            extraButtonsRight,
             hideRetry: true, // đã có nút "Ôn lại từ chưa biết" riêng
         };
 

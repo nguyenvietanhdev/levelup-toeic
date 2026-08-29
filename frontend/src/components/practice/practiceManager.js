@@ -789,6 +789,12 @@ export const PracticeManager = {
             wrongLabel = 'Sai',
             accuracyLabel = 'Chính xác',
             extraButtons = [],
+            // Nút xếp vào CỤM PHẢI, cạnh "Xem lại câu sai" / "Chơi lại".
+            //
+            // `extraButtons` nằm trước "Về trang chủ", mà `.pr-btn-home` có
+            // `margin-right: auto` — nên mọi thứ trước nó bị dồn sang trái.
+            // Nút hành động chính đặt bên đó là xa tay phải.
+            extraButtonsRight = [],
             hideRetry = false,
         } = opts;
         // Session có thể đã bị dọn (vd Flashcard gọi lại sau khi kết thúc batch)
@@ -882,6 +888,7 @@ export const PracticeManager = {
                         this.start(mode);
                     }
                 }] : []),
+                ...extraButtonsRight,
                 {
                     text: 'Chơi lại',
                     className: 'btn-primary',
