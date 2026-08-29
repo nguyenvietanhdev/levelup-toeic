@@ -146,7 +146,7 @@ export const MultipleChoice = {
 
         if (!question.reversed && GameState.state?.settings?.autoPronunciation) {
             setTimeout(() => {
-                GameLogic.speakWord(question.word.en, 'en-US');
+                GameLogic.speakWord(question.word.en);
             }, 300);
         }
     },
@@ -191,7 +191,7 @@ export const MultipleChoice = {
         if (speakExBtn) {
             speakExBtn.addEventListener('click', () => {
                 const q = this.questions[this.currentIndex];
-                if (q?.word?.example) GameLogic.speakWord(q.word.example, 'en-US');
+                if (q?.word?.example) GameLogic.speakWord(q.word.example);
             });
         }
     },

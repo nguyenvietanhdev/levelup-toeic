@@ -221,7 +221,7 @@ export const ExampleFillBlank = {
 
         if (GameState.state.settings.soundEnabled) {
             setTimeout(() => {
-                GameLogic.speakWord(question.originalExample, 'en-US');
+                GameLogic.speakWord(question.originalExample);
             }, 300);
         }
 

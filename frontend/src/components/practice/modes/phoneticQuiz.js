@@ -199,7 +199,7 @@ export const PhoneticQuiz = {
     },
 
     playAudio(text) {
-        GameLogic.speakWord(text, 'en-US');
+        GameLogic.speakWord(text);
         const btn = document.getElementById('pq-play-btn');
         if (btn) {
             btn.classList.add('playing');

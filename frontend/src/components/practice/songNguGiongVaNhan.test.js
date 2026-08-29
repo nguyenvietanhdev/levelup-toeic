@@ -33,11 +33,30 @@ describe('giọng chọn theo VĂN BẢN, không theo kho', () => {
         expect(t).not.toMatch(/getVocabLang\(\) === 'zh'/);
     });
 
-    test('quyết định bằng chính đoạn chữ', () => {
+    test('quyết định bằng chính đoạn chữ — khi KHÔNG ai nói rõ', () => {
+        // Nhận diện giờ là LỐI LÙI, không phải luật. Chỗ gọi biết chắc thì
+        // truyền mã vào và hàm nghe theo — xem `heChu` bên dưới.
         const t = thanSpeak();
         expect(t).toMatch(/const isZhText = /);
-        expect(t).toMatch(/if \(isZhText\) lang = 'zh-CN'/);
-        expect(t).toMatch(/const isZhMode = isZhText/);
+        expect(t).toMatch(/: \(isZhText \? 'zh' : isViText \? 'vi' : 'en'\)/);
+        expect(t).toMatch(/const isZhMode = heChu === 'zh'/);
+    });
+
+    test('mã được TRUYỀN VÀO thắng nhận diện', () => {
+        // Bản cũ luôn ghi đè `lang` bằng kết quả đoán, nên tham số `lang` hoàn
+        // toàn vô nghĩa: nghĩa tiếng Việt không dấu ("hoa", "ban") bị đọc bằng
+        // giọng Anh dù chỗ gọi thừa biết đó là ô nghĩa tiếng Việt.
+        const t = thanSpeak();
+        expect(t).toMatch(/const maDaBiet = String\(lang \|\| ''\)\.trim\(\)/);
+        expect(t).toMatch(/const heChu = maDaBiet/);
+        // Và KHÔNG còn ghi đè vô điều kiện.
+        expect(t).not.toMatch(/if \(isZhText\) lang = 'zh-CN';/);
+    });
+
+    test('mặc định là `null` — "chưa ai nói", không phải "tiếng Anh"', () => {
+        // Để mặc định `'en-US'` thì không phân biệt được "không biết" với "biết
+        // chắc là tiếng Anh", nên không thể cho mã truyền vào thắng.
+        expect(gl).toMatch(/speakWord\(text, lang = null, onEnd = null\)/);
     });
 
     test('giọng đã lưu phải KHỚP ngôn ngữ mới được dùng', () => {
@@ -56,10 +75,10 @@ describe('giọng chọn theo VĂN BẢN, không theo kho', () => {
         // Chiều Hán→ZH đã có. Chiều ngược cần từ khi có kho song ngữ: đang học
         // mặt Hán rồi nghe câu ví dụ tiếng Anh thì `voiceKey` trỏ giọng Trung.
         const t = thanSpeak();
-        expect(t).toMatch(/if \(isZhText && !isZhVoice\) effectiveVoice = '__gtts_zh_random__'/);
-        // Điều kiện nới ra khi có thêm tiếng Việt: nay là "không phải Hán VÀ
-        // không phải Việt" mới quay về giọng Anh.
-        expect(t).toMatch(/!isZhText && !isViText && \(isZhVoice \|\| isViVoice\)\) effectiveVoice = '__gtts_random__'/);
+        // Theo `heChu` chứ không soi thẳng `isZhText`: soi mặt chữ ở đây là bỏ
+        // qua điều chỗ gọi vừa khẳng định.
+        expect(t).toMatch(/if \(heChu === 'zh' && !isZhVoice\) effectiveVoice = '__gtts_zh_random__'/);
+        expect(t).toMatch(/heChu === 'en' && \(isZhVoice \|\| isViVoice\)\) effectiveVoice = '__gtts_random__'/);
     });
 });
 

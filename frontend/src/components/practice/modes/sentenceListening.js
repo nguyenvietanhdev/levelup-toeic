@@ -172,7 +172,7 @@ export const SentenceListening = {
                 btn?.classList.remove('playing');
                 return;
             }
-            GameLogic.speakWord(words[index].en, 'en-US', () => {
+            GameLogic.speakWord(words[index].en, null, () => {
                 setTimeout(() => playWord(index + 1), gap);
             });
         };

@@ -333,7 +333,15 @@ export const GameLogic = {
         try { window.speechSynthesis?.cancel(); } catch { /* không hỗ trợ */ }
     },
 
-    speakWord(text, lang = 'en-US', onEnd = null) {
+    /**
+     * Đọc một đoạn chữ.
+     *
+     * @param {string} text
+     * @param {string|null} lang mã BCP-47. Truyền vào là NÓI CHẮC — hàm dùng
+     *   đúng mã đó. Bỏ trống (`null`) mới tự nhận diện theo mặt chữ.
+     * @param {Function|null} onEnd
+     */
+    speakWord(text, lang = null, onEnd = null) {
         // Ch\u1ecdn gi\u1ecdng theo CH\u00cdNH V\u0102N B\u1ea2N, kh\u00f4ng theo kho \u0111ang h\u1ecdc.
         //
         // Tr\u01b0\u1edbc \u0111\u00e2y quy\u1ebft \u0111\u1ecbnh b\u1eb1ng `getVocabLang() === 'zh'`. Kho song ng\u1eef tr\u1ea3
@@ -354,17 +362,30 @@ export const GameLogic = {
         const isViText = !isZhText
             && /[\u0103\u00e2\u0111\u00ea\u00f4\u01a1\u01b0\u00e0\u00e1\u1ea3\u00e3\u1ea1\u1eb1\u1eaf\u1eb3\u1eb5\u1eb7\u1ea7\u1ea5\u1ea9\u1eab\u1ead\u00e8\u00e9\u1ebb\u1ebd\u1eb9\u1ec1\u1ebf\u1ec3\u1ec5\u1ec7\u00ec\u00ed\u1ec9\u0129\u1ecb\u00f2\u00f3\u1ecf\u00f5\u1ecd\u1ed3\u1ed1\u1ed5\u1ed7\u1ed9\u1edd\u1edb\u1edf\u1ee1\u1ee3\u00f9\u00fa\u1ee7\u0169\u1ee5\u1ef3\u00fd\u1ef7\u1ef9\u1ef5]/i.test(chu);
 
-        if (isZhText) lang = 'zh-CN';
-        else if (isViText) lang = 'vi-VN';
+        // Chỗ gọi BIẾT CHẮC thì nói ra — hàm này nghe theo, không đoán lại.
+        //
+        // Bản cũ luôn ghi đè `lang` bằng kết quả nhận diện, tức là tham số
+        // `lang` hoàn toàn vô nghĩa. Nhận diện chỉ là ĐOÁN theo mặt chữ: nghĩa
+        // tiếng Việt không dấu ("hoa", "ban", "cam") trông y hệt tiếng Anh nên
+        // bị đọc bằng giọng Anh, dù chỗ gọi thừa biết đó là ô nghĩa tiếng Việt.
+        //
+        // Nhận diện GIỮ LẠI làm lối lùi cho chỗ gọi không có thông tin — và cho
+        // ca một từ tiếng Anh lọt vào bộ tiếng Trung.
+        const maDaBiet = String(lang || '').trim();
+        const heChu = maDaBiet
+            ? (maDaBiet.startsWith('zh') ? 'zh' : maDaBiet.startsWith('vi') ? 'vi' : 'en')
+            : (isZhText ? 'zh' : isViText ? 'vi' : 'en');
 
-        const isZhMode = isZhText;
+        lang = maDaBiet || (heChu === 'zh' ? 'zh-CN' : heChu === 'vi' ? 'vi-VN' : 'en-US');
+
+        const isZhMode = heChu === 'zh';
         const voiceKey = isZhMode ? 'toeic_voice_zh'
-            : isViText ? 'toeic_voice_vi'
+            : heChu === 'vi' ? 'toeic_voice_vi'
             : 'toeic_voice_en';
         const savedVoiceName = localStorage.getItem(voiceKey)
             || localStorage.getItem('toeic_voice')  // backward compat
             || (isZhMode ? '__gtts_zh_random__'
-                : isViText ? '__gtts_vi_random__'
+                : heChu === 'vi' ? '__gtts_vi_random__'
                 : '__gtts_random__');
 
         this._replayCallback = () => this.speakWord(text, lang);
@@ -376,12 +397,16 @@ export const GameLogic = {
             // ngữ: đang học mặt chữ Hán rồi bấm nghe câu ví dụ tiếng Anh thì
             // `voiceKey` trỏ vào giọng Trung, và giọng đó đọc chữ Latin theo
             // lối phiên âm tiếng Trung — sai hẳn.
+            //
+            // Theo `heChu` — tức là theo mã đã BIẾT nếu chỗ gọi truyền vào, chỉ
+            // rơi về nhận diện khi không ai nói. Soi thẳng `isZhText`/`isViText`
+            // ở đây là bỏ qua điều chỗ gọi vừa khẳng định.
             const isZhVoice = savedVoiceName.startsWith('__gtts_zh');
             const isViVoice = savedVoiceName.startsWith('__gtts_vi');
             let effectiveVoice = savedVoiceName;
-            if (isZhText && !isZhVoice) effectiveVoice = '__gtts_zh_random__';
-            else if (isViText && !isViVoice) effectiveVoice = '__gtts_vi_random__';
-            else if (!isZhText && !isViText && (isZhVoice || isViVoice)) effectiveVoice = '__gtts_random__';
+            if (heChu === 'zh' && !isZhVoice) effectiveVoice = '__gtts_zh_random__';
+            else if (heChu === 'vi' && !isViVoice) effectiveVoice = '__gtts_vi_random__';
+            else if (heChu === 'en' && (isZhVoice || isViVoice)) effectiveVoice = '__gtts_random__';
             this._speakGoogleTTS(text, effectiveVoice, onEnd);
             return;
         }

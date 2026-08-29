@@ -146,7 +146,7 @@ export const ContextLearning = {
         this.attachListeners(question);
 
         setTimeout(() => {
-            GameLogic.speakWord(question.example, 'en-US');
+            GameLogic.speakWord(question.example);
         }, 300);
     },
 
@@ -161,7 +161,7 @@ export const ContextLearning = {
         const speakBtn = document.getElementById('speak-example-btn');
         if (speakBtn) {
             speakBtn.addEventListener('click', () => {
-                GameLogic.speakWord(question.example, 'en-US');
+                GameLogic.speakWord(question.example);
             });
         }
 
@@ -169,7 +169,7 @@ export const ContextLearning = {
         if (listenHint) {
             listenHint.style.cursor = 'pointer';
             listenHint.addEventListener('click', () => {
-                GameLogic.speakWord(question.example, 'en-US');
+                GameLogic.speakWord(question.example);
             });
         }
 

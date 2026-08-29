@@ -354,11 +354,11 @@ export const Dictation = {
 
         // Gắn sau khi innerHTML đã dựng xong — nút chỉ tồn tại từ lúc này.
         resultEl.querySelector('.js-speak-example')?.addEventListener('click', (e) => {
-            GameLogic.speakWord(e.currentTarget.dataset.text || word.example, 'en-US');
+            GameLogic.speakWord(e.currentTarget.dataset.text || word.example);
         });
 
         if (!allCorrect) {
-            setTimeout(() => GameLogic.speakWord(word.example, 'en-US'), 700);
+            setTimeout(() => GameLogic.speakWord(word.example), 700);
         }
 
         this._translateExample(word.example);

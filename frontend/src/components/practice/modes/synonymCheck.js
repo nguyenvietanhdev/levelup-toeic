@@ -140,7 +140,7 @@ export const SynonymCheck = {
 
         if (GameState.state?.settings?.autoPronunciation) {
             setTimeout(() => {
-                GameLogic.speakWord(question.word.en, 'en-US');
+                GameLogic.speakWord(question.word.en);
             }, 300);
         }
     },
@@ -153,7 +153,7 @@ export const SynonymCheck = {
         document.getElementById('speak-word-btn')?.addEventListener('click', e => {
             e.stopPropagation();
             const q = this.questions?.[this.currentIndex];
-            if (q?.word?.en) GameLogic.speakWord(q.word.en, 'en-US');
+            if (q?.word?.en) GameLogic.speakWord(q.word.en);
         });
     },
 

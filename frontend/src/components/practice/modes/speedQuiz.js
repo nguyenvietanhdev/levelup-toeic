@@ -133,7 +133,7 @@ export const SpeedQuiz = {
             speakBtn.addEventListener('click', () => {
                 // Luôn đọc từ tiếng Anh (kể cả khi đảo chiều prompt đang là tiếng Việt).
                 if (question?.word?.en) {
-                    GameLogic.speakWord(question.word.en, 'en-US');
+                    GameLogic.speakWord(question.word.en);
                 }
             });
         }

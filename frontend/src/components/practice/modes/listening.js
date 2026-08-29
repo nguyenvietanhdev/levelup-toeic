@@ -162,7 +162,7 @@ export const Listening = {
     },
 
     playAudio(text) {
-        GameLogic.speakWord(text, 'en-US');
+        GameLogic.speakWord(text);
 
         const playBtn = document.getElementById('play-audio-btn');
         if (playBtn) {

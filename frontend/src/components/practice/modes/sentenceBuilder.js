@@ -536,7 +536,7 @@ export const SentenceBuilder = {
         }
 
         setTimeout(() => {
-            GameLogic.speakWord(this.correctSentence, 'en-US');
+            GameLogic.speakWord(this.correctSentence);
         }, 500);
 
         // Xem `contextLearning`: tôn trọng cài đặt "Tự động chuyển câu".

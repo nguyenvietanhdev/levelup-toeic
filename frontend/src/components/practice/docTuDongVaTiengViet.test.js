@@ -77,7 +77,7 @@ describe('phát âm tiếng Việt', () => {
     test('có khoá giọng riêng cho tiếng Việt', () => {
         // Soi ĐIỀU KIỆN dẫn tới khoá đó, không phải "có chuỗi ở đâu đó":
         // `false ? 'toeic_voice_vi'` vẫn khớp mà khoá thì không bao giờ dùng.
-        expect(thanSpeak()).toMatch(/: isViText \? 'toeic_voice_vi'/);
+        expect(thanSpeak()).toMatch(/: heChu === 'vi' \? 'toeic_voice_vi'/);
     });
 
     test('gTTS có ánh xạ giọng Việt', () => {
@@ -91,7 +91,7 @@ describe('phát âm tiếng Việt', () => {
     });
 
     test('giọng sai ngôn ngữ bị đổi sang giọng Việt', () => {
-        expect(thanSpeak()).toMatch(/isViText && !isViVoice.*__gtts_vi_random__/);
+        expect(thanSpeak()).toMatch(/heChu === 'vi' && !isViVoice.*__gtts_vi_random__/);
     });
 
     test('tiền tố lọc giọng khai MỘT lần, dùng chung', () => {

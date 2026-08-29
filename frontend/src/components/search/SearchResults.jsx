@@ -90,7 +90,7 @@ export default function SearchResults() {
 
     const speak = (e, en) => {
         e.stopPropagation();
-        if (en) GameLogic.speakWord(en, 'en-US');
+        if (en) GameLogic.speakWord(en);
     };
 
     const showWordDetail = (word) => {
@@ -140,7 +140,7 @@ export default function SearchResults() {
 
         setTimeout(() => {
             document.getElementById('play-pronunciation-btn')
-                ?.addEventListener('click', () => GameLogic.speakWord(word.en, 'en-US'));
+                ?.addEventListener('click', () => GameLogic.speakWord(word.en));
         }, 100);
     };
 

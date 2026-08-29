@@ -30,7 +30,7 @@ describe('phát âm CẢ HAI cột', () => {
         const i = src.indexOf('items.forEach');
         const t = src.slice(i, src.indexOf('this.selectItem(', i));
         expect(t).not.toMatch(/if \(side === 'left'\)/);
-        expect(t).toMatch(/GameLogic\.speakWord\(wordEl\.dataset\.word\)/);
+        expect(t).toMatch(/GameLogic\.speakWord\(wordEl\.dataset\.word, wordEl\.dataset\.lang/);
     });
 
     test('KHÔNG truyền cứng ngôn ngữ', () => {

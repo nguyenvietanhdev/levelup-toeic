@@ -232,7 +232,7 @@ export const WordTypeCheck = {
 
         if (GameState.state?.settings?.autoPronunciation) {
             setTimeout(() => {
-                GameLogic.speakWord(question.word.en, 'en-US');
+                GameLogic.speakWord(question.word.en);
             }, 300);
         }
     },

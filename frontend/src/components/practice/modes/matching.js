@@ -1,5 +1,5 @@
 import { GameLogic } from '@game/gameLogic.js';
-import { nhanTheoChieu } from '../nhanNgonNgu.js';
+import { nhanTheoChieu, maCapHoc } from '../nhanNgonNgu.js';
 import { GameState } from '@game/state.js';
 import { Config } from '@game/config.js';
 import { Utils } from '@lib/utils.js';
@@ -93,7 +93,8 @@ export const Matching = {
                     <div class="matching-items">
                         ${this.matchingData.leftColumn.map(item => `
                             <div class="matching-item" data-id="${item.id}" data-side="left">
-                                <span class="matching-word-text" data-word="${item.text}">${item.text}</span>
+                                <span class="matching-word-text" data-word="${item.text}"
+                                      data-lang="${maCapHoc(item.wordData).tu}">${item.text}</span>
                             </div>
                         `).join('')}
                     </div>
@@ -104,7 +105,8 @@ export const Matching = {
                     <div class="matching-items">
                         ${this.matchingData.rightColumn.map(item => `
                             <div class="matching-item" data-id="${item.id}" data-side="right">
-                                <span class="matching-word-text" data-word="${item.text}">${item.text}</span>
+                                <span class="matching-word-text" data-word="${item.text}"
+                                      data-lang="${maCapHoc(item.wordData).nghia}">${item.text}</span>
                             </div>
                         `).join('')}
                     </div>
@@ -129,10 +131,17 @@ export const Matching = {
                 // nhất là kho song ngữ, nơi cột phải là tiếng Anh chứ không
                 // phải nghĩa tiếng Việt.
                 //
-                // KHÔNG truyền cứng 'en-US': `speakWord` tự nhận diện hệ chữ.
-                // Truyền vào thì cột chữ Hán bị đọc bằng giọng Mỹ.
+                // Giọng theo CỘT, không để `speakWord` tự đoán theo mặt chữ.
+                //
+                // `generateMatching` luôn đặt `w.en` bên trái và `w.vn` bên
+                // phải, nên ở đây BIẾT CHẮC mỗi cột là ngôn ngữ gì — đã biết
+                // thì đừng đoán. Nhận diện chỉ nhìn mặt chữ, mà nghĩa tiếng
+                // Việt không dấu ("hoa", "ban", "cam") trông y hệt tiếng Anh
+                // nên bị đọc bằng giọng Anh.
                 const wordEl = item.querySelector('.matching-word-text');
-                if (wordEl?.dataset.word) GameLogic.speakWord(wordEl.dataset.word);
+                if (wordEl?.dataset.word) {
+                    GameLogic.speakWord(wordEl.dataset.word, wordEl.dataset.lang || null);
+                }
 
                 this.selectItem(id, side, item);
             });
