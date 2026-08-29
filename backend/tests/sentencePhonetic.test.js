@@ -112,36 +112,12 @@ describe('gọi AI', () => {
     });
 });
 
-describe('cache và phản hồi', () => {
-    const { readFileSync } = require('node:fs');
-    const { join } = require('node:path');
-    const ctrl = readFileSync(
-        join(__dirname, '..', 'controllers', 'phoneticController.js'), 'utf8');
-
-    test('có cache trong DB thì KHÔNG gọi AI', () => {
-        // Câu ví dụ là dữ liệu tĩnh — người thứ hai gặp cùng câu không phải trả
-        // tiền lần nữa.
-        expect(ctrl.indexOf('daCo?.examplePhonetic'))
-            .toBeLessThan(ctrl.indexOf('layPhienAmCau('));
-    });
-
-    test('ghi cache cho MỌI bản ghi dùng chung câu đó', () => {
-        // Một câu ví dụ có thể gắn với nhiều từ.
-        expect(ctrl).toMatch(/updateMany\(\{ example: text \}/);
-    });
-
-    test('thất bại trả 200 với phiên âm rỗng, KHÔNG trả 5xx', () => {
-        // Đây là thông tin phụ trợ; đẩy lỗi đỏ lên console cho thứ không ảnh
-        // hưởng bài học là báo động giả.
-        const i = ctrl.indexOf('if (!ai.success)');
-        const khoi = ctrl.slice(i, ctrl.indexOf('}', ctrl.indexOf('return', i)));
-        expect(khoi).toMatch(/phonetic: ''/);
-        expect(khoi).not.toMatch(/status\(5/);
-    });
-
-    test('chọn đúng kho theo ngôn ngữ của câu', () => {
-        // Câu tiếng Trung nằm ở `VocabularyZh`; tra nhầm kho thì không bao giờ
-        // thấy cache và gọi AI lại mỗi lần.
-        expect(ctrl).toMatch(/coChuHan\(cau\) \? VocabularyZh : Vocabulary/);
-    });
-});
+/**
+ * Hành vi cache của controller được kiểm ở `phoneticControllerBi.test.js` —
+ * gọi controller thật với model đã mock, thay vì so khớp chuỗi mã.
+ *
+ * Vì sao bỏ khối so-chuỗi cũ: nó khớp `daCo?.examplePhonetic`, một tên biến.
+ * Đổi tên biến là test đỏ dù hành vi y nguyên; mà tệ hơn, khi controller được
+ * viết lại thì `indexOf` trả -1 và phép so `-1 < n` vẫn đúng — test XANH GIẢ,
+ * không còn kiểm gì nữa mà không ai biết.
+ */

@@ -74,6 +74,12 @@ const vocabularyBiSchema = new mongoose.Schema(
         synonymsZh: { type: String, default: '' },
         synonymsEn: { type: String, default: '' },
 
+        // Phiên âm CỦA CHUỖI đồng nghĩa, cùng cơ chế cache như câu ví dụ.
+        // Không có ô này thì chuỗi đồng nghĩa không nằm ở kho nào, nên lần nào
+        // hiện thẻ cũng phải gọi AI lại — tốn tiền âm thầm và mãi mãi.
+        synonymsPhoneticZh: { type: String, default: '' },
+        synonymsPhoneticEn: { type: String, default: '' },
+
         // ── Câu ví dụ ──────────────────────────────────────────────────────
         exampleZh: { type: String, default: '' },
         exampleEn: { type: String, default: '' },

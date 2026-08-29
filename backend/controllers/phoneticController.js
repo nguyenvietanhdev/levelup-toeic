@@ -1,5 +1,6 @@
 const Vocabulary = require('../models/Vocabulary');
 const VocabularyZh = require('../models/VocabularyZh');
+const VocabularyBi = require('../models/VocabularyBi');
 const { layPhienAmCau, coChuHan } = require('../services/sentencePhonetic');
 const logger = require('../utils/logger');
 
@@ -11,9 +12,31 @@ const logger = require('../utils/logger');
  * nữa, và restart server không mất cache.
  */
 
-/** Bản ghi chứa câu này, ở kho tương ứng ngôn ngữ. */
+/**
+ * Nơi tra và ghi cache phiên âm của một câu.
+ *
+ * Trả về DANH SÁCH chứ không một kho: cùng một câu tiếng Anh có thể nằm ở kho
+ * tiếng Anh (`example`) lẫn kho song ngữ (`exampleEn`), và kho song ngữ dùng
+ * tên trường khác hẳn vì mỗi bản ghi ôm cả hai ngôn ngữ.
+ *
+ * Bỏ sót kho song ngữ là hỏng đúng hai đường một lúc: tra cache không bao giờ
+ * trúng, mà ghi cache cũng không trúng bản ghi nào — nên mỗi lần hiện thẻ song
+ * ngữ là một lần gọi AI tính tiền, lặp lại vô hạn.
+ */
 function khoTheoCau(cau) {
-    return coChuHan(cau) ? VocabularyZh : Vocabulary;
+    const zh = coChuHan(cau);
+    const KhoCu = zh ? VocabularyZh : Vocabulary;
+    const hau = zh ? 'Zh' : 'En';
+
+    // Cả câu ví dụ LẪN chuỗi đồng nghĩa: client chỉ gửi đoạn chữ, không nói đó
+    // là loại nào — mà cùng một endpoint phục vụ cả hai. Thiếu vế đồng nghĩa
+    // thì nó không nằm ở ô nào, nên lần nào hiện thẻ cũng gọi AI lại.
+    return [
+        { Kho: KhoCu, oCau: 'example', oPhienAm: 'examplePhonetic' },
+        { Kho: KhoCu, oCau: 'synonyms', oPhienAm: 'synonymsPhonetic' },
+        { Kho: VocabularyBi, oCau: `example${hau}`, oPhienAm: `examplePhonetic${hau}` },
+        { Kho: VocabularyBi, oCau: `synonyms${hau}`, oPhienAm: `synonymsPhonetic${hau}` },
+    ];
 }
 
 /**
@@ -27,16 +50,17 @@ exports.sentence = async (req, res, next) => {
             return res.status(400).json({ success: false, message: 'Thiếu câu' });
         }
 
-        const Kho = khoTheoCau(text);
+        const nguon = khoTheoCau(text);
 
-        // Đã có trong kho → trả ngay, không gọi AI.
-        const daCo = await Kho.findOne({ example: text })
-            .select('examplePhonetic').lean();
-        if (daCo?.examplePhonetic) {
-            return res.json({
-                success: true,
-                data: { phonetic: daCo.examplePhonetic, cached: true },
-            });
+        // Đã có ở BẤT KỲ kho nào → trả ngay, không gọi AI.
+        for (const { Kho, oCau, oPhienAm } of nguon) {
+            const daCo = await Kho.findOne({ [oCau]: text }).select(oPhienAm).lean();
+            if (daCo?.[oPhienAm]) {
+                return res.json({
+                    success: true,
+                    data: { phonetic: daCo[oPhienAm], cached: true },
+                });
+            }
         }
 
         const ai = await layPhienAmCau({ cau: text, userId: req.user?.id || null });
@@ -48,10 +72,12 @@ exports.sentence = async (req, res, next) => {
             return res.json({ success: true, data: { phonetic: '' } });
         }
 
-        // Ghi cache cho MỌI bản ghi dùng chung câu này — cùng một câu ví dụ có
-        // thể gắn với nhiều từ.
-        Kho.updateMany({ example: text }, { $set: { examplePhonetic: ai.phonetic } })
-            .catch((e) => logger.warn('Cache phiên âm thất bại:', e.message));
+        // Ghi cache cho MỌI bản ghi dùng chung câu này, ở mọi kho — cùng một câu
+        // ví dụ có thể gắn với nhiều từ, và có mặt ở cả kho song ngữ.
+        for (const { Kho, oCau, oPhienAm } of nguon) {
+            Kho.updateMany({ [oCau]: text }, { $set: { [oPhienAm]: ai.phonetic } })
+                .catch((e) => logger.warn('Cache phiên âm thất bại:', e.message));
+        }
 
         res.json({ success: true, data: { phonetic: ai.phonetic, cached: false } });
     } catch (error) {

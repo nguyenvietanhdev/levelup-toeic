@@ -7,6 +7,8 @@ const vocabularySchema = new mongoose.Schema(
         phonetic: { type: String, default: '' },
         part: { type: String, required: true, trim: true },
         synonyms: { type: String, default: '' },
+        // Phiên âm CỦA CHUỖI đồng nghĩa, cùng cơ chế cache như `examplePhonetic`.
+        synonymsPhonetic: { type: String, default: '' },
         type: { type: String, default: '' },
         image: { type: String, default: '' },
         example: { type: String, default: '' },
