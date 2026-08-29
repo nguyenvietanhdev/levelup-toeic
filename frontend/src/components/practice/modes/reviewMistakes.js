@@ -820,7 +820,27 @@ export const ReviewMistakes = {
         const input = document.getElementById('rm-input');
         if (!question || !input || input.disabled) return;
 
-        const dung = GameLogic.checkFillBlank(traLoi, question.correctAnswer);
+        // Ô TRỐNG thì không nộp — nhấn Enter khi chưa gõ gì là mất câu oan.
+        // `calculateSimilarity` còn trả 100 khi cả hai chuỗi rỗng (nhánh
+        // `longer.length === 0`), nên bỏ trống có thể thành "đúng".
+        if (!String(traLoi).trim()) {
+            Notification.show({
+                type: 'warning',
+                title: 'Chưa nhập đáp án',
+                message: 'Vui lòng nhập câu trả lời',
+                duration: 2000,
+            });
+            return;
+        }
+
+        // `.correct` — KHÔNG dùng thẳng giá trị trả về.
+        //
+        // `checkFillBlank` trả OBJECT `{ correct, similarity }`, mà object thì
+        // luôn truthy: bản cũ chấm đúng cho MỌI câu trả lời, kể cả gõ một chữ
+        // hay bỏ trống. Cả lượt ôn hiện "Chính xác!" nên không có gì gợi ra là
+        // sai — mà đây lại là chế độ ôn từ ĐÃ SAI, tức là hỏng đúng chỗ cần
+        // chấm nghiêm nhất.
+        const { correct: dung } = GameLogic.checkFillBlank(traLoi, question.correctAnswer);
         input.disabled = true;
         input.classList.add(dung ? 'is-correct' : 'is-wrong');
         const btn = document.getElementById('rm-check-btn');
