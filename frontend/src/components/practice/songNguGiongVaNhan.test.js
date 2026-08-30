@@ -9,6 +9,7 @@ import { describe, test, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { nhanKho } from '@lib/nhanKho.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const F = (...p) => readFileSync(join(__dirname, ...p), 'utf8');
@@ -106,13 +107,21 @@ describe('kho song ngữ mở CẢ HAI ô chọn giọng', () => {
 });
 
 describe('nhãn ngôn ngữ theo CẶP đang học', () => {
+    // Bảng nhãn nay ở module LÁ `lib/nhanKho.js` — `gameLogic` cũng cần nó để
+    // đặt câu hỏi, mà `nhanNgonNgu` lại import `vocabLang` TỪ `gameLogic`, nên
+    // để bảng ở một trong hai chỗ đó là vòng import. Nội dung bảng được kiểm
+    // bằng cách GỌI THẬT ở `lib/nhanKho.test.js`.
     test('kho song ngữ: Trung – Anh, KHÔNG có tiếng Việt', () => {
-        expect(nhan).toMatch(/kho === 'bi'\) return \{ tu: 'Tiếng Trung', nghia: 'Tiếng Anh' \}/);
+        expect(nhanKho('bi')).toEqual({ tu: 'Tiếng Trung', nghia: 'Tiếng Anh' });
     });
 
     test('hai kho cũ giữ nhãn cũ', () => {
-        expect(nhan).toMatch(/kho === 'zh'\) return \{ tu: 'Tiếng Trung', nghia: 'Tiếng Việt' \}/);
-        expect(nhan).toMatch(/return \{ tu: 'Tiếng Anh', nghia: 'Tiếng Việt' \}/);
+        expect(nhanKho('zh')).toEqual({ tu: 'Tiếng Trung', nghia: 'Tiếng Việt' });
+        expect(nhanKho('en')).toEqual({ tu: 'Tiếng Anh', nghia: 'Tiếng Việt' });
+    });
+
+    test('`nhanNgonNgu` dùng LẠI bảng đó, không chép tay', () => {
+        expect(nhan).toMatch(/return nhanKho\(vocabLang\(\)\)/);
     });
 
     test('đảo chiều thì nhãn đổi chỗ theo', () => {

@@ -84,7 +84,9 @@ export const HanziWriting = {
             Notification.show({
                 type: 'warning',
                 title: 'Không có chữ Hán',
-                message: 'Chế độ này cần bộ từ vựng tiếng Trung. Đổi Ngôn ngữ từ vựng sang Tiếng Trung trong Cài đặt.',
+                // Nêu CẢ HAI bộ dùng được. Người đang ở kho Trung–Anh mà được bảo
+                // "đổi sang Tiếng Trung" thì không hiểu mình đang thiếu gì.
+                message: 'Chế độ này cần bộ từ có chữ Hán. Đổi Ngôn ngữ từ vựng sang Tiếng Trung hoặc Trung–Anh trong Cài đặt.',
                 duration: 4000,
             });
             return;

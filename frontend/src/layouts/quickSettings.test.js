@@ -154,7 +154,10 @@ describe('nút đảo chiều luyện tập', () => {
     test('nhãn nói rõ chiều, theo ĐÚNG ngôn ngữ đang học', () => {
         // "Tiếng Anh → Tiếng Việt" hay "Tiếng Việt → Tiếng Trung" tuỳ vocabLang;
         // ghi cứng "EN/VN" là sai khi người dùng đang học tiếng Trung.
-        expect(quick).toMatch(/vocabLang === 'en' \? 'Tiếng Anh' : 'Tiếng Trung'/);
+        // Nhãn lấy từ bảng chung `nhanKho` thay vì chép tay lần thứ hai — chép
+        // thì sửa nhãn ở màn này còn màn kia giữ nguyên, mà không gì nhắc.
+        expect(quick).toMatch(/const n = nhanKho\(vocabLang\)/);
+        expect(quick).toMatch(/return \{ tu: n\.tu, sang: n\.nghia \}/);
     });
 
     test('dùng <select>, không phải nút bật/tắt', () => {

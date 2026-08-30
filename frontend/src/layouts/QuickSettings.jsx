@@ -5,6 +5,7 @@ import { EventBus, GameEvents } from '@game/eventBus.js';
 import { Notification } from '@ui/Toaster.jsx';
 import { loadUnlocks, lockInfo } from '@game/featureUnlocks.js';
 import { levelsFor, bandLabel, BANDS } from '@lib/levelBands.js';
+import { nhanKho } from '@lib/nhanKho.js';
 
 // Bảng mức độ khó theo ngôn ngữ nằm ở `@lib/levelBands.js` — tiếng Trung dùng
 // HSK, tiếng Anh dùng CEFR. Trước đây bảng CEFR bị chép cứng ở đây, nên chọn
@@ -174,9 +175,13 @@ export default function QuickSettings({ variant = 'bar' }) {
         localStorage.setItem('reverseMode', String(next));
         GameState.state.settings.reverseMode = next;
         GameState.save?.();
+        // Gọi ĐÚNG tên hai mặt. Kho song ngữ học Trung ↔ Anh, không qua tiếng
+        // Việt — báo "hỏi bằng Tiếng Việt" ở đó là sai hẳn, mà `nhanKho` đã biết
+        // điều này rồi.
+        const c = nhanKho(vocabLang);
         Notification.success(next
-            ? 'Đảo chiều: hỏi bằng Tiếng Việt → trả lời bằng từ đang học'
-            : 'Chiều thường: hỏi bằng từ đang học → trả lời bằng Tiếng Việt');
+            ? `Đảo chiều: hỏi bằng ${c.nghia} → trả lời bằng ${c.tu}`
+            : `Chiều thường: hỏi bằng ${c.tu} → trả lời bằng ${c.nghia}`);
     };
 
     const guestBlocked = !isLoggedIn;
@@ -188,9 +193,10 @@ export default function QuickSettings({ variant = 'bar' }) {
 
     // Nhãn chiều luyện tập. Kho song ngữ KHÔNG đi qua tiếng Việt — hiện
     // "Tiếng Trung → Tiếng Việt" ở đó là sai cả hai vế.
-    const tenChieu = vocabLang === 'bi'
-        ? { tu: 'Tiếng Trung', sang: 'Tiếng Anh' }
-        : { tu: vocabLang === 'en' ? 'Tiếng Anh' : 'Tiếng Trung', sang: 'Tiếng Việt' };
+    const tenChieu = (() => {
+        const n = nhanKho(vocabLang);
+        return { tu: n.tu, sang: n.nghia };
+    })();
 
     // Ngôn ngữ học dùng <select> cho ĐỒNG BỘ với các lựa chọn nhanh còn lại
     // (số câu · độ khó · chiều luyện tập) — trước đây nó là nút bật/tắt duy nhất

@@ -156,3 +156,73 @@ describe('kiểu PHÁT ÂM: khoá điều khiển sau khi chấm', () => {
         expect(t.slice(i, i + 500)).toMatch(/this\._daChamNoi/);
     });
 });
+
+describe('kiểu PHÁT ÂM có BA lần thử', () => {
+    const t = than('ganPhatAm(question) {');
+
+    test('hằng số khai riêng, giá trị 3', () => {
+        // Nhận dạng giọng nói không phải phép đo chính xác: micro rè, tiếng ồn,
+        // hay máy nghe hụt một âm là trượt — mà người học không sai gì cả. Một
+        // lần duy nhất biến những ca đó thành "sai", rồi lịch ôn đẩy từ ấy quay
+        // lại sớm hơn mức cần.
+        expect(src).toMatch(/const SO_LAN_NOI = 3;/);
+    });
+
+    test('đếm lần thử, đặt lại ở ĐẦU mỗi câu', () => {
+        // Không đặt lại thì câu trước dùng hết lượt là câu sau chấm sai ngay
+        // lần nói đầu tiên.
+        expect(t).toMatch(/this\._soLanNoi = 0;/);
+        expect(t.indexOf('this._soLanNoi = 0')).toBeLessThan(t.indexOf('const bat ='));
+    });
+
+    test('sai mà CÒN lượt thì chưa chấm', () => {
+        expect(t).toMatch(/if \(!diem\.correct && conLai > 0\)/);
+        // Và phải THOÁT khỏi nhánh chấm.
+        const i = t.indexOf('if (!diem.correct && conLai > 0)');
+        expect(t.slice(i, i + 700)).toMatch(/return;/);
+    });
+
+    test('nhánh còn lượt KHÔNG gọi `khoaLai` hay `ketThucCau`', () => {
+        // `khoaLai` vừa đặt cờ "đã chấm" vừa vô hiệu hoá nút mic, nên gọi sớm
+        // là người học không bấm lại được và lượt thử còn lại thành vô nghĩa.
+        //
+        // Bỏ comment trước khi soi: chính lời giải thích trong nhánh cũng nhắc
+        // tên hai hàm đó.
+        const i = t.indexOf('if (!diem.correct && conLai > 0)');
+        const nhanh = t.slice(i, t.indexOf('return;', i))
+            .replace(/\/\/.*/g, '');
+        expect(nhanh).not.toMatch(/khoaLai\(\)/);
+        expect(nhanh).not.toMatch(/ketThucCau\(/);
+    });
+
+    test('nói ĐÚNG thì chấm ngay, không bắt thử đủ ba lần', () => {
+        // Điều kiện có `!diem.correct` nên đúng là rơi thẳng xuống nhánh chấm.
+        const i = t.indexOf('this._soLanNoi += 1');
+        const sau = t.slice(i);
+        expect(sau).toMatch(/khoaLai\(\);/);
+        expect(sau).toMatch(/this\.ketThucCau\(diem\.correct, question, tu\)/);
+    });
+
+    test('hết lượt thì chấm SAI, không cho thử mãi', () => {
+        // `conLai > 0` là điều kiện duy nhất giữ câu lại; hết lượt thì rơi
+        // xuống `khoaLai()` + `ketThucCau`.
+        expect(t).toMatch(/const conLai = SO_LAN_NOI - this\._soLanNoi;/);
+    });
+
+    test('báo còn mấy lần thử', () => {
+        // Không báo thì người học không biết mình còn cơ hội, và bỏ qua luôn.
+        expect(t).toMatch(/còn \$\{conLai\} lần thử/);
+    });
+
+    test('lời nhắc trên màn hình nói rõ có mấy lần', () => {
+        expect(src).toMatch(/có \$\{SO_LAN_NOI\} lần thử/);
+    });
+
+    test('MỘT CÂU vẫn chỉ chấm MỘT lần', () => {
+        // Ba lần thử không được phá luật cũ: chỉ đúng một lời gọi `ketThucCau`
+        // trong nhánh chấm của `onresult`.
+        const i = t.indexOf('rec.onresult');
+        const j = t.indexOf('rec.onend', i);
+        expect((t.slice(i, j).match(/ketThucCau\(/g) || []).length).toBe(1);
+    });
+});

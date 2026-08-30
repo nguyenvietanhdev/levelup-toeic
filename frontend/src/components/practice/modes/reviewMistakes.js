@@ -45,6 +45,18 @@ async function ensureHanziWriter() {
 // nhưng vẫn dễ hơn tự gõ đúng chính tả.
 const KIEU_HOI = ['flashcard', 'choice', 'truefalse', 'listen', 'speak', 'scramble', 'fill', 'hanzi'];
 
+/**
+ * Số lần được thử ở câu PHÁT ÂM.
+ *
+ * Nhận dạng giọng nói không phải phép đo chính xác: micro rè, tiếng ồn, hay
+ * máy nghe hụt một âm là trượt — mà người học không sai gì cả. Một lần duy
+ * nhất biến những ca đó thành "sai", rồi lịch ôn đẩy từ ấy quay lại sớm hơn
+ * mức cần.
+ *
+ * Ba lần: đủ để vượt qua nhiễu, mà vẫn ít hơn số lần cần để đoán mò.
+ */
+const SO_LAN_NOI = 3;
+
 /** Chữ Hán — dùng để biết một từ có viết được không. */
 const HAN_RE = /[\u4e00-\u9fff\u3400-\u4dbf]/;
 
@@ -483,7 +495,7 @@ export const ReviewMistakes = {
 
         if (question.kieu === 'speak') {
             return `
-                <p class="rm-prompt">Bấm mic rồi đọc to từ này</p>
+                <p class="rm-prompt">Bấm mic rồi đọc to từ này — có ${SO_LAN_NOI} lần thử</p>
                 <div class="rm-speak">
                     <button class="rm-mic-btn" id="rm-mic">
                         <i class="fas fa-microphone"></i>
@@ -639,6 +651,11 @@ export const ReviewMistakes = {
          */
         this._daChamNoi = false;
 
+        // Số lần ĐÃ thử ở câu này. Đặt lại cùng chỗ với cờ trên: câu mới phải
+        // bắt đầu lại từ 0, không thì câu trước dùng hết lượt là câu sau chấm
+        // sai ngay lần nói đầu.
+        this._soLanNoi = 0;
+
         /** Khoá mọi điều khiển sau khi đã chấm — không cho làm lại. */
         const khoaLai = () => {
             this._daChamNoi = true;
@@ -694,14 +711,32 @@ export const ReviewMistakes = {
                     return;
                 }
 
-                khoaLai();
                 if (oNghe) oNghe.textContent = chu;
                 const diem = scoreAttempt(chu, Array.from(kq), tu, laZh);
                 this._dungNghe();
                 nut.classList.remove('is-listening');
-                if (trangThai) trangThai.textContent = feedbackMessage(diem, tu, laZh);
+
+                this._soLanNoi += 1;
+                const conLai = SO_LAN_NOI - this._soLanNoi;
+
                 // `correct` đã bao gồm cả ca "gần đúng" (xem `scoreAttempt`:
                 // nhánh cuối trả `correct: near`), không cần kiểm `near` nữa.
+                if (!diem.correct && conLai > 0) {
+                    // Sai nhưng CÒN LƯỢT → chưa chấm, mời nói lại.
+                    //
+                    // Chưa gọi `khoaLai()` ở đây là điểm mấu chốt: nó vừa đặt
+                    // cờ "đã chấm" vừa vô hiệu hoá nút mic, nên gọi sớm là
+                    // người học không bấm lại được và lượt thử còn lại thành vô
+                    // nghĩa.
+                    if (trangThai) {
+                        trangThai.textContent =
+                            `${feedbackMessage(diem, tu, laZh)} — còn ${conLai} lần thử`;
+                    }
+                    return;
+                }
+
+                khoaLai();
+                if (trangThai) trangThai.textContent = feedbackMessage(diem, tu, laZh);
                 this.ketThucCau(diem.correct, question, tu);
             };
 

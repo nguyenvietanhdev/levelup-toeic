@@ -392,7 +392,7 @@ export default function TopicModal({ open, mode = null, onClose, onSelected }) {
                                   className="wrong-count"
                                   title="Số từ bạn đã sai ở đề này, còn phải ôn"
                                 >
-                                  <i className="fas fa-rotate-left"></i>{" "}
+                                  <i className="fas fa-circle-xmark"></i>{" "}
                                   {soTuSaiCuaDe(topic)} sai
                                 </span>
                               )}
@@ -636,7 +636,7 @@ export default function TopicModal({ open, mode = null, onClose, onSelected }) {
                                 className={`wrong-count${g.canOn > 0 ? "" : " is-done"}`}
                                 title="Số từ đã tới hạn ôn theo lịch"
                               >
-                                <i className={`fas fa-${g.canOn > 0 ? "rotate-left" : "circle-check"}`}></i>{" "}
+                                <i className={`fas fa-${g.canOn > 0 ? "circle-xmark" : "circle-check"}`}></i>{" "}
                                 {g.canOn > 0 ? `còn ${g.canOn} cần ôn` : "đã ôn xong"}
                               </span>
                             </div>

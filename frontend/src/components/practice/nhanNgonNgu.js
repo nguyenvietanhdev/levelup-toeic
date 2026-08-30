@@ -1,4 +1,5 @@
 import { vocabLang } from '@game/gameLogic.js';
+import { nhanKho, maKho } from '@lib/nhanKho.js';
 
 /**
  * Nhãn hai mặt của cặp học hiện tại.
@@ -13,10 +14,7 @@ import { vocabLang } from '@game/gameLogic.js';
  * @returns {{tu: string, nghia: string}} `tu` = mặt hỏi, `nghia` = mặt đáp.
  */
 export function nhanCapHoc() {
-    const kho = vocabLang();
-    if (kho === 'bi') return { tu: 'Tiếng Trung', nghia: 'Tiếng Anh' };
-    if (kho === 'zh') return { tu: 'Tiếng Trung', nghia: 'Tiếng Việt' };
-    return { tu: 'Tiếng Anh', nghia: 'Tiếng Việt' };
+    return nhanKho(vocabLang());
 }
 
 /**
@@ -45,18 +43,7 @@ export function nhanTheoChieu(dao = false) {
  * @returns {{tu: string, nghia: string}} mã BCP-47 cho `/api/tts`.
  */
 export function maCapHoc(word = null) {
-    const kho = vocabLang();
-    // Kho song ngữ: hai mặt là Hán ↔ Anh, KHÔNG có tiếng Việt nào.
-    //
-    // Mặt đang học do CHÍNH BẢN GHI khai (`hienThi` → `ttsLang` từ mapper),
-    // không phải do kho: một kho chứa cả hai chiều, nên hỏi "kho này mặt trước
-    // là gì" là câu hỏi sai. Không có bản ghi thì lấy chiều mặc định 'zh'.
-    if (kho === 'bi') {
-        const tu = word?.ttsLang === 'en-US' ? 'en-US' : 'zh-CN';
-        return { tu, nghia: tu === 'zh-CN' ? 'en-US' : 'zh-CN' };
-    }
-    if (kho === 'zh') return { tu: 'zh-CN', nghia: 'vi-VN' };
-    return { tu: 'en-US', nghia: 'vi-VN' };
+    return maKho(vocabLang(), word);
 }
 
 /**

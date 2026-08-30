@@ -63,14 +63,14 @@ const gameModes = [
     { group: 'Nghe & Phát âm', icon: 'fa-headphones', modes: [
         { mode: 'listening', icon: 'fa-headphones', label: 'Nghe và chọn', desc: 'Nghe từ, chọn từ đúng trong 4 lựa chọn', cost: 12, color: C_MED },
         { mode: 'sentence-listening', icon: 'fa-ear-listen', label: 'Nghe chuỗi từ', desc: 'Nghe 3 từ đọc liên tiếp, chọn đúng trong lưới 8 từ', cost: 12, color: C_MED },
-        { mode: 'pronunciation', icon: 'fa-microphone', label: 'Phát âm', desc: 'Nói đúng từ tiếng Anh để ghi điểm', cost: 15, color: C_MED },
-        { mode: 'dictation', icon: 'fa-keyboard', label: 'Chép chính tả', desc: 'Nghe từ và gõ lại chính xác tiếng Anh', cost: 15, color: C_MED },
+        { mode: 'pronunciation', icon: 'fa-microphone', label: 'Phát âm', desc: 'Nói đúng từ đang học để ghi điểm', cost: 15, color: C_MED },
+        { mode: 'dictation', icon: 'fa-keyboard', label: 'Chép chính tả', desc: 'Nghe từ và gõ lại chính xác', cost: 15, color: C_MED },
     ]},
     { group: 'Đọc & Viết', icon: 'fa-pen-nib', modes: [
         { mode: 'synonym-check', icon: 'fa-equals', label: 'Từ đồng nghĩa', desc: 'Tìm từ đồng nghĩa với từ cho sẵn', cost: 10, color: C_HARD },
         { mode: 'example-fill-blank', icon: 'fa-pen-to-square', label: 'Điền vào câu', desc: 'Điền từ đúng vào câu ví dụ', cost: 12, color: C_HARD },
-        { mode: 'phonetic-quiz', icon: 'fa-spell-check', label: 'Đọc phiên âm', desc: 'Nhìn ký hiệu IPA, tìm từ tiếng Anh tương ứng', cost: 12, color: C_HARD },
-        { mode: 'fill-blank', icon: 'fa-pen', label: 'Điền từ', desc: 'Điền từ tiếng Anh vào chỗ trống', cost: 15, color: C_HARD },
+        { mode: 'phonetic-quiz', icon: 'fa-spell-check', label: 'Đọc phiên âm', desc: 'Nhìn phiên âm, tìm từ tương ứng', cost: 12, color: C_HARD },
+        { mode: 'fill-blank', icon: 'fa-pen', label: 'Điền từ', desc: 'Điền từ vào chỗ trống', cost: 15, color: C_HARD },
     ]},
     { group: 'Nâng cao & Thử thách', icon: 'fa-brain', modes: [
         // Hai chế độ luyện CÂU dưới đây bỏ `weekendOnly`.
@@ -83,7 +83,7 @@ const gameModes = [
         // Cùng lý do đã bỏ khoá cho "Ôn lại từ sai": khan hiếm chỉ có ý nghĩa
         // với thứ thưởng nhiều (Tốc độ vẫn giữ `weekendOnly`), không phải với
         // thứ người học cần luyện hằng ngày.
-        { mode: 'context-learning', icon: 'fa-book-reader', label: 'Hiểu qua câu', desc: 'Đọc câu ví dụ, suy luận nghĩa tiếng Việt', cost: 10, color: C_MAX },
+        { mode: 'context-learning', icon: 'fa-book-reader', label: 'Hiểu qua câu', desc: 'Đọc câu ví dụ, suy luận nghĩa của từ', cost: 10, color: C_MAX },
         { mode: 'sentence-builder', icon: 'fa-puzzle-piece', label: 'Xếp câu', desc: 'Sắp xếp cụm từ thành câu hoàn chỉnh', cost: 15, color: C_MAX },
         // `zhOnly` = chỉ chạy được với bộ từ tiếng Trung. Vẫn HIỆN khi học tiếng
         // Anh nhưng ở trạng thái khoá, không ẩn đi: ẩn thì người học tiếng Anh

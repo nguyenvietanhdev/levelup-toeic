@@ -9,6 +9,7 @@ import { Notification } from '@ui/Toaster.jsx';
 import { PartSelector } from '@components/vocab/part/partSelector.js';
 import { logger } from '@lib/logger.js';
 import { MA_GIONG } from '@lib/giongDaChon.js';
+import { nhanKho, nhanKhoThuong } from '@lib/nhanKho.js';
 
 export function vocabLang() {
     return GameState.state?.settings?.vocabLang || getVocabLang() || 'en';
@@ -234,14 +235,24 @@ export const GameLogic = {
 
     generateFillBlank(word) {
         const reversed = this.isReversed();
-        // Convention (giống generateMultipleChoice): reversed = VN→EN — hiện
-        // nghĩa tiếng Việt, người dùng gõ từ tiếng Anh. Mặc định = EN→VN.
+
+        // Câu hỏi gọi ĐÚNG tên ngôn ngữ của từng mặt.
+        //
+        // Bản cũ viết cứng "tiếng Anh" / "tiếng Việt" — di sản hồi app chỉ có
+        // một kho. Từ khi có kho `zh` và `bi` thì hai câu đó sai hẳn: kho `zh`
+        // hỏi chữ HÁN mà form ghi "Từ tiếng Anh của từ trên là", còn kho `bi`
+        // thì KHÔNG có tiếng Việt ở đâu cả. Người học đọc một đằng, gõ một nẻo.
+        const kho = vocabLang();
+        const ten = nhanKho(kho);
+        const thuong = nhanKhoThuong(kho);
+
         if (reversed) {
+            // Đảo chiều: hiện MẶT ĐÁP, người dùng gõ MẶT HỎI.
             return {
                 word,
                 displayWord: word.vn,
-                prompt: `Từ tiếng Anh của từ trên là:`,
-                placeholder: 'Nhập từ tiếng Anh',
+                prompt: `${ten.tu} của từ trên là:`,
+                placeholder: `Nhập từ ${thuong.tu}`,
                 correctAnswer: word.en,
                 acceptableAnswers: [word.en.toLowerCase()],
                 reversed: true
@@ -250,8 +261,8 @@ export const GameLogic = {
         return {
             word,
             displayWord: word.en,
-            prompt: `Nghĩa tiếng Việt của từ trên là:`,
-            placeholder: 'Nhập nghĩa tiếng Việt',
+            prompt: `${ten.nghia} của từ trên là:`,
+            placeholder: `Nhập ${thuong.nghia}`,
             correctAnswer: word.vn,
             acceptableAnswers: [word.vn.toLowerCase()],
             reversed: false
@@ -810,7 +821,8 @@ export const GameLogic = {
 
         return {
             word,
-            question: 'Chọn từ đồng nghĩa (tiếng Anh):',
+            // Đồng nghĩa luôn cùng ngôn ngữ với TỪ đang học, nên gọi tên mặt đó.
+            question: `Chọn từ đồng nghĩa (${nhanKhoThuong(vocabLang()).tu}):`,
             options,
             correctAnswers,                          // single correct token
             correctIndex: options.indexOf(correctAnswers[0]),

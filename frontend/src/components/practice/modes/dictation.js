@@ -30,7 +30,9 @@ export const Dictation = {
             Notification.show({
                 type: 'warning',
                 title: 'Không đủ dữ liệu',
-                message: 'Không tìm thấy từ vựng nào có câu ví dụ tiếng Anh.',
+                // Không gọi tên ngôn ngữ: chế độ này chạy trên mọi kho, mà câu
+                // này hiện cả khi đang học tiếng Trung.
+                message: 'Không tìm thấy từ vựng nào có câu ví dụ.',
             });
         }
     },

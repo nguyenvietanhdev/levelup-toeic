@@ -178,7 +178,7 @@ export const PartSelector = {
                                 <span class="word-count"><i class="fas fa-book"></i> ${this.partCounts[part]} từ</span>
                                 ${this.soTuSai(part) > 0 ? `
                                     <span class="wrong-count" title="Số từ bạn đã sai ở phần này">
-                                        <i class="fas fa-rotate-left"></i> ${this.soTuSai(part)} sai
+                                        <i class="fas fa-circle-xmark"></i> ${this.soTuSai(part)} sai
                                     </span>` : ''}
                             </div>
                             ${!disabled ? getLevelBar(part) : ''}
