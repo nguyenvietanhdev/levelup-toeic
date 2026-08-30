@@ -322,11 +322,21 @@ describe('app luyện tập: lựa chọn ngôn ngữ thứ ba', () => {
 
     test('nhãn chiều luyện tập KHÔNG nói "Tiếng Việt" cho kho song ngữ', () => {
         // Kho này học Trung ↔ Anh, không đi qua tiếng Việt.
+        //
+        // Nhãn nay lấy từ bảng chung `lib/nhanKho.js` thay vì chép tay tại chỗ
+        // — chép thì sửa nhãn ở màn này còn màn kia giữ nguyên. Nội dung bảng
+        // được kiểm bằng cách gọi thật ở `frontend/src/lib/nhanKho.test.js`;
+        // ở đây chỉ chốt rằng QuickSettings DÙNG bảng đó.
         const i = quick.indexOf('const tenChieu');
         expect(i).toBeGreaterThan(-1);
         const t = quick.slice(i, i + 300);
-        expect(t).toMatch(/vocabLang === 'bi'/);
-        expect(t).toMatch(/sang: 'Tiếng Anh'/);
+        expect(t).toMatch(/nhanKho\(vocabLang\)/);
+
+        // Và bảng đó phải thật sự trả 'Tiếng Anh' cho mặt đáp của kho `bi`.
+        const bang = require('node:fs').readFileSync(
+            require('node:path').join(
+                __dirname, '..', '..', 'frontend', 'src', 'lib', 'nhanKho.js'), 'utf8');
+        expect(bang).toMatch(/kho === 'bi'\) return \{ tu: 'Tiếng Trung', nghia: 'Tiếng Anh' \}/);
     });
 
     test('`getVocabLang` cho `bi` đi qua', () => {
