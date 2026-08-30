@@ -150,11 +150,14 @@ describe('chấm điểm và dọn mic', () => {
         expect(than).toMatch(/scoreAttempt\(chu, Array\.from\(kq\), tu, laZh\)/);
     });
 
-    test('ngôn ngữ nhận dạng theo CHỮ của từ, không theo cài đặt', () => {
-        // Lượt ôn trộn từ của mọi bộ; đặt `en-US` cho một từ chữ Hán là máy
-        // nghe ra một tràng vô nghĩa và người học bị chấm sai dù đọc chuẩn.
-        expect(than).toMatch(/const laZh = HAN_RE\.test\(tu\)/);
-        expect(than).toMatch(/rec\.lang = laZh \? 'zh-CN' : 'en-US'/);
+    test('ngôn ngữ nhận dạng theo CẶP ĐANG HỌC, không đoán theo mặt chữ', () => {
+        // Trước đây đoán bằng `HAN_RE.test(tu)`. Đoán sai ở những chỗ không
+        // nhìn ra ngay: từ tiếng Trung viết bằng chữ số hay ký tự Latin (2002年,
+        // Tầng 1, OK) đều rơi vào nhánh 'en-US' — người học nói tiếng Trung mà
+        // máy nghe bằng tiếng Anh. Kho đang học thì BIẾT CHẮC.
+        expect(than).toMatch(/const maNghe = maCapHoc\(question\.word\)\.tu;/);
+        expect(than).toMatch(/rec\.lang = maNghe;/);
+        expect(than).not.toMatch(/const laZh = HAN_RE\.test\(tu\)/);
     });
 
     test('KHÔNG chấm trên kết quả tạm', () => {

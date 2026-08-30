@@ -9,6 +9,7 @@ import { afterAnswer } from '@components/practice/practiceNav.js';
 import { startQuestionTimer } from '@components/practice/questionTimer.js';
 import { timeoutQuestion } from '@components/practice/questionTimeout.js';
 import { chenViDu } from '../exampleBlock.js';
+import { maCapHoc } from '../nhanNgonNgu.js';
 // Dùng lại bộ chấm của chế độ Phát âm: nó là logic thuần (vào chuỗi, ra điểm)
 // và đã xử lý những ca thật mà `===` bỏ sót — vd máy tự thêm trợ từ tiếng Trung.
 import { scoreAttempt, feedbackMessage } from './pronunciationScoring.js';
@@ -630,7 +631,17 @@ export const ReviewMistakes = {
      */
     ganPhatAm(question) {
         const tu = String(question.word?.en || '');
-        const laZh = HAN_RE.test(tu);
+
+        // Ngôn ngữ nghe lấy theo MẶT ĐANG HỎI của cặp đang học, KHÔNG đoán theo
+        // mặt chữ.
+        //
+        // Đoán bằng `HAN_RE.test(tu)` sai ở những chỗ không nhìn ra ngay: từ tiếng
+        // Trung viết bằng chữ số hay ký tự Latin (2002年, Tầng 1, OK), từ đã bị
+        // cắt mất phần Hán — đều rơi vào nhánh 'en-US', và người học nói tiếng
+        // Trung mà máy nghe bằng tiếng Anh. Kho đang học thì BIẾT CHẮC, không
+        // phải đoán.
+        const maNghe = maCapHoc(question.word).tu;
+        const laZh = maNghe.startsWith('zh');
 
         const nut = document.getElementById('rm-mic');
         const trangThai = document.getElementById('rm-mic-status');
@@ -687,7 +698,7 @@ export const ReviewMistakes = {
             if (this._daChamNoi) return;   // đã chấm — một câu chỉ chấm MỘT lần
 
             const rec = new SR();
-            rec.lang = laZh ? 'zh-CN' : 'en-US';
+            rec.lang = maNghe;
             rec.continuous = false;
             rec.interimResults = true;
             rec.maxAlternatives = 5;

@@ -9690,7 +9690,36 @@ mark {
 .coach-head h3 {
   margin: 0;
   font-size: 1em;
+  /* `auto` thay cho `space-between` của khối cha: nay hàng có BA phần tử
+     (tiêu đề · tải lại · xem thêm), mà `space-between` dàn đều cả ba nên nút
+     tải lại trôi ra giữa hàng. Đẩy bằng margin thì hai nút luôn dính nhau ở
+     mép phải, thêm nút nữa cũng không lệch. */
+  margin-right: auto;
 }
+
+/* Nút tải lại gợi ý — đứng NGAY TRƯỚC "Xem thêm". */
+.coach-reload {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border: none;
+  border-radius: 50%;
+  background: none;
+  color: var(--text-secondary);
+  font-size: 0.85em;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.coach-reload:hover:not(:disabled) {
+  background: var(--bg-secondary);
+  color: var(--accent-color);
+}
+
+/* Đang tải thì mờ và không bấm được — bấm dồn là gọi mạng chồng nhau. */
+.coach-reload:disabled { opacity: 0.5; cursor: default; }
 
 .coach-toggle {
   display: inline-flex;

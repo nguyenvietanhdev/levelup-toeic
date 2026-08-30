@@ -524,7 +524,7 @@ export default function HomeScreen({ active }) {
             {/* Gợi ý đặt TRÊN thẻ streak và trên lưới chế độ: đây là thứ trả lời
                 câu người dùng đang có trong đầu lúc vừa vào ("làm gì bây giờ"),
                 nên phải đọc được trước khi mắt trôi xuống lưới 16 ô. */}
-            <CoachPanel onPick={handleCoachPick} />
+            <CoachPanel onPick={handleCoachPick} active={active} />
 
             <div className="streak-card">
                 <div className="streak-flame">
