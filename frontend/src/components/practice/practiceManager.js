@@ -150,6 +150,13 @@ export const PracticeManager = {
     async start(mode) {
         logger.log('🚀 PracticeManager.start() called with mode:', mode);
 
+        // Lượt MỚI → bỏ khoá chiều của lượt trước.
+        //
+        // Người dùng đổi chiều giữa lượt và chọn "Giữ lượt này" thì chiều cũ bị
+        // khoá tới hết lượt. Không bỏ ở đây là khoá đó sống mãi và lựa chọn mới
+        // không bao giờ có hiệu lực — đúng thứ họ vừa chọn lại là thứ không xảy ra.
+        GameLogic.boKhoaDaoPhien();
+
         if (this.currentSession && this.currentSession.mode) {
             this.cleanupMode(this.currentSession.mode);
         }

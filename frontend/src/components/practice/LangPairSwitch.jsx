@@ -1,6 +1,9 @@
 import { useState, useRef, useEffect } from 'react';
 import { GameState } from '@game/state.js';
+import { GameLogic } from '@game/gameLogic.js';
 import { Notification } from '@ui/Toaster.jsx';
+import { Modal } from '@ui/Modal.jsx';
+import { PracticeManager } from './practiceManager.js';
 
 /**
  * ĐỔI CẶP HỌC ngay khi đang luyện tập.
@@ -48,10 +51,8 @@ export function LangPairSwitch() {
     const tu = dao ? TEN_DAP[kho] : TEN_KHO[kho];
     const sang = dao ? TEN_KHO[kho] : TEN_DAP[kho];
 
-    const chon = (daoMoi) => {
-        setMo(false);
-        if (daoMoi === dao) return;
-
+    /** Ghi lựa chọn xuống localStorage + hồ sơ server. */
+    const luuLuaChon = (daoMoi) => {
         setDao(daoMoi);
         // localStorage cho `gameLogic.isReversed()` (đọc đồng bộ), GameState để
         // đồng bộ lên server — thiếu vế sau là máy khác không thấy lựa chọn này.
@@ -60,11 +61,87 @@ export function LangPairSwitch() {
             GameState.state.settings.reverseMode = daoMoi;
             GameState.save?.();
         }
+    };
 
-        Notification.success(
-            `Đổi sang ${daoMoi ? TEN_DAP[kho] : TEN_KHO[kho]} → ${daoMoi ? TEN_KHO[kho] : TEN_DAP[kho]}`
-            + ' — áp dụng từ câu sau'
-        );
+    const nhanCap = (d) => `${d ? TEN_DAP[kho] : TEN_KHO[kho]} → ${d ? TEN_KHO[kho] : TEN_DAP[kho]}`;
+
+    const chon = (daoMoi) => {
+        setMo(false);
+        if (daoMoi === dao) return;
+
+        // Ngoài lượt luyện tập (vd đứng ở màn khác) → đổi thẳng, không hỏi:
+        // không có lượt nào đang dở để mà giữ.
+        const dangLuyen = !!PracticeManager.currentSession?.mode;
+        if (!dangLuyen) {
+            luuLuaChon(daoMoi);
+            Notification.success(`Đã đổi sang ${nhanCap(daoMoi)}`);
+            return;
+        }
+
+        /*
+         * HỎI TRƯỚC, vì hai lựa chọn có hậu quả khác hẳn nhau.
+         *
+         * Bản cũ ghi thẳng lựa chọn rồi báo "áp dụng từ câu sau" — câu đó KHÔNG
+         * ĐÚNG với phần lớn chế độ: chúng sinh trọn bộ câu hỏi từ đầu lượt
+         * (`generateQuestions`), nên đổi giữa chừng không đổi được câu nào của
+         * lượt này. Người dùng đọc thông báo rồi chờ câu sau mà chẳng thấy gì.
+         *
+         * Muốn đổi THẬT thì phải chạy lại lượt — mà chạy lại là mất tiến độ
+         * đang có, nên đó là việc phải hỏi chứ không tự quyết.
+         */
+        Modal.show({
+            title: '🔄 Đảo chiều ngôn ngữ',
+            closeOnBackdrop: false,
+            content: `
+                <div style="padding:4px 0;line-height:1.6">
+                    <p style="margin:0 0 10px">
+                        Bạn vừa chọn <strong>${nhanCap(daoMoi)}</strong>, trong khi
+                        một lượt luyện tập đang dở.
+                    </p>
+                    <p style="margin:0 0 6px">
+                        <strong>Giữ lượt này</strong> — lượt đang chạy vẫn theo chiều
+                        <strong>${nhanCap(dao)}</strong> như cũ. Chiều mới áp dụng ở
+                        lượt sau (làm xong, ra trang chủ rồi vào luyện tập lại).
+                    </p>
+                    <p style="margin:0;color:var(--text-secondary)">
+                        <strong>Đổi ngay</strong> — chạy lại lượt này theo chiều mới.
+                        <span style="color:var(--error-color,#ef4444)">Tiến độ của lượt
+                        đang dở sẽ mất.</span>
+                    </p>
+                </div>`,
+            buttons: [
+                {
+                    text: 'Giữ lượt này',
+                    className: 'btn-secondary',
+                    onClick: () => {
+                        // KHOÁ chiều CŨ cho tới hết lượt. Chỉ ghi lựa chọn mà
+                        // không khoá thì lượt đang chạy nửa cũ nửa mới: câu đã
+                        // sinh theo chiều cũ, còn chỗ chấm điểm hỏi lại
+                        // `isReversed()` và nhận chiều mới.
+                        GameLogic.khoaDaoPhien(dao);
+                        luuLuaChon(daoMoi);
+                        Notification.success(
+                            `Đã lưu ${nhanCap(daoMoi)} — áp dụng từ lượt sau`);
+                    },
+                },
+                {
+                    text: 'Đổi ngay',
+                    className: 'btn-primary',
+                    onClick: () => {
+                        const mode = PracticeManager.currentSession?.mode;
+                        GameLogic.boKhoaDaoPhien();
+                        luuLuaChon(daoMoi);
+                        // Chạy lại lượt: câu hỏi sinh lại theo chiều mới.
+                        // `start()` tự bỏ khoá lần nữa, gọi ở đây chỉ để phòng
+                        // trường hợp `mode` rỗng và không chạy lại được.
+                        PracticeManager.cleanupCurrentMode?.();
+                        PracticeManager.cleanupKeyboardShortcuts?.();
+                        PracticeManager.currentSession = null;
+                        if (mode) PracticeManager.start(mode);
+                    },
+                },
+            ],
+        });
     };
 
     const muc = [

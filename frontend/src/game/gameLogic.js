@@ -187,7 +187,27 @@ export const GameLogic = {
         );
     },
 
+    /**
+     * KHOÁ chiều hỏi–đáp cho riêng lượt đang chạy.
+     *
+     * `null` = không khoá, đọc theo lựa chọn đã lưu. Boolean = giữ nguyên giá
+     * trị đó bất kể người dùng vừa đổi gì.
+     *
+     * Vì sao cần: đổi chiều GIỮA LƯỢT thì câu hỏi đã sinh xong từ đầu lượt theo
+     * chiều cũ, trong khi phần chấm điểm và giao diện lại hỏi lại `isReversed()`
+     * mỗi lần vẽ. Không khoá thì lượt đang chạy nửa cũ nửa mới — câu hiện chiều
+     * này, đáp án chấm theo chiều kia.
+     */
+    _daoPhien: null,
+
+    /** Giữ chiều hiện tại cho tới hết lượt; lựa chọn mới áp dụng từ lượt sau. */
+    khoaDaoPhien(dao) { this._daoPhien = !!dao; },
+
+    /** Bỏ khoá — gọi khi bắt đầu một lượt mới. */
+    boKhoaDaoPhien() { this._daoPhien = null; },
+
     isReversed() {
+        if (this._daoPhien !== null) return this._daoPhien;
         return localStorage.getItem('reverseMode') === 'true';
     },
 
