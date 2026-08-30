@@ -5,10 +5,28 @@ import { Utils } from '@lib/utils.js';
 import { Notification } from '@ui/Toaster.jsx';
 import { EventBus, GameEvents } from '@game/eventBus.js';
 import { PartSelector } from '@components/vocab/part/partSelector.js';
-import { afterAnswer } from '@components/practice/practiceNav.js';
-import { startQuestionTimer } from '@components/practice/questionTimer.js';
+import { afterAnswer, isAutoAdvance } from '@components/practice/practiceNav.js';
+import { startQuestionTimer, stopQuestionTimer } from '@components/practice/questionTimer.js';
+import { getTransitionDelay } from '@components/practice/transitionDelay.js';
 import { timeoutQuestion } from '@components/practice/questionTimeout.js';
 import { layPhienAmCau, coChuHan } from '@lib/sentencePinyin.js';
+
+/**
+ * Hoãn bao lâu sau khi chọn đáp án rồi mới đọc câu ví dụ (ms).
+ *
+ * Không đọc ngay: đúng lúc ấy tiếng "đúng"/"sai" đang kêu, hai âm chồng nhau
+ * thì không nghe rõ cái nào.
+ */
+const HOAN_DOC_VI_DU = 350;
+
+/**
+ * Chờ tối đa bao lâu cho câu ví dụ đọc xong (ms).
+ *
+ * Lưới an toàn cho nhịp tự chuyển câu: `onEnd` KHÔNG bao giờ về nếu lượt đọc bị
+ * một lượt sau chiếm chỗ, hoặc trình duyệt chặn tự phát tiếng. Không có mốc này
+ * thì cả lượt đứng im giữa chừng, không có nút nào đi tiếp.
+ */
+const CHO_DOC_TOI_DA = 8000;
 
 export const MultipleChoice = {
 
@@ -231,7 +249,16 @@ export const MultipleChoice = {
         // Lộ câu ví dụ SAU khi trả lời — cho MỌI câu, không riêng chế độ đảo
         // chiều. Câu ví dụ chứa chính từ đang hỏi nên hiện sẵn là cho không đáp
         // án; hiện ở đây thì nó thành phần giải thích.
-        this.revealExample(question);
+        const seDoc = this.revealExample(question);
+
+        // Tự chuyển câu phải ĐỢI câu ví dụ đọc xong.
+        //
+        // Nhịp mặc định của chế độ này là 1000ms, ngắn hơn mọi câu ví dụ —
+        // chuyển đúng hẹn là cắt tiếng giữa chừng, lần nào cũng vậy.
+        if (seDoc && isAutoAdvance()) {
+            this.chuyenSauKhiDocXong();
+            return;
+        }
 
         afterAnswer(this, 'multiple-choice');
     },
@@ -314,6 +341,28 @@ export const MultipleChoice = {
             GameLogic.speakWord(cau);
         });
 
+        // TỰ ĐỘNG đọc câu ví dụ ngay khi nó lộ ra.
+        //
+        // Câu ví dụ là chỗ dạy CÁCH DÙNG từ, và nó chỉ hiện đúng một khoảnh khắc
+        // này — sau đó câu trôi mất. Bắt bấm thêm nút loa mới nghe được nghĩa là
+        // hầu như không ai nghe: người học đang nhìn kết quả đúng/sai, không đi
+        // tìm nút.
+        //
+        // Không cần theo `autoPronunciation`: cài đặt đó nói về việc đọc TỪ lúc
+        // hiện câu hỏi (dễ lộ đáp án ở chiều đảo), còn đây là phần giải thích
+        // sau khi đã chấm xong.
+        const idxLucDoc = this.currentIndex;
+        setTimeout(() => {
+            // Bỏ nếu đã sang câu khác — người học bấm "Tiếp" nhanh hơn khoảng hoãn.
+            if (this.currentIndex !== idxLucDoc) return;
+            GameLogic.speakWord(cau, null, () => {
+                // Chốt LẠI ở đây nữa: `onEnd` của câu trước về muộn sẽ gọi đúng
+                // `_docXong` của câu SAU và đẩy câu đó đi sớm.
+                if (this.currentIndex !== idxLucDoc) return;
+                this._docXong?.();
+            });
+        }, HOAN_DOC_VI_DU);
+
         // Phiên âm cả câu (IPA cho tiếng Anh, pinyin cho tiếng Trung).
         const idxLucGoi = this.currentIndex;
         layPhienAmCau(cau).then((pinyin) => {
@@ -323,6 +372,39 @@ export const MultipleChoice = {
             const el = document.getElementById('mc-example-pinyin');
             if (el) el.textContent = pinyin;
         });
+
+        // Báo cho nơi gọi biết CÓ đọc — nhịp chuyển câu phải đợi đọc xong.
+        return true;
+    },
+
+    /**
+     * Chuyển câu khi câu ví dụ đọc XONG, hoặc khi hết nhịp chờ — cái nào SAU thì
+     * cái đó quyết định.
+     *
+     * Lấy mốc muộn hơn chứ không cộng dồn: câu ví dụ ngắn thì vẫn giữ đúng nhịp
+     * người dùng đặt trong Cài đặt, câu dài thì giãn ra vừa đủ để nghe hết.
+     */
+    chuyenSauKhiDocXong() {
+        // Câu này chấm xong rồi → dừng đếm ngược, tránh "hết giờ" nổ trong lúc chờ.
+        stopQuestionTimer();
+
+        const idx = this.currentIndex;
+        const hen = Date.now() + getTransitionDelay('multiple-choice');
+        let daChuyen = false;
+
+        const chuyen = () => {
+            // Chốt theo CHỈ SỐ CÂU: `onEnd` của lượt đọc trước có thể về muộn,
+            // và lưới an toàn dưới đây cũng nổ sau khi đã chuyển rồi.
+            if (daChuyen || this.currentIndex !== idx) return;
+            daChuyen = true;
+            setTimeout(() => {
+                if (this.currentIndex !== idx) return;
+                this.nextQuestion();
+            }, Math.max(0, hen - Date.now()));
+        };
+
+        this._docXong = chuyen;
+        setTimeout(chuyen, CHO_DOC_TOI_DA);
     },
 
     nextQuestion() {
@@ -411,6 +493,9 @@ export const MultipleChoice = {
         this.currentIndex = 0;
         this.selectedAnswer = null;
         this.hintUsed = false;
+        // Rời chế độ giữa lúc đang đọc câu ví dụ: `onEnd` về sau đó mà còn giữ
+        // callback là gọi `nextQuestion` trên một lượt đã đóng.
+        this._docXong = null;
     }
 };
 
