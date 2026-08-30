@@ -128,6 +128,14 @@ export default function PracticeScreen({ active }) {
                         <span id="wrong-count">{wrongCount}</span>
                     </div>
                 </div>
+                {/* NGẮT DÒNG trên màn hẹp — chỉ hiện ở mobile (CSS).
+                    Header là flex có `wrap`, nên trước đây nút đổi cặp có xuống
+                    dòng hay không là TÌNH CỜ: phụ thuộc tên chế độ dài bao
+                    nhiêu. Tên ngắn thì nó chen vào hàng đầu và bóp méo cả hàng.
+                    Một phần tử rộng 100% cao 0 là cách duy nhất ép flex xuống
+                    dòng chắc chắn. */}
+                <div className="practice-header-break" aria-hidden="true" />
+
                 {/* Đổi chiều hỏi–đáp ngay tại chỗ. Trước đây phải thoát ra vào
                     Settings, mà đó là hai lựa chọn nằm hai chỗ khác nhau. */}
                 <LangPairSwitch />

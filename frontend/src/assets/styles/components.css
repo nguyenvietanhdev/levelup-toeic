@@ -10926,15 +10926,45 @@ mark {
   color: var(--text-secondary);
 }
 
-/* Màn hẹp: nhãn dài đẩy cả hàng tiêu đề xuống dòng. Bỏ chữ, giữ mũi tên —
-   vẫn bấm được, chỉ mất phần đọc nhanh trạng thái. */
+/* Phần tử NGẮT DÒNG trong header luyện tập. Ẩn ở màn rộng. */
+.practice-header-break { display: none; }
+
+/* ── Màn hẹp: nút đổi cặp xuống HẲN một hàng riêng ──────────────────────────
+   Trước đây nút này ở lại hàng tiêu đề và bị bóp: nhãn "ZH → VN" bị ẩn, thay
+   bằng một glyph Font Awesome. Hai vấn đề:
+     · Nút xuống dòng hay không là TÌNH CỜ — header là flex `wrap` nên nó phụ
+       thuộc tên chế độ dài bao nhiêu; tên ngắn thì nút chen vào hàng đầu.
+     · Glyph `\f362` (fa-arrow-right-arrow-left) KHÔNG có trong bộ Font Awesome
+       đang nạp, nên hiện ra ô vuông rỗng. Nút thành một ô trống vô nghĩa.
+   Cho hẳn một hàng thì vừa chắc chắn, vừa đủ chỗ hiện lại nhãn chữ. */
 @media (max-width: 560px) {
-  .lang-pair-label { display: none; }
-  .lang-pair-btn::before {
-    content: '\f362';               /* fa-arrow-right-arrow-left */
-    font-family: 'Font Awesome 6 Free';
-    font-weight: 900;
-    font-size: 11px;
+  /* `wrap` phải khai Ở ĐÂY, không mượn của `@media 480px` bên responsive.css.
+     Dải 481–560px không có luật đó, mà flex `nowrap` thì phần tử ngắt dòng bị
+     co về 0 và không ngắt được gì — nút lại nằm chung hàng tiêu đề. */
+  .practice-header { flex-wrap: wrap; }
+
+  .practice-header-break {
+    display: block;
+    flex-basis: 100%;
+    height: 0;
+    margin: 0;
+  }
+
+  /* Nút sát mép TRÁI; `auto` đẩy mọi thứ sau nó (tim, đồng hồ) sang phải. */
+  .lang-pair-switch { margin-right: auto; }
+
+  /* Hiện lại nhãn chữ — hàng riêng thì thừa chỗ. */
+  .lang-pair-label { display: inline; }
+
+  /* Danh sách mở xuống từ MÉP TRÁI của nút.
+     Neo `right: 0` (mặc định) đúng khi nút nằm sát mép phải thanh; nay nút ở
+     mép TRÁI nên menu trải 160px sang trái và tràn ra ngoài màn hình — chỉ
+     thấy một mẩu, bấm không tới. */
+  .lang-pair-menu {
+    left: 0;
+    right: auto;
+    /* Chặn trên: màn quá hẹp thì vẫn không tràn mép phải. */
+    max-width: calc(100vw - 24px);
   }
 }
 
