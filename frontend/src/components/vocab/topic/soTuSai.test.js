@@ -2,10 +2,15 @@
  * Số từ sai hiện trên thẻ đề, thẻ Part, và tab "Từ vựng sai".
  *
  * Mục đích của con số này là để người học CHỌN ĐỀ: nhìn vào biết đề nào còn
- * nhiều từ chưa thuộc mà học trước. Nên hai chỗ dùng hai con số khác nhau:
- *   · thẻ đề / thẻ Part → `sai`   = đã sai bao nhiêu từ ở đây;
- *   · tab "Từ vựng sai" → `canOn` = còn bao nhiêu từ TỚI HẠN phải ôn.
- * Trộn hai con số là thẻ nói một đằng, việc phải làm một nẻo.
+ * nhiều từ chưa thuộc mà học trước. Nên CẢ BA chỗ — thẻ đề, thẻ Part, tab "Từ
+ * vựng sai" — đều hiện `canOn`: còn bao nhiêu từ TỚI HẠN phải ôn.
+ *
+ * Ban đầu thẻ đề và thẻ Part hiện `sai` (tổng đã từng sai) còn tab kia hiện
+ * `canOn`. Hai nửa nghĩa khác nhau trên hai huy hiệu ĐỎE TRÔNG GIỐNG HỆT NHAU:
+ * popup chọn đề báo "đã ôn xong" mà thẻ Part vẫn "26 sai" đỏ chói — người dùng
+ * đọc ra MÂU THUẮN chứ không phải thông tin, và không biết tin bên nào.
+ *
+ * Một huy hiệu — đúng MỘT nghĩa, ở mọi màn.
  */
 import { describe, test, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
@@ -48,31 +53,38 @@ describe('thẻ ĐỀ hiện số từ đã sai', () => {
     test('cộng theo TẤT CẢ `sourceKeys` của đề', () => {
         // Một đề gom được nhiều nguồn; tra mỗi khoá đầu là bỏ sót từ sai của
         // những nguồn còn lại — con số nhỏ hơn thực tế mà không gì báo.
-        const f = soTuSaiCuaDe({ a: { sai: 3 }, b: { sai: 4 } });
-        expect(f({ sourceKeys: ['a', 'b'] })).toBe(7);
+        const f = soTuSaiCuaDe({
+            a: { sai: 3, canOn: 1 },
+            b: { sai: 4, canOn: 2 },
+        });
+        expect(f({ sourceKeys: ['a', 'b'] })).toEqual({ sai: 7, canOn: 3 });
     });
 
-    test('đề chỉ có một nguồn vẫn đúng', () => {
-        const f = soTuSaiCuaDe({ a: { sai: 5 } });
-        expect(f({ sourceKeys: ['a'] })).toBe(5);
+    test('cộng CẢ hai con số, không chỉ một', () => {
+        // Thiếu `canOn` thì thẻ không biết khi nào báo "đã ôn xong".
+        const f = soTuSaiCuaDe({ a: { sai: 5, canOn: 0 } });
+        expect(f({ sourceKeys: ['a'] })).toEqual({ sai: 5, canOn: 0 });
     });
 
     test('lùi về `source` khi không có `sourceKeys`', () => {
-        const f = soTuSaiCuaDe({ x: { sai: 2 } });
-        expect(f({ source: 'x' })).toBe(2);
+        const f = soTuSaiCuaDe({ x: { sai: 2, canOn: 2 } });
+        expect(f({ source: 'x' })).toEqual({ sai: 2, canOn: 2 });
     });
 
     test('nguồn chưa có từ sai → 0, không phải NaN', () => {
         const f = soTuSaiCuaDe({});
-        expect(f({ sourceKeys: ['a', 'b'] })).toBe(0);
-        expect(f({})).toBe(0);
-        expect(f(null)).toBe(0);
+        expect(f({ sourceKeys: ['a', 'b'] })).toEqual({ sai: 0, canOn: 0 });
+        expect(f({})).toEqual({ sai: 0, canOn: 0 });
+        expect(f(null)).toEqual({ sai: 0, canOn: 0 });
     });
 
-    test('chỉ hiện khi > 0', () => {
-        // Hiện "0 sai" trên mọi thẻ là nhiễu, mà thẻ nào cũng có thì con số
-        // không còn phân biệt được đề nào đáng học.
-        expect(modal).toMatch(/soTuSaiCuaDe\(topic\) > 0 && \(/);
+    test('không có từ sai nào thì không hiện gì', () => {
+        expect(modal).toMatch(/soTuSaiCuaDe\(topic\)\.sai > 0 && \(/);
+    });
+
+    test('hiện `canOn`, cùng chữ với hai màn kia', () => {
+        expect(modal).toMatch(/soTuSaiCuaDe\(topic\)\.canOn > 0 \?/);
+        expect(modal).toMatch(/còn \{soTuSaiCuaDe\(topic\)\.canOn\} cần ôn/);
     });
 });
 
@@ -123,9 +135,9 @@ describe('nạp số từ sai cho MỌI tab', () => {
 });
 
 describe('thẻ PART hiện số từ đã sai', () => {
-    test('có hàm đếm riêng, đọc từ dữ liệu đã nạp', () => {
+    test('có hàm đếm riêng, trả CẢ hai con số', () => {
         expect(part).toMatch(/soTuSai\(part\) \{/);
-        expect(part).toMatch(/this\.tuSaiTheoPart\?\.\[part\]\?\.sai \|\| 0/);
+        expect(part).toMatch(/sai: o\?\.sai \|\| 0, canOn: o\?\.canOn \|\| 0/);
     });
 
     test('nạp SONG SONG, không chặn việc mở popup', () => {
@@ -143,8 +155,27 @@ describe('thẻ PART hiện số từ đã sai', () => {
         expect(part.slice(i, i + 500)).toMatch(/if \(!this\._modalOpen\) return;/);
     });
 
-    test('chỉ hiện khi > 0', () => {
-        expect(part).toMatch(/this\.soTuSai\(part\) > 0 \? `/);
+    test('không có từ sai nào thì không hiện gì', () => {
+        // Hiện "đã ôn xong" trên mọi Part chưa từng sai là nhiễu.
+        expect(part).toMatch(/if \(!sai\) return '';/);
+    });
+
+    test('hiện CÙNG con số với popup chọn đề — `canOn`', () => {
+        // Đây là mâu thuẫn người dùng báo: popup chọn đề báo "đã ôn xong" mà
+        // thẻ Part vẫn "26 sai" đỏ chói. Hai nửa nghĩa khác nhau trên hai huy
+        // hiệu trông giống hệt nhau thì đọc ra mâu thuẫn, không phải thông tin.
+        expect(part).toMatch(/canOn > 0/);
+        expect(part).toMatch(/còn \$\{canOn\} cần ôn/);
+    });
+
+    test('hết hạn ôn thì báo "đã ôn xong", cùng chữ với popup kia', () => {
+        expect(part).toMatch(/đã ôn xong/);
+        expect(part).toMatch(/wrong-count is-done/);
+    });
+
+    test('KHÔNG còn hiện tổng `sai` trên thẻ', () => {
+        // Tổng đã sai chỉ nói quá khứ; nó không giúp chọn Part nào để học.
+        expect(part).not.toMatch(/\$\{this\.soTuSai\(part\)\} sai/);
     });
 });
 
@@ -161,5 +192,33 @@ describe('kiểu hiển thị', () => {
 
     test('ôn xong thì đổi màu, không còn là cảnh báo', () => {
         expect(css).toMatch(/\.wrong-count\.is-done \{/);
+    });
+});
+
+describe('hai popup KHÔNG được nói ngược nhau', () => {
+    test('thẻ ĐỀ cũng dựa trên `canOn`', () => {
+        // Chỗ thứ ba cùng loại huy hiệu — bỏ sót thì mâu thuẫn lặp lại y hệt,
+        // chỉ ở một tab khác.
+        expect(modal).toMatch(/soTuSaiCuaDe\(topic\)\.canOn > 0 \?/);
+    });
+
+    test('cả hai cùng dựa trên `canOn`', () => {
+        // Người dùng nhìn hai màn này cạnh nhau để quyết định học gì. Một bên
+        // báo xong, một bên báo đỏ thì không biết tin bên nào.
+        expect(modal).toMatch(/g\.canOn > 0/);
+        expect(part).toMatch(/canOn > 0/);
+    });
+
+    test('cùng một cách nói', () => {
+        for (const src of [modal, part]) {
+            expect(src).toMatch(/cần ôn/);
+            expect(src).toMatch(/đã ôn xong/);
+        }
+    });
+
+    test('cùng một lớp CSS cho trạng thái xong', () => {
+        // Khác lớp là khác màu, và hai màn lại trông như nói hai chuyện.
+        expect(modal).toMatch(/wrong-count\$\{g\.canOn > 0 \? "" : " is-done"\}/);
+        expect(part).toMatch(/wrong-count is-done/);
     });
 });

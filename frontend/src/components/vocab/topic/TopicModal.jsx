@@ -73,7 +73,13 @@ export default function TopicModal({ open, mode = null, onClose, onSelected }) {
     const keys = Array.isArray(topic?.sourceKeys)
       ? topic.sourceKeys
       : [topic?.source].filter(Boolean);
-    return keys.reduce((t, k) => t + (tuSai?.[k]?.sai || 0), 0);
+    return keys.reduce(
+      (t, k) => ({
+        sai: t.sai + (tuSai?.[k]?.sai || 0),
+        canOn: t.canOn + (tuSai?.[k]?.canOn || 0),
+      }),
+      { sai: 0, canOn: 0 },
+    );
   };
   const tabBiKhoa = (t) => (chiTuSai ? t !== 'wrong' : t === 'wrong');
 
@@ -387,14 +393,27 @@ export default function TopicModal({ open, mode = null, onClose, onSelected }) {
                                 <i className="fas fa-book"></i>{" "}
                                 {topic.wordCount} từ
                               </span>
-                              {soTuSaiCuaDe(topic) > 0 && (
-                                <span
-                                  className="wrong-count"
-                                  title="Số từ bạn đã sai ở đề này, còn phải ôn"
-                                >
-                                  <i className="fas fa-circle-xmark"></i>{" "}
-                                  {soTuSaiCuaDe(topic)} sai
-                                </span>
+                              {/* CÙNG con số, cùng cách nói với tab "Từ vựng sai" và
+                                  với thẻ Part. Một huy hiệu đỏ phải có ĐÚNG MỘT nghĩa ở
+                                  mọi màn — không thì màn này báo "đã ôn xong" còn màn kia
+                                  vẫn đỏ chói, và người dùng không biết tin bên nào. */}
+                              {soTuSaiCuaDe(topic).sai > 0 && (
+                                soTuSaiCuaDe(topic).canOn > 0 ? (
+                                  <span
+                                    className="wrong-count"
+                                    title="Số từ đã tới hạn ôn theo lịch"
+                                  >
+                                    <i className="fas fa-circle-xmark"></i>{" "}
+                                    còn {soTuSaiCuaDe(topic).canOn} cần ôn
+                                  </span>
+                                ) : (
+                                  <span
+                                    className="wrong-count is-done"
+                                    title={`${soTuSaiCuaDe(topic).sai} từ từng sai ở đề này đều chưa tới hạn ôn lại`}
+                                  >
+                                    <i className="fas fa-circle-check"></i> đã ôn xong
+                                  </span>
+                                )
                               )}
                             </div>
                             <LevelBar stats={topic.levelStats} />

@@ -157,3 +157,60 @@ describe('bảng nhãn chế độ đủ mọi chế độ', () => {
         expect(moiCheDo.size).toBeGreaterThanOrEqual(17);
     });
 });
+
+describe('chữ không được TRÀN ra ngoài ô', () => {
+    const hz = F('modes', 'hanziWriting.js');
+
+    test('KHÔNG bịa số khi đo trượt', () => {
+        // Bản cũ rơi về `|| 260` — con số của luật CSS đã bỏ, nên SVG được vẽ
+        // to hơn ô và chữ tràn ra ngoài khung. Trông như dữ liệu nét hỏng, mà
+        // thật ra chỉ là một phép đo trượt.
+        expect(hz).not.toMatch(/getBoundingClientRect\(\)\.width\) \|\| 260/);
+        expect(hz).toMatch(/const size = this\.doCo\(target\);/);
+    });
+
+    test('đo trượt thì ĐỢI khung hình sau, không vẽ', () => {
+        const i = hz.indexOf('const size = this.doCo(target);');
+        const khoi = hz.slice(i, i + 900);
+        expect(khoi).toMatch(/if \(!size\) \{/);
+        expect(khoi).toMatch(/requestAnimationFrame/);
+        // Và phải THOÁT, không chạy tiếp với `size` rỗng.
+        expect(khoi).toMatch(/return;/);
+    });
+
+    test('lần thử lại bỏ qua nếu đã sang câu khác', () => {
+        // Người dùng bấm Tiếp trong lúc chờ khung hình sau thì vẽ chữ của câu cũ.
+        const i = hz.indexOf('requestAnimationFrame');
+        expect(hz.slice(i, i + 220))
+            .toMatch(/this\.questions\[this\.currentIndex\] === q/);
+    });
+
+    test('vẽ lại khi ô ĐỔI CỠ', () => {
+        // HanziWriter nhận kích thước lúc tạo rồi không đọc lại. Cỡ ô nay tính
+        // theo `vh`, nên xoay máy hay kéo cửa sổ là ô co lại mà SVG giữ nguyên.
+        expect(hz).toMatch(/new ResizeObserver\(/);
+        // Chốt LỜI GỌI, không phải khai báo: `/theoDoiCo\(target, q\)/` trần còn
+        // khớp chính dòng `theoDoiCo(target, q) {` nên gỡ lời gọi đi vẫn xanh.
+        expect(hz).toMatch(/this\.theoDoiCo\(target, q\);/);
+    });
+
+    test('chặn vòng lặp vẽ lại', () => {
+        // `vh` cho số lẻ, nên chính việc vẽ lại cũng làm rect lệch vài phần
+        // trăm pixel — không chặn thì quan sát → vẽ → quan sát mãi.
+        const i = hz.indexOf('new ResizeObserver(');
+        expect(hz.slice(i, i + 700)).toMatch(/Math\.abs\(moi - this\._coCu\) < 4/);
+    });
+
+    test('ngừng theo dõi khi rời chế độ', () => {
+        // `ResizeObserver` sống tiếp là giữ tham chiếu tới DOM đã gỡ.
+        const i = hz.indexOf('cleanup() {');
+        expect(hz.slice(i, i + 300)).toMatch(/this\.thoiTheoDoiCo\(\)/);
+    });
+
+    test('CSS có lưới an toàn cắt phần tràn', () => {
+        // Lớp chặn cuối: SVG lỡ to hơn ô thì tệ nhất cũng chỉ bị xén trong ô,
+        // không phá bố cục xung quanh.
+        expect(rule('.hanzi-canvas {')).toMatch(/overflow: hidden/);
+        expect(css).toMatch(/\.hanzi-canvas > svg/);
+    });
+});

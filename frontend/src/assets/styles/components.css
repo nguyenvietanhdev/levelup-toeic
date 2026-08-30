@@ -9054,7 +9054,17 @@ mark {
         var(--bg-primary);
     touch-action: none;   /* không thì kéo nét trên điện thoại bị cuộn trang */
     cursor: crosshair;
+    /* LƯỚI AN TOÀN: HanziWriter nhận kích thước LÚC TẠO và không đọc lại, nên
+       nếu SVG lỡ to hơn ô (phép đo trượt, ô co lại sau khi vẽ) thì chữ tràn ra
+       ngoài khung — trông như dữ liệu nét hỏng. Cắt ở đây thì tệ nhất cũng chỉ
+       là chữ bị xén trong ô, không phá bố cục xung quanh.
+       JS vẫn tự vẽ lại khi ô đổi cỡ (`theoDoiCo`); đây chỉ là lớp chặn cuối. */
+    overflow: hidden;
 }
+
+/* SVG do HanziWriter chèn vào — chặn nốt ở tầng con cho chắc. */
+.hanzi-canvas > svg,
+.rm-hanzi > svg { display: block; max-width: 100%; max-height: 100%; }
 .hanzi-actions {
     display: flex;
     align-items: center;

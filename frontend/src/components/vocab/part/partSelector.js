@@ -39,9 +39,15 @@ export const PartSelector = {
      */
     tuSaiTheoPart: {},
 
-    /** Số từ đang trong danh sách sai của một Part. */
+    /**
+     * Số từ sai của một Part — `{ sai, canOn }`.
+     *
+     * `sai`   = tổng từ đang trong danh sách sai (chưa thuộc hẳn);
+     * `canOn` = trong số đó, bao nhiêu từ ĐÃ TỚI HẠN ôn theo lịch SM-2.
+     */
     soTuSai(part) {
-        return this.tuSaiTheoPart?.[part]?.sai || 0;
+        const o = this.tuSaiTheoPart?.[part];
+        return { sai: o?.sai || 0, canOn: o?.canOn || 0 };
     },
 
     async init() {
@@ -176,10 +182,25 @@ export const PartSelector = {
                             <h3 title="${part}">${part}</h3>
                             <div class="topic-meta">
                                 <span class="word-count"><i class="fas fa-book"></i> ${this.partCounts[part]} từ</span>
-                                ${this.soTuSai(part) > 0 ? `
-                                    <span class="wrong-count" title="Số từ bạn đã sai ở phần này">
-                                        <i class="fas fa-circle-xmark"></i> ${this.soTuSai(part)} sai
-                                    </span>` : ''}
+                                ${(() => {
+                                    const { sai, canOn } = this.soTuSai(part);
+                                    // Không có từ sai nào → không hiện gì. Hiện
+                                    // "đã ôn xong" trên mọi Part chưa từng sai là nhiễu.
+                                    if (!sai) return '';
+                                    // CÙNG con số và cÙNG cách nói với popup chọn đề.
+                                    //
+                                    // Trước đây chỗ này hiện `sai` còn popup chọn đề hiện
+                                    // `canOn` — hai nửa nghĩa khác nhau trên hai huy hiệu đỏ
+                                    // giống hệt nhau. Bên kia báo "đã ôn xong" mà bên này vẫn
+                                    // "26 sai" đỏ chói thì đọc ra mâu thuẫn, không phải thông tin.
+                                    return canOn > 0
+                                        ? `<span class="wrong-count" title="Số từ đã tới hạn ôn theo lịch">
+                                               <i class="fas fa-circle-xmark"></i> còn ${canOn} cần ôn
+                                           </span>`
+                                        : `<span class="wrong-count is-done" title="${sai} từ từng sai ở phần này đều chưa tới hạn ôn lại">
+                                               <i class="fas fa-circle-check"></i> đã ôn xong
+                                           </span>`;
+                                })()}
                             </div>
                             ${!disabled ? getLevelBar(part) : ''}
                         </div>

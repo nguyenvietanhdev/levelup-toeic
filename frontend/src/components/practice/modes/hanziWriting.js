@@ -179,6 +179,53 @@ export const HanziWriting = {
         startQuestionTimer('hanzi-writing', () => this.timeUp());
     },
 
+    /**
+     * Bề rộng thật của ô, làm tròn. `0` = chưa đo được.
+     *
+     * `getBoundingClientRect` trả 0 khi phần tử chưa vào bố cục (tổ tiên còn
+     * `display: none`, hoặc CSS chưa kịp áp). Trả 0 ra ngoài để chỗ gọi biết mà
+     * chờ, thay vì tự đổi thành một con số chắc chắn sai.
+     */
+    doCo(el) {
+        return Math.round(el?.getBoundingClientRect?.().width || 0);
+    },
+
+    /**
+     * Vẽ lại khi Ô ĐỔI KÍCH THƯỚC.
+     *
+     * HanziWriter nhận kích thước LÚC TẠO rồi không bao giờ đọc lại. Mà cỡ ô nay
+     * tính theo `vh`, nên mọi thay đổi chiều cao khung nhìn — xoay máy, thanh địa
+     * chỉ trên di động ẩn hiện, kéo cửa sổ — đều làm ô co lại trong khi SVG giữ
+     * nguyên cỡ cũ, và chữ tràn ra ngoài.
+     *
+     * `ResizeObserver` bắt được MỌI nguyên nhân làm ô đổi cỡ, kể cả nguyên nhân
+     * chưa nghĩ tới — tốt hơn là đoán xem có những nguyên nhân nào.
+     */
+    theoDoiCo(target, q) {
+        this.thoiTheoDoiCo();
+        if (typeof ResizeObserver === 'undefined') return;
+
+        this._coCu = this.doCo(target);
+        this._quanSat = new ResizeObserver(() => {
+            const moi = this.doCo(target);
+            // Chỉ vẽ lại khi đổi ĐÁNG KỂ: `vh` cho số lẻ, nên chính việc vẽ lại
+            // cũng làm rect lệch vài phần trăm pixel — không chặn thì thành vòng lặp.
+            if (!moi || Math.abs(moi - this._coCu) < 4) return;
+            this._coCu = moi;
+            // Nét đã tô của chữ ĐANG viết sẽ mất khi dựng lại — chấp nhận được:
+            // đổi cỡ cửa sổ giữa lúc đang tô là chuyện hiếm, mà chữ tràn khung thì
+            // không tô tiếp được nữa.
+            this.mountWriter(q);
+        });
+        try { this._quanSat.observe(target); } catch { this._quanSat = null; }
+    },
+
+    /** Ngừng theo dõi — gọi trước khi dựng lại hoặc rời chế độ. */
+    thoiTheoDoiCo() {
+        try { this._quanSat?.disconnect(); } catch { /* chưa tạo */ }
+        this._quanSat = null;
+    },
+
     mountWriter(q) {
         const i = this.charIndex;
         const target = document.getElementById(`hanzi-box-${i}`);
@@ -191,6 +238,26 @@ export const HanziWriting = {
             document.getElementById(`hanzi-box-${k}`)?.classList.toggle('is-active', k === i);
         });
 
+        // Cuộn tới ô đang viết — ĐẶT Ở ĐÂY, trước phép đo.
+        //
+        // Tô sáng ô và cuộn tới nó KHÔNG phụ thuộc vào việc đo được cỡ hay
+        // không. Để sau nhánh `if (!size) return` thì lần đo trượt đầu tiên
+        // nuốt luôn cả hai — người học viết xong một chữ mà màn hình đứng im.
+        //
+        // Từ dài thì ô kế tiếp nằm NGOÀI vùng nhìn. Không cuộn tới thì người học
+        // viết xong một chữ là màn hình đứng im — ô kế đã sẵn sàng nhưng không ai
+        // thấy nó ở đâu.
+        //
+        // Trục cuộn khác nhau theo khổ màn: máy tính xếp ô ngang (cuộn ngang),
+        // điện thoại xếp dọc (cuộn dọc — xem responsive.css). Truyền cả hai trục
+        // để màn nào cũng cuộn đúng.
+        //
+        // Trục dọc để `nearest` chứ không `center`: scrollIntoView cuộn MỌI tổ
+        // tiên cuộn được, nên `center` còn kéo cả trang để đưa ô vào giữa
+        // viewport — màn hình giật lên xuống sau mỗi chữ. `nearest` cuộn tối
+        // thiểu, đủ để ô lọt vào vùng nhìn mà không đụng tới trang.
+        target.scrollIntoView?.({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+
         // HanziWriter nhận kích thước LÚC TẠO, không đọc CSS — truyền số lệch với
         // CSS thì SVG tràn ra ngoài hoặc để lại viền trống.
         //
@@ -198,7 +265,20 @@ export const HanziWriting = {
         // là hai nơi phải sửa song song, mà lệch nhau thì hỏng ÂM THẦM: chữ vẫn
         // hiện, chỉ là lệch khỏi khung hoặc chừa viền trống. Lấy từ DOM thì CSS
         // đổi ngưỡng lúc nào cũng tự khớp.
-        const size = Math.round(target.getBoundingClientRect().width) || 260;
+        const size = this.doCo(target);
+
+        // Chưa đo được (ô chưa xong bố cục) → ĐỢI khung hình sau, đừng bịa số.
+        //
+        // Bản cũ rơi về `|| 260`. Đó là con số của luật CSS đã bỏ, nên SVG được
+        // vẽ to hơn ô và chữ TRÀN ra ngoài khung — trông như dữ liệu nét hỏng, mà
+        // thật ra chỉ là một phép đo trượt.
+        if (!size) {
+            requestAnimationFrame(() => {
+                if (this.questions[this.currentIndex] === q) this.mountWriter(q);
+            });
+            return;
+        }
+
 
         // Chỉ bỏ qua phần DỰNG BỘ VẼ khi thư viện chưa sẵn sàng — phần tô sáng ô
         // và cuộn tới ô đang viết vẫn phải chạy, chúng không phụ thuộc vào nó.
@@ -207,6 +287,8 @@ export const HanziWriting = {
         // luôn có. Nhưng hàm này còn được gọi trực tiếp lúc chuyển sang chữ kế
         // tiếp, nên vẫn tự bảo vệ: thiếu lớp này thì `HanziWriter.create` ném
         // "Cannot read properties of null" và cả lượt luyện chết giữa chừng.
+        this.theoDoiCo(target, q);
+
         this.writer = HanziWriter?.create(target, q.chars[i], {
             width: size,
             height: size,
@@ -234,19 +316,6 @@ export const HanziWriting = {
         this.strokeNum = 0;
         this.openQuiz(q);
 
-        // Từ dài thì ô kế tiếp nằm NGOÀI vùng nhìn. Không cuộn tới thì người học
-        // viết xong một chữ là màn hình đứng im — ô kế đã sẵn sàng nhưng không ai
-        // thấy nó ở đâu.
-        //
-        // Trục cuộn khác nhau theo khổ màn: máy tính xếp ô ngang (cuộn ngang),
-        // điện thoại xếp dọc (cuộn dọc — xem responsive.css). Truyền cả hai trục
-        // để màn nào cũng cuộn đúng.
-        //
-        // Trục dọc để `nearest` chứ không `center`: scrollIntoView cuộn MỌI tổ
-        // tiên cuộn được, nên `center` còn kéo cả trang để đưa ô vào giữa
-        // viewport — màn hình giật lên xuống sau mỗi chữ. `nearest` cuộn tối
-        // thiểu, đủ để ô lọt vào vùng nhìn mà không đụng tới trang.
-        target.scrollIntoView?.({ behavior: 'smooth', block: 'nearest', inline: 'center' });
     },
 
     /**
@@ -375,6 +444,7 @@ export const HanziWriting = {
 
     cleanup() {
         stopQuestionTimer();
+        this.thoiTheoDoiCo();
         this.cleanupWriter();
         EventBus.off(GameEvents.HINT_USED, this._onHint);
         EventBus.off(GameEvents.QUESTION_SKIPPED, this._onSkip);
