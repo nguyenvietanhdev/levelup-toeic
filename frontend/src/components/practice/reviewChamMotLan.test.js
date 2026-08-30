@@ -226,3 +226,46 @@ describe('kiểu PHÁT ÂM có BA lần thử', () => {
         expect((t.slice(i, j).match(/ketThucCau\(/g) || []).length).toBe(1);
     });
 });
+
+describe('may nghe SAI HE CHU thi khong cham', () => {
+    const t = than('ganPhatAm(question) {');
+
+    test('xin tiếng Trung mà nhận lại chữ Latin → không chấm', () => {
+        // Đó là lỗi của khâu nhận dạng, không phải người học phát âm sai.
+        // Chấm sai ở đây là phạt oan, mà còn đẩy từ đó quay lại sớm hơn
+        // mức cần trong lịch ôn.
+        expect(t).toMatch(/if \(laZh && chu && !HAN_RE\.test\(chu\)\)/);
+    });
+
+    test('nhánh đó THOÁT trước khi chấm', () => {
+        const i = t.indexOf('if (laZh && chu && !HAN_RE.test(chu))');
+        const nhanh = t.slice(i, t.indexOf('scoreAttempt(', i));
+        expect(nhanh).toMatch(/return;/);
+    });
+
+    test('KHÔNG trừ lượt thử', () => {
+        // Cùng lý do với "chưa nghe thấy gì": phạt phải dành cho lỗi phát âm.
+        const i = t.indexOf('if (laZh && chu && !HAN_RE.test(chu))');
+        const nhanh = t.slice(i, t.indexOf('return;', i));
+        expect(nhanh).not.toMatch(/_soLanNoi \+= 1/);
+    });
+
+    test('tăng bộ đếm SAU nhánh đó', () => {
+        const iChan = t.indexOf('!HAN_RE.test(chu)');
+        const iDem = t.indexOf('this._soLanNoi += 1');
+        expect(iChan).toBeGreaterThan(-1);
+        expect(iDem).toBeGreaterThan(iChan);
+    });
+
+    test('chỉ áp dụng khi ĐANG xin tiếng Trung', () => {
+        // Kho tiếng Anh nhận chữ Latin là đúng — chặn ở đó là không bao giờ
+        // chấm được câu nào.
+        expect(t).toMatch(/laZh && chu &&/);
+    });
+
+    test('hiện MÃ ngôn ngữ đang nghe', () => {
+        // Không hiện thì khi máy nghe sai, không ai biết là app xin sai mã
+        // hay trình duyệt phớt lờ mã đúng.
+        expect(t).toMatch(/Đang nghe… \(\$\{maNghe\}\)/);
+    });
+});

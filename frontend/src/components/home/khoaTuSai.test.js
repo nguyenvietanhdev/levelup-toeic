@@ -166,3 +166,43 @@ describe('hàm bỏ chọn có sẵn và làm đủ việc', () => {
         expect(than).toMatch(/settings\.selectedPart = null/);
     });
 });
+
+describe('Modal ĐÓNG TRƯỚC rồi mới chạy hành động', () => {
+    const modalSrc = readFileSync(
+        join(__dirname, '..', '..', 'ui', 'Modal.jsx'), 'utf8');
+
+    /** `handleButtonClick` dựng từ chính mã nguồn rồi gọi thật. */
+    const dung = () => {
+        const i = modalSrc.indexOf('const handleButtonClick = (btn) => {');
+        expect(i).toBeGreaterThan(-1);
+        const than = modalSrc.slice(modalSrc.indexOf('{', i + 30) + 1,
+            modalSrc.indexOf('\n    };', i));
+        const thuTu = [];
+        const close = () => thuTu.push('close');
+        const f = new Function('close', 'btn', than);
+        return { thuTu, goi: (btn) => f(close, btn) };
+    };
+
+    test('`close` chạy TRƯỚC `onClick`', () => {
+        // Cả app chỉ có MỘT khe modal. Chạy `onClick` trước thì một nút mở
+        // popup khác (vđ "Giữ nguyên" → popup chọn Part) vừa mở xong là `close()`
+        // ngay dưới đóng luôn — bấm nút mà không có gì xảy ra, không lỗi nào
+        // trong console.
+        const { thuTu, goi } = dung();
+        goi({ onClick: () => thuTu.push('onClick') });
+        expect(thuTu).toEqual(['close', 'onClick']);
+    });
+
+    test('`closeOnClick: false` thì KHÔNG đóng', () => {
+        // Vđ "Xem lại câu sai" — popup phải ở lại sau khi bấm.
+        const { thuTu, goi } = dung();
+        goi({ closeOnClick: false, onClick: () => thuTu.push('onClick') });
+        expect(thuTu).toEqual(['onClick']);
+    });
+
+    test('nút không có `onClick` vẫn đóng được', () => {
+        const { thuTu, goi } = dung();
+        expect(() => goi({})).not.toThrow();
+        expect(thuTu).toEqual(['close']);
+    });
+});

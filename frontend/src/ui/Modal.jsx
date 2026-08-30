@@ -52,9 +52,20 @@ export default function ModalContainer() {
     if (!modal) return <div id="modal-container" />;
 
 
+    /**
+     * ĐÓNG TRƯỚC, rồi mới chạy hành động.
+     *
+     * Cả app chỉ có MỘT khe modal. Chạy `onClick` trước thì một nút mở popup
+     * khác (vd "Giữ nguyên" → popup chọn Part) vừa mở xong là `close()` ngay
+     * dưới đóng luôn — bấm nút mà không có gì xảy ra, không lỗi nào trong
+     * console. Đúng lỗi người dùng gặp.
+     *
+     * Đảo thứ tự an toàn: handler nào cần modal còn mở thì đã khai
+     * `closeOnClick: false` (vd "Xem lại câu sai"), và nhánh đó không đóng.
+     */
     const handleButtonClick = (btn) => {
-        btn.onClick?.();
         if (btn.closeOnClick !== false) close();
+        btn.onClick?.();
     };
 
     return (

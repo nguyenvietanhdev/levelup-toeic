@@ -706,7 +706,12 @@ export const ReviewMistakes = {
 
             rec.onstart = () => {
                 nut.classList.add('is-listening');
-                if (trangThai) trangThai.textContent = 'Đang nghe…';
+                // Ghi RÕ mã đang nghe.
+                //
+                // Không hiện thì khi máy nghe sai ngôn ngữ, không ai biết là app
+                // xin sai mã hay trình duyệt phớt lờ mã đúng — hai nguyên nhân
+                // khác hẳn nhau mà nhìn màn hình thì giống hệt.
+                if (trangThai) trangThai.textContent = `Đang nghe… (${maNghe})`;
             };
 
             rec.onresult = (e) => {
@@ -723,10 +728,27 @@ export const ReviewMistakes = {
                 }
 
                 if (oNghe) oNghe.textContent = chu;
-                const diem = scoreAttempt(chu, Array.from(kq), tu, laZh);
                 this._dungNghe();
                 nut.classList.remove('is-listening');
 
+                // Máy trả về SAI HỆ CHỮ → coi như KHÔNG nghe được, không chấm.
+                //
+                // Xin nghe tiếng Trung mà nhận lại toàn chữ Latin ("How how?")
+                // nghĩa là bộ nhận dạng không chạy bằng ngôn ngữ ta yêu cầu —
+                // đó là lỗi của khâu nhận dạng, không phải người học phát âm
+                // sai. Chấm sai ở đây là phạt oan, mà còn đẩy từ đó quay lại
+                // sớm hơn mức cần trong lịch ôn.
+                //
+                // Không trừ lượt thử: cùng lý do với "chưa nghe thấy gì".
+                if (laZh && chu && !HAN_RE.test(chu)) {
+                    if (trangThai) {
+                        trangThai.textContent =
+                            `Máy nghe ra chữ Latin, không phải tiếng Trung — bấm mic nói lại (${maNghe})`;
+                    }
+                    return;
+                }
+
+                const diem = scoreAttempt(chu, Array.from(kq), tu, laZh);
                 this._soLanNoi += 1;
                 const conLai = SO_LAN_NOI - this._soLanNoi;
 
