@@ -496,7 +496,8 @@ export const ReviewMistakes = {
 
         if (question.kieu === 'speak') {
             return `
-                <p class="rm-prompt">Bấm mic rồi đọc to từ này — có ${SO_LAN_NOI} lần thử</p>
+                <p class="rm-prompt">Bấm mic rồi đọc to từ này —
+                   <span id="rm-speak-luot">còn ${SO_LAN_NOI} lần thử</span></p>
                 <div class="rm-speak">
                     <button class="rm-mic-btn" id="rm-mic">
                         <i class="fas fa-microphone"></i>
@@ -629,6 +630,24 @@ export const ReviewMistakes = {
      * Không nghe được gì thì KHÔNG chấm sai — chỉ mời thử lại. Phạt phải dành
      * cho lỗi phát âm, không phải cho việc mic chưa bắt được tiếng.
      */
+    /**
+     * Vẽ lại số lượt còn lại.
+     *
+     * Dòng nhắc trước đây ghi cứng "có 3 lần thử" và đứng im suốt câu, nên sau
+     * hai lần trượt người học vẫn đọc thấy "3" — không biết mình còn mấy lượt.
+     * Số còn lại chỉ hiện thoáng ở dòng trạng thái rồi bị câu nhận xét sau đè mất.
+     */
+    veLuotNoi() {
+        const el = document.getElementById('rm-speak-luot');
+        if (!el) return;
+        const conLai = Math.max(0, SO_LAN_NOI - (this._soLanNoi || 0));
+        el.textContent = conLai > 0 ? `còn ${conLai} lần thử` : 'hết lượt thử';
+        // Còn một lượt là mốc đáng báo động — đổi màu để mắt bắt được ngay,
+        // thay vì phải đọc con số.
+        el.classList.toggle('sap-het', conLai === 1);
+        el.classList.toggle('het', conLai === 0);
+    },
+
     ganPhatAm(question) {
         const tu = String(question.word?.en || '');
 
@@ -666,6 +685,7 @@ export const ReviewMistakes = {
         // bắt đầu lại từ 0, không thì câu trước dùng hết lượt là câu sau chấm
         // sai ngay lần nói đầu.
         this._soLanNoi = 0;
+        this.veLuotNoi();
 
         /** Khoá mọi điều khiển sau khi đã chấm — không cho làm lại. */
         const khoaLai = () => {
@@ -750,6 +770,7 @@ export const ReviewMistakes = {
 
                 const diem = scoreAttempt(chu, Array.from(kq), tu, laZh);
                 this._soLanNoi += 1;
+                this.veLuotNoi();
                 const conLai = SO_LAN_NOI - this._soLanNoi;
 
                 // `correct` đã bao gồm cả ca "gần đúng" (xem `scoreAttempt`:

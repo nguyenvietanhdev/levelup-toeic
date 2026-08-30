@@ -215,7 +215,7 @@ describe('kiểu PHÁT ÂM có BA lần thử', () => {
     });
 
     test('lời nhắc trên màn hình nói rõ có mấy lần', () => {
-        expect(src).toMatch(/có \$\{SO_LAN_NOI\} lần thử/);
+        expect(src).toMatch(/còn \$\{SO_LAN_NOI\} lần thử/);
     });
 
     test('MỘT CÂU vẫn chỉ chấm MỘT lần', () => {
@@ -267,5 +267,76 @@ describe('may nghe SAI HE CHU thi khong cham', () => {
         // Không hiện thì khi máy nghe sai, không ai biết là app xin sai mã
         // hay trình duyệt phớt lờ mã đúng.
         expect(t).toMatch(/Đang nghe… \(\$\{maNghe\}\)/);
+    });
+});
+
+describe('bộ đếm lượt thử ĐẾM NGƯỢC', () => {
+    const t = than('ganPhatAm(question) {');
+
+    /** `veLuotNoi` dựng từ chính mã nguồn rồi chạy thật trên DOM giả. */
+    const dung = (daThu) => {
+        const i = src.indexOf('veLuotNoi() {');
+        expect(i).toBeGreaterThan(-1);
+        const than_ = src.slice(src.indexOf('{', i) + 1, src.indexOf('\n    },', i));
+        const el = {
+            textContent: '',
+            classList: {
+                _c: new Set(),
+                toggle(k, v) { if (v) this._c.add(k); else this._c.delete(k); },
+                has(k) { return this._c.has(k); },
+            },
+        };
+        const doc = { getElementById: () => el };
+        const f = new Function('document', 'SO_LAN_NOI',
+            `return function () { ${than_} };`)(doc, 3);
+        f.call({ _soLanNoi: daThu });
+        return el;
+    };
+
+    test('chưa thử lần nào → còn 3', () => {
+        expect(dung(0).textContent).toBe('còn 3 lần thử');
+    });
+
+    test('thử 1 lần → còn 2', () => {
+        expect(dung(1).textContent).toBe('còn 2 lần thử');
+    });
+
+    test('thử 2 lần → còn 1, và ĐỔI MÀU cảnh báo', () => {
+        const el = dung(2);
+        expect(el.textContent).toContain('1');
+        expect(el.classList.has('sap-het')).toBe(true);
+    });
+
+    test('hết lượt → báo hết, không hiện số âm', () => {
+        const el = dung(3);
+        expect(el.textContent).toMatch(/hết lượt/);
+        expect(el.classList.has('het')).toBe(true);
+        expect(el.textContent).not.toMatch(/-/);
+    });
+
+    test('lỡ đếm quá số lượt vẫn báo ĐÚNG trạng thái hết', () => {
+        // `Math.max(0, ...)`: không kẹp sàn thì `conLai === 0` sai ở mọi giá trị
+        // vượt ngưỡng, nên lớp `het` không được bật — dòng nhắc giữ nguyên màu
+        // thường trong khi người học đã hết lượt.
+        const el = dung(9);
+        expect(el.textContent).toBe('hết lượt thử');
+        expect(el.classList.has('het')).toBe(true);
+        expect(el.classList.has('sap-het')).toBe(false);
+    });
+
+    test('vẽ lại NGAY khi dựng câu', () => {
+        // Không gọi thì câu mới vẫn hiện số của câu trước.
+        const i = t.indexOf('this._soLanNoi = 0;');
+        expect(t.slice(i, i + 120)).toMatch(/this\.veLuotNoi\(\)/);
+    });
+
+    test('vẽ lại SAU mỗi lần thử', () => {
+        const i = t.indexOf('this._soLanNoi += 1;');
+        expect(t.slice(i, i + 120)).toMatch(/this\.veLuotNoi\(\)/);
+    });
+
+    test('dòng nhắc có phần tử riêng để cập nhật', () => {
+        // Ghi thẳng trong thẻ <p> thì không sửa được số mà không vẽ lại cả khối.
+        expect(src).toMatch(/id="rm-speak-luot"/);
     });
 });

@@ -10799,6 +10799,13 @@ mark {
     padding: 6px 14px;
 }
 
+/* Bộ đếm lượt thử còn lại. Bình thường mờ như phần còn lại của dòng nhắc;
+   còn một lượt thì chuyển cảnh báo, hết lượt thì xám hẳn. Đổi MÀU chứ không
+   chỉ đổi số: mắt bắt được ngay mà không phải đọc. */
+#rm-speak-luot { font-weight: 600; }
+#rm-speak-luot.sap-het { color: var(--warning-color, #f59e0b); }
+#rm-speak-luot.het { color: var(--text-secondary); font-weight: 400; }
+
 /* Câu PHÁT ÂM trong lượt ôn từ sai: nút mic tròn + dòng trạng thái + chữ máy
    nghe được. Cùng khổ với ô tô nét chữ Hán để hai kiểu không nhảy chiều cao. */
 .rm-speak {
