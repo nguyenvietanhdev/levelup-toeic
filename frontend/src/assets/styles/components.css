@@ -10926,6 +10926,26 @@ mark {
   color: var(--text-secondary);
 }
 
+/* Số từ SAI trên thẻ đề / thẻ Part — đứng cạnh tổng số từ.
+   Màu cảnh báo để tách khỏi con số tổng ngay bên trái: hai số cùng màu thì đọc
+   thành một cặp vô nghĩa ("496 12"). */
+.wrong-count {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: 10px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--error-color, #ef4444);
+  white-space: nowrap;
+}
+
+/* Đã ôn hết thì không còn là cảnh báo — đổi sang màu "xong". */
+.wrong-count.is-done {
+  color: var(--success-color, #22c55e);
+  font-weight: 500;
+}
+
 /* Phần tử NGẮT DÒNG trong header luyện tập. Ẩn ở màn rộng. */
 .practice-header-break { display: none; }
 

@@ -22,13 +22,17 @@ const css = readFileSync(
 
 /** Chạy THẬT hàm quyết định khoá, cắt từ nguồn. */
 function loadTabBiKhoa(mode) {
-    // Cắt ĐÚNG hai dòng khai báo. Cắt tới dòng trống gần nhất thì lấn sang JSX
-    // phía dưới và `new Function` nổ ở dấu `<`.
+    // Ghép ĐÚNG hai dòng khai báo, tìm từng dòng một.
+    //
+    // Cắt tới dòng trống gần nhất thì lấn sang JSX phía dưới và `new Function`
+    // nổ ở dấu `<`. Còn lấy cố định 2 dòng liền nhau thì hụt ngay khi có hàm
+    // khác chen vào giữa hai khai báo — vừa đúng hôm nay, hỏng hôm sau.
     const lines = modal.split('\n');
     const i = lines.findIndex((l) => l.includes('const chiTuSai ='));
     expect(i).toBeGreaterThan(-1);
-    const body = lines.slice(i, i + 2).join('\n');
-    expect(body).toContain('tabBiKhoa');
+    const j = lines.findIndex((l, k) => k > i && l.includes('const tabBiKhoa ='));
+    expect(j).toBeGreaterThan(i);
+    const body = [lines[i], lines[j]].join('\n');
     return new Function('mode', `${body}; return tabBiKhoa;`)(mode);
 }
 

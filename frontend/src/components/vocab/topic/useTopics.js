@@ -11,6 +11,14 @@ export function useTopics({ enabled = true } = {}) {
     const [loadingShared, setLoadingShared] = useState(false);
     const [loadingPersonal, setLoadingPersonal] = useState(false);
     const [loadingWrong, setLoadingWrong] = useState(false);
+    /**
+     * Số từ sai theo NGUỒN — `{ [source]: { sai, canOn } }`.
+     *
+     * Đếm ở server bằng aggregate. Đếm từ `WrongWordsAPI.list()` thì con số bị
+     * trần ở `limit` của lời gọi đó, và sai âm thầm đúng với người có nhiều từ
+     * sai — nhóm cần con số này nhất.
+     */
+    const [tuSai, setTuSai] = useState({});
     const [current, setCurrent] = useState(() => TopicSelector.getCurrentTopic());
     // Những bộ được chia sẻ mà mình ĐÃ sao chép về, dạng `ownerEmail|source`.
     // Chỉ sống trong phiên: chép xong thì thẻ gốc biến khỏi danh sách, tránh bấm
@@ -76,6 +84,19 @@ export function useTopics({ enabled = true } = {}) {
         }
     }, []);
 
+    /**
+     * Nạp số từ sai theo nguồn — dùng cho MỌI tab, không riêng tab "Từ vựng sai".
+     *
+     * Trước đây chỉ `loadWrong` đặt số này, nên thẻ đề ở tab "Chung"/"Riêng"
+     * không bao giờ hiện được số từ sai trừ khi người dùng tình cờ mở tab kia
+     * trước.
+     */
+    const loadTuSai = useCallback(async () => {
+        if (!getToken()) { setTuSai({}); return; }
+        const tk = await WrongWordsAPI.summary();
+        setTuSai(tk?.theoNguon || {});
+    }, []);
+
     const loadWrong = useCallback(async () => {
         if (!getToken()) { setWrong([]); return; }
         setLoadingWrong(true);
@@ -97,9 +118,25 @@ export function useTopics({ enabled = true } = {}) {
                 else if (lv === 'B') g.levelStats.b++;
                 else if (lv === 'C') g.levelStats.c++;
             }
+            // Số CÒN PHẢI ÔN lấy từ server, không đếm lại ở đây.
+            //
+            // Danh sách trên chỉ có từ đang `active`; "còn phải ôn" là tập con
+            // của nó (những từ đã tới hạn theo lịch SM-2), mà `nextReviewDate`
+            // phải so với giờ server — so bằng giờ máy thì máy lệch giờ là con
+            // số lệch theo.
+            const tk = await WrongWordsAPI.summary();
+            const theoNguon = tk?.theoNguon || {};
+            setTuSai(theoNguon);
+
             const groups = [...bySource.entries()]
-                .map(([source, g]) => ({ source, ...g }))
-                .sort((a, b) => b.wordCount - a.wordCount);
+                .map(([source, g]) => ({
+                    source,
+                    ...g,
+                    canOn: theoNguon[source]?.canOn ?? 0,
+                }))
+                // Xếp theo số CÒN PHẢI ÔN: đó là thứ người dùng đang tìm khi mở
+                // tab này — đề nào còn nhiều nhất thì nên học trước.
+                .sort((a, b) => (b.canOn - a.canOn) || (b.wordCount - a.wordCount));
             setWrong(groups);
         } catch {
             setWrong([]);
@@ -159,7 +196,8 @@ export function useTopics({ enabled = true } = {}) {
     return {
         shared, personal, wrong, current,
         loadingShared, loadingPersonal, loadingWrong,
-        loadShared, loadPersonal, loadWrong,
+        tuSai,
+        loadShared, loadPersonal, loadWrong, loadTuSai,
         selectShared, selectPersonal, selectWrong,
         selectSharedWithMe, copyShared,
     };

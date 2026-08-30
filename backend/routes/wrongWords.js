@@ -8,6 +8,7 @@ const {
     getAllWrongWords,
     deleteWrongWord,
     getStats,
+    getSummary,
     bulkUpdate
 } = require('../controllers/wrongWordsController');
 
@@ -34,6 +35,11 @@ router.get('/', getAllWrongWords);
 
 // GET /api/wrong-words/stats - Thống kê
 router.get('/stats', getStats);
+
+// Đếm từ sai theo nguồn / theo Part — cho thẻ đề và thẻ Part hiện "còn bao
+// nhiêu từ phải ôn". Đặt TRƯỚC `/:...` nếu sau này có route tham số, kẻo
+// 'summary' bị nuốt thành một id.
+router.get('/summary', getSummary);
 
 // DELETE /api/wrong-words/:wordId - Xóa từ
 router.delete('/:wordId', deleteWrongWord);

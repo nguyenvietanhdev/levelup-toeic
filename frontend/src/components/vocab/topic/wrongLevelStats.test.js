@@ -50,14 +50,17 @@ describe('gom độ khó cho tab Từ vựng sai', () => {
         expect(loops).toHaveLength(1);
     });
 
-    test('vẫn giữ nguyên wordCount và thứ tự sắp xếp', () => {
+    test('vẫn đếm wordCount, và wordCount là tiêu chí xếp PHỤ', () => {
+        // Tiêu chí CHÍNH nay là `canOn` (còn bao nhiêu từ tới hạn ôn) — đó mới
+        // là thứ người dùng tìm khi mở tab này. `wordCount` chỉ dùng để phá hoà.
         expect(body).toMatch(/g\.wordCount\+\+/);
-        expect(body).toMatch(/sort\(\(a, b\) => b\.wordCount - a\.wordCount\)/);
+        expect(body).toMatch(/\(b\.canOn - a\.canOn\) \|\| \(b\.wordCount - a\.wordCount\)/);
     });
 
     test('levelStats đi kèm mỗi nhóm khi trả ra', () => {
-        // `{ source, ...g }` mới mang được cả wordCount lẫn levelStats.
-        expect(body).toMatch(/\{ source, \.\.\.g \}/);
+        // Trải `...g` mới mang được cả wordCount lẫn levelStats; liệt kê tay là
+        // dễ quên một trường.
+        expect(body).toMatch(/source,\s+\.\.\.g,/);
     });
 });
 

@@ -8,6 +8,7 @@ import { Notification } from '@ui/Toaster.jsx';
 import { Modal } from '@ui/Modal.jsx';
 import { toBand } from '@lib/levelBands.js';
 import { theoDoiCuon } from '@lib/scrollMemory.js';
+import { WrongWordsAPI } from '@api/wrongWords.js';
 
 export const PartSelector = {
     parts: [],
@@ -28,6 +29,20 @@ export const PartSelector = {
      * khi caller không truyền offset.
      */
     conTroLo: 0,
+
+    /**
+     * Số từ SAI theo từng Part — nạp từ server, khoá là tên Part.
+     *
+     * Rỗng khi chưa nạp xong hoặc gọi lỗi; `soTuSai` trả 0 nên thẻ chỉ không
+     * hiện thêm gì. Đây là con số phụ trợ, hỏng thì ẩn đi chứ không được chặn
+     * màn chọn Part.
+     */
+    tuSaiTheoPart: {},
+
+    /** Số từ đang trong danh sách sai của một Part. */
+    soTuSai(part) {
+        return this.tuSaiTheoPart?.[part]?.sai || 0;
+    },
 
     async init() {
         await this.loadParts();
@@ -84,6 +99,20 @@ export const PartSelector = {
     showPartSelectionModal() {
         // Reload parts in case vocabulary finished loading after init
         this.loadParts();
+
+        // Số từ sai — nạp SONG SONG, không chặn việc mở popup.
+        //
+        // `await` ở đây là popup đứng chờ mạng mới hiện ra, cho một con số phụ
+        // trợ. Nạp xong thì vẽ lại lưới; chưa xong thì thẻ chỉ thiếu con số đó.
+        WrongWordsAPI.summary().then((d) => {
+            this.tuSaiTheoPart = d?.theoPart || {};
+            // Chỉ vẽ lại khi popup CÒN mở. Người dùng đóng trước lúc mạng về
+            // thì `renderModal` ghi vào `.modal-body` của popup KHÁC đang mở —
+            // dùng đúng cờ mà `onVocabLoaded` bên dưới đã dùng.
+            if (!this._modalOpen) return;
+            const body = q('.modal-body');
+            if (body) { body.innerHTML = renderModal(); setupHeaderSearch(); attachListeners(); }
+        }).catch(() => {});
         let currentMode = this.practiceMode || 'sequential';
         let searchQuery = '';
 
@@ -147,6 +176,10 @@ export const PartSelector = {
                             <h3 title="${part}">${part}</h3>
                             <div class="topic-meta">
                                 <span class="word-count"><i class="fas fa-book"></i> ${this.partCounts[part]} từ</span>
+                                ${this.soTuSai(part) > 0 ? `
+                                    <span class="wrong-count" title="Số từ bạn đã sai ở phần này">
+                                        <i class="fas fa-rotate-left"></i> ${this.soTuSai(part)} sai
+                                    </span>` : ''}
                             </div>
                             ${!disabled ? getLevelBar(part) : ''}
                         </div>

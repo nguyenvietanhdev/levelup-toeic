@@ -1,7 +1,25 @@
+const mongoose = require('mongoose');
 const WrongWord = require('../models/WrongWord');
 const User = require('../models/User');
 const UserProfile = require('../models/UserProfile');
 const logger = require('../utils/logger');
+
+/**
+ * Kho từ vựng người dùng đang học — dùng để lọc từ sai.
+ *
+ * Ba giá trị, KHÔNG phải hai: `'en'`, `'zh'` và `'bi'` (song ngữ Trung–Anh).
+ *
+ * Bản cũ viết `=== 'zh' ? 'zh' : 'en'` nên kho song ngữ rơi vào nhánh `'en'`.
+ * Mà `WrongWord.langFilter('en')` loại hẳn `lang: 'bi'` ra, nên người học song
+ * ngữ KHÔNG BAO GIỜ thấy từ sai của mình: tab "Từ vựng sai" trống trơn và chế
+ * độ "Ôn lại từ sai" không có gì để ôn — trong khi từ sai vẫn đang được ghi
+ * vào DB bình thường.
+ */
+function khoDangHoc(profile) {
+    const kho = profile?.settings?.vocabLang;
+    return kho === 'zh' || kho === 'bi' ? kho : 'en';
+}
+
 
 /** Hạn TTL cho một từ sai mới: now + WrongWord.TTL_DAYS ngày. */
 function ttlDate() {
@@ -213,7 +231,7 @@ exports.getWordsToReview = async (req, res) => {
 
         // Ngôn ngữ lấy từ HỒ SƠ, không nhận từ client (giống Viết luận/Hội thoại).
         const profile = await UserProfile.findOne({ userId }).select('settings').lean();
-        const lang = profile?.settings?.vocabLang === 'zh' ? 'zh' : 'en';
+        const lang = khoDangHoc(profile);
 
         // Bản ghi CŨ chưa có `lang` (139 doc trong DB) vẫn phải lọc đúng, nếu
         // không thì tính năng vô dụng cho tới khi người dùng gặp lại từng từ.
@@ -267,7 +285,7 @@ exports.getAllWrongWords = async (req, res) => {
         // Thiếu bước này thì popup chọn nhóm từ sai hiện lẫn nhóm tiếng Trung
         // với nhóm tiếng Anh, và chọn nhóm nào cũng ra một lượt ôn lẫn lộn.
         const profile = await UserProfile.findOne({ userId }).select('settings').lean();
-        const lang = profile?.settings?.vocabLang === 'zh' ? 'zh' : 'en';
+        const lang = khoDangHoc(profile);
 
         logger.debug(`📚 getAllWrongWords: Fetching active words for user ${userId}, limit=${limit}, lang=${lang}`);
 
@@ -357,6 +375,70 @@ exports.getStats = async (req, res) => {
             message: 'Lỗi khi lấy thống kê',
             error: error.message
         });
+    }
+};
+
+/**
+ * @desc    Đếm từ sai theo NGUỒN và theo PART
+ * @route   GET /api/wrong-words/summary
+ * @access  Private
+ *
+ * Để thẻ đề / thẻ Part hiện được "còn bao nhiêu từ phải ôn" ngay lúc chọn —
+ * người học nhìn con số đó để quyết định học đề nào, chứ không phải mở từng đề
+ * ra đếm.
+ *
+ * Dùng AGGREGATE chứ không tải danh sách rồi đếm ở client: `getAllWrongWords`
+ * có `limit` mặc định 100, nên đếm từ đó thì con số trần ở 100 và sai âm thầm
+ * với người có nhiều từ sai — đúng nhóm cần con số này nhất.
+ *
+ * Trả HAI con số cho mỗi nhóm:
+ *   · `sai`   — tổng số từ đang trong danh sách sai (chưa thuộc hẳn);
+ *   · `canOn` — trong số đó, bao nhiêu từ ĐÃ ĐẾN HẠN ôn theo lịch SM-2.
+ * Hai con số dùng cho hai chỗ khác nhau, nên trả cả hai thay vì bắt chỗ gọi đoán.
+ */
+exports.getSummary = async (req, res) => {
+    try {
+        const userId = req.user.id || req.user._id;
+        const profile = await UserProfile.findOne({ userId }).select('settings').lean();
+        const lang = khoDangHoc(profile);
+
+        const now = new Date();
+        const dong = await WrongWord.aggregate([
+            {
+                $match: {
+                    userId: new mongoose.Types.ObjectId(String(userId)),
+                    status: 'active',
+                    ...WrongWord.langFilter(lang),
+                },
+            },
+            {
+                $group: {
+                    _id: { source: '$source', part: '$part' },
+                    sai: { $sum: 1 },
+                    canOn: { $sum: { $cond: [{ $lte: ['$nextReviewDate', now] }, 1, 0] } },
+                },
+            },
+        ]);
+
+        const gop = (lay) => {
+            const ra = {};
+            for (const d of dong) {
+                const k = lay(d._id) || '';
+                if (!k) continue;
+                const o = ra[k] || (ra[k] = { sai: 0, canOn: 0 });
+                o.sai += d.sai;
+                o.canOn += d.canOn;
+            }
+            return ra;
+        };
+
+        res.json({
+            success: true,
+            data: { lang, theoNguon: gop((x) => x.source), theoPart: gop((x) => x.part) },
+        });
+    } catch (error) {
+        logger.error('Error in getSummary:', error);
+        res.status(500).json({ success: false, message: 'Lỗi khi đếm từ sai' });
     }
 };
 

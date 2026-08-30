@@ -188,8 +188,26 @@ describe('danh sách từ sai ở popup chọn nhóm cũng lọc theo ngôn ng�
         // Client khai `lang` là client tự chọn xem mình thấy nhóm nào — mà nó
         // không biết người dùng đang học gì.
         const t = than();
-        expect(t).toMatch(/settings\?\.vocabLang === 'zh'/);
+        expect(t).toMatch(/khoDangHoc\(profile\)/);
         expect(t).not.toMatch(/req\.query\.lang|req\.body\.lang/);
+    });
+
+    test('kho SONG NGỮ không bị quy về `en`', () => {
+        // Bản cũ viết `=== 'zh' ? 'zh' : 'en'` nên `bi` rơi vào nhánh `en`, mà
+        // `langFilter('en')` loại hẳn `lang: 'bi'` — người học song ngữ KHÔNG
+        // BAO GIỜ thấy từ sai của mình, dù chúng vẫn đang được ghi vào DB.
+        const i = ctrl.indexOf('function khoDangHoc');
+        expect(i).toBeGreaterThan(-1);
+        const ham = ctrl.slice(i, ctrl.indexOf('\n}', i));
+        expect(ham).toMatch(/kho === 'zh' \|\| kho === 'bi' \? kho : 'en'/);
+    });
+
+    test('CẢ HAI chỗ đọc ngôn ngữ đều dùng chung hàm đó', () => {
+        // Sửa một chỗ thì tab "Từ vựng sai" hiện đúng mà chế độ "Ôn lại từ sai"
+        // vẫn rỗng (hoặc ngược lại).
+        expect((ctrl.match(/khoDangHoc\(profile\)/g) || []).length)
+            .toBeGreaterThanOrEqual(2);
+        expect(ctrl).not.toMatch(/vocabLang === 'zh' \? 'zh' : 'en'/);
     });
 
     test('truyền `lang` xuống truy vấn', () => {

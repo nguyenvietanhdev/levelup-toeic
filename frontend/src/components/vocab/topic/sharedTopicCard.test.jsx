@@ -23,6 +23,9 @@ vi.mock('./useTopics.js', () => ({
         shared: [], wrong: [], personal: state.personal, current: state.current,
         loadingShared: false, loadingPersonal: false, loadingWrong: false,
         loadShared: vi.fn(), loadPersonal: vi.fn(), loadWrong: vi.fn(),
+        // `TopicModal` gọi hàm này khi mở popup để đếm từ sai. Thiếu trong
+        // mock là component ném ngay, và lỗi trông như hỏng phần chia sẻ.
+        loadTuSai: vi.fn(), tuSai: {},
         selectShared: vi.fn(), selectPersonal, selectWrong: vi.fn(),
         selectSharedWithMe, copyShared,
     }),

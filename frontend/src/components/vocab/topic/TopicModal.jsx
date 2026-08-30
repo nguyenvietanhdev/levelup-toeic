@@ -48,6 +48,8 @@ export default function TopicModal({ open, mode = null, onClose, onSelected }) {
     loadShared,
     loadPersonal,
     loadWrong,
+    loadTuSai,
+    tuSai,
     selectShared,
     selectSharedWithMe,
     copyShared,
@@ -59,6 +61,20 @@ export default function TopicModal({ open, mode = null, onClose, onSelected }) {
   // của chúng là bộ từ vựng, không phải danh sách lỗi). Khoá thay vì ẩn: ẩn thì
   // người dùng tưởng tab biến mất do lỗi, còn khoá kèm `title` nói rõ vì sao.
   const chiTuSai = mode === 'review-mistakes';
+
+  /**
+   * Số từ đã sai của MỘT đề.
+   *
+   * Cộng theo `sourceKeys`, không phải một khoá: một đề gom được nhiều nguồn
+   * (`vocabularies_topics.sourceKeys` là mảng), nên chỉ tra khoá đầu là bỏ sót
+   * từ sai của những nguồn còn lại — con số nhỏ hơn thực tế mà không có gì báo.
+   */
+  const soTuSaiCuaDe = (topic) => {
+    const keys = Array.isArray(topic?.sourceKeys)
+      ? topic.sourceKeys
+      : [topic?.source].filter(Boolean);
+    return keys.reduce((t, k) => t + (tuSai?.[k]?.sai || 0), 0);
+  };
   const tabBiKhoa = (t) => (chiTuSai ? t !== 'wrong' : t === 'wrong');
 
   const [tab, setTab] = useState(tabOfCurrentTopic);
@@ -111,12 +127,15 @@ export default function TopicModal({ open, mode = null, onClose, onSelected }) {
     if (!open) return;
 
     loadShared();
+    // Số từ sai nạp NGAY khi mở, không đợi người dùng vào tab "Từ vựng sai":
+    // thẻ đề ở hai tab kia cũng hiện con số này.
+    loadTuSai();
     const onKey = (e) => {
       if (e.key === "Escape") onClose();
     };
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
-  }, [open, loadShared, onClose]);
+  }, [open, loadShared, loadTuSai, onClose]);
 
   useEffect(() => {
     if (open && tab === "personal") loadPersonal();
@@ -368,6 +387,15 @@ export default function TopicModal({ open, mode = null, onClose, onSelected }) {
                                 <i className="fas fa-book"></i>{" "}
                                 {topic.wordCount} từ
                               </span>
+                              {soTuSaiCuaDe(topic) > 0 && (
+                                <span
+                                  className="wrong-count"
+                                  title="Số từ bạn đã sai ở đề này, còn phải ôn"
+                                >
+                                  <i className="fas fa-rotate-left"></i>{" "}
+                                  {soTuSaiCuaDe(topic)} sai
+                                </span>
+                              )}
                             </div>
                             <LevelBar stats={topic.levelStats} />
                           </div>
@@ -598,6 +626,18 @@ export default function TopicModal({ open, mode = null, onClose, onSelected }) {
                             <div className="topic-meta">
                               <span className="word-count">
                                 <i className="fas fa-book"></i> {g.wordCount} từ
+                              </span>
+                              {/* Số CÒN PHẢI ÔN, không phải tổng đã từng sai.
+                                  Đây là con số quyết định nên học đề nào: tổng
+                                  đã sai chỉ nói quá khứ, còn cái này nói việc
+                                  đang chờ. Hết hạn ôn thì ghi rõ "đã ôn xong"
+                                  thay vì để trống — trống trông như lỗi tải. */}
+                              <span
+                                className={`wrong-count${g.canOn > 0 ? "" : " is-done"}`}
+                                title="Số từ đã tới hạn ôn theo lịch"
+                              >
+                                <i className={`fas fa-${g.canOn > 0 ? "rotate-left" : "circle-check"}`}></i>{" "}
+                                {g.canOn > 0 ? `còn ${g.canOn} cần ôn` : "đã ôn xong"}
                               </span>
                             </div>
                             <LevelBar stats={g.levelStats} />

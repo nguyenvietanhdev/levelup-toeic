@@ -27,6 +27,23 @@ async function post(path, body) {
 }
 
 export const WrongWordsAPI = {
+    /**
+     * Đếm từ sai theo NGUỒN và theo PART.
+     *
+     * Đếm ở server bằng aggregate, không tải danh sách rồi đếm ở client:
+     * `list()` có `limit`, nên đếm từ đó là con số trần ở giới hạn đó và sai âm
+     * thầm với người có nhiều từ sai — đúng nhóm cần con số này nhất.
+     *
+     * @returns {Promise<{theoNguon: object, theoPart: object}>} rỗng nếu lỗi —
+     *   đây là con số phụ trợ, hỏng thì ẩn đi chứ không chặn màn chọn đề.
+     */
+    async summary() {
+        return fetch('/api/wrong-words/summary', { headers: authHeaders() })
+            .then(r => r.json())
+            .then(j => (j?.success ? j.data : { theoNguon: {}, theoPart: {} }))
+            .catch(() => ({ theoNguon: {}, theoPart: {} }));
+    },
+
     /** Toàn bộ từ sai đang active của user hiện tại. @returns parsed JSON. */
     async list(limit = 1000) {
         return fetch(`/api/wrong-words?limit=${limit}`, { headers: authHeaders() })
