@@ -8967,16 +8967,19 @@ mark {
 /* ── Chế độ luyện viết chữ Hán ───────────────────────────────────────────────
    Khung vẽ để giữa, pinyin + nghĩa ở trên để người học biết mình đang viết chữ
    gì mà không lộ mặt chữ. HanziWriter tự chèn <svg> vào .hanzi-canvas. */
+/* Nhịp dọc gọn: khoảng hở `md` ở ba chỗ (trên, giữa, dưới) cộng lại gần 64px
+   — vừa đúng phần làm ba nút dưới cùng tụt khỏi khung hình. */
 .hanzi-mode {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: var(--spacing-md);
-    padding: var(--spacing-md) 0;
+    gap: var(--spacing-sm);
+    padding: var(--spacing-sm) 0;
 }
 .hanzi-prompt { text-align: center; }
 .hanzi-pinyin {
-    font-size: 1.6rem;
+    /* 1.6rem → 1.35rem: vẫn là dòng to nhất khối, mà bớt được ~8px chiều cao. */
+    font-size: 1.35rem;
     font-weight: 700;
     color: var(--primary-color);
     letter-spacing: 0.02em;
@@ -9023,22 +9026,26 @@ mark {
 }
 .hanzi-canvas.is-active { border-color: var(--primary-color); }
 
-/* Từ nhiều chữ thì thu ô lại một mức cho thấy được nhiều chữ cùng lúc — nhưng
-   KHÔNG thu tiếp theo số chữ nữa, vì giờ đã cuộn ngang được. Ô quá nhỏ thì
-   không tô nét nổi, mà đó mới là việc chính. */
-.hanzi-boxes:has(> :nth-child(3)) .hanzi-canvas { width: 180px; height: 180px; }
 
-/* Điện thoại: ô 260px gần kín màn hình 360px, người học không thấy được chữ nào
-   khác ngoài chữ đang viết. Thu lại để nhìn thấy ô kế bên — biết còn mấy chữ
-   nữa là phần quan trọng của việc viết trọn một từ. */
-@media (max-width: 480px) {
-    .hanzi-boxes .hanzi-canvas,
-    .hanzi-boxes:has(> :nth-child(3)) .hanzi-canvas { width: 170px; height: 170px; }
-}
-
+/* MỘT kích cỡ duy nhất cho mọi từ, dài hay ngắn.
+ *
+ * Trước đây ô to 260px với từ 1–2 chữ rồi tụt xuống 180px từ 3 chữ. Hai hệ
+ * quả đều khó chịu:
+ *   · cỡ 260 đẩy hai nút Điều hướng và ba nút dưới cùng xuống dưới mép màn
+ *     hình — phải cuộn mới bấm được;
+ *   · cỡ đổi theo số chữ thì các nút NHẢY CHỖ giữa hai câu, mắt phải tìm lại
+ *     nút sau mỗi lần chuyển.
+ *
+ * `clamp` theo `vh` chứ không phải một số cứng: màn thấp thì ô tự nhỏ lại để
+ * chừa chỗ cho các nút, màn cao thì không phình quá 220px. Với MỘT cỡa sổ nhất
+ * định thì con số là cố định — đúng điều cần: nút không nhúc ních giữa các câu.
+ *
+ * `60vw` chặn thêm cho điện thoại hẹp: ô vuông rộng bằng chiều cao, mà 34vh trên
+ * máy dài có thể rộng hơn cả màn. */
 .hanzi-canvas {
-    width: 260px;
-    height: 260px;
+    --o-chu: clamp(140px, min(34vh, 60vw), 220px);
+    width: var(--o-chu);
+    height: var(--o-chu);
     border: 2px solid var(--border-color);
     border-radius: var(--border-radius);
     background:
@@ -10758,9 +10765,12 @@ mark {
    Vuông, căn giữa, có viền mờ để thấy rõ vùng vẽ. Kích thước do JS đặt theo bề
    rộng thật (kẹp 180–260px) — nhỏ hơn thì nét chen nhau khó tô bằng ngón tay,
    to hơn thì đẩy thanh ba nút ra khỏi khung hình. */
+/* Cung cong thuc co voi o cua che do "Luyen viet chu Han" (`--o-chu`).
+   Cung mot widget, cung mot van de: o 260px day thanh ba nut duoi cung ra khoi
+   khung hinh tren man thap. Hai noi dat hai con so la sua cho nay quen cho kia. */
 .rm-hanzi {
     margin: 0 auto;
-    max-width: 260px;
+    max-width: clamp(140px, min(34vh, 60vw), 220px);
     border: 2px dashed var(--border-color);
     border-radius: 12px;
     background: var(--bg-secondary);

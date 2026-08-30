@@ -523,11 +523,15 @@ export const PracticeManager = {
             'context-learning': 'Hiểu qua câu',
             'dictation': 'Chép chính tả',
             'sentence-listening': 'Nghe chuỗi từ',
-            'phonetic-quiz': 'Đọc phiên âm'
+            'phonetic-quiz': 'Đọc phiên âm',
+            'hanzi-writing': 'Luyện viết chữ Hán'
         };
 
         const titleEl = document.getElementById('practice-mode-title');
         if (titleEl) {
+            // Rơi về `mode` là in ra MÃ chế độ (`hanzi-writing`) ngay trên thanh
+            // tiêu đề — trông như lỗi kỹ thuật lọt ra ngoài. Giữ lối lùi để không
+            // để trống, nhưng bảng trên phải đủ 17 chế độ (có test chốt).
             titleEl.textContent = modeNames[mode] || mode;
         }
 

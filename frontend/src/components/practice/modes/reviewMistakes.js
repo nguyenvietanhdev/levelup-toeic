@@ -812,9 +812,14 @@ export const ReviewMistakes = {
         // Ô có thể đã bị gỡ khỏi DOM trong lúc chờ nạp.
         if (!box.isConnected) return;
 
-        // Ô vuông theo bề rộng thật, kẹp trong [180, 260]: nhỏ hơn thì nét chen
-        // nhau khó tô bằng ngón tay, to hơn thì đẩy thanh ba nút khỏi khung hình.
-        const size = Math.max(180, Math.min(260, box.clientWidth || 220));
+        // Ô vuông theo BỀ RỘNG THẬT của ô đã dựng — CSS quyết định cỡ
+        // (`.rm-hanzi` dùng chung công thức với chế độ viết chữ Hán), ở đây chỉ
+        // đọc lại.
+        //
+        // Kẹp dưới ở 140 cho khớp `clamp` bên CSS: nhỏ hơn thì nét chen nhau
+        // không tô nổi bằng ngón tay. KHÔNG kẹp trên nữa — CSS đã chặn ở 220,
+        // đặt thêm một con số ở đây là hai nơi phải sửa song song.
+        const size = Math.max(140, box.clientWidth || 200);
         box.style.height = `${size}px`;
 
         this.writer = W.create(box, question.chuCanViet, {
