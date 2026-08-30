@@ -12,6 +12,8 @@ import { Quest } from '@components/quest/quest.js';
 import { Utils } from '@lib/utils.js';
 import { Config } from '@game/config.js';
 import { Notification } from '@ui/Toaster.jsx';
+import { Modal } from '@ui/Modal.jsx';
+import { PartSelector } from '@components/vocab/part/partSelector.js';
 import { loadUnlocks, lockInfo } from '@game/featureUnlocks.js';
 import { loadSchedules, scheduleInfo } from '@game/modeSchedules.js';
 import { Storage } from '@lib/storage.js';
@@ -289,6 +291,27 @@ export default function HomeScreen({ active }) {
         return () => clearInterval(id);
     }, [active]);
 
+    /**
+     * Đang khoá vào một đề TỪ SAI hay không.
+     *
+     * Nhóm từ sai là danh sách LỖI, không phải một bộ từ vựng. 16 chế độ kia
+     * lấy câu từ kho từ vựng nên chạy trên nhóm này là vô nghĩa — trước đây vẫn
+     * bấm vào được và người dùng chỉ phát hiện khi đã vào tới bài.
+     *
+     * Theo dõi bằng state chứ không đọc thẳng `TopicSelector`: đọc thẳng thì
+     * React không biết để vẽ lại, và thẻ vẫn sáng sau khi người dùng chọn đề.
+     */
+    const [khoaTuSai, setKhoaTuSai] = useState(
+        () => String(TopicSelector.getCurrentTopic()?.id || '').startsWith('wrong:'));
+
+    useEffect(() => {
+        const doi = () => setKhoaTuSai(
+            String(TopicSelector.getCurrentTopic()?.id || '').startsWith('wrong:'));
+        doi();
+        EventBus.on('topic:changed', doi);
+        return () => EventBus.off('topic:changed', doi);
+    }, [active]);
+
     // Mốc mở khoá theo Level — nạp lại mỗi lần vào Trang chủ (level có thể vừa tăng).
     const [unlockTick, setUnlockTick] = useState(0);
     useEffect(() => {
@@ -348,6 +371,51 @@ export default function HomeScreen({ active }) {
             setAuthModal('login');
             return;
         }
+        // Đang khoá vào nhóm TỪ SAI → 16 chế độ kia tạm dừng.
+        //
+        // Hỏi ngay tại đây thay vì để người dùng vào tới bài rồi mới phát hiện:
+        // nhóm từ sai là danh sách LỖI chứ không phải bộ từ vựng, nên 16 chế độ
+        // kia không có gì để sinh câu.
+        if (khoaTuSai && mode !== 'review-mistakes') {
+            Modal.show({
+                title: 'Đang ở chế độ luyện từ vựng sai',
+                closeOnBackdrop: false,
+                content: `
+                    <div style="padding:4px 0;line-height:1.6">
+                        <p style="margin:0 0 10px">
+                            Bạn đang chọn một <strong>nhóm từ sai</strong> để ôn. Các chế độ
+                            khác lấy câu từ bộ từ vựng, nên không chạy được trên nhóm này.
+                        </p>
+                        <p style="margin:0 0 6px">
+                            <strong>Thoát</strong> — bỏ chọn nhóm từ sai và mở lại popup
+                            chọn đề thường.
+                        </p>
+                        <p style="margin:0;color:var(--text-secondary)">
+                            <strong>Giữ nguyên</strong> — ở lại nhóm từ sai, mở popup chọn Part.
+                        </p>
+                    </div>`,
+                buttons: [
+                    {
+                        text: 'Giữ nguyên',
+                        className: 'btn-secondary',
+                        onClick: () => PartSelector.showPartSelectionModal(),
+                    },
+                    {
+                        text: 'Thoát',
+                        className: 'btn-primary',
+                        onClick: () => {
+                            PracticeManager.xoaLuaChonTuSai();
+                            setKhoaTuSai(false);
+                            // Mở lại popup chọn đề KÈM `pendingMode`: chọn đề xong là
+                            // vào thẳng chế độ vừa bấm, không bắt bấm lại lần nữa.
+                            EventBus.emit(GameEvents.TOPIC_MODAL_REQUESTED, { pendingMode: mode });
+                        },
+                    },
+                ],
+            });
+            return;
+        }
+
         // Khoá theo Level (server cũng chặn — đây là phản hồi tức thì cho người dùng).
         const lv = lockInfo(`mode:${mode}`);
         if (lv.locked) {
@@ -679,8 +747,12 @@ export default function HomeScreen({ active }) {
                                 // không ẩn: ẩn thì người học tiếng Anh không bao
                                 // giờ biết app có chế độ này.
                                 const langLocked = m.zhOnly && !coChuHan(getVocabLang());
+                                // Đang ôn nhóm từ sai → 16 chế độ kia tạm dừng.
+                                // Riêng "Ôn lại từ sai" vẫn mở — đó là chế độ duy
+                                // nhất chạy được trên nhóm này.
+                                const tuSaiLocked = khoaTuSai && m.mode !== 'review-mistakes';
                                 const locked = guestLocked || levelLocked || weekendLocked
-                                    || langLocked || schedLocked;
+                                    || langLocked || schedLocked || tuSaiLocked;
                                 return (
                                 <div
                                     key={m.mode}
@@ -735,6 +807,13 @@ export default function HomeScreen({ active }) {
                                         // Level phải cày mới tới.
                                         <div className="mode-level-badge" title="Chế độ này cần bộ từ vựng tiếng Trung">
                                             <i className="fas fa-language"></i> Cần học <b>tiếng Trung</b>
+                                        </div>
+                                    ) : tuSaiLocked ? (
+                                        // Nói rõ đang vướng gì: đây là khoá người dùng
+                                        // tự mở được ngay, khác hẳn khoá Level phải cày.
+                                        <div className="mode-level-badge"
+                                             title="Bạn đang chọn một nhóm từ sai — bỏ chọn để dùng chế độ này">
+                                            <i className="fas fa-rotate"></i> Đang ôn <b>từ sai</b>
                                         </div>
                                     ) : schedLocked ? (
                                         // Ghi thẳng KHUNG GIỜ lên thẻ. Đây là khoá
