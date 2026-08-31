@@ -29,11 +29,12 @@ describe('module dùng chung', () => {
         expect(lib.split('e.stopPropagation()').length - 1).toBe(2);
     });
 
-    test('KHÔNG truyền ngôn ngữ cho `speakWord`', () => {
+    test('KHÔNG truyền ngôn ngữ khi đọc câu ví dụ', () => {
         // Nó tự nhận chữ Hán và đổi sang zh-CN. Truyền cứng 'en-US' là đọc câu
         // tiếng Trung bằng giọng tiếng Anh.
-        expect(lib).toMatch(/GameLogic\.speakWord\(text\)/);
-        expect(lib).not.toMatch(/speakWord\(text, ['"]en/);
+        // `speakPhu` — câu ví dụ là chú thích, không được cướp mục tiêu của Ctrl.
+        expect(lib).toMatch(/GameLogic\.speakPhu\(text\)/);
+        expect(lib).not.toMatch(/speak(Word|Phu)\(text, ['"]en/);
     });
 
     test('phiên âm dùng hàm CHUNG cho cả hai ngôn ngữ', () => {

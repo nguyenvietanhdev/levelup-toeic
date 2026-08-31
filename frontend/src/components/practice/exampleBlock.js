@@ -93,9 +93,13 @@ export function ganViDu(id, cau, { modeObj = null, goc = document, tuDoc = false
 
     q(`#${id}-sp`)?.addEventListener('click', (e) => {
         e.stopPropagation();
+        // `speakPhu` chứ không phải `speakWord`: câu ví dụ là chú thích, không
+        // phải từ đang học. Đọc bằng `speakWord` thì phím Ctrl ("đọc lại từ")
+        // quay sang đọc cả câu ví dụ, và không còn cách nào nghe lại đúng từ.
+        //
         // KHÔNG truyền ngôn ngữ: `speakWord` tự nhận chữ Hán và đổi sang zh-CN.
         // Truyền cứng 'en-US' là đọc câu tiếng Trung bằng giọng tiếng Anh.
-        GameLogic.speakWord(text);
+        GameLogic.speakPhu(text);
     });
 
     // TỰ ĐỘNG ĐỌC — chỉ khi chế độ gọi NÓI RÕ là muốn.
@@ -128,7 +132,7 @@ export function ganViDu(id, cau, { modeObj = null, goc = document, tuDoc = false
         setTimeout(() => {
             // Bỏ nếu đã sang câu khác — người dùng bấm nhanh hơn khoảng hoãn.
             if (modeObj && modeObj.currentIndex !== idxLucGoiDoc) return;
-            GameLogic.speakWord(text);
+            GameLogic.speakPhu(text);
         }, DOI_TRUOC_KHI_DOC);
     }
 

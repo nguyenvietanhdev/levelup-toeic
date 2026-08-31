@@ -333,6 +333,25 @@ export const GameLogic = {
         if (this._replayCallback) this._replayCallback();
     },
 
+    /**
+     * Đọc một đoạn PHỤ — câu ví dụ, từ đồng nghĩa — mà KHÔNG đổi mục tiêu của
+     * phím Ctrl.
+     *
+     * Ctrl là "đọc lại từ đang học". Nhưng `speakWord` ghi đè mục tiêu đó sau
+     * MỌI lượt đọc, nên chỉ cần một câu ví dụ vừa tự phát là Ctrl quay sang đọc
+     * câu ví dụ — người học bấm để nghe lại từ mà nhận về cả một câu dài, và
+     * không còn cách nào nghe lại đúng cái từ nữa.
+     *
+     * Đánh dấu ở lượt đọc PHỤ chứ không phải lượt đọc chính: chính là mặc định
+     * (43 chỗ gọi), phụ chỉ có vài chỗ — đánh dấu vào phía ít hơn thì chỗ nào
+     * quên cũng chỉ rơi về hành vi cũ, không im lặng mất mục tiêu.
+     */
+    speakPhu(text, lang = null, onEnd = null) {
+        const giu = this._replayCallback;
+        this.speakWord(text, lang, onEnd);
+        this._replayCallback = giu;
+    },
+
     // Gắn mục tiêu phát âm cho phím Ctrl theo ĐÚNG từ hiện tại. Dùng wordPk()
     // (zh khi học Tiếng Trung, ngược lại là en) + ttsLang() nên luôn đúng ngôn
     // ngữ và không phụ thuộc chiều hiển thị (đảo ngược). Mỗi câu mới gọi lại để

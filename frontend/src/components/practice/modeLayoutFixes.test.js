@@ -61,13 +61,13 @@ describe('câu ví dụ: hiện SAU khi trả lời, DƯỚI 4 ô đáp án', ()
 });
 
 describe('phát âm: không ép giọng tiếng Anh cho câu tiếng Trung', () => {
-    test('Trắc nghiệm để speakWord tự nhận ngôn ngữ', () => {
+    test('Trắc nghiệm để bộ đọc tự nhận ngôn ngữ', () => {
         // `speakWord` tự phát hiện chữ Hán rồi đổi sang zh-CN. Truyền cứng
         // 'en-US' là đọc 多少钱 bằng giọng tiếng Anh.
         const i = mc.indexOf('revealExample(question) {');
         const body = mc.slice(i, i + 1800);
-        expect(body).toMatch(/GameLogic\.speakWord\(cau\)/);
-        expect(body).not.toMatch(/speakWord\(cau, .en-US.\)/);
+        expect(body).toMatch(/GameLogic\.speakPhu\(cau\)/);
+        expect(body).not.toMatch(/speak(Word|Phu)\(cau, .en-US.\)/);
     });
 
     test('Flashcard có hàm đọc riêng, không truyền en-US', () => {
@@ -75,7 +75,7 @@ describe('phát âm: không ép giọng tiếng Anh cho câu tiếng Trung', () 
         // ví dụ lại làm nút kia nhấp nháy.
         const i = fc.indexOf('pronounceText(text) {');
         expect(i).toBeGreaterThan(-1);
-        expect(fc.slice(i, i + 300)).toMatch(/GameLogic\.speakWord\(text\)/);
+        expect(fc.slice(i, i + 300)).toMatch(/GameLogic\.speakPhu\(text\)/);
     });
 });
 

@@ -422,7 +422,9 @@ export const ReviewMistakes = {
         this.attachListeners();
 
         if (GameState.state?.settings?.autoPronunciation) {
-            setTimeout(() => GameLogic.speakWord(w.en), 300);
+            // Đọc THỨ ĐANG HIỆN (`deBai`), không phải luôn luôn `w.en`: cùng
+            // hàm mà thẻ chữ ở trên dùng, nên nghe và nhìn luôn khớp nhau.
+            setTimeout(() => GameLogic.speakWord(deBai(question) || w.en), 300);
         }
     },
 

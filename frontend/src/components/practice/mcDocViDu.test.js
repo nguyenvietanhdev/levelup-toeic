@@ -32,10 +32,10 @@ const than = (ten) => {
 describe('tự đọc khi câu ví dụ lộ ra', () => {
     const t = than('revealExample(question) {');
 
-    test('có gọi `speakWord` mà không cần bấm nút', () => {
-        // Lời gọi của NÚT loa là `speakWord(cau)` trần; lời gọi tự động phải kèm
+    test('có tự đọc mà không cần bấm nút', () => {
+        // Lời gọi của NÚT loa là `speakPhu(cau)` trần; lời gọi tự động phải kèm
         // `onEnd` để nhịp chuyển câu bám vào.
-        expect(t).toMatch(/GameLogic\.speakWord\(cau, null, \(\) => \{/);
+        expect(t).toMatch(/GameLogic\.speakPhu\(cau, null, \(\) => \{/);
     });
 
     test('hoãn một nhịp, không đè lên tiếng đúng/sai', () => {
@@ -59,7 +59,7 @@ describe('tự đọc khi câu ví dụ lộ ra', () => {
         // Hai lớp, không thừa: lớp trên chặn lúc BẮT ĐẦU đọc, lớp này chặn
         // `onEnd` của câu trước về muộn — nó sẽ gọi đúng `_docXong` của câu SAU
         // và đẩy câu đó đi sớm.
-        const i = t.indexOf('GameLogic.speakWord(cau, null');
+        const i = t.indexOf('GameLogic.speakPhu(cau, null');
         expect(t.slice(i, i + 400)).toMatch(/if \(this\.currentIndex !== idxLucDoc\) return;/);
     });
 

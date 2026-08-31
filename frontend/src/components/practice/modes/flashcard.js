@@ -548,7 +548,9 @@ export const Flashcard = {
 
     pronounceText(text) {
         if (!text) return;
-        GameLogic.speakWord(text);
+        // Nút này chỉ đọc câu ví dụ / từ đồng nghĩa — thứ PHỤ. Dùng `speakWord`
+        // thì Ctrl quay sang đọc chúng thay vì đọc từ trên thẻ.
+        GameLogic.speakPhu(text);
     },
 
     pronounce(text) {

@@ -162,9 +162,18 @@ export const MultipleChoice = {
 
         this.attachListeners();
 
-        if (!question.reversed && GameState.state?.settings?.autoPronunciation) {
+        // Tự động phát âm chạy ở CẢ HAI chiều.
+        //
+        // Bản cũ tắt hẳn khi đảo chiều (`!question.reversed`), vì đọc `word.en`
+        // lúc mặt hỏi là nghĩa thì bằng đọc thẳng đáp án ra loa. Nhưng cách chữa
+        // đúng là đọc THỨ ĐANG HIỆN, không phải bỏ luôn tính năng: mặt hỏi khi
+        // đảo chiều là nghĩa, đọc nó lên chẳng lộ gì cả.
+        //
+        // `question.question` chính là mặt đang hiện — cùng thứ nút loa đọc, nên
+        // bấm nút hay để nó tự đọc đều ra một kết quả.
+        if (GameState.state?.settings?.autoPronunciation) {
             setTimeout(() => {
-                GameLogic.speakWord(question.word.en);
+                GameLogic.speakWord(question.question || question.word.en);
             }, 300);
         }
     },
@@ -209,7 +218,7 @@ export const MultipleChoice = {
         if (speakExBtn) {
             speakExBtn.addEventListener('click', () => {
                 const q = this.questions[this.currentIndex];
-                if (q?.word?.example) GameLogic.speakWord(q.word.example);
+                if (q?.word?.example) GameLogic.speakPhu(q.word.example);
             });
         }
     },
@@ -338,7 +347,7 @@ export const MultipleChoice = {
             // Không truyền ngôn ngữ: `speakWord` tự phát hiện chữ Hán và đổi
             // sang zh-CN (gameLogic.js:304). Truyền cứng 'en-US' như các chế độ
             // khác là đọc câu tiếng Trung bằng giọng tiếng Anh.
-            GameLogic.speakWord(cau);
+            GameLogic.speakPhu(cau);
         });
 
         // TỰ ĐỘNG đọc câu ví dụ ngay khi nó lộ ra.
@@ -355,7 +364,7 @@ export const MultipleChoice = {
         setTimeout(() => {
             // Bỏ nếu đã sang câu khác — người học bấm "Tiếp" nhanh hơn khoảng hoãn.
             if (this.currentIndex !== idxLucDoc) return;
-            GameLogic.speakWord(cau, null, () => {
+            GameLogic.speakPhu(cau, null, () => {
                 // Chốt LẠI ở đây nữa: `onEnd` của câu trước về muộn sẽ gọi đúng
                 // `_docXong` của câu SAU và đẩy câu đó đi sớm.
                 if (this.currentIndex !== idxLucDoc) return;
