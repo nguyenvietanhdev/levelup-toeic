@@ -415,6 +415,10 @@ async function shutdown(signal) {
         logger.info('HTTP server closed — no longer accepting requests.');
     }
 
+    // Đóng WebSocket giữ ấm của TTS trước khi thoát — mỗi cái là một kết nối
+    // mở tới Microsoft, để lại là tiến trình không chịu chết.
+    try { require('./services/ttsEngine').dongHet(); } catch (_) { /* chưa từng dùng */ }
+
     await Promise.allSettled([
         closeMongoConnection(),
         closeRedisConnection(),

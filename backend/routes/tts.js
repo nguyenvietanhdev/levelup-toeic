@@ -9,7 +9,8 @@
 const express = require('express');
 const logger = require('../utils/logger');
 const router = express.Router();
-const { MsEdgeTTS, OUTPUT_FORMAT } = require('msedge-tts');
+const crypto = require('crypto');
+const { tongHop } = require('../services/ttsEngine');
 
 // TOEIC voice map - neural voices (female + male)
 const VOICE_MAP = {
@@ -50,6 +51,34 @@ const VOICE_MAP = {
 };
 
 /**
+ * Trình duyệt được giữ audio bao lâu (giây).
+ *
+ * Cùng chữ + cùng giọng + cùng tốc độ thì audio KHÔNG bao giờ đổi — cả ba đều
+ * nằm trong URL, nên không có ca "nội dung mới ở địa chỉ cũ". Vì vậy `immutable`
+ * là đúng chứ không phải liều: nó bảo trình duyệt đừng cả hỏi lại.
+ *
+ * Bản cũ đặt `no-store`, nghĩa là bấm nghe lại đúng từ vừa nghe cũng phải đi
+ * hết một vòng mạng và một lượt tổng hợp.
+ */
+const GIU_CACHE = 7 * 24 * 60 * 60;
+
+/**
+ * Chọn giọng cho các mã `*-random`: theo CHÍNH ĐOẠN CHỮ, không phải `Math.random`.
+ *
+ * Vẫn trộn giọng như trước — hai từ khác nhau vẫn rơi vào hai giọng khác nhau,
+ * đó là điểm của chế độ này. Nhưng CÙNG một từ thì lần nào cũng ra cùng giọng,
+ * và đó là điều kiện để cả kho nhớ lẫn cache trình duyệt có tác dụng: bốc ngẫu
+ * nhiên mỗi lượt thì mỗi lượt là một audio khác, không có gì dùng lại được.
+ *
+ * Ổn định còn dễ chịu hơn khi học: một từ luôn nghe bằng một giọng, thay vì
+ * đổi người đọc mỗi lần bấm nghe lại.
+ */
+function chonGiong(danhSach, text) {
+    const bam = crypto.createHash('sha1').update(String(text)).digest();
+    return danhSach[bam[0] % danhSach.length];
+}
+
+/**
  * GET /api/tts?text=hello&lang=en-us&rate=1
  * Collect toàn bộ audio rồi gửi với Content-Length — tránh ERR_REQUEST_RANGE_NOT_SATISFIABLE
  * khi Audio element cố range-request trên blob URL từ chunked stream.
@@ -62,45 +91,42 @@ router.get('/', async (req, res) => {
         const rate = Math.min(2, Math.max(0.5, parseFloat(rawRate) || 1));
         let voiceName;
         if (lang === 'zh-cn-random') {
-            const zhVoices = ['zh-CN-XiaoxiaoNeural', 'zh-CN-XiaoyiNeural', 'zh-CN-YunxiNeural', 'zh-CN-YunyangNeural'];
-            voiceName = zhVoices[Math.floor(Math.random() * zhVoices.length)];
+            voiceName = chonGiong(['zh-CN-XiaoxiaoNeural', 'zh-CN-XiaoyiNeural', 'zh-CN-YunxiNeural', 'zh-CN-YunyangNeural'], text);
         } else if (lang === 'vi-random') {
-            const viVoices = ['vi-VN-HoaiMyNeural', 'vi-VN-NamMinhNeural'];
-            voiceName = viVoices[Math.floor(Math.random() * viVoices.length)];
+            voiceName = chonGiong(['vi-VN-HoaiMyNeural', 'vi-VN-NamMinhNeural'], text);
         } else if (lang === 'en-random') {
-            const enVoices = [
+            voiceName = chonGiong([
                 'en-US-AriaNeural', 'en-US-GuyNeural',
                 'en-GB-SoniaNeural', 'en-GB-RyanNeural',
                 'en-AU-NatashaNeural', 'en-AU-WilliamNeural',
                 'en-CA-ClaraNeural',
-            ];
-            voiceName = enVoices[Math.floor(Math.random() * enVoices.length)];
+            ], text);
         } else {
             voiceName = VOICE_MAP[lang] || VOICE_MAP['en-us'];
         }
 
-        const tts = new MsEdgeTTS();
-        await tts.setMetadata(voiceName, OUTPUT_FORMAT.AUDIO_24KHZ_96KBITRATE_MONO_MP3);
+        // ETag tính từ CHÍNH yêu cầu, không phải từ audio.
+        //
+        // Nhờ vậy trả lời được `If-None-Match` mà KHÔNG phải tổng hợp trước rồi
+        // mới biết có nên gửi hay không — tính xong là biết ngay, đúng mục đích
+        // của 304. Ba thứ quyết định audio (giọng, tốc độ, chữ) đều có trong đó.
+        const etag = `"${crypto.createHash('sha1')
+            .update(`${voiceName}|${rate}|${text}`).digest('hex')}"`;
 
-        const { audioStream } = tts.toStream(text, { rate });
+        res.setHeader('ETag', etag);
+        res.setHeader('Cache-Control', `public, max-age=${GIU_CACHE}, immutable`);
 
-        // Collect tất cả chunks trước khi gửi — đảm bảo Content-Length chính xác
-        // để browser không dùng range request khi phát từ blob URL.
-        const chunks = [];
-        await new Promise((resolve, reject) => {
-            audioStream.on('data', (chunk) => chunks.push(chunk));
-            audioStream.on('end', resolve);
-            audioStream.on('error', reject);
-        });
-        try { tts.close && tts.close(); } catch (_) {}
+        if (req.headers['if-none-match'] === etag) return res.status(304).end();
 
-        const buffer = Buffer.concat(chunks);
-        if (!buffer.length) return res.status(500).json({ error: 'TTS returned empty audio' });
+        const { buffer, tuKho } = await tongHop(voiceName, text, rate);
+        if (!buffer || !buffer.length) return res.status(500).json({ error: 'TTS returned empty audio' });
 
         res.setHeader('Content-Type', 'audio/mpeg');
         res.setHeader('Content-Length', buffer.length);
         res.setHeader('Accept-Ranges', 'bytes');
-        res.setHeader('Cache-Control', 'no-store');
+        // Chỉ để nhìn được kho có chạy không — không có header này thì phải đoán
+        // qua thời gian phản hồi.
+        res.setHeader('X-TTS-Cache', tuKho ? 'HIT' : 'MISS');
         res.end(buffer);
     } catch (err) {
         logger.error('TTS error:', err);
