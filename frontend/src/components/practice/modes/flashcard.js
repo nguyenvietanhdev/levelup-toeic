@@ -213,7 +213,7 @@ export const Flashcard = {
                                             <button class="btn-speak-mini card-translate" data-tr="${viDu}" title="Dịch cả câu">
                                                 <i class="fas fa-language"></i>
                                             </button>
-                                            <button class="btn-speak-mini card-speak" data-speak="${viDu}" title="Nghe câu ví dụ">
+                                            <button class="btn-speak-mini js-nut-am card-speak" data-speak="${viDu}" title="Nghe câu ví dụ">
                                                 <i class="fas fa-volume-up"></i>
                                             </button>
                                         </div>
@@ -229,7 +229,7 @@ export const Flashcard = {
                                             <button class="btn-speak-mini card-translate" data-tr="${dongNghia}" title="Dịch từ đồng nghĩa">
                                                 <i class="fas fa-language"></i>
                                             </button>
-                                            <button class="btn-speak-mini card-speak" data-speak="${dongNghia}" title="Nghe từ đồng nghĩa">
+                                            <button class="btn-speak-mini js-nut-am card-speak" data-speak="${dongNghia}" title="Nghe từ đồng nghĩa">
                                                 <i class="fas fa-volume-up"></i>
                                             </button>
                                         </div>

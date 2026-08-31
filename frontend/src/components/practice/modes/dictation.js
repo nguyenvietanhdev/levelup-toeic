@@ -196,7 +196,7 @@ export const Dictation = {
 
                     <div class="dictation-col-question">
                         <div class="dictation-audio-area">
-                            <button class="dictation-play-btn" id="dictation-play-btn" title="Nghe lại câu">
+                            <button class="dictation-play-btn js-nut-am" id="dictation-play-btn" title="Nghe lại câu">
                                 <i class="fas fa-volume-up"></i>
                             </button>
                             <div class="dictation-audio-info">
@@ -345,7 +345,7 @@ export const Dictation = {
                      word.example vào mã JS mà chỉ escape dấu nháy đơn thì câu có
                      dấu \ hoặc xuống dòng là vỡ cú pháp. Đưa qua data-* rồi đọc
                      bằng listener: dữ liệu ở lại là dữ liệu, không thành mã. -->
-                <button class="btn-speak-mini js-speak-example" data-text="${this._escapeHtml(word.example)}" title="Nghe lại">
+                <button class="btn-speak-mini js-nut-am js-speak-example" data-text="${this._escapeHtml(word.example)}" title="Nghe lại">
                     <i class="fas fa-volume-up"></i>
                 </button>
             </div>

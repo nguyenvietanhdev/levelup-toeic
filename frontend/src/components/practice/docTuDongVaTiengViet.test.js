@@ -111,7 +111,7 @@ describe('phát âm tiếng Việt', () => {
 describe('đảo chiều vẫn có nút loa', () => {
     test('nút loa KHÔNG còn bị ẩn khi đảo chiều', () => {
         expect(mc).not.toMatch(/\$\{!isReversed \? `<button class="btn-speak"/);
-        expect(mc).toMatch(/<button class="btn-speak" id="speak-word-btn"/);
+        expect(mc).toMatch(/<button class="btn-speak[^"]*" id="speak-word-btn"/);
     });
 
     test('đọc thứ ĐANG HIỆN, không luôn luôn `word.en`', () => {

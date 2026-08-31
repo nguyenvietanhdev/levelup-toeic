@@ -121,7 +121,7 @@ export const MultipleChoice = {
                                  tiếng Việt mà hệ thống chỉ có giọng Anh/Trung.
                                  Nay speakWord nhận diện được tiếng Việt và có
                                  giọng riêng, nên nghe được cả hai chiều. -->
-                            <button class="btn-speak" id="speak-word-btn" title="Nghe phát âm">
+                            <button class="btn-speak js-nut-am" id="speak-word-btn" title="Nghe phát âm">
                                 <i class="fas fa-volume-up"></i>
                             </button>
                         </div>
@@ -325,7 +325,7 @@ export const MultipleChoice = {
                     <i class="fas fa-quote-left" style="color: var(--primary-color); margin-right: 6px;"></i>
                     <span id="mc-example-text">${cau}</span>
                     <button class="btn-speak-mini" id="translate-example-btn" title="Dịch cả câu"><i class="fas fa-language"></i></button>
-                    <button class="btn-speak-mini" id="speak-example-btn" title="Nghe phát âm câu ví dụ"><i class="fas fa-volume-up"></i></button>
+                    <button class="btn-speak-mini js-nut-am" id="speak-example-btn" title="Nghe phát âm câu ví dụ"><i class="fas fa-volume-up"></i></button>
                 </div>
                 <div class="word-info-example-pinyin" id="mc-example-pinyin"></div>
             </div>`;

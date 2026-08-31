@@ -178,7 +178,7 @@ export const SentenceBuilder = {
                                 <span class="highlight-word">${question.word.en}</span>
                                 ${question.word.phonetic ? `<span class="sb-phonetic">${question.word.phonetic}</span>` : ''}
                                 <span class="word-translation">= ${question.wordVn}</span>
-                                <button class="btn-speak-mini sb-key-speak" title="Nghe phát âm từ khoá">
+                                <button class="btn-speak-mini js-nut-am sb-key-speak" title="Nghe phát âm từ khoá">
                                     <i class="fas fa-volume-up"></i>
                                 </button>
                             </span>
@@ -447,7 +447,7 @@ export const SentenceBuilder = {
                     <button class="btn-speak-mini rs-translate" title="Dịch câu này">
                         <i class="fas fa-language"></i>
                     </button>
-                    <button class="btn-speak-mini rs-speak" title="Nghe câu này">
+                    <button class="btn-speak-mini js-nut-am rs-speak" title="Nghe câu này">
                         <i class="fas fa-volume-up"></i>
                     </button>
                 </div>`;
@@ -477,7 +477,7 @@ export const SentenceBuilder = {
                         <i class="fas fa-times-circle"></i>
                         ${than('Chưa đúng — câu của bạn:', userSentence)}
                         <div class="result-actions">
-                            <button class="btn-speak-mini rs-speak-wrong"
+                            <button class="btn-speak-mini js-nut-am rs-speak-wrong"
                                     title="Nghe câu bạn vừa xếp">
                                 <i class="fas fa-volume-up"></i>
                             </button>

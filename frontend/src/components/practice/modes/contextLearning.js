@@ -119,7 +119,7 @@ export const ContextLearning = {
                         <i class="fas fa-ear-listen" style="font-size: 28px; color: var(--primary-color); margin-bottom: 8px;"></i>
                         <div>Hãy nghe và đoán nghĩa</div>
                     </div>
-                    <button class="btn-speak" id="speak-example-btn" title="Nghe lại câu ví dụ">
+                    <button class="btn-speak js-nut-am" id="speak-example-btn" title="Nghe lại câu ví dụ">
                         <i class="fas fa-volume-up"></i>
                     </button>
                 </div>

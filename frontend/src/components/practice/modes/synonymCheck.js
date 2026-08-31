@@ -107,7 +107,7 @@ export const SynonymCheck = {
                     <div class="question-text-col">
                         <div class="word-display" style="font-size:1.8rem; font-weight:700">
                             ${question.word.en}
-                            <button class="btn-speak" id="speak-word-btn" title="Nghe phát âm" style="margin-left:6px">
+                            <button class="btn-speak js-nut-am" id="speak-word-btn" title="Nghe phát âm" style="margin-left:6px">
                                 <i class="fas fa-volume-up"></i>
                             </button>
                         </div>

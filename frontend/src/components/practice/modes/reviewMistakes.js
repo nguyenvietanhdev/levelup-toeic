@@ -409,7 +409,7 @@ export const ReviewMistakes = {
                     <!-- Kiểu NGHE che mặt chữ: thấy chữ thì không còn phải nghe,
                          và đó đúng là kỹ năng kiểu này kiểm tra. -->
                     <span class="rm-word-text">${question.kieu === 'listen' ? '🔊 ? ? ?' : deBai(question)}</span>
-                    <button class="btn-speak-mini" id="rm-speak-btn" title="Nghe phát âm">
+                    <button class="btn-speak-mini js-nut-am" id="rm-speak-btn" title="Nghe phát âm">
                         <i class="fas fa-volume-up"></i>
                     </button>
                     ${w.phonetic ? `<span class="rm-phonetic">/${w.phonetic}/</span>` : ''}
@@ -499,7 +499,7 @@ export const ReviewMistakes = {
                 <p class="rm-prompt">Bấm mic rồi đọc to từ này —
                    <span id="rm-speak-luot">còn ${SO_LAN_NOI} lần thử</span></p>
                 <div class="rm-speak">
-                    <button class="rm-mic-btn" id="rm-mic">
+                    <button class="rm-mic-btn js-nut-am" id="rm-mic">
                         <i class="fas fa-microphone"></i>
                     </button>
                     <div class="rm-mic-status" id="rm-mic-status">Bấm để bắt đầu nói</div>
@@ -554,6 +554,15 @@ export const ReviewMistakes = {
         if (!question) return;
 
         document.getElementById('rm-speak-btn')?.addEventListener('click', () => {
+            // ĐANG GHI ÂM thì dừng ghi trước.
+            //
+            // Kiểu `speak` để nút loa và nút mic cạnh nhau, nên bấm loa giữa lúc
+            // đang nói là máy ghi lại chính tiếng loa của mình rồi chấm điểm
+            // trên đó — người học nghe thấy máy "chấm đúng" một lượt mình chưa
+            // hề nói. Chiều ngược lại (đang phát mà bấm mic) do bộ chặn chung
+            // trong `nutPhatAm` lo; chiều này thì không, vì lúc bấm chưa có
+            // tiếng nào đang phát để mà khoá.
+            this._dungNghe();
             // Không truyền ngôn ngữ — `speakWord` tự nhận chữ Hán.
             GameLogic.speakWord(question.word.en);
         });

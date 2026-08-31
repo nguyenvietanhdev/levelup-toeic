@@ -109,7 +109,7 @@ export const SentenceListening = {
         container.innerHTML = `
             <div class="sentence-listening-container">
                 <div class="sl-audio-area">
-                    <button class="sl-play-btn" id="sl-play-btn" title="Nghe lại 3 từ">
+                    <button class="sl-play-btn js-nut-am" id="sl-play-btn" title="Nghe lại 3 từ">
                         <i class="fas fa-headphones"></i>
                     </button>
                     <div class="sl-listen-info">

@@ -143,13 +143,13 @@ export const PhoneticQuiz = {
                            <div class="pq-ipa-side">
                                <div class="pq-ipa-label"><i class="fas fa-language"></i> Phiên âm IPA</div>
                                <div class="pq-ipa-hint-area">
-                                   <button class="pq-play-btn" id="pq-play-btn" title="Nghe phát âm">
+                                   <button class="pq-play-btn js-nut-am" id="pq-play-btn" title="Nghe phát âm">
                                        <i class="fas fa-volume-up"></i>
                                    </button>
                                </div>
                            </div>`
                         : `<div class="pq-word">${question.word.en}</div>
-                           <button class="pq-play-btn" id="pq-play-btn" title="Nghe lại">
+                           <button class="pq-play-btn js-nut-am" id="pq-play-btn" title="Nghe lại">
                                <i class="fas fa-volume-up"></i>
                            </button>`
                     }

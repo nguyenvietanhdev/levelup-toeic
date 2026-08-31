@@ -331,7 +331,7 @@ export const PronunciationMode = {
 
                     <!-- Mic + status + attempts + replay stacked -->
                     <div class="pronunciation-mic-col" style="display:flex;flex-direction:column;align-items:center;gap:8px;flex-shrink:0;">
-                        <button class="mic-button" id="mic-btn" title="Click để phát âm" style="width:72px;height:72px;font-size:1.6em;">
+                        <button class="mic-button js-nut-am" id="mic-btn" title="Click để phát âm" style="width:72px;height:72px;font-size:1.6em;">
                             <i class="fas fa-microphone"></i>
                         </button>
                         <div class="mic-status" id="mic-status" style="font-size:0.75em;text-align:center;max-width:120px;">

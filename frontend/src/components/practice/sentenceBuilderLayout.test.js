@@ -86,7 +86,7 @@ describe('khoảng cách giữa hai khối', () => {
 describe('nút Dịch và Nghe ở khối kết quả', () => {
     test('có cả hai nút', () => {
         expect(src).toMatch(/class="btn-speak-mini rs-translate"/);
-        expect(src).toMatch(/class="btn-speak-mini rs-speak"/);
+        expect(src).toMatch(/class="btn-speak-mini[^"]* rs-speak"/);
     });
 
     test('nút DỊCH đứng trước nút LOA', () => {
@@ -224,7 +224,7 @@ describe('ô Từ khoá: phiên âm + nút nghe', () => {
     });
 
     test('có nút nghe từ khoá', () => {
-        expect(src).toMatch(/class="btn-speak-mini sb-key-speak"/);
+        expect(src).toMatch(/class="btn-speak-mini[^"]* sb-key-speak"/);
     });
 
     test('nút đọc câu hỏi từ STATE, không dùng biến tự do', () => {
@@ -256,7 +256,7 @@ describe('ô Từ khoá: phiên âm + nút nghe', () => {
 
 describe('nghe lại câu mình xếp sai', () => {
     test('khối câu SAI có nút loa riêng', () => {
-        expect(src).toMatch(/class="btn-speak-mini rs-speak-wrong"/);
+        expect(src).toMatch(/class="btn-speak-mini[^"]* rs-speak-wrong"/);
     });
 
     test('nút đó đọc câu NGƯỜI DÙNG xếp, không đọc câu đúng', () => {

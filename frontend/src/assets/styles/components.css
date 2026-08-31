@@ -11087,3 +11087,17 @@ mark {
 #modal-container.translate-layer.translate-tren-cung {
   z-index: calc(var(--z-modal) + 1);
 }
+
+/* ── Đang phát tiếng: nút âm thanh tạm khoá ────────────────────────────────
+   Bấm liên tiếp thì mỗi lần huỷ lượt đang phát rồi bắt đầu lượt mới — nghe ra
+   một chuỗi tiếng cụt. Chặn thật nằm ở `lib/nutPhatAm.js` (bắt sự kiện ở pha
+   capture nên chặn được cả phím Enter); phần dưới đây chỉ để NHÌN THẤY là nút
+   đang không bấm được, thay vì bấm mà không có gì xảy ra.
+
+   Chỉ nhắm `.js-nut-am`, KHÔNG nhắm `.btn-speak-mini`: lớp đó dùng chung cho cả
+   nút DỊCH, mà đang nghe vẫn phải tra được nghĩa. */
+body.dang-phat-am .js-nut-am {
+  opacity: 0.45;
+  cursor: not-allowed;
+  filter: grayscale(0.6);
+}

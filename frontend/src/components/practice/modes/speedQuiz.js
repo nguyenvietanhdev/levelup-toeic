@@ -90,7 +90,7 @@ export const SpeedQuiz = {
                 <div class="speed-question">
                     <div class="word-display">
                         ${question.question}
-                        <button class="btn-speak" id="speak-word-btn" title="Nghe phát âm">
+                        <button class="btn-speak js-nut-am" id="speak-word-btn" title="Nghe phát âm">
                             <i class="fas fa-volume-up"></i>
                         </button>
                     </div>

@@ -9,6 +9,7 @@ import { Notification } from '@ui/Toaster.jsx';
 import { PartSelector } from '@components/vocab/part/partSelector.js';
 import { logger } from '@lib/logger.js';
 import { MA_GIONG } from '@lib/giongDaChon.js';
+import { batDauPhat, ketThucPhat } from '@lib/nutPhatAm.js';
 import { nhanKho, nhanKhoThuong } from '@lib/nhanKho.js';
 
 export function vocabLang() {
@@ -362,6 +363,10 @@ export const GameLogic = {
             this._gttsAudio = null;
         }
         try { window.speechSynthesis?.cancel(); } catch { /* không hỗ trợ */ }
+        // Mở khoá nút âm thanh BẤT KỂ lượt nào đang chạy: đã dừng thì không còn
+        // tiếng nào để chờ. Không mở ở đây thì mọi nút loa khoá cứng cho tới hết
+        // `TRAN_CHO`, ngay sau một cú lật thẻ.
+        ketThucPhat(null);
     },
 
     /**
@@ -373,6 +378,21 @@ export const GameLogic = {
      * @param {Function|null} onEnd
      */
     speakWord(text, lang = null, onEnd = null) {
+        // Khoá mọi nút âm thanh trong suốt lượt phát này.
+        //
+        // Bọc `onEnd` thay vì bắt từng nơi gọi tự nhớ: có 43 chỗ gọi `speakWord`,
+        // nơi nào quên là một chỗ hở im lặng. Và phải bọc CẢ khi nơi gọi không
+        // truyền `onEnd` — đó là đa số các chỗ.
+        const _theLuot = batDauPhat();
+        const _gocOnEnd = onEnd;
+        let _daBao = false;
+        onEnd = () => {
+            if (_daBao) return;          // `onend` và `onerror` có thể cùng bắn
+            _daBao = true;
+            ketThucPhat(_theLuot);
+            if (_gocOnEnd) _gocOnEnd();
+        };
+
         // Ch\u1ecdn gi\u1ecdng theo CH\u00cdNH V\u0102N B\u1ea2N, kh\u00f4ng theo kho \u0111ang h\u1ecdc.
         //
         // Tr\u01b0\u1edbc \u0111\u00e2y quy\u1ebft \u0111\u1ecbnh b\u1eb1ng `getVocabLang() === 'zh'`. Kho song ng\u1eef tr\u1ea3
@@ -443,7 +463,7 @@ export const GameLogic = {
         }
 
         if (!('speechSynthesis' in window)) {
-            if (onEnd) onEnd();
+            onEnd();
             return;
         }
         window.speechSynthesis.cancel();
@@ -454,10 +474,11 @@ export const GameLogic = {
         const savedRate = localStorage.getItem('toeic_speech_rate');
         utterance.rate = savedRate ? parseInt(savedRate) / 100 : 0.8;
 
-        if (onEnd) {
-            utterance.onend = onEnd;
-            utterance.onerror = onEnd;
-        }
+        // Gắn KHÔNG điều kiện: `onEnd` nay luôn tồn tại (đã bọc ở đầu hàm), và
+        // chính nó là thứ mở khoá nút âm thanh. Giữ `if (onEnd)` như bản cũ thì
+        // nhánh này không bao giờ mở khoá khi nơi gọi không truyền callback.
+        utterance.onend = onEnd;
+        utterance.onerror = onEnd;
 
         const voices = window.speechSynthesis.getVoices();
         // Tiền tố ngôn ngữ để lọc giọng — khai một lần, dùng ở cả ba nhánh dưới.

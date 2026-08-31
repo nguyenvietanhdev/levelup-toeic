@@ -111,7 +111,7 @@ export const Listening = {
                             <div class="word-type">${question.word.type}</div>
                         ` : `
                             <div class="audio-player">
-                                <button class="play-audio-btn" id="play-audio-btn">
+                                <button class="play-audio-btn js-nut-am" id="play-audio-btn">
                                     <i class="fas fa-volume-up"></i>
                                 </button>
                             </div>

@@ -56,7 +56,7 @@ export function htmlViDu(cau, { nhan = '', id = '' } = {}) {
                     <button class="btn-speak-mini" id="${pre}-tr" title="Dịch cả câu">
                         <i class="fas fa-language"></i>
                     </button>
-                    <button class="btn-speak-mini" id="${pre}-sp" title="Nghe phát âm câu ví dụ">
+                    <button class="btn-speak-mini js-nut-am" id="${pre}-sp" title="Nghe phát âm câu ví dụ">
                         <i class="fas fa-volume-up"></i>
                     </button>
                 </div>
