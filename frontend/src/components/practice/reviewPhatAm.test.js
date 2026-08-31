@@ -146,7 +146,7 @@ describe('chấm điểm và dọn mic', () => {
     test('dùng lại bộ chấm của chế độ Phát âm', () => {
         // Viết lại phép so bằng `===` là bỏ sót ca máy tự thêm trợ từ tiếng
         // Trung — người học đọc chuẩn mà bị chấm sai.
-        expect(src).toMatch(/import \{ scoreAttempt, feedbackMessage \}/);
+        expect(src).toMatch(/import \{ scoreAttempt, feedbackMessage/);
         expect(than).toMatch(/scoreAttempt\(chu, Array\.from\(kq\), tu, laZh\)/);
     });
 

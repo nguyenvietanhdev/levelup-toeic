@@ -8,9 +8,31 @@
 // thanh thô. Nên đây là "máy có nghe ra đúng từ không", KHÔNG phải chấm phát âm
 // theo từng âm vị. Nói sai thanh mà máy vẫn đoán đúng chữ thì ta không biết.
 
+/**
+ * Lấy chuỗi ra khỏi thứ Web Speech trả về.
+ *
+ * `SpeechRecognitionResult` là một mảng-giống các `SpeechRecognitionAlternative`,
+ * mỗi cái là OBJECT có `.transcript` — không phải chuỗi. Chuyền thẳng mảng đó
+ * vào đây thì `String(object)` ra `"[object speechrecognitionalternative]"`, và
+ * mọi bản đoán thay thế biến thành cùng một chuỗi rác.
+ *
+ * Hỏng KIỂU IM LẶNG, đó là chỗ đáng sợ: không lỗi, không cảnh báo, chỉ là bản
+ * đoán hạng 2–5 không bao giờ khớp nữa. Đo trên ca thật — nói "brand", máy đoán
+ * đầu ra "bread" và để "brand" ở hạng 2 — chế độ truyền object chấm SAI trong
+ * khi chế độ truyền chuỗi chấm ĐÚNG, cùng một lượt nói.
+ *
+ * Nhận cả hai kiểu ở ĐÂY chứ không bắt từng nơi gọi tự nhớ: nơi gọi nào quên là
+ * lỗi lại im lặng y hệt, mà không có gì báo.
+ */
+function layChu(x) {
+    if (x == null) return '';
+    if (typeof x === 'string') return x;
+    return typeof x.transcript === 'string' ? x.transcript : '';
+}
+
 /** Bỏ dấu câu và khoảng trắng để so — giữ nguyên chữ. */
 export function normalize(text, isZh) {
-    const t = String(text ?? '');
+    const t = layChu(text);
     return isZh
         // Dấu câu Trung + Latin. Bỏ hết khoảng trắng vì tiếng Trung không dùng.
         ? t.replace(/[\s　-〿＀-￯.,!?;:'"]/g, '')
@@ -126,6 +148,7 @@ export function scoreAttempt(transcript, alternatives, target, isZh) {
         .map(t => normalize(t, isZh))
         .filter(Boolean);
 
+
     const exactRank = ranked.findIndex(t => t === want);
     if (exactRank !== -1) {
         return { correct: true, near: false, similarity: 1, matchedRank: exactRank, heard };
@@ -141,6 +164,31 @@ export function scoreAttempt(transcript, alternatives, target, isZh) {
 
     const near = bestRank !== -1 && isNear(ranked[bestRank], want);
     return { correct: near, near, similarity: best, matchedRank: near ? bestRank : -1, heard };
+}
+
+/**
+ * Bản TẠM này đã đủ để chốt ngay chưa?
+ *
+ * ── VÌ SAO CẦN ──────────────────────────────────────────────────────────────
+ * Web Speech không chốt kết quả khi người học nói xong — nó đợi im lặng một
+ * quãng (Chrome khoảng 1–2 giây) rồi mới phát `isFinal`. Cả quãng đó màn hình
+ * đứng im sau khi người học đã nói xong và đang chờ biết mình đúng hay sai.
+ *
+ * Nhưng bản tạm thì về gần như tức thì. Khi bản tạm đã khớp HẲN từ cần nói thì
+ * không còn gì để đợi nữa — gọi `stop()` là bộ nhận dạng chốt luôn.
+ *
+ * ── VÌ SAO KHÔNG CHẤM THẲNG TRÊN BẢN TẠM ────────────────────────────────────
+ * Vì bản tạm còn đổi: nói "拿" trên đường tới "拿铁" thì chấm sớm là cho điểm một
+ * từ chưa nói xong. `stop()` khác hẳn — nó chỉ RÚT NGẮN thời gian chờ, còn điểm
+ * vẫn chấm trên kết quả cuối như cũ. Không đổi một luật chấm nào.
+ *
+ * Chỉ nhận khớp HẲN, không nhận "gần đúng": gần đúng là lúc cần đợi thêm nhất,
+ * vì bản tạm rất hay tự sửa lại thành đúng ở nhịp cuối.
+ */
+export function chotSomDuoc(interim, target, isZh) {
+    const want = normalize(target, isZh);
+    if (!want) return false;
+    return normalize(interim, isZh) === want;
 }
 
 /**

@@ -4,7 +4,7 @@ import { PartSelector } from '@components/vocab/part/partSelector.js';
 import { Config } from '@game/config.js';
 import { Utils } from '@lib/utils.js';
 import { Notification } from '@ui/Toaster.jsx';
-import { scoreAttempt, feedbackMessage, scoreSentence, sentenceFeedback } from './pronunciationScoring.js';
+import { scoreAttempt, feedbackMessage, scoreSentence, sentenceFeedback, chotSomDuoc } from './pronunciationScoring.js';
 
 export const PronunciationMode = {
 
@@ -142,6 +142,16 @@ export const PronunciationMode = {
                 // gì. TUYỆT ĐỐI không chấm ở đây — bản tạm thay đổi liên tục
                 // trong lúc nói, chấm sớm là ăn ngay một lượt thử oan.
                 this.showInterim(transcript);
+
+                // Đã nghe ra ĐÚNG thứ cần nói → thôi đợi.
+                //
+                // Web Speech chỉ chốt sau khi im lặng một quãng (Chrome 1–2
+                // giây). Cả quãng đó người học đã nói xong và đang nhìn màn hình
+                // đứng im. `stop()` bảo bộ nhận dạng chốt ngay — điểm vẫn chấm
+                // trên kết quả CUỐI như cũ, chỉ là kết quả cuối về sớm hơn.
+                if (chotSomDuoc(transcript, this.cauDoc || this.currentWord, this._isZh())) {
+                    try { this.recognition?.stop(); } catch (_) { /* đã dừng rồi */ }
+                }
                 return;
             }
 
@@ -179,6 +189,29 @@ export const PronunciationMode = {
                 Notification.show({ type: 'error', title: 'Không có quyền truy cập', message: 'Vui lòng cho phép truy cập microphone', duration: 3000 });
             } else if (event.error === 'language-not-supported') {
                 Notification.show({ type: 'error', title: 'Ngôn ngữ không hỗ trợ', message: 'Trình duyệt không nhận dạng được ngôn ngữ này', duration: 3000 });
+            } else if (event.error === 'aborted') {
+                // CHÍNH TA huỷ: sang câu khác, bấm mic lại, rời chế độ. Không
+                // phải lỗi của người học nên không báo gì — nhưng phải kể tên ở
+                // đây, nếu không nó rơi vào nhánh cuối và hiện thông báo lỗi cho
+                // một việc hoàn toàn bình thường.
+            } else {
+                // MỌI lỗi còn lại — `network`, `audio-capture`, `service-not-allowed`.
+                //
+                // Bản cũ im lặng ở đây: bấm mic, không nghe, không chấm, không
+                // một chữ nào trên màn hình. Người học ngồi chờ một lượt không
+                // bao giờ tới, và tưởng là mình nói chưa đủ to.
+                this._resultHandled = false;
+                Notification.show({
+                    type: 'error',
+                    title: 'Mic gặp sự cố',
+                    message: 'Không nhận dạng được lúc này — kiểm tra micro và mạng rồi thử lại.',
+                    duration: 3000,
+                });
+                const el = document.getElementById('mic-status');
+                if (el) {
+                    el.textContent = 'Mic gặp sự cố — bấm để thử lại';
+                    el.className = 'mic-status';
+                }
             }
         };
 

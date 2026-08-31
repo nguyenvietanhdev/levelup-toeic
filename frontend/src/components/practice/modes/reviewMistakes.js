@@ -12,7 +12,7 @@ import { chenViDu } from '../exampleBlock.js';
 import { maCapHoc } from '../nhanNgonNgu.js';
 // Dùng lại bộ chấm của chế độ Phát âm: nó là logic thuần (vào chuỗi, ra điểm)
 // và đã xử lý những ca thật mà `===` bỏ sót — vd máy tự thêm trợ từ tiếng Trung.
-import { scoreAttempt, feedbackMessage } from './pronunciationScoring.js';
+import { scoreAttempt, feedbackMessage, chotSomDuoc } from './pronunciationScoring.js';
 
 /**
  * Ba kiểu hỏi, xếp theo ĐỘ KHÓ tăng dần.
@@ -744,6 +744,13 @@ export const ReviewMistakes = {
                     // Bản tạm ĐỔI LIÊN TỤC trong lúc nói — chỉ hiện cho người
                     // học thấy máy đang nghe được gì, tuyệt đối không chấm.
                     if (oNghe) oNghe.textContent = chu;
+
+                    // Đã nghe ra ĐÚNG từ cần nói → thôi đợi. `stop()` chỉ rút
+                    // ngắn quãng im lặng Web Speech chờ trước khi chốt (Chrome
+                    // 1–2 giây); điểm vẫn chấm trên kết quả CUỐI như cũ.
+                    if (chotSomDuoc(chu, tu, laZh)) {
+                        try { this._rec?.stop(); } catch (_) { /* đã dừng rồi */ }
+                    }
                     return;
                 }
 
@@ -768,6 +775,10 @@ export const ReviewMistakes = {
                     return;
                 }
 
+                // `Array.from(kq)` cho ra các `SpeechRecognitionAlternative` —
+                // OBJECT, không phải chuỗi. `scoreAttempt` nay tự lấy
+                // `.transcript`, nên cả 5 bản đoán mới thật sự được xét: trước
+                // đó chúng biến thành cùng một chuỗi rác và không bao giờ khớp.
                 const diem = scoreAttempt(chu, Array.from(kq), tu, laZh);
                 this._soLanNoi += 1;
                 this.veLuotNoi();
