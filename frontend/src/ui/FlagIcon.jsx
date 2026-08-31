@@ -54,5 +54,14 @@ export default function FlagIcon({ lang, size = 18, style }) {
         );
     }
 
+    if (lang === 'vi') {
+        return (
+            <svg viewBox="0 0 30 20" {...common}>
+                <rect width="30" height="20" fill="#da251d" />
+                <polygon points={starPoints(15, 10, 6)} fill="#ff0" />
+            </svg>
+        );
+    }
+
     return null;
 }

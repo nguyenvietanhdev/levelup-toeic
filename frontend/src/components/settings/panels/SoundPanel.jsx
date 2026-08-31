@@ -11,10 +11,13 @@ export default function SoundPanel({
     updateSetting,
     selectedVoiceEn,
     selectedVoiceZh,
+    selectedVoiceVi,
     handleVoiceChangeEn,
     handleVoiceChangeZh,
+    handleVoiceChangeVi,
     handleTestVoiceEn,
     handleTestVoiceZh,
+    handleTestVoiceVi,
     speechRate,
     handleSpeechRate,
     vocabLang,
@@ -27,6 +30,12 @@ export default function SoundPanel({
     // "Không dùng" chỉ đúng khi kho kia THẬT SỰ không phát giọng này.
     const tatEn = isZh;
     const tatZh = !isZh && !laSongNgu;
+    // Giọng Việt KHÔNG có ô "Không dùng" nào cả — và đó không phải sơ suất.
+    //
+    // Hai giọng trên gắn với KHO ĐANG HỌC: học bộ tiếng Trung thì giọng Anh
+    // không phát chữ nào. Tiếng Việt thì khác hẳn — nó là mặt NGHĨA của cả ba
+    // kho, nên phát ở mọi chế độ: đảo chiều (mặt hỏi là nghĩa), nút loa trên ô
+    // nghĩa, popup Dịch nhanh. Không có kho nào làm nó im.
 
     return (
         <>
@@ -158,6 +167,34 @@ export default function SoundPanel({
                             </optgroup>
                         </select>
                         <button className="btn btn-secondary btn-sm" onClick={handleTestVoiceZh} disabled={tatZh}>
+                            <i className="fas fa-volume-up"></i> Thử
+                        </button>
+                    </div>
+                </div>
+
+                {/* Tiếng Việt — KHÔNG bao giờ khoá. Xem ghi chú ở đầu file:
+                    đây là mặt nghĩa của cả ba kho, không kho nào làm nó im. */}
+                <div className="setting-item voice-select-row"
+                    style={{ flexDirection: 'column', alignItems: 'flex-start', gap: 8, marginTop: 12 }}>
+                    <div className="setting-info">
+                        <h4><FlagIcon lang="vi" size={18} style={{ marginRight: 6 }} />Giọng Tiếng Việt</h4>
+                        <p>Đọc phần nghĩa — dùng ở mọi chế độ, kể cả khi đảo chiều</p>
+                    </div>
+                    <div style={{ display: 'flex', gap: 8, width: '100%' }}>
+                        <select
+                            value={selectedVoiceVi}
+                            onChange={e => handleVoiceChangeVi(e.target.value)}
+                            style={{ flex: 1 }}
+                        >
+                            <optgroup label="Nữ">
+                                <option value="__gtts_vi_random__">Tự động — Random nam+nữ</option>
+                                <option value="__gtts_vi__">Hoài My — Miền Bắc 👩</option>
+                            </optgroup>
+                            <optgroup label="Nam">
+                                <option value="__gtts_vi_m__">Nam Minh — Miền Bắc 👨</option>
+                            </optgroup>
+                        </select>
+                        <button className="btn btn-secondary btn-sm" onClick={handleTestVoiceVi}>
                             <i className="fas fa-volume-up"></i> Thử
                         </button>
                     </div>

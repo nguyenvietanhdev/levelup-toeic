@@ -24,10 +24,11 @@ const schema = readFileSync(
     join(__dirname, '..', '..', '..', '..', 'backend', 'models', 'UserProfile.js'), 'utf8');
 
 describe('1. schema server nhận trường giọng', () => {
-    test('có voiceEn / voiceZh / speechRate', () => {
+    test('có voiceEn / voiceZh / voiceVi / speechRate', () => {
         // Thiếu thì Mongoose strip mất, client gửi lên bao nhiêu lần cũng vô ích.
         expect(schema).toMatch(/voiceEn:\s*\{ type: String/);
         expect(schema).toMatch(/voiceZh:\s*\{ type: String/);
+        expect(schema).toMatch(/voiceVi:\s*\{ type: String/);
         expect(schema).toMatch(/speechRate:\s*\{ type: Number/);
     });
 
@@ -46,6 +47,7 @@ describe('2. đổi giọng thì lưu lên server', () => {
     for (const [handler, key] of [
         ['handleVoiceChangeEn', 'voiceEn'],
         ['handleVoiceChangeZh', 'voiceZh'],
+        ['handleVoiceChangeVi', 'voiceVi'],
         ['handleSpeechRate', 'speechRate'],
     ]) {
         test(`${handler} gọi updateSetting('${key}')`, () => {
@@ -62,9 +64,10 @@ describe('2. đổi giọng thì lưu lên server', () => {
 });
 
 describe('3. mở Cài đặt thì kéo giá trị từ server xuống', () => {
-    test('đồng bộ cả ba trường', () => {
+    test('đồng bộ cả bốn trường', () => {
         expect(screen).toMatch(/if \(st\.voiceEn\)/);
         expect(screen).toMatch(/if \(st\.voiceZh\)/);
+        expect(screen).toMatch(/if \(st\.voiceVi\)/);
         expect(screen).toMatch(/if \(st\.speechRate\)/);
     });
 
@@ -80,6 +83,7 @@ describe('4. máy mới phát âm ĐÚNG ngay lần đầu', () => {
         // cho tới khi người dùng mở màn Cài đặt.
         expect(state).toMatch(/localStorage\.setItem\('toeic_voice_en', st\.voiceEn\)/);
         expect(state).toMatch(/localStorage\.setItem\('toeic_voice_zh', st\.voiceZh\)/);
+        expect(state).toMatch(/localStorage\.setItem\('toeic_voice_vi', st\.voiceVi\)/);
         expect(state).toMatch(/localStorage\.setItem\('toeic_speech_rate', String\(st\.speechRate\)\)/);
     });
 
@@ -107,6 +111,7 @@ describe('4. máy mới phát âm ĐÚNG ngay lần đầu', () => {
     test('có trong DEFAULT_SETTINGS để khôi phục mặc định không mất khoá', () => {
         expect(state).toMatch(/voiceEn: '',/);
         expect(state).toMatch(/voiceZh: '',/);
+        expect(state).toMatch(/voiceVi: '',/);
         expect(state).toMatch(/speechRate: 80,/);
     });
 });

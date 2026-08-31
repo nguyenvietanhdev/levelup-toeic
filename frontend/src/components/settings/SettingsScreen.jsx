@@ -127,6 +127,9 @@ export default function SettingsScreen({ active }) {
     const [selectedVoiceZh, setSelectedVoiceZh] = useState(() =>
         localStorage.getItem('toeic_voice_zh') || '__gtts_zh_random__'
     );
+    const [selectedVoiceVi, setSelectedVoiceVi] = useState(() =>
+        localStorage.getItem('toeic_voice_vi') || '__gtts_vi_random__'
+    );
     const [speechRate, setSpeechRate] = useState(() => parseInt(localStorage.getItem('toeic_speech_rate') || '80'));
     const voicesLoaded = useRef(false);
 
@@ -181,6 +184,10 @@ export default function SettingsScreen({ active }) {
         if (st.voiceZh) {
             setSelectedVoiceZh(st.voiceZh);
             localStorage.setItem('toeic_voice_zh', st.voiceZh);
+        }
+        if (st.voiceVi) {
+            setSelectedVoiceVi(st.voiceVi);
+            localStorage.setItem('toeic_voice_vi', st.voiceVi);
         }
         if (st.speechRate) {
             setSpeechRate(st.speechRate);
@@ -300,6 +307,12 @@ export default function SettingsScreen({ active }) {
         updateSetting('voiceZh', name);
     };
 
+    const handleVoiceChangeVi = (name) => {
+        setSelectedVoiceVi(name);
+        localStorage.setItem('toeic_voice_vi', name);
+        updateSetting('voiceVi', name);
+    };
+
     const handleSpeechRate = (val) => {
         setSpeechRate(val);
         localStorage.setItem('toeic_speech_rate', String(val));
@@ -308,6 +321,10 @@ export default function SettingsScreen({ active }) {
 
     const handleTestVoiceEn = () => GameLogic.speakWord('vocabulary', 'en-US');
     const handleTestVoiceZh = () => GameLogic.speakWord('你好，我正在学习汉语。', 'zh-CN');
+    // Truyền THẲNG 'vi-VN' chứ không để `speakWord` tự nhận diện: câu thử phải
+    // có dấu để nghe ra giọng, nhưng chỗ gọi đã biết chắc thì nói ra vẫn hơn
+    // đoán lại.
+    const handleTestVoiceVi = () => GameLogic.speakWord('Xin chào, tôi đang học từ vựng.', 'vi-VN');
 
     const handleDifficulty = (value) => {
         // Theo ĐÚNG khung của ngôn ngữ đang học: zh → HSK*, en → CEFR. Bảng
@@ -561,11 +578,14 @@ export default function SettingsScreen({ active }) {
                                         updateSetting={updateSetting}
                                         selectedVoiceEn={selectedVoiceEn}
                                         selectedVoiceZh={selectedVoiceZh}
+                                        selectedVoiceVi={selectedVoiceVi}
                                         handleVoiceChangeEn={handleVoiceChangeEn}
                                         handleVoiceChangeZh={handleVoiceChangeZh}
+                                        handleVoiceChangeVi={handleVoiceChangeVi}
                                         voices={voices}
                                         handleTestVoiceEn={handleTestVoiceEn}
                                         handleTestVoiceZh={handleTestVoiceZh}
+                                        handleTestVoiceVi={handleTestVoiceVi}
                                         speechRate={speechRate}
                                         handleSpeechRate={handleSpeechRate}
                                         vocabLang={s.vocabLang || 'en'}

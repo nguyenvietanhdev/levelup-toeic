@@ -21,6 +21,11 @@ const settingsSchema = new mongoose.Schema(
         // "chưa từng chọn" với "cố ý chọn random".
         voiceEn: { type: String, default: '' },
         voiceZh: { type: String, default: '' },
+        // Giọng Việt KHÔNG theo kho đang học như hai giọng trên: tiếng Việt là
+        // mặt NGHĨA của cả ba kho, nên nó phát ở mọi chế độ. Thiếu dòng này thì
+        // `strict` của Mongoose vứt lặng lẽ — người dùng chọn giọng, màn Cài đặt
+        // hiện đúng, mà máy khác vẫn ra giọng mặc định.
+        voiceVi: { type: String, default: '' },
         // Tốc độ đọc, % (50–150). Cũng chỉ nằm ở localStorage như trên.
         speechRate: { type: Number, default: 80, min: 50, max: 150 },
 

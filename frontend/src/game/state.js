@@ -20,6 +20,7 @@ export const DEFAULT_SETTINGS = {
     // "chưa từng chọn" với "cố ý chọn random".
     voiceEn: '',
     voiceZh: '',
+    voiceVi: '',
     speechRate: 80,
     autoPronunciation: true,
     practiceSoundEnabled: true,
@@ -277,6 +278,7 @@ export const GameState = {
             const st = this.state.settings || {};
             if (st.voiceEn) localStorage.setItem('toeic_voice_en', st.voiceEn);
             if (st.voiceZh) localStorage.setItem('toeic_voice_zh', st.voiceZh);
+            if (st.voiceVi) localStorage.setItem('toeic_voice_vi', st.voiceVi);
             if (st.speechRate) localStorage.setItem('toeic_speech_rate', String(st.speechRate));
 
             // Cùng lý do, cho ba khoá còn lại có nơi đọc THẲNG localStorage:
