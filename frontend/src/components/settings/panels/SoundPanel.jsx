@@ -186,12 +186,21 @@ export default function SoundPanel({
                             onChange={e => handleVoiceChangeVi(e.target.value)}
                             style={{ flex: 1 }}
                         >
-                            <optgroup label="Nữ">
+                            <optgroup label="Giọng Việt bản địa">
                                 <option value="__gtts_vi_random__">Tự động — Random nam+nữ</option>
-                                <option value="__gtts_vi__">Hoài My — Miền Bắc 👩</option>
+                                <option value="__gtts_vi__">Hoài My 👩</option>
+                                <option value="__gtts_vi_m__">Nam Minh 👨</option>
                             </optgroup>
-                            <optgroup label="Nam">
-                                <option value="__gtts_vi_m__">Nam Minh — Miền Bắc 👨</option>
+                            {/* Edge TTS chỉ có ĐÚNG hai giọng `vi-VN`. Bốn giọng
+                                dưới là giọng đa ngôn ngữ đọc được tiếng Việt —
+                                đo độ dài audio thì chúng trôi chảy ngang giọng
+                                bản địa, nhưng chất giọng thì phải nghe mới biết
+                                hợp tai hay không. Nên tách nhóm và nói rõ. */}
+                            <optgroup label="Đa ngôn ngữ — nghe thử trước">
+                                <option value="__gtts_vi_emma__">Emma 👩</option>
+                                <option value="__gtts_vi_seraphina__">Seraphina 👩</option>
+                                <option value="__gtts_vi_andrew__">Andrew 👨</option>
+                                <option value="__gtts_vi_brian__">Brian 👨</option>
                             </optgroup>
                         </select>
                         <button className="btn btn-secondary btn-sm" onClick={handleTestVoiceVi}>

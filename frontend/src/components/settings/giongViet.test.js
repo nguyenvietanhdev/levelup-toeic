@@ -86,9 +86,48 @@ describe('các lựa chọn khớp với đường ống có sẵn', () => {
     /** Mã trong mọi `<option value="...">` của ô giọng Việt. */
     const maTrongO = [...khoiVi.matchAll(/<option value="([^"]+)"/g)].map((m) => m[1]);
 
-    test('có đủ ba lựa chọn: tự động, nữ, nam', () => {
+    test('có đủ hai giọng BẢN ĐỊA và mục tự động', () => {
+        // Edge TTS chỉ có ĐÚNG hai giọng `vi-VN` trên tổng 322 — đã liệt kê
+        // bằng `getVoices()`, không phải nhớ áng chừng.
         expect(maTrongO).toEqual(
             expect.arrayContaining(['__gtts_vi_random__', '__gtts_vi__', '__gtts_vi_m__']));
+    });
+
+    test('có thêm giọng ĐA NGÔN NGỮ, tách nhóm riêng', () => {
+        // Muốn nhiều hơn hai thì phải mượn nhóm `*MultilingualNeural`. Tách
+        // nhóm vì chúng không phải giọng Việt bản địa — người dùng phải biết
+        // mình đang chọn gì.
+        expect(khoiVi).toMatch(/<optgroup label="Giọng Việt bản địa">/);
+        expect(khoiVi).toMatch(/<optgroup label="Đa ngôn ngữ/);
+        for (const ma of ['__gtts_vi_emma__', '__gtts_vi_seraphina__',
+            '__gtts_vi_andrew__', '__gtts_vi_brian__']) {
+            expect(maTrongO).toContain(ma);
+        }
+    });
+
+    test('MỌI khoá giọng Việt bắt đầu bằng `__gtts_vi`', () => {
+        // `speakWord` nhận ra giọng hợp ngôn ngữ bằng đúng tiền tố này
+        // (`savedVoiceName.startsWith('__gtts_vi')`). Đặt tên khác thì nó tưởng
+        // giọng Anh và lặng lẽ đổi sang giọng Việt mặc định — chọn Emma vẫn ra
+        // Hoài My, không báo gì.
+        for (const ma of maTrongO) expect(ma.startsWith('__gtts_vi')).toBe(true);
+    });
+
+    test('"Tự động" chỉ bốc trong hai giọng BẢN ĐỊA', () => {
+        // Chọn "tự động" là muốn đổi giọng cho đỡ chán, không phải muốn thử
+        // nghiệm. Giọng đa ngôn ngữ phải tự chọn thì mới nhận được.
+        const i = tts.indexOf("lang === 'vi-random'");
+        expect(i).toBeGreaterThan(-1);
+        const nhanh = tts.slice(i, tts.indexOf('} else', i));
+        expect(nhanh).toMatch(/vi-VN-HoaiMyNeural/);
+        expect(nhanh).toMatch(/vi-VN-NamMinhNeural/);
+        expect(nhanh).not.toMatch(/Multilingual/);
+    });
+
+    test('mỗi lựa chọn trỏ tới MỘT giọng riêng', () => {
+        // Hai ô khác nhau mà ra cùng một giọng thì một trong hai là vô nghĩa.
+        const co = maTrongO.filter((m) => m !== '__gtts_vi_random__').map((m) => MA_GIONG[m]);
+        expect(new Set(co).size).toBe(co.length);
     });
 
     test('MỌI mã trong ô đều có trong `MA_GIONG`', () => {
@@ -111,6 +150,20 @@ describe('các lựa chọn khớp với đường ống có sẵn', () => {
 
     test('nữ và nam là HAI giọng khác nhau', () => {
         expect(MA_GIONG['__gtts_vi__']).not.toBe(MA_GIONG['__gtts_vi_m__']);
+    });
+
+    test('giọng đa ngôn ngữ trỏ tới giọng `*Multilingual*` thật', () => {
+        // Trỏ nhầm vào một giọng Anh THƯỜNG thì nó đánh vần tiếng Việt theo lối
+        // chữ Latin — đo được: dài hơn giọng bản địa 8–27%, trong khi nhóm đa
+        // ngôn ngữ ngắn hơn 3–7%.
+        for (const ma of ['__gtts_vi_emma__', '__gtts_vi_seraphina__',
+            '__gtts_vi_andrew__', '__gtts_vi_brian__']) {
+            const api = MA_GIONG[ma];
+            const i = tts.indexOf(`'${api}':`);
+            expect(i, `backend thiếu ${api}`).toBeGreaterThan(-1);
+            const cuoiDong = tts.indexOf(String.fromCharCode(10), i);
+            expect(tts.slice(i, cuoiDong)).toMatch(/MultilingualNeural/);
+        }
     });
 });
 

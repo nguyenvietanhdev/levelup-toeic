@@ -32,10 +32,18 @@ export const MA_GIONG = {
     '__gtts_zh_yunyang__': 'zh-cn-yunyang',
     '__gtts_zh_tw_m__': 'zh-tw-m',
     '__gtts_zh_random__': 'zh-cn-random',
-    // Vietnamese
+    // Vietnamese — bản địa (Edge TTS chỉ có đúng hai giọng `vi-VN`).
     '__gtts_vi__': 'vi-vn-f',
     '__gtts_vi_m__': 'vi-vn-m',
     '__gtts_vi_random__': 'vi-random',
+    // Vietnamese — mượn nhóm giọng ĐA NGÔN NGỮ để có thêm lựa chọn.
+    // Mọi khoá phải bắt đầu bằng `__gtts_vi`: `speakWord` nhận ra giọng hợp
+    // ngôn ngữ bằng đúng tiền tố đó, đặt tên khác là nó tưởng giọng Anh và
+    // đổi sang giọng Việt mặc định.
+    '__gtts_vi_emma__': 'vi-multi-emma',
+    '__gtts_vi_seraphina__': 'vi-multi-seraphina',
+    '__gtts_vi_andrew__': 'vi-multi-andrew',
+    '__gtts_vi_brian__': 'vi-multi-brian',
 };
 
 /** Mã mặc định khi người dùng chưa chọn gì. */

@@ -48,6 +48,24 @@ const VOICE_MAP = {
     'vi-vn-m':        'vi-VN-NamMinhNeural',
     'vi-vn':          'vi-VN-HoaiMyNeural',
     'vi-random':      null,
+    // Vietnamese — giọng ĐA NGÔN NGỮ.
+    //
+    // Edge TTS chỉ có ĐÚNG HAI giọng `vi-VN` trên tổng 322 giọng (đã liệt kê
+    // bằng `getVoices()`), nên muốn thêm lựa chọn thì phải mượn nhóm
+    // `*MultilingualNeural` — chúng đọc được nhiều thứ tiếng, tiếng Việt trong
+    // số đó.
+    //
+    // Không đoán mò là chúng "đọc được": đo ĐỘ DÀI audio trên ba câu tiếng
+    // Việt, lấy hai giọng bản địa làm mốc. Giọng đa ngôn ngữ ra −3% đến −7% —
+    // tức là đọc trôi chảy. Giọng thường (Aria, Guy, Sonia, Xiaoxiao) ra +8%
+    // đến +27%: dài hơn hẳn vì phải đánh vần từng âm theo lối chữ Latin. Hai
+    // nhóm tách bạch rõ, không có ca nào ở giữa.
+    //
+    // Bốn giọng dưới đây là bốn giọng sát mốc bản địa nhất trong nhóm đó.
+    'vi-multi-emma':      'en-US-EmmaMultilingualNeural',
+    'vi-multi-seraphina': 'de-DE-SeraphinaMultilingualNeural',
+    'vi-multi-andrew':    'en-US-AndrewMultilingualNeural',
+    'vi-multi-brian':     'en-US-BrianMultilingualNeural',
 };
 
 /**
@@ -93,6 +111,9 @@ router.get('/', async (req, res) => {
         if (lang === 'zh-cn-random') {
             voiceName = chonGiong(['zh-CN-XiaoxiaoNeural', 'zh-CN-XiaoyiNeural', 'zh-CN-YunxiNeural', 'zh-CN-YunyangNeural'], text);
         } else if (lang === 'vi-random') {
+            // "Tự động" chỉ bốc trong hai giọng BẢN ĐỊA. Người chọn "tự động"
+            // muốn đổi giọng cho đỡ chán, không phải muốn thử nghiệm — giọng đa
+            // ngôn ngữ là thứ phải tự chọn thì mới nhận được.
             voiceName = chonGiong(['vi-VN-HoaiMyNeural', 'vi-VN-NamMinhNeural'], text);
         } else if (lang === 'en-random') {
             voiceName = chonGiong([
