@@ -1,13 +1,18 @@
 /**
- * Ba chế độ luyện CÂU phải luôn mở.
+ * KHÔNG chế độ nào bị khoá theo NGÀY TRONG TUẦN.
  *
- * Chúng là con đường duy nhất trong app rèn kỹ năng đặt câu — 12 chế độ còn lại
- * đều hỏi từ ĐƠN LẺ (chọn nghĩa, ghép cặp, nghe rồi chọn). Trong DB thật, cả ba
- * đều 0 phiên: hai cái bị `weekendOnly` nên người học chỉ chạm tới hai ngày mỗi
- * tuần, mà đó lại là kỹ năng cần lặp đều nhất.
+ * App từng khoá vài chế độ vào Thứ 7 & Chủ nhật (`weekendOnly`) để tạo cảm giác
+ * khan hiếm. Trong DB thật thì kết quả ngược lại: những chế độ đó 0 phiên. Khoá
+ * năm ngày một tuần không làm người học chờ tới cuối tuần — nó làm họ quên chế
+ * độ đó tồn tại, và nhìn vào số liệu thì tưởng tính năng hỏng.
  *
- * Cùng bẫy đã gỡ cho "Ôn lại từ sai": chế độ tồn tại nhưng bị khoá nên không ai
- * gặp, và nhìn vào số liệu thì tưởng tính năng không có.
+ * Ba chế độ luyện CÂU chịu nặng nhất: chúng là con đường duy nhất trong app rèn
+ * kỹ năng đặt câu (12 chế độ còn lại đều hỏi từ ĐƠN LẺ), mà đó lại là kỹ năng
+ * cần lặp đều nhất.
+ *
+ * Khoá theo giờ vẫn còn, nhưng do ADMIN đặt trong tab "Khung giờ chạy chế độ" —
+ * dữ liệu, tắt được, mặc định không giới hạn. Khác hẳn một luật ghi cứng trong
+ * mã mà người dùng không gỡ được.
  */
 import { describe, test, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
@@ -17,6 +22,8 @@ const home = readFileSync(join(__dirname, 'HomeScreen.jsx'), 'utf8');
 const cfg = readFileSync(join(__dirname, '..', '..', 'game', 'config.js'), 'utf8');
 const srv = readFileSync(
     join(__dirname, '..', '..', '..', '..', 'backend', 'utils', 'energyCosts.js'), 'utf8');
+const css = readFileSync(
+    join(__dirname, '..', '..', 'assets', 'styles', 'components.css'), 'utf8');
 
 const CHE_DO_CAU = ['sentence-builder', 'context-learning', 'example-fill-blank'];
 
@@ -28,12 +35,6 @@ function the(mode) {
 }
 
 describe('ba chế độ luyện câu đều mở', () => {
-    for (const mode of CHE_DO_CAU) {
-        test(`${mode} KHÔNG khoá cuối tuần`, () => {
-            expect(the(mode)).not.toContain('weekendOnly');
-        });
-    }
-
     test('cả ba đều có mặt trong lưới', () => {
         for (const mode of CHE_DO_CAU) {
             expect(home).toContain(`mode: '${mode}'`);
@@ -41,12 +42,35 @@ describe('ba chế độ luyện câu đều mở', () => {
     });
 });
 
-describe('Tốc độ VẪN khoá — khan hiếm chỉ hợp với thứ thưởng nhiều', () => {
-    test('speed-quiz giữ weekendOnly', () => {
-        // Không phải cứ bỏ khoá tất cả: Tốc độ là thử thách lấy điểm, không phải
-        // kỹ năng cần luyện hằng ngày. Giữ nó khoá là giữ lý do để quay lại
-        // cuối tuần.
-        expect(the('speed-quiz')).toContain('weekendOnly');
+describe('khoá theo ngày trong tuần đã gỡ HẲN', () => {
+    test('KHÔNG chế độ nào còn cờ `weekendOnly`', () => {
+        // Chốt cả lưới, không riêng vài chế độ: gắn lại cờ cho một chế độ mới
+        // là lỗi này quay lại y hệt, chỉ ở chỗ khác.
+        expect(home).not.toMatch(/weekendOnly/);
+    });
+
+    test('Tốc độ mở MỌI ngày', () => {
+        // Đây là chế độ cuối cùng còn giữ cờ đó.
+        expect(the('speed-quiz')).not.toContain('weekendOnly');
+    });
+
+    test('không còn hàm nhận biết cuối tuần', () => {
+        // Cờ đi mà hàm ở lại thì lần sau có người nối lại chỉ bằng một dòng.
+        expect(home).not.toMatch(/isWeekend|getTimeUntilWeekend|weekendTimer/);
+    });
+
+    test('không còn huy hiệu đếm ngược tới cuối tuần', () => {
+        expect(home).not.toMatch(/mode-weekend-badge|mode-weekend-countdown/);
+        expect(css).not.toMatch(/\.mode-weekend-/);
+    });
+
+    test('lưới chế độ KHÔNG soi thứ trong tuần nữa', () => {
+        // `getDay()` còn dùng cho lịch học và nhiệm vụ tuần — hai chỗ đó đọc
+        // ngày để HIỂN THỊ, không để khoá. Chốt riêng đường khoá thay vì cấm
+        // cả `getDay`.
+        const i = home.indexOf('const locked = guestLocked');
+        expect(i).toBeGreaterThan(-1);
+        expect(home.slice(i, home.indexOf(';', i))).not.toMatch(/weekend/i);
     });
 });
 

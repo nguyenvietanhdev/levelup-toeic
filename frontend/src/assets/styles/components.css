@@ -505,20 +505,7 @@
   transform: none;
   box-shadow: none;
 }
-.mode-weekend-badge {
-  display: inline-flex; align-items: center; gap: 5px;
-  margin-top: 10px; padding: 4px 10px;
-  background: rgba(139,92,246,0.15);
-  border: 1px solid rgba(139,92,246,0.35);
-  border-radius: 20px; font-size: 11px; font-weight: 600;
-  color: #a78bfa;
-}
-.mode-weekend-countdown {
-  font-family: monospace; font-size: 12px; font-weight: 700;
-  color: #c4b5fd; letter-spacing: 0.5px;
-}
-
-/* Khoá theo Level — phân biệt với khoá cuối tuần (tím) bằng tông hổ phách. */
+/* Khoá theo Level — tông hổ phách, khác tông của các huy hiệu khoá còn lại. */
 .mode-level-badge {
   display: inline-flex; align-items: center; gap: 5px;
   margin-top: 10px; padding: 4px 10px;

@@ -3,7 +3,7 @@
  *
  * Chỗ dễ hỏng nhất KHÔNG phải hiển thị mà là hai thứ:
  *   1. Bấm gợi ý gọi thẳng `PracticeManager.start` → bỏ qua mọi phép kiểm
- *      (khách chưa đăng nhập, khoá Level, chế độ cuối tuần, bước chọn đề).
+ *      (khách chưa đăng nhập, khoá Level, khung giờ, bước chọn đề).
  *   2. API lỗi làm vỡ trang chủ — đây là thông tin phụ trợ, không được chặn
  *      người dùng vào luyện tập.
  */
@@ -41,7 +41,7 @@ describe('không làm vỡ trang chủ', () => {
 describe('bấm gợi ý đi đúng đường', () => {
     test('chế độ đi qua `handleModeClick`, KHÔNG gọi thẳng PracticeManager', () => {
         // `handleModeClick` mới có đủ phép kiểm: khách chưa đăng nhập, khoá
-        // Level, chế độ cuối tuần, và bước chọn đề.
+        // Level, khung giờ, và bước chọn đề.
         const i = home.indexOf('const handleCoachPick');
         const than = home.slice(i, home.indexOf('};', i));
         expect(than).toMatch(/handleModeClick\(g\.mode\)/);

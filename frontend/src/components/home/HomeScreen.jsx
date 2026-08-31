@@ -75,16 +75,6 @@ const gameModes = [
         { mode: 'fill-blank', icon: 'fa-pen', label: 'Điền từ', desc: 'Điền từ vào chỗ trống', cost: 15, color: C_HARD },
     ]},
     { group: 'Nâng cao & Thử thách', icon: 'fa-brain', modes: [
-        // Hai chế độ luyện CÂU dưới đây bỏ `weekendOnly`.
-        //
-        // Chúng là con đường duy nhất trong app rèn kỹ năng đặt câu — 12 chế độ
-        // còn lại đều hỏi từ ĐƠN LẺ (chọn nghĩa, ghép cặp, nghe rồi chọn). Khoá
-        // vào cuối tuần nghĩa là người học chỉ chạm tới kỹ năng đó hai ngày mỗi
-        // tuần, mà đó lại là kỹ năng cần lặp đều nhất.
-        //
-        // Cùng lý do đã bỏ khoá cho "Ôn lại từ sai": khan hiếm chỉ có ý nghĩa
-        // với thứ thưởng nhiều (Tốc độ vẫn giữ `weekendOnly`), không phải với
-        // thứ người học cần luyện hằng ngày.
         { mode: 'context-learning', icon: 'fa-book-reader', label: 'Hiểu qua câu', desc: 'Đọc câu ví dụ, suy luận nghĩa của từ', cost: 10, color: C_MAX },
         { mode: 'sentence-builder', icon: 'fa-puzzle-piece', label: 'Xếp câu', desc: 'Sắp xếp cụm từ thành câu hoàn chỉnh', cost: 15, color: C_MAX },
         // `zhOnly` = chỉ chạy được với bộ từ tiếng Trung. Vẫn HIỆN khi học tiếng
@@ -95,11 +85,10 @@ const gameModes = [
         // Xếp ở nhóm THỬ THÁCH chứ không phải "Đọc & Viết": tô đúng thứ tự nét
         // là việc khó nhất trong app với người mới học chữ Hán.
         { mode: 'hanzi-writing', icon: 'fa-paintbrush', label: 'Luyện viết chữ Hán', desc: 'Tô theo nét mẫu, chấm đúng thứ tự nét', cost: 15, color: C_MAX, zhOnly: true },
-        { mode: 'speed-quiz', icon: 'fa-clock', label: 'Tốc độ', desc: 'Trả lời nhanh nhất trong giới hạn thời gian', cost: 20, color: C_MAX, weekendOnly: true },
+        { mode: 'speed-quiz', icon: 'fa-clock', label: 'Tốc độ', desc: 'Trả lời nhanh nhất trong giới hạn thời gian', cost: 20, color: C_MAX },
     ]},
 ];
 
-const isWeekend = () => { const d = new Date().getDay(); return d === 0 || d === 6; };
 
 // Châm ngôn động lực — mỗi ngày hiển thị 1 câu, ĐỔI theo ngày và ổn định
 // trong suốt ngày đó (chỉ số tính theo ngày địa phương).
@@ -163,21 +152,6 @@ const buildCalendar = (monthDate, studiedSet, todayKey) => {
 
 const CAL_WEEKDAYS = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'];
 
-function getTimeUntilWeekend() {
-    const now = new Date();
-    const day = now.getDay();
-    if (day === 0 || day === 6) return null;
-    const daysUntilSat = 6 - day;
-    const nextSat = new Date(now);
-    nextSat.setDate(now.getDate() + daysUntilSat);
-    nextSat.setHours(0, 0, 0, 0);
-    const diff = nextSat - now;
-    const d2 = Math.floor(diff / 86400000);
-    const h = String(Math.floor((diff % 86400000) / 3600000)).padStart(2, '0');
-    const m = String(Math.floor((diff % 3600000) / 60000)).padStart(2, '0');
-    const s = String(Math.floor((diff % 60000) / 1000)).padStart(2, '0');
-    return d2 > 0 ? `${d2} ngày ${h}:${m}:${s}` : `${h}:${m}:${s}`;
-}
 
 function getTimeUntilMidnight() {
     const now = new Date();
@@ -195,7 +169,6 @@ export default function HomeScreen({ active }) {
     const { isLoggedIn, setAuthModal } = useAuth();
     const [quests, setQuests] = useState([]);
     const [timer, setTimer] = useState(getTimeUntilMidnight());
-    const [weekendTimer, setWeekendTimer] = useState(getTimeUntilWeekend());
     const [stats, setStats] = useState({});
     const [wrongWordsCount, setWrongWordsCount] = useState(0);
     // Số lượt đã chơi từng chế độ. Đọc từ GameState (đồng bộ với server qua
@@ -283,10 +256,8 @@ export default function HomeScreen({ active }) {
     useEffect(() => {
         if (!active) return;
         setTimer(getTimeUntilMidnight());
-        setWeekendTimer(getTimeUntilWeekend());
         const id = setInterval(() => {
             setTimer(getTimeUntilMidnight());
-            setWeekendTimer(getTimeUntilWeekend());
         }, 1000);
         return () => clearInterval(id);
     }, [active]);
@@ -439,10 +410,6 @@ export default function HomeScreen({ active }) {
             });
             return;
         }
-        if (modeConfig?.weekendOnly && !isWeekend()) {
-            Notification.show({ type: 'warning', title: '🔒 Chế độ cuối tuần', message: 'Chế độ này chỉ mở vào Thứ 7 & Chủ Nhật. Hãy quay lại vào cuối tuần!', duration: 3500 });
-            return;
-        }
         // Khung giờ do admin đặt. Chặn ở đây chứ không chỉ làm mờ thẻ: `onClick`
         // vẫn gắn trên thẻ bị mờ, nên bấm vào là vào tới bước trừ năng lượng rồi
         // mới bị server từ chối — mất lượt mà không hiểu vì sao.
@@ -472,7 +439,7 @@ export default function HomeScreen({ active }) {
      *
      * `screen` đi qua `showScreen` (chế độ AI có màn hình riêng); `mode` đi qua
      * `handleModeClick` để hưởng đủ mọi phép kiểm sẵn có — khách chưa đăng
-     * nhập, khoá theo Level, chế độ cuối tuần, và bước chọn đề. Gọi thẳng
+     * nhập, khoá theo Level, và bước chọn đề. Gọi thẳng
      * `PracticeManager.start` là bỏ qua hết chúng.
      */
     const handleCoachPick = (g) => {
@@ -732,12 +699,11 @@ export default function HomeScreen({ active }) {
                                 <i className={`fas ${group.icon}`}></i> {group.group}
                             </div>
                             {group.modes.map(m => {
-                                // 5 loại khoá: khách chưa login, theo LEVEL, theo cuối
-                                // tuần, theo NGÔN NGỮ đang học, và theo KHUNG GIỜ.
+                                // 4 loại khoá: khách chưa login, theo LEVEL, theo
+                                // NGÔN NGỮ đang học, và theo KHUNG GIỜ.
                                 const guestLocked = !isLoggedIn && !GUEST_FREE_MODES.has(m.mode);
                                 const lv = lockInfo(`mode:${m.mode}`);
                                 const levelLocked = lv.locked;
-                                const weekendLocked = m.weekendOnly && !isWeekend();
                                 // Khung giờ do admin đặt (tab "Khung giờ chạy
                                 // chế độ"). HIỆN nhưng khoá, giống mọi khoá
                                 // khác — ẩn đi thì người học tưởng chế độ biến
@@ -751,7 +717,7 @@ export default function HomeScreen({ active }) {
                                 // Riêng "Ôn lại từ sai" vẫn mở — đó là chế độ duy
                                 // nhất chạy được trên nhóm này.
                                 const tuSaiLocked = khoaTuSai && m.mode !== 'review-mistakes';
-                                const locked = guestLocked || levelLocked || weekendLocked
+                                const locked = guestLocked || levelLocked
                                     || langLocked || schedLocked || tuSaiLocked;
                                 return (
                                 <div
@@ -795,10 +761,6 @@ export default function HomeScreen({ active }) {
                                     ) : levelLocked ? (
                                         <div className="mode-level-badge" title={`Cần đạt Level ${lv.requiredLevel}`}>
                                             <i className="fas fa-lock"></i> Mở ở <b>Level {lv.requiredLevel}</b>
-                                        </div>
-                                    ) : weekendLocked ? (
-                                        <div className="mode-weekend-badge">
-                                            <i className="fas fa-lock"></i> Mở sau: <span className="mode-weekend-countdown">{weekendTimer}</span>
                                         </div>
                                     ) : langLocked ? (
                                         // Nói rõ ĐIỀU KIỆN chứ không chỉ "bị khoá":
