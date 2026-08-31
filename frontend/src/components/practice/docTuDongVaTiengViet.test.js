@@ -13,12 +13,18 @@ const gl = F('..', '..', 'game', 'gameLogic.js');
 const ts = F('..', 'vocab', 'topic', 'topicSelector.js');
 const mc = F('modes', 'multipleChoice.js');
 
-describe('tự đọc câu ví dụ khi TẮT chuyển câu tự động', () => {
-    test('đọc khi `autoAdvance` tắt', () => {
-        // Bật tự chuyển → câu trôi sau vài giây, tiếng nói bị cắt giữa chừng.
-        // Tắt → người học đang dừng lại đọc, đúng lúc để nghe.
+describe('tự đọc câu ví dụ — chỉ khi chế độ NÓI RÕ là muốn', () => {
+    test('mặc định KHÔNG đọc', () => {
+        // Bản cũ đọc cho MỌI chế độ đi qua module này. Xem `viDuTuDoc.test.js`
+        // cho hậu quả đầy đủ.
+        expect(eb).toMatch(/tuDoc = false/);
+        expect(eb).toMatch(/if \(tuDoc && !tuChuyen\)/);
+    });
+
+    test('vẫn không đọc khi BẬT tự chuyển câu', () => {
+        // Câu trôi sau vài giây thì tiếng nói bị cắt giữa chừng, lần nào cũng
+        // vậy — bắt đầu một lượt đọc biết chắc sẽ bị cắt thì thà đừng đọc.
         expect(eb).toMatch(/const tuChuyen = GameState\.state\?\.settings\?\.autoAdvance !== false/);
-        expect(eb).toMatch(/if \(!tuChuyen\)/);
     });
 
     test('`!== false` chứ không `=== true`', () => {
@@ -33,7 +39,7 @@ describe('tự đọc câu ví dụ khi TẮT chuyển câu tự động', () =>
     });
 
     test('bỏ nếu đã sang câu khác trong lúc hoãn', () => {
-        const i = eb.indexOf('if (!tuChuyen)');
+        const i = eb.indexOf('if (tuDoc && !tuChuyen)');
         expect(eb.slice(i, i + 400)).toMatch(/modeObj\.currentIndex !== idxLucGoiDoc/);
     });
 });

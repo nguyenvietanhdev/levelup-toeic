@@ -245,10 +245,14 @@ export const ExampleFillBlank = {
             // không biết phát âm thế nào, mà câu ví dụ vốn là chỗ dạy CÁCH DÙNG
             // từ. Dùng module chung `exampleBlock` thay vì tự dựng nút: mười
             // chế độ khác đã đi qua nó, chép tay là thêm một chỗ để lệch.
+            // `tuDoc: true` — chế độ này LUYỆN chính câu ví dụ, và đây là câu
+            // vừa điền xong. Nghe lại nguyên câu đúng là phần cuối của bài, nên
+            // nó tự đọc chứ không bắt bấm thêm. Các chế độ khác không xin điều
+            // này: câu ví dụ ở đó chỉ là chú thích.
             chenViDu(
                 sentenceEl.querySelector('.efb-vi-du-slot'),
                 question.originalExample,
-                { modeObj: this }
+                { modeObj: this, tuDoc: true }
             );
         }
 

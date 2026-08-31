@@ -73,8 +73,9 @@ export function htmlViDu(cau, { nhan = '', id = '' } = {}) {
  * @param {object} opts
  *   - `modeObj`: object chế độ, để bỏ kết quả phiên âm khi đã sang câu khác.
  *   - `goc`    : phần tử cha để tìm nút; mặc định `document`.
+ *   - `tuDoc`  : có TỰ ĐỌC câu lên không. Mặc định KHÔNG — xem ghi chú ở chỗ dùng.
  */
-export function ganViDu(id, cau, { modeObj = null, goc = document } = {}) {
+export function ganViDu(id, cau, { modeObj = null, goc = document, tuDoc = false } = {}) {
     const text = String(cau || '').trim();
     if (!id || !text) return;
 
@@ -97,18 +98,31 @@ export function ganViDu(id, cau, { modeObj = null, goc = document } = {}) {
         GameLogic.speakWord(text);
     });
 
-    // TỰ ĐỘNG ĐỌC khi người dùng TẮT chuyển câu tự động.
+    // TỰ ĐỘNG ĐỌC — chỉ khi chế độ gọi NÓI RÕ là muốn.
     //
-    // Hai chế độ dùng thời gian khác hẳn nhau:
-    //   · Bật tự chuyển → câu tự trôi sau vài giây. Đọc cả câu ví dụ ở đây là
-    //     tiếng nói bị cắt ngang giữa chừng, lần nào cũng vậy.
-    //   · Tắt tự chuyển → người học tự bấm "Tiếp" khi đã xong. Họ đang DỪNG
-    //     lại để đọc, đúng lúc để nghe câu mẫu mà không phải bấm thêm.
+    // Bản cũ tự đọc cho MỌI chế độ đi qua đây, và điều kiện duy nhất là người
+    // dùng đã tắt "tự chuyển câu". Hai sai lầm chồng lên nhau:
+    //
+    //   1. Lấy một cài đặt ĐIỀU HƯỚNG làm công tắc cho ÂM THANH. Người dùng tắt
+    //      tự chuyển câu vì muốn tự bấm "Tiếp", không phải vì muốn nghe thêm.
+    //      Cài đặt phát âm là "Tự động phát âm", và nó nói về TỪ (`en`/`zh`/`vn`)
+    //      chứ không phải câu ví dụ.
+    //   2. Bật cho mọi chế độ. Nặng nhất là "Nghe và chọn": khối ví dụ nằm ngay
+    //      trong màn câu hỏi, nên câu ví dụ được đọc lên TRƯỚC khi người học kịp
+    //      chọn gì — vừa ồn vừa lộ. "Hiểu qua câu" thì bị đọc HAI lần: một lần
+    //      là đề bài, một lần nữa ở đây sau khi trả lời.
+    //
+    // Nay phải nói rõ `tuDoc: true` mới đọc, và chỉ chế độ nào LUYỆN chính câu
+    // ví dụ mới nói câu đó.
+    //
+    // Vẫn giữ điều kiện "đã tắt tự chuyển": bật tự chuyển thì câu trôi sau vài
+    // giây và tiếng nói bị cắt ngang giữa chừng, lần nào cũng vậy — bắt đầu một
+    // lượt đọc mà biết chắc sẽ bị cắt thì thà đừng đọc.
     //
     // `!== false` chứ không phải `=== true`: mặc định của cài đặt này là BẬT,
     // và hồ sơ cũ chưa có trường đó thì `undefined` phải hiểu là bật.
     const tuChuyen = GameState.state?.settings?.autoAdvance !== false;
-    if (!tuChuyen) {
+    if (tuDoc && !tuChuyen) {
         // Hoãn một nhịp: nơi gọi thường phát âm TỪ ngay trước đó, hai giọng
         // chồng lên nhau thì không nghe rõ cái nào.
         setTimeout(() => {
@@ -136,11 +150,11 @@ export function ganViDu(id, cau, { modeObj = null, goc = document } = {}) {
  *
  * @returns {boolean} có dựng được không (false khi câu rỗng).
  */
-export function chenViDu(slot, cau, { nhan = '', modeObj = null } = {}) {
+export function chenViDu(slot, cau, { nhan = '', modeObj = null, tuDoc = false } = {}) {
     if (!slot) return false;
     const { html, id } = htmlViDu(cau, { nhan });
     if (!html) return false;
     slot.innerHTML = html;
-    ganViDu(id, cau, { modeObj, goc: slot });
+    ganViDu(id, cau, { modeObj, goc: slot, tuDoc });
     return true;
 }
