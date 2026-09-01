@@ -429,8 +429,16 @@ export const GameLogic = {
         // C\u1ea7n cho ch\u1ebf \u0111\u1ed9 \u0110\u1ea2O CHI\u1ec0U: m\u1eb7t h\u1ecfi l\u00e0 ngh\u0129a ti\u1ebfng Vi\u1ec7t, m\u00e0 tr\u01b0\u1edbc \u0111\u00e2y
         // h\u1ec7 th\u1ed1ng ch\u1ec9 c\u00f3 gi\u1ecdng Anh/Trung n\u00ean n\u00fat loa b\u1ecb \u1ea9n h\u1eb3n. Gi\u1ecdng Anh \u0111\u1ecdc
         // "ng\u01b0\u1eddi cung c\u1ea5p \u0111\u1ed3 \u0103n" ra m\u1ed9t tr\u00e0ng v\u00f4 ngh\u0129a.
+        //
+        // Gõ THEO KHOẢNG Unicode, không liệt kê tay từng ký tự. Bản liệt kê tay
+        // sót nguyên một họ — ừ ứ ử ữ ự (U+1EE9…U+1EF1) không có trong danh sách,
+        // nên "Ngựa", "sữa", "tự tin", "cửa", "lửa", "trứng" đều bị đọc bằng giọng
+        // Anh. Đếm trên DB thật: 632 nghĩa rơi vào ca này.
+        //
+        // U+1EA0–U+1EF9 là khối chứa TOÀN BỘ nguyên âm tiếng Việt mang dấu hỏi,
+        // ngã, nặng và mọi tổ hợp với ă â ê ô ơ ư — không cách nào sót một họ.
         const isViText = !isZhText
-            && /[\u0103\u00e2\u0111\u00ea\u00f4\u01a1\u01b0\u00e0\u00e1\u1ea3\u00e3\u1ea1\u1eb1\u1eaf\u1eb3\u1eb5\u1eb7\u1ea7\u1ea5\u1ea9\u1eab\u1ead\u00e8\u00e9\u1ebb\u1ebd\u1eb9\u1ec1\u1ebf\u1ec3\u1ec5\u1ec7\u00ec\u00ed\u1ec9\u0129\u1ecb\u00f2\u00f3\u1ecf\u00f5\u1ecd\u1ed3\u1ed1\u1ed5\u1ed7\u1ed9\u1edd\u1edb\u1edf\u1ee1\u1ee3\u00f9\u00fa\u1ee7\u0169\u1ee5\u1ef3\u00fd\u1ef7\u1ef9\u1ef5]/i.test(chu);
+            && /[ăâđêôơưẠ-ỹàáãèéìíòóõùúý]/i.test(chu);
 
         // Chỗ gọi BIẾT CHẮC thì nói ra — hàm này nghe theo, không đoán lại.
         //

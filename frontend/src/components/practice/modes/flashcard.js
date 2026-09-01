@@ -1,5 +1,5 @@
 import { GameLogic } from '@game/gameLogic.js';
-import { nhanCapHoc } from '../nhanNgonNgu.js';
+import { nhanCapHoc, maCapHoc } from '../nhanNgonNgu.js';
 import { GameState } from '@game/state.js';
 import { Config } from '@game/config.js';
 import { Utils } from '@lib/utils.js';
@@ -138,6 +138,19 @@ export const Flashcard = {
         const nghia = word.vi || word.vn || '';
         // Mặt trước: đảo chiều → nghĩa, thường → từ. Mặt sau ngược lại.
         return (dao !== matSau) ? nghia : word.en;
+    },
+
+    /**
+     * Mã giọng của mặt đang hiện — song sinh với `chuMat`.
+     *
+     * `chuMat` đã BIẾT mặt nào là nghĩa, mặt nào là từ; nó chỉ không nói ra.
+     * Để `speakWord` đoán lại thì nghĩa tiếng Việt không dấu ("Ba", "Anh trai",
+     * "kho") bị đọc bằng giọng Mỹ — 632 nghĩa trong DB rơi vào ca này.
+     */
+    maMat(word, matSau = false) {
+        const dao = GameLogic.isReversed();
+        const { tu, nghia } = maCapHoc(word);
+        return (dao !== matSau) ? nghia : tu;
     },
 
     render(word) {
@@ -348,7 +361,7 @@ export const Flashcard = {
             // Đọc MẶT SAU — thứ vừa lật ra. Trước đây luôn đọc `word.en`, nên
             // đảo chiều thì lật ra nghĩa mà loa lại đọc từ, còn ở kho song ngữ
             // thì đọc chữ Hán bằng giọng Anh.
-            setTimeout(() => this.pronounce(this.chuMat(word, true)), 300);
+            setTimeout(() => this.pronounce(this.chuMat(word, true), this.maMat(word, true)), 300);
         }
 
         // Tự phát âm mặt TRƯỚC khi vừa hiện thẻ.
@@ -357,7 +370,7 @@ export const Flashcard = {
         // chỉ có giọng Anh/Trung. Nay `speakWord` nhận diện được tiếng Việt và
         // có giọng riêng, nên chiều nào cũng đọc được.
         if (!this.isFlipped && GameState.state.settings.autoPronunciation) {
-            setTimeout(() => this.pronounce(this.chuMat(word)), 500);
+            setTimeout(() => this.pronounce(this.chuMat(word), this.maMat(word)), 500);
         }
     },
 
@@ -376,7 +389,7 @@ export const Flashcard = {
         pronounceBtn?.addEventListener('click', (e) => {
             e.stopPropagation();
             // Đọc mặt ĐANG hiện, không phải luôn `word.en`.
-            this.pronounce(this.chuMat(word, this.isFlipped));
+            this.pronounce(this.chuMat(word, this.isFlipped), this.maMat(word, this.isFlipped));
         });
 
         // Nút loa cho câu ví dụ và từ đồng nghĩa.
@@ -443,7 +456,8 @@ export const Flashcard = {
             this.markAsKnown(this.words[this.currentIndex]);
         } else if (e.key === 'p' || e.key === 'P') {
             // Phím P: đọc mặt ĐANG hiện.
-            this.pronounce(this.chuMat(this.words[this.currentIndex], this.isFlipped));
+            this.pronounce(this.chuMat(this.words[this.currentIndex], this.isFlipped),
+                this.maMat(this.words[this.currentIndex], this.isFlipped));
         }
     },
 
@@ -477,7 +491,8 @@ export const Flashcard = {
         setTimeout(() => {
             // Bỏ nếu người dùng đã lật tiếp hoặc sang thẻ khác trong lúc chờ.
             if (this.words[this.currentIndex] !== currentWord) return;
-            this.pronounce(this.chuMat(currentWord, this.isFlipped));
+            this.pronounce(this.chuMat(currentWord, this.isFlipped),
+                this.maMat(currentWord, this.isFlipped));
         }, 350);
 
         if (this.isFlipped) {
@@ -553,13 +568,15 @@ export const Flashcard = {
         GameLogic.speakPhu(text);
     },
 
-    pronounce(text) {
+    pronounce(text, ma = null) {
         if (!text) return;
-        // KHÔNG truyền ngôn ngữ: `speakWord` tự nhận diện hệ chữ (Hán / có dấu
-        // tiếng Việt / Latin) rồi chọn giọng. Truyền cứng 'en-US' là ghi đè mất
-        // phần đó — kho song ngữ đặt chữ Hán vào `word.en`, nên đọc bằng giọng
-        // Mỹ ra một tràng vô nghĩa.
-        GameLogic.speakWord(text);
+        // `ma` là mã ngôn ngữ của mặt đang hiện (xem `maMat`). Truyền vào thì
+        // `speakWord` nghe theo; không truyền thì nó tự nhận diện hệ chữ.
+        //
+        // Nhận diện chỉ là ĐOÁN: nghĩa tiếng Việt không dấu trông y hệt tiếng
+        // Anh. Nhưng KHÔNG được gắn cứng 'en-US' như trước — kho song ngữ đặt
+        // chữ Hán vào `word.en`, đọc bằng giọng Mỹ ra một tràng vô nghĩa.
+        GameLogic.speakWord(text, ma);
 
         const btn = document.getElementById('pronounce-btn');
         if (btn) {

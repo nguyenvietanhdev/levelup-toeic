@@ -10,6 +10,7 @@ import { startQuestionTimer, stopQuestionTimer } from '@components/practice/ques
 import { getTransitionDelay } from '@components/practice/transitionDelay.js';
 import { timeoutQuestion } from '@components/practice/questionTimeout.js';
 import { layPhienAmCau, coChuHan } from '@lib/sentencePinyin.js';
+import { maTheoChieu } from '@components/practice/nhanNgonNgu.js';
 
 /**
  * Hoãn bao lâu sau khi chọn đáp án rồi mới đọc câu ví dụ (ms).
@@ -173,7 +174,16 @@ export const MultipleChoice = {
         // bấm nút hay để nó tự đọc đều ra một kết quả.
         if (GameState.state?.settings?.autoPronunciation) {
             setTimeout(() => {
-                GameLogic.speakWord(question.question || question.word.en);
+                // Nói THẲNG mã ngôn ngữ của mặt đang hiện.
+                //
+                // Để `speakWord` tự đoán thì nghĩa tiếng Việt KHÔNG DẤU ("Ba",
+                // "Anh trai", "in", "kho") trông y hệt tiếng Anh và bị đọc bằng
+                // giọng Mỹ — đếm trên DB thật có 632 nghĩa như vậy. Chỗ này thì
+                // biết chắc mặt nào là mặt nào, biết rồi thì đừng đoán.
+                GameLogic.speakWord(
+                    question.question || question.word.en,
+                    maTheoChieu(question.reversed, question.word).trai,
+                );
             }, 300);
         }
     },
@@ -199,7 +209,12 @@ export const MultipleChoice = {
                 //
                 // KHÔNG truyền cứng 'en-US': `speakWord` tự nhận diện hệ chữ và
                 // chọn giọng, truyền vào là ghi đè mất phần đó.
-                GameLogic.speakWord(q.question || q.word.en);
+                // Cùng mã với lượt tự đọc ở trên — bấm nút hay để nó tự đọc
+                // mà ra hai giọng khác nhau thì không ai hiểu nổi.
+                GameLogic.speakWord(
+                    q.question || q.word.en,
+                    maTheoChieu(q.reversed, q.word).trai,
+                );
             });
         }
 

@@ -424,7 +424,11 @@ export const ReviewMistakes = {
         if (GameState.state?.settings?.autoPronunciation) {
             // Đọc THỨ ĐANG HIỆN (`deBai`), không phải luôn luôn `w.en`: cùng
             // hàm mà thẻ chữ ở trên dùng, nên nghe và nhìn luôn khớp nhau.
-            setTimeout(() => GameLogic.speakWord(deBai(question) || w.en), 300);
+            // Nói thẳng mã ngôn ngữ: nghĩa tiếng Việt không dấu bị đoán nhầm
+            // sang giọng Anh. Chế độ này không đảo chiều nên mặt hỏi luôn là
+            // mặt `tu`.
+            setTimeout(() => GameLogic.speakWord(
+                deBai(question) || w.en, maCapHoc(question.word).tu), 300);
         }
     },
 
@@ -565,8 +569,7 @@ export const ReviewMistakes = {
             // trong `nutPhatAm` lo; chiều này thì không, vì lúc bấm chưa có
             // tiếng nào đang phát để mà khoá.
             this._dungNghe();
-            // Không truyền ngôn ngữ — `speakWord` tự nhận chữ Hán.
-            GameLogic.speakWord(question.word.en);
+            GameLogic.speakWord(question.word.en, maCapHoc(question.word).tu);
         });
 
         if (question.kieu === 'fill') {

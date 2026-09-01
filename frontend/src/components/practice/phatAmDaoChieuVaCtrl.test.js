@@ -43,29 +43,29 @@ describe('tự động phát âm chạy ở CẢ HAI chiều', () => {
         expect(sau).toMatch(/if \(GameState\.state\?\.settings\?\.autoPronunciation\) \{/);
     });
 
-    test('đọc MẶT ĐANG HIỆN, không phải luôn luôn `word.en`', () => {
+    test('đọc MẶT ĐANG HIỆN, và NÓI THẲNG mã ngôn ngữ của mặt đó', () => {
         // Đây là điều làm việc bỏ `!reversed` trở nên an toàn: mặt hỏi khi đảo
         // chiều là nghĩa, không phải đáp án. Đọc `word.en` mà bỏ chặn thì thành
         // đọc thẳng đáp án ra loa.
         const i = mc.indexOf('autoPronunciation) {');
-        expect(mc.slice(i, i + 300))
-            .toMatch(/speakWord\(question\.question \|\| question\.word\.en\)/);
+        expect(mc.slice(i, i + 900))
+            .toMatch(/speakWord\(\s*question\.question \|\| question\.word\.en,\s*maTheoChieu/);
     });
 
     test('giống hệt thứ NÚT LOA đọc', () => {
         // Bấm nút hay để nó tự đọc mà ra hai kết quả khác nhau thì người dùng
         // không hiểu nổi cái nào mới đúng.
-        expect(mc).toMatch(/GameLogic\.speakWord\(q\.question \|\| q\.word\.en\)/);
+        expect(mc).toMatch(/GameLogic\.speakWord\(\s*q\.question \|\| q\.word\.en,\s*maTheoChieu/);
     });
 
     test('"Ôn từ sai" cũng đọc mặt đang hiện', () => {
         // Thẻ chữ dùng `deBai(question)`; đọc `w.en` là nghe một đằng nhìn một nẻo.
         const i = rm.indexOf('autoPronunciation) {');
-        expect(rm.slice(i, i + 300)).toMatch(/speakWord\(deBai\(question\) \|\| w\.en\)/);
+        expect(rm.slice(i, i + 900)).toMatch(/speakWord\(\s*deBai\(question\) \|\| w\.en, maCapHoc\(question\.word\)\.tu\)/);
     });
 
     test('Flashcard vốn đã đúng — vẫn đọc mặt trước', () => {
-        expect(fc).toMatch(/this\.pronounce\(this\.chuMat\(word\)\)/);
+        expect(fc).toMatch(/this\.pronounce\(this\.chuMat\(word\), this\.maMat\(word\)\)/);
     });
 });
 
@@ -123,12 +123,12 @@ describe('lượt đọc CHÍNH vẫn giữ nguyên `speakWord`', () => {
     test('Trắc nghiệm: đọc từ lúc hiện câu hỏi', () => {
         // Đây mới là thứ Ctrl phải đọc lại.
         const i = mc.indexOf('autoPronunciation) {');
-        expect(mc.slice(i, i + 300)).toMatch(/GameLogic\.speakWord\(/);
+        expect(mc.slice(i, i + 900)).toMatch(/GameLogic\.speakWord\(/);
     });
 
     test('"Ôn từ sai": đọc từ lúc hiện câu hỏi', () => {
         const i = rm.indexOf('autoPronunciation) {');
-        expect(rm.slice(i, i + 300)).toMatch(/GameLogic\.speakWord\(/);
+        expect(rm.slice(i, i + 900)).toMatch(/GameLogic\.speakWord\(/);
     });
 
     test('Flashcard: mặt thẻ vẫn dùng `pronounce`, không phải `pronounceText`', () => {

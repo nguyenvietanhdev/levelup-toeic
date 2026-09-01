@@ -67,7 +67,9 @@ describe('đọc mặt vừa lật ra, ở CẢ HAI chiều', () => {
         // Đọc cứng `true` là chỉ nói khi lật sang mặt sau; lật về mặt trước im
         // lặng, hai chiều hai hành vi.
         const t = thanFlip();
-        const goi = t.match(/this\.pronounce\(this\.chuMat\([^)]*\)\)/g) || [];
+        // `[^)]*` không qua nổi dấu ngoặc của tham số thứ hai (`this.maMat(...)`),
+        // và lời gọi nay xuống dòng — dò tới hết câu lệnh thay vì tới `))`.
+        const goi = t.match(/this\.pronounce\(this\.chuMat\([\s\S]*?\);/g) || [];
         expect(goi).toHaveLength(1);
         expect(goi[0]).toMatch(/this\.isFlipped/);
     });

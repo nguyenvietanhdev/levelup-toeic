@@ -67,9 +67,9 @@ describe('không truyền cứng ngôn ngữ', () => {
     test('`pronounce` để `speakWord` tự nhận diện', () => {
         // Truyền 'en-US' là ghi đè mất phần nhận diện hệ chữ.
         // Bỏ comment trước khi soi: chính comment giải thích cũng nhắc 'en-US'.
-        const i = src.indexOf('    pronounce(text) {');
+        const i = src.indexOf('    pronounce(text, ma = null) {');
         const t = src.slice(i, src.indexOf('\n    },', i)).replace(/\/\/[^\n]*/g, '');
-        expect(t).toMatch(/GameLogic\.speakWord\(text\);/);
+        expect(t).toMatch(/GameLogic\.speakWord\(text, ma\);/);
         expect(t).not.toMatch(/'en-US'/);
     });
 
@@ -87,11 +87,11 @@ describe('mọi lối đọc đều qua `chuMat`', () => {
         // Đây là chỗ chính người dùng nghe khi lật. Theo `this.isFlipped` chứ
         // không cứng `true`: lật về mặt trước cũng phải đọc — xem
         // `flashcardLatThe.test.js`.
-        expect(src).toMatch(/this\.pronounce\(this\.chuMat\(currentWord, this\.isFlipped\)\)/);
+        expect(src).toMatch(/this\.pronounce\(this\.chuMat\(currentWord, this\.isFlipped\),/);
     });
 
     test('tự phát âm lúc hiện thẻ đọc mặt TRƯỚC', () => {
-        expect(src).toMatch(/this\.pronounce\(this\.chuMat\(word\)\), 500/);
+        expect(src).toMatch(/this\.pronounce\(this\.chuMat\(word\), this\.maMat\(word\)\), 500/);
     });
 
     test('nút loa và phím P đọc mặt ĐANG hiện', () => {
@@ -118,7 +118,7 @@ describe('nhãn góc thẻ theo cặp đang học', () => {
     });
 
     test('lấy từ `nhanCapHoc`, dùng chung với các chế độ khác', () => {
-        expect(src).toMatch(/import \{ nhanCapHoc \}/);
+        expect(src).toMatch(/import \{ nhanCapHoc, maCapHoc \}/);
         expect(src).toMatch(/const \{ tu, nghia \} = nhanCapHoc\(\)/);
     });
 

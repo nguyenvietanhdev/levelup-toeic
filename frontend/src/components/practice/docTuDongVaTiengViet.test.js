@@ -117,8 +117,8 @@ describe('đảo chiều vẫn có nút loa', () => {
     test('đọc thứ ĐANG HIỆN, không luôn luôn `word.en`', () => {
         // Đảo chiều thì mặt hỏi là nghĩa — đọc `en` là đọc mất đáp án ra loa.
         const i = mc.indexOf("getElementById('speak-word-btn')");
-        const t = mc.slice(i, i + 700);
-        expect(t).toMatch(/speakWord\(q\.question \|\| q\.word\.en\)/);
+        const t = mc.slice(i, i + 1200);
+        expect(t).toMatch(/speakWord\(\s*q\.question \|\| q\.word\.en,/);
     });
 
     test('KHÔNG truyền cứng ngôn ngữ', () => {
