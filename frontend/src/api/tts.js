@@ -10,7 +10,11 @@ export const TtsAPI = {
         const res = await fetch(
             `/api/tts?text=${encodeURIComponent(text)}&lang=${lang}&rate=${rate}`
         );
-        if (!res.ok) return { success: false };
+        // Ném lỗi thay vì trả `{ success: false }`: bản cũ để nơi gọi nhận một
+        // đối tượng không có `url`, và nhánh đó chỉ gọi `onEnd` — không phát gì,
+        // không fallback. Ném lỗi thì `catch` của nơi gọi lo được việc lùi về
+        // giọng trình duyệt.
+        if (!res.ok) throw new Error(`TTS HTTP ${res.status}`);
         const blob = await res.blob();
         return { url: URL.createObjectURL(blob) };
     },

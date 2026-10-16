@@ -600,10 +600,16 @@ export const GameLogic = {
                     });
                 }
             } else {
-                if (onEnd) onEnd();
+                // Không có audio nào: đưa vào `catch` để lùi về giọng trình duyệt,
+                // đừng im lặng gọi `onEnd` như trước.
+                throw new Error('TTS không trả audio');
             }
         } catch (err) {
             console.warn('Google TTS API failed, falling back to browser:', err);
+            // Request này đã bị lượt mới hơn thay thế (lật thẻ, sang câu khác)
+            // trong lúc chờ — đừng đọc thêm tiếng cũ lên.
+            if (this._gttsSpeak !== myId) { if (onEnd) onEnd(); return; }
+            if (!('speechSynthesis' in window)) { if (onEnd) onEnd(); return; }
             const utterance = new SpeechSynthesisUtterance(text);
             const isZhVoice = lang.startsWith('zh');
             utterance.lang = isZhVoice ? 'zh-CN' : 'en-US';
