@@ -528,6 +528,12 @@ export default function ConversationScreen({ active }) {
                                     </p>
                                 </div>
                             )}
+                            {/* Đã đóng nhận xét: vẫn mở lại được ngay trong phiên. */}
+                            {result.feedback && feedbackClosed && (
+                                <button className="btn btn-secondary" onClick={() => setFeedbackClosed(false)}>
+                                    <i className="fas fa-clipboard-check"></i> Xem nhận xét
+                                </button>
+                            )}
                             <div className="convo-actions">
                                 <button className="btn btn-primary" onClick={() => { setConvo(null); setResult(null); }}>
                                     <i className="fas fa-rotate-right"></i> Luyện tiếp
