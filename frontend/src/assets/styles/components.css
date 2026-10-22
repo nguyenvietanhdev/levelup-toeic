@@ -9555,10 +9555,18 @@ mark {
     display: grid;
     /* Cột phải cố định bề rộng và dính mép phải; cột trái chiếm phần còn lại. */
     grid-template-columns: minmax(0, 1fr) minmax(260px, 340px);
+    grid-template-rows: minmax(0, 1fr);
+    /* Chiều cao theo khung nhìn để MỖI CỘT tự cuộn dọc, không đẩy cả trang. */
+    height: clamp(260px, calc(100vh - 320px), 560px);
     gap: 18px;
     width: 100%;
     margin: 14px 0 18px;
     text-align: left;
+}
+.convo-setup-col {
+    min-height: 0;
+    overflow-y: auto;
+    padding-right: 6px;
 }
 .convo-setup-col + .convo-setup-col {
     justify-self: end;
@@ -9598,6 +9606,11 @@ mark {
 @media (max-width: 640px) {
     .convo-setup {
         grid-template-columns: 1fr;
+        grid-template-rows: auto;
+        height: auto;
+    }
+    .convo-setup-col {
+        overflow-y: visible;
     }
 }
 
