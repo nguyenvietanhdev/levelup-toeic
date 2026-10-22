@@ -148,8 +148,9 @@ describe('điểm và thưởng do SERVER tính', () => {
         // tưởng mất thưởng.
         const b = body('finish');
         const i = b.indexOf('if (convo.reward.claimed)');
-        const seg = b.slice(i, i + 300);
-        expect(seg).toMatch(/alreadyClaimed: true/);
+        // Cửa sổ đủ rộng để chứa cả object trả về (đã có thêm `feedback`).
+        const seg = b.slice(i, i + 500);
+        expect(seg).toMatch(/alreadyClaimed:\s*true/);
         expect(seg).not.toMatch(/status\(4\d\d\)/);
     });
 });

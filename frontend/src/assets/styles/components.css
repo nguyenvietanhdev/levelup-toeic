@@ -9542,6 +9542,88 @@ mark {
     color: var(--text-secondary);
     font-size: 12px;
 }
+/* Màn chọn thiết lập hội thoại: hai cột, trái = bối cảnh, phải = kiểu chấm + độ khó.
+   Các nút trong cột dùng `.tr-level` nhưng xếp DỌC và rộng bằng cột. */
+.convo-setup {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 18px;
+    width: 100%;
+    max-width: 720px;
+    margin: 14px auto 18px;
+    text-align: left;
+}
+.convo-setup-col {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 0;
+}
+.convo-setup-title {
+    margin: 4px 0 2px;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--text-secondary);
+}
+.convo-setup-title:not(:first-child) {
+    margin-top: 12px;
+}
+/* Dùng `.convo-setup .convo-setup-list` để thắng `.tr-levels` (khai báo sau, cùng
+   độ đặc hiệu): danh sách này xếp dọc, không căn giữa, không cách lề trên. */
+.convo-setup .convo-setup-list {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    flex-wrap: nowrap;
+    gap: 6px;
+    margin-top: 0;
+}
+.convo-setup-list button {
+    width: 100%;
+    text-align: left;
+}
+@media (max-width: 640px) {
+    .convo-setup {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Kết quả chấm theo bộ tiêu chí, hiện trong màn "Xong!". */
+.convo-feedback {
+    margin: 10px auto;
+    max-width: 520px;
+    padding: 12px 14px;
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    text-align: left;
+    font-size: 13px;
+}
+.convo-feedback-head {
+    margin-bottom: 8px;
+    color: var(--text-secondary);
+}
+.convo-feedback-row {
+    padding: 4px 0;
+    border-top: 1px dashed var(--border-color);
+}
+.convo-feedback-label {
+    display: inline-block;
+    min-width: 150px;
+    font-weight: 600;
+}
+.convo-feedback-note {
+    color: var(--text-secondary);
+}
+.convo-feedback-summary {
+    margin: 8px 0 0;
+}
+.convo-feedback-foot {
+    margin: 8px 0 0;
+    font-size: 11px;
+    color: var(--text-secondary);
+}
 .convo-hint-btn.is-on {
     background: #f59e0b;
     border-color: #f59e0b;

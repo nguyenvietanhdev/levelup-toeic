@@ -53,7 +53,7 @@ describe('bốn màn AI đều cho chọn mức khó', () => {
 
 describe('mức được GỬI lên server', () => {
     test('Hội thoại gửi khi mở phiên', () => {
-        expect(MAN['Hội thoại']).toMatch(/ConversationAPI\.start\(\{ context, level \}\)/);
+        expect(MAN['Hội thoại']).toMatch(/ConversationAPI\.start\(\{ context, level, rubric: bo \? bo\.key : 'giaotiep' \}\)/);
     });
 
     test('Viết luận gửi khi xin đề', () => {

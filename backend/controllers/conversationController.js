@@ -7,6 +7,7 @@ const VocabularyZh = require('../models/VocabularyZh');
 const UserUpload = require('../models/UserUpload');
 const WrongWord = require('../models/WrongWord');
 const { openConversation, replyTurn, moTaBoiCanh } = require('../services/conversationAi');
+const { chuanHoaBoTieuChi, gradeConversation } = require('../services/conversationGrader');
 const { matchWords, collectUsed } = require('../utils/wordMatch');
 const { awardXp } = require('../utils/userStateHelper');
 const { isVipActive } = require('../utils/energyCosts');
@@ -171,6 +172,9 @@ exports.start = async (req, res, next) => {
         const lang = req.body.lang === 'zh' || req.body.lang === 'en'
             ? req.body.lang
             : (st.vocabLang === 'zh' ? 'zh' : 'en');
+        // Kho song ngữ Trung–Anh: hội thoại vẫn nói tiếng Anh (`lang`), nhưng bộ
+        // tiêu chí được chọn theo cả hai ngôn ngữ (`track`).
+        const track = st.vocabLang === 'bi' ? 'bi' : lang;
 
         if (!source) {
             // Nói rõ PHẢI LÀM GÌ, không chỉ "thiếu source": người dùng không
@@ -211,6 +215,8 @@ exports.start = async (req, res, next) => {
         }
 
         const level = chuanHoaMuc(req.body.level);
+        // Bộ tiêu chí phải hợp với ngôn ngữ của phiên (HSK chỉ cho tiếng Trung).
+        const rubric = chuanHoaBoTieuChi(req.body.rubric, track);
         const ai = await openConversation({ lang, topic, targetWords, userId: req.user.id, level });
         if (!ai.success) {
             // AI lỗi thì HOÀN năng lượng — người dùng không được gì mà vẫn mất
@@ -227,7 +233,7 @@ exports.start = async (req, res, next) => {
 
         const convo = await Conversation.create({
             userId: req.user.id,
-            source, part, lang, topic,
+            source, part, lang, topic, rubric, track,
             targetWords,
             level,
             turns: [{ role: 'npc', content: ai.content }],
@@ -339,7 +345,12 @@ exports.finish = async (req, res, next) => {
             // thường, báo lỗi ở đó làm người dùng tưởng mất thưởng.
             return res.json({
                 success: true,
-                data: { alreadyClaimed: true, reward: convo.reward, usedWords: convo.usedWords },
+                data: {
+                    alreadyClaimed: true,
+                    reward: convo.reward,
+                    usedWords: convo.usedWords,
+                    feedback: convo.feedback ?? null,
+                },
             });
         }
 
@@ -360,9 +371,20 @@ exports.finish = async (req, res, next) => {
         const lvl = awardXp(profile, stats, xp);
         stats.coins += coins;
 
+        // Chấm theo bộ tiêu chí đã chọn. Lỗi hoặc không chấm được thì `feedback`
+        // là null — phần thưởng từ vựng vẫn được nhận, không phụ thuộc vào AI.
+        const feedback = await gradeConversation({
+            rubric: convo.rubric,
+            lang: convo.lang,
+            track: convo.track,
+            turns: convo.turns.map((t) => ({ role: t.role, content: t.content })),
+            userId: req.user.id,
+        });
+
         convo.usedWords = used;
         convo.status = 'done';
         convo.reward = { xp, coins, claimed: true };
+        convo.feedback = feedback;
         // Phiên đã xong là LỊCH SỬ học tập — bỏ hạn tự xoá để người dùng xem lại.
         convo.expiresAt = null;
 
@@ -374,6 +396,7 @@ exports.finish = async (req, res, next) => {
                 usedWords: used,
                 totalTargets: convo.targetWords.length,
                 reward: { xp, coins },
+                feedback,
                 leveledUp: lvl.leveledUp,
                 newLevel: lvl.newLevel,
                 coinsBalance: stats.coins,

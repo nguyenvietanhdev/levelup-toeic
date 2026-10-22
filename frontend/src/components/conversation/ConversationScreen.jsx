@@ -35,6 +35,17 @@ const MUC_KHO = [
 ];
 
 /**
+ * Bộ tiêu chí chấm cuối phiên. Khoá khớp `BO_TIEU_CHI` ở server
+ * (services/conversationGrader.js).
+ */
+const BO_TIEU_CHI_CHON = [
+    { key: 'giaotiep', label: 'Giao tiếp', desc: 'Rõ ý, tự nhiên, đúng ngữ cảnh', langs: ['en', 'zh', 'bi'] },
+    { key: 'toeic', label: 'TOEIC', desc: 'Ngữ pháp, mạch lạc, vốn từ', langs: ['en', 'bi'] },
+    { key: 'ielts', label: 'IELTS', desc: 'Mạch lạc, vốn từ, ngữ pháp', langs: ['en', 'bi'] },
+    { key: 'hsk', label: 'HSK', desc: 'Từ vựng, ngữ pháp, lưu loát', langs: ['zh', 'bi'] },
+];
+
+/**
  * Bối cảnh hội thoại. Khoá là MÃ server nhận (`BOI_CANH` ở conversationAi.js);
  * '' = chung chung, không đặt bối cảnh.
  */
@@ -57,6 +68,7 @@ export default function ConversationScreen({ active }) {
     const [speechOn, setSpeechOn] = useState(false);
     const [level, setLevel] = useState('medium');
     const [context, setContext] = useState('');     // mã bối cảnh, '' = chung
+    const [rubric, setRubric] = useState('giaotiep'); // bộ tiêu chí chấm cuối phiên
     const [showHint, setShowHint] = useState(false);
 
     const speechRef = useRef(null);
@@ -127,7 +139,10 @@ export default function ConversationScreen({ active }) {
         setStarting(true);
         setResult(null);
         try {
-            const data = await ConversationAPI.start({ context, level });
+            // Bộ đã chọn có thể không hợp ngôn ngữ hiện tại (chọn TOEIC rồi đổi sang
+            // tiếng Trung) — gửi về Giao tiếp để không lệch giữa giao diện và chấm.
+            const bo = BO_TIEU_CHI_CHON.find((b) => b.key === rubric && b.langs.includes(lang));
+            const data = await ConversationAPI.start({ context, level, rubric: bo ? bo.key : 'giaotiep' });
             // Chốt cuối: không có `id` thì KHÔNG phải phiên hợp lệ.
             //
             // `unwrap` đã ném lỗi cho mọi thất bại đã biết, nhưng nếu server đổi
@@ -173,7 +188,7 @@ export default function ConversationScreen({ active }) {
         } finally {
             setStarting(false);
         }
-    }, [starting, lang, speak, syncFromState, level, context]);
+    }, [starting, lang, speak, syncFromState, level, context, rubric]);
 
     handleStartRef.current = handleStart;
 
@@ -280,34 +295,57 @@ export default function ConversationScreen({ active }) {
                         dùng những từ đó — bạn đáp lại, càng dùng được nhiều từ
                         càng nhiều thưởng.
                     </p>
-                    {/* Bối cảnh: AI đóng vai và đặt câu chuyện theo tình huống đã chọn. */}
-                    <div className="tr-levels">
-                        {BOI_CANH_CHON.map((b) => (
-                            <button
-                                key={b.key || 'chung'}
-                                className={`tr-level${context === b.key ? ' is-on' : ''}`}
-                                onClick={() => setContext(b.key)}
-                            >
-                                <strong>{b.label}</strong>
-                                <em>{b.desc}</em>
-                            </button>
-                        ))}
-                    </div>
+                    {/* Hai cột: bên trái chọn BỐI CẢNH, bên phải chọn KIỂU CHẤM và ĐỘ KHÓ.
+                        Trên màn hẹp hai cột xếp chồng (xem CSS `.convo-setup`). */}
+                    <div className="convo-setup">
+                        <div className="convo-setup-col">
+                            <div className="convo-setup-title">Bối cảnh</div>
+                            <div className="convo-setup-list tr-levels">
+                                {BOI_CANH_CHON.map((b) => (
+                                    <button
+                                        key={b.key || 'chung'}
+                                        className={`tr-level${context === b.key ? ' is-on' : ''}`}
+                                        onClick={() => setContext(b.key)}
+                                    >
+                                        <strong>{b.label}</strong>
+                                        <em>{b.desc}</em>
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
 
-                    {/* Ba mức dùng CHUNG một bảng với Dịch và Đọc hiểu (server:
-                        `services/aiLevel.js`), nên "Khó" ở đây và "Khó" ở đó là
-                        cùng một trình độ — người học so được giữa các chế độ. */}
-                    <div className="tr-levels">
-                        {MUC_KHO.map((m) => (
-                            <button
-                                key={m.key}
-                                className={`tr-level${level === m.key ? ' is-on' : ''}`}
-                                onClick={() => setLevel(m.key)}
-                            >
-                                <strong>{m.label}</strong>
-                                <em>{m.desc}</em>
-                            </button>
-                        ))}
+                        <div className="convo-setup-col">
+                            <div className="convo-setup-title">Kiểu chấm</div>
+                            <div className="convo-setup-list tr-levels">
+                                {BO_TIEU_CHI_CHON.filter((b) => b.langs.includes(lang)).map((b) => (
+                                    <button
+                                        key={b.key}
+                                        className={`tr-level${rubric === b.key ? ' is-on' : ''}`}
+                                        onClick={() => setRubric(b.key)}
+                                    >
+                                        <strong>{b.label}</strong>
+                                        <em>{b.desc}</em>
+                                    </button>
+                                ))}
+                            </div>
+
+                            {/* Ba mức dùng CHUNG một bảng với Dịch và Đọc hiểu (server:
+                                `services/aiLevel.js`), nên "Khó" ở đây và "Khó" ở đó là
+                                cùng một trình độ — người học so được giữa các chế độ. */}
+                            <div className="convo-setup-title">Độ khó</div>
+                            <div className="convo-setup-list tr-levels">
+                                {MUC_KHO.map((m) => (
+                                    <button
+                                        key={m.key}
+                                        className={`tr-level${level === m.key ? ' is-on' : ''}`}
+                                        onClick={() => setLevel(m.key)}
+                                    >
+                                        <strong>{m.label}</strong>
+                                        <em>{m.desc}</em>
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
                     </div>
 
                     <button className="btn btn-primary" onClick={handleStart} disabled={starting}>
@@ -379,6 +417,29 @@ export default function ConversationScreen({ active }) {
                                 <p className="convo-reward">
                                     +{result.reward?.xp || 0} XP · +{result.reward?.coins || 0} xu
                                 </p>
+                            )}
+                            {/* Chấm theo bộ tiêu chí. Không có `feedback` (AI lỗi hoặc
+                                phiên không có lời nói) thì bỏ qua — từ vựng vẫn tính. */}
+                            {result.feedback && (
+                                <div className="convo-feedback">
+                                    <div className="convo-feedback-head">
+                                        Chấm theo <strong>{result.feedback.label}</strong>
+                                        {' · '}trung bình <strong>{result.feedback.overall}</strong>/9
+                                    </div>
+                                    {result.feedback.criteria.map((c) => (
+                                        <div key={c.key} className="convo-feedback-row">
+                                            <span className="convo-feedback-label">{c.label}</span>
+                                            <strong>{c.score ?? '—'}</strong>/9
+                                            {c.comment && <span className="convo-feedback-note"> — {c.comment}</span>}
+                                        </div>
+                                    ))}
+                                    {result.feedback.summary && (
+                                        <p className="convo-feedback-summary">{result.feedback.summary}</p>
+                                    )}
+                                    <p className="convo-feedback-foot">
+                                        Chấm qua chữ: không đánh giá phát âm hay ngữ điệu.
+                                    </p>
+                                </div>
                             )}
                             <div className="convo-actions">
                                 <button className="btn btn-primary" onClick={() => { setConvo(null); setResult(null); }}>

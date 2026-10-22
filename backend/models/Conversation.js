@@ -38,6 +38,13 @@ const conversationSchema = new mongoose.Schema(
 
         // Chủ đề hội thoại, do AI đặt lúc mở phiên (vd "đi chợ", "hỏi đường").
         topic: { type: String, default: '' },
+        // Bộ tiêu chí chấm cuối phiên (giaotiep / toeic / ielts / hsk).
+        rubric: { type: String, default: 'giaotiep' },
+        // Kho của phiên: en / zh / bi (song ngữ). `lang` chỉ là ngôn ngữ đối thoại
+        // với AI, còn `track` quyết định được chọn bộ tiêu chí nào.
+        track: { type: String, enum: ['en', 'zh', 'bi'], default: 'en' },
+        // Kết quả chấm cuối phiên (null nếu chưa chấm hoặc chấm lỗi).
+        feedback: { type: mongoose.Schema.Types.Mixed, default: null },
         /**
          * Mức khó của phiên. PHẢI lưu: `replyTurn` chạy ở request khác với
          * `openConversation`, nên không lưu thì mọi lượt đáp sau lượt đầu rơi

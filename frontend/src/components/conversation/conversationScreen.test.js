@@ -115,8 +115,9 @@ describe('dùng đúng API sẵn có của app', () => {
         // từ hồ sơ, và client tự gom là mở lại đúng ranh giới đã gây cả chuỗi lỗi.
         // `context` là MÃ bối cảnh người dùng chọn (server đổi thành câu mô tả),
         // cùng loại lựa chọn với `level` — không phải dữ liệu server tự đọc được.
-        expect(src).toMatch(/ConversationAPI\.start\(\{ context, level \}\)/);
-        expect(api).toMatch(/async start\(\{ context = '', level = 'medium' \} = \{\}\)/);
+        // `rubric` được chuẩn hoá theo ngôn ngữ trước khi gửi (xem handleStart).
+        expect(src).toMatch(/ConversationAPI\.start\(\{ context, level, rubric: bo \? bo\.key : 'giaotiep' \}\)/);
+        expect(api).toMatch(/async start\(\{ context = '', level = 'medium', rubric = 'giaotiep' \} = \{\}\)/);
         // Vẫn cấm ba thứ server tự đọc được.
         // Soi đúng ĐỐI SỐ của lời gọi, không soi cả file — `lang` xuất hiện hợp
         // lệ ở nhiều chỗ khác trong màn này.
