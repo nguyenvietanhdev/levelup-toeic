@@ -320,11 +320,11 @@ export default function ConversationScreen({ active }) {
                         càng nhiều thưởng.
                     </p>
                     {/* Hai cột: bên trái chọn BỐI CẢNH, bên phải chọn KIỂU CHẤM và ĐỘ KHÓ.
-                        Trên màn hẹp hai cột xếp chồng (xem CSS `.convo-setup`). */}
-                    <div className="convo-setup">
-                        <div className="convo-setup-col">
-                            <div className="convo-setup-title">Vai của AI</div>
-                            <div className="convo-setup-list tr-levels">
+                        Trên màn hẹp hai cột xếp chồng (xem CSS `.ai-setup`). */}
+                    <div className="ai-setup">
+                        <div className="ai-setup-col">
+                            <div className="ai-setup-title">Vai của AI</div>
+                            <div className="ai-setup-list tr-levels">
                                 {BOI_CANH_CHON.map((b) => (
                                     <button
                                         key={b.key || 'chung'}
@@ -338,9 +338,9 @@ export default function ConversationScreen({ active }) {
                             </div>
                         </div>
 
-                        <div className="convo-setup-col">
-                            <div className="convo-setup-title">Kiểu chấm</div>
-                            <div className="convo-setup-list tr-levels">
+                        <div className="ai-setup-col">
+                            <div className="ai-setup-title">Kiểu chấm</div>
+                            <div className="ai-setup-list tr-levels">
                                 {BO_TIEU_CHI_CHON.filter((b) => b.langs.includes(lang)).map((b) => (
                                     <button
                                         key={b.key}
@@ -356,8 +356,8 @@ export default function ConversationScreen({ active }) {
                             {/* Ba mức dùng CHUNG một bảng với Dịch và Đọc hiểu (server:
                                 `services/aiLevel.js`), nên "Khó" ở đây và "Khó" ở đó là
                                 cùng một trình độ — người học so được giữa các chế độ. */}
-                            <div className="convo-setup-title">Độ khó</div>
-                            <div className="convo-setup-list tr-levels">
+                            <div className="ai-setup-title">Độ khó</div>
+                            <div className="ai-setup-list tr-levels">
                                 {(MUC_CHAM_CHON[rubric] || MUC_KHO).map((m) => (
                                     <button
                                         key={m.key}

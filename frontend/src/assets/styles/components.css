@@ -9551,7 +9551,7 @@ mark {
 }
 /* Màn chọn thiết lập hội thoại: hai cột, trái = bối cảnh, phải = kiểu chấm + độ khó.
    Các nút trong cột dùng `.tr-level` nhưng xếp DỌC và rộng bằng cột. */
-.convo-setup {
+.ai-setup {
     display: grid;
     /* Cột phải cố định bề rộng và dính mép phải; cột trái chiếm phần còn lại. */
     grid-template-columns: minmax(0, 1fr) minmax(260px, 340px);
@@ -9563,22 +9563,22 @@ mark {
     margin: 14px 0 18px;
     text-align: left;
 }
-.convo-setup-col {
+.ai-setup-col {
     min-height: 0;
     overflow-y: auto;
     padding-right: 6px;
 }
-.convo-setup-col + .convo-setup-col {
+.ai-setup-col + .ai-setup-col {
     justify-self: end;
     width: 100%;
 }
-.convo-setup-col {
+.ai-setup-col {
     display: flex;
     flex-direction: column;
     gap: 6px;
     min-width: 0;
 }
-.convo-setup-title {
+.ai-setup-title {
     margin: 4px 0 2px;
     font-size: 12px;
     font-weight: 600;
@@ -9586,12 +9586,12 @@ mark {
     letter-spacing: 0.04em;
     color: var(--text-secondary);
 }
-.convo-setup-title:not(:first-child) {
+.ai-setup-title:not(:first-child) {
     margin-top: 12px;
 }
-/* Dùng `.convo-setup .convo-setup-list` để thắng `.tr-levels` (khai báo sau, cùng
+/* Dùng `.ai-setup .ai-setup-list` để thắng `.tr-levels` (khai báo sau, cùng
    độ đặc hiệu): danh sách này xếp dọc, không căn giữa, không cách lề trên. */
-.convo-setup .convo-setup-list {
+.ai-setup .ai-setup-list {
     display: flex;
     flex-direction: column;
     justify-content: flex-start;
@@ -9599,17 +9599,17 @@ mark {
     gap: 6px;
     margin-top: 0;
 }
-.convo-setup-list button {
+.ai-setup-list button {
     width: 100%;
     text-align: left;
 }
 @media (max-width: 640px) {
-    .convo-setup {
+    .ai-setup {
         grid-template-columns: 1fr;
         grid-template-rows: auto;
         height: auto;
     }
-    .convo-setup-col {
+    .ai-setup-col {
         overflow-y: visible;
     }
 }

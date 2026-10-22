@@ -143,29 +143,38 @@ export default function ReadingScreen({ active }) {
                         thích kèm dẫn chứng trong bài.
                     </p>
 
-                    <div className="tr-levels">
-                        {MUC_KHO.map((m) => (
-                            <button
-                                key={m.key}
-                                className={`tr-level${level === m.key ? ' is-on' : ''}`}
-                                onClick={() => setLevel(m.key)}
-                            >
-                                <strong>{m.label}</strong>
-                                <em>{m.desc}</em>
-                            </button>
-                        ))}
-                    </div>
+                    {/* Hai cột như Hội thoại: trái = loại bài, phải = độ khó. */}
+                    <div className="ai-setup">
+                        <div className="ai-setup-col">
+                            <div className="ai-setup-title">Loại bài</div>
+                            <div className="ai-setup-list rd-types">
+                                {DANG.map((d) => (
+                                    <button
+                                        key={d.key}
+                                        className={`tr-level${dang === d.key ? ' is-on' : ''}`}
+                                        onClick={() => setDang(d.key)}
+                                    >
+                                        <strong>{d.label}</strong>
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
 
-                    <div className="rd-types">
-                        {DANG.map((d) => (
-                            <button
-                                key={d.key}
-                                className={`ml-range-btn${dang === d.key ? ' is-on' : ''}`}
-                                onClick={() => setDang(d.key)}
-                            >
-                                {d.label}
-                            </button>
-                        ))}
+                        <div className="ai-setup-col">
+                            <div className="ai-setup-title">Độ khó</div>
+                            <div className="ai-setup-list tr-levels">
+                                {MUC_KHO.map((m) => (
+                                    <button
+                                        key={m.key}
+                                        className={`tr-level${level === m.key ? ' is-on' : ''}`}
+                                        onClick={() => setLevel(m.key)}
+                                    >
+                                        <strong>{m.label}</strong>
+                                        <em>{m.desc}</em>
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
                     </div>
 
                     <button className="btn btn-primary" onClick={handleDeMoi} disabled={loadingDe}>
