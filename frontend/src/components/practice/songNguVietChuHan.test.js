@@ -39,25 +39,10 @@ describe('Cài đặt có đủ ba lựa chọn ngôn ngữ', () => {
     });
 });
 
-describe('Cài đặt tôn trọng mốc Level như thanh nav', () => {
-    test('chặn cả `zh` lẫn `bi` khi chưa đủ Level', () => {
-        // Kho song ngữ cũng có chữ Hán nên chịu chung mốc — mở nó ra khi chưa
-        // mở tiếng Trung là đi cửa sau.
-        expect(panel).toMatch(/if \(next === 'zh' \|\| next === 'bi'\)/);
-    });
-
-    test('dùng CÙNG khoá tính năng với nav', () => {
-        // Hai khoá khác nhau thì một bên mở một bên đóng, không ai hiểu vì sao.
-        expect(panel).toMatch(/lockInfo\('feature:lang-zh'\)/);
-        expect(nav).toMatch(/lockInfo\('feature:lang-zh'\)/);
-    });
-
-    test('chặn TRƯỚC khi ghi cài đặt', () => {
-        // Ghi rồi mới chặn là giá trị đã vào `settings` và lần tải sau vẫn dùng.
-        const i = panel.indexOf("lockInfo('feature:lang-zh')");
-        const j = panel.indexOf("updateSetting('vocabLang', next)");
-        expect(i).toBeGreaterThan(-1);
-        expect(i).toBeLessThan(j);
+describe('Ngôn ngữ học không khoá theo Level', () => {
+    test('Cài đặt và thanh nav đều không còn khoá tiếng Trung theo mốc Level', () => {
+        expect(panel).not.toMatch(/feature:lang-zh/);
+        expect(nav).not.toMatch(/feature:lang-zh/);
     });
 });
 

@@ -62,12 +62,9 @@ describe('hành vi phải giữ nguyên sau khi tách', () => {
         expect(quick).toMatch(/levelsFor\(val, vocabLang\)/);
     });
 
-    test('chỉ khoá chiều SANG chữ Hán, luôn cho quay về tiếng Anh', () => {
-        // Khoá cả hai chiều thì ai đang ở 'zh' mà mốc bị nâng lên sẽ kẹt luôn.
-        //
-        // Kho song ngữ cũng có chữ Hán nên chịu chung mốc: mở nó ra khi chưa
-        // mở tiếng Trung là đi cửa sau.
-        expect(quick).toMatch(/\(next === 'zh' \|\| next === 'bi'\) && zhLock\.locked/);
+    test('không khoá tiếng Trung hay song ngữ theo mốc Level', () => {
+        expect(quick).not.toMatch(/zhLock/);
+        expect(quick).not.toMatch(/feature:lang-zh/);
     });
 
     test('khách chưa đăng nhập thì mời đăng nhập, không đổi rồi reload', () => {
@@ -95,7 +92,7 @@ describe('hai bản cùng tồn tại thì phải đồng bộ', () => {
     });
 
     test('gỡ đăng ký khi tháo khỏi cây', () => {
-        expect(quick).toMatch(/return \(\) => unsub\?\.\(\)/);
+        expect(quick).toMatch(/return \(\) => \{ unsub\?\.\(\); unsubInit\?\.\(\); \}/);
     });
 });
 
@@ -116,9 +113,9 @@ describe('chọn ngôn ngữ học dùng <select>', () => {
         expect(block).not.toMatch(/disabled=/);
     });
 
-    test('nhãn tiếng Trung NÓI RÕ mốc Level khi chưa mở', () => {
-        // Chỉ để tên trơn thì chọn xong bị từ chối mà không hiểu tại sao.
-        expect(quick).toMatch(/zhBlocked \? `🔒 Tiếng Trung \(Lv\.\$\{zhLock\.requiredLevel\}\)`/);
+    test('nhãn tiếng Trung là tên trơn, không còn ổ khoá', () => {
+        expect(quick).toMatch(/<option value="zh">🇨🇳 Tiếng Trung<\/option>/);
+        expect(quick).not.toMatch(/🔒 Tiếng Trung/);
     });
 
     test('chọn lại đúng ngôn ngữ đang dùng thì không làm gì', () => {

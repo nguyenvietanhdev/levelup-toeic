@@ -3,7 +3,6 @@ import { useState } from 'react';
 import Toggle from './Toggle.jsx';
 import { QUESTION_TIME_MODES, getQuestionTimeDefault } from '@components/practice/questionTime.js';
 import { bandLabel, BANDS, levelsFor } from '@lib/levelBands.js';
-import { lockInfo } from '@game/featureUnlocks.js';
 import { Notification } from '@ui/Toaster.jsx';
 
 const SEC_OPTIONS = [10, 15, 20, 25, 30, 45, 60, 90, 120];
@@ -141,25 +140,6 @@ export default function PracticePanel({ s, handleQPS, updateSetting, handleDiffi
                 <select value={s.vocabLang || 'en'} onChange={async e => {
                     const next = e.target.value;
                     if (next === (s.vocabLang || 'en')) return;
-
-                    // Cùng mốc Level với ô đổi ngôn ngữ trên thanh nav.
-                    //
-                    // Thiếu chỗ này thì màn Cài đặt là CỬA SAU: bỏ qua khoá mà
-                    // nav đang giữ, và người dùng chưa đủ Level vẫn vào được kho
-                    // tiếng Trung. Kho song ngữ cũng có chữ Hán nên chịu chung
-                    // mốc — mở nó ra khi chưa mở tiếng Trung cũng là đi cửa sau.
-                    if (next === 'zh' || next === 'bi') {
-                        const khoa = lockInfo('feature:lang-zh');
-                        if (khoa.locked) {
-                            Notification.show({
-                                type: 'warning',
-                                title: `🔒 Cần Level ${khoa.requiredLevel}`,
-                                message: `Học tiếng Trung mở khi bạn đạt Level ${khoa.requiredLevel}.`,
-                                duration: 3500,
-                            });
-                            return;
-                        }
-                    }
 
                     updateSetting('vocabLang', next);
                     try {

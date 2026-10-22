@@ -3,7 +3,6 @@ import { useAuth } from '@components/auth/AuthContext.jsx';
 import { GameState } from '@game/state.js';
 import { EventBus, GameEvents } from '@game/eventBus.js';
 import { Notification } from '@ui/Toaster.jsx';
-import { loadUnlocks, lockInfo } from '@game/featureUnlocks.js';
 import { levelsFor, bandLabel, BANDS } from '@lib/levelBands.js';
 import { nhanKho } from '@lib/nhanKho.js';
 
@@ -69,16 +68,6 @@ export default function QuickSettings({ variant = 'bar' }) {
         return () => { unsub?.(); unsubInit?.(); };
     }, []);
 
-    // Mốc mở khoá — nạp 1 lần, làm mới khi lên cấp.
-    const [, setUnlockTick] = useState(0);
-    useEffect(() => {
-        const reload = () => loadUnlocks(true).then(() => setUnlockTick(t => t + 1));
-        reload();
-        const unsub = EventBus.on(GameEvents.USER_LEVEL_UP, reload);
-        return () => unsub?.();
-    }, []);
-    const zhLock = lockInfo('feature:lang-zh');
-
     const handleQuestionsChange = (e) => {
         const val = e.target.value;
         setQuestionsPerSession(val);
@@ -124,20 +113,6 @@ export default function QuickSettings({ variant = 'bar' }) {
             return;
         }
         const next = dich || (vocabLang === 'en' ? 'zh' : 'en');
-        // Chỉ khoá chiều SANG tiếng Trung — luôn cho quay về tiếng Anh
-        // (tránh kẹt nếu đang ở 'zh' mà mốc bị nâng lên).
-        //
-        // Kho song ngữ cũng có chữ Hán nên chịu chung mốc Level: mở nó ra khi
-        // chưa mở tiếng Trung là đi cửa sau.
-        if ((next === 'zh' || next === 'bi') && zhLock.locked) {
-            Notification.show({
-                type: 'warning',
-                title: `🔒 Cần Level ${zhLock.requiredLevel}`,
-                message: `Học tiếng Trung mở khi bạn đạt Level ${zhLock.requiredLevel}.`,
-                duration: 3500,
-            });
-            return;
-        }
         setVocabLang(next);
         try {
             localStorage.setItem('vocabLang', next);
@@ -185,10 +160,7 @@ export default function QuickSettings({ variant = 'bar' }) {
     };
 
     const guestBlocked = !isLoggedIn;
-    // Chỉ khoá chiều SANG chữ Hán (zh hoặc song ngữ). Đang ở đó rồi thì luôn
-    // cho quay về, tránh kẹt nếu mốc Level bị nâng lên sau.
-    const zhBlocked = vocabLang === 'en' && zhLock.locked;
-    const blocked = guestBlocked || zhBlocked;
+    const blocked = guestBlocked;
     const inMenu = variant === 'menu';
 
     // Nhãn chiều luyện tập. Kho song ngữ KHÔNG đi qua tiếng Việt — hiện
@@ -221,21 +193,15 @@ export default function QuickSettings({ variant = 'bar' }) {
                 id={inMenu ? 'menu-lang-select' : 'quick-lang-select'}
                 value={vocabLang}
                 onChange={handleSelectLang}
-                title={guestBlocked ? 'Đăng nhập để đổi ngôn ngữ học'
-                    : zhBlocked ? `Học tiếng Trung mở ở Level ${zhLock.requiredLevel}`
-                    : 'Ngôn ngữ đang học'}
+                title={guestBlocked ? 'Đăng nhập để đổi ngôn ngữ học' : 'Ngôn ngữ đang học'}
                 style={{
                     width: inMenu ? '100%' : undefined,
                     opacity: blocked ? 0.7 : 1,
                 }}
             >
                 <option value="en">🇬🇧 Tiếng Anh</option>
-                <option value="zh">
-                    {zhBlocked ? `🔒 Tiếng Trung (Lv.${zhLock.requiredLevel})` : '🇨🇳 Tiếng Trung'}
-                </option>
-                <option value="bi">
-                    {zhBlocked ? `🔒 Trung–Anh (Lv.${zhLock.requiredLevel})` : '🔀 Trung–Anh'}
-                </option>
+                <option value="zh">🇨🇳 Tiếng Trung</option>
+                <option value="bi">🔀 Trung–Anh</option>
             </select>
         </div>
     );
