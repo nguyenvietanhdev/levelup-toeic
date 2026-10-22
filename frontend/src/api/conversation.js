@@ -91,4 +91,16 @@ export const ConversationAPI = {
         const res = await Http.post(`/conversation/${id}/finish`, {});
         return unwrap(res);
     },
+
+    /** Danh sách phiên đã kết thúc của người dùng (không kèm lời thoại). */
+    async history(limit = 20) {
+        const res = await Http.get(`/conversation/history?limit=${limit}`);
+        return unwrap(res);
+    },
+
+    /** Một phiên đã kết thúc, đầy đủ lời thoại và kết quả chấm. */
+    async detail(id) {
+        const res = await Http.get(`/conversation/${encodeURIComponent(id)}`);
+        return unwrap(res);
+    },
 };

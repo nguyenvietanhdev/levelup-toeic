@@ -25,6 +25,11 @@ router.use(protect);
 // CHỈ khoá `start`: `reply`/`finish` là phiên ĐANG chạy. Chặn cả hai thì người
 // vừa tụt Level (admin sửa, hoặc mốc bị nâng lên) mắc kẹt giữa hội thoại — đã
 // trừ năng lượng mà không chốt được để nhận thưởng.
+// Lịch sử: chỉ phiên ĐÃ KẾT THÚC của chính người dùng. `/history` khai TRƯỚC
+// `/:id` để chữ "history" không bị coi là một id.
+router.get('/history', ctrl.history);
+router.get('/:id', ctrl.detail);
+
 router.post('/start', requireLevel('feature:conversation'), ctrl.start);
 router.post('/:id/reply', ctrl.reply);
 router.post('/:id/finish', ctrl.finish);

@@ -9627,6 +9627,70 @@ mark {
 .convo-feedback {
     position: relative;
 }
+/* Lịch sử AI: danh sách phiên và khung xem lại. */
+.ai-history-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    width: 100%;
+    max-width: 720px;
+    margin: 12px auto;
+}
+.ai-history-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    background: var(--bg-secondary, transparent);
+    color: inherit;
+    text-align: left;
+    font: inherit;
+}
+button.ai-history-row {
+    cursor: pointer;
+}
+.ai-history-main {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+.ai-history-main em {
+    font-style: normal;
+    font-size: 12px;
+    color: var(--text-secondary);
+}
+.ai-history-score {
+    font-size: 13px;
+    white-space: nowrap;
+}
+.ai-history-detail {
+    width: 100%;
+    max-width: 720px;
+    margin: 12px auto;
+}
+.ai-history-turns {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 12px;
+}
+.ai-history-turn {
+    padding: 8px 12px;
+    border-radius: 10px;
+    border: 1px solid var(--border-color);
+}
+.ai-history-turn span {
+    font-size: 11px;
+    text-transform: uppercase;
+    color: var(--text-secondary);
+}
+.ai-history-turn p {
+    margin: 2px 0 0;
+}
 .convo-feedback-close {
     position: absolute;
     top: 6px;

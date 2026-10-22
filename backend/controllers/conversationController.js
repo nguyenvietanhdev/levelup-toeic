@@ -423,6 +423,88 @@ exports.finish = async (req, res, next) => {
 };
 
 // Xuất hằng số cho test và cho giao diện hiển thị giá.
+/**
+ * @desc    Danh sách phiên đã kết thúc của CHÍNH người dùng (mới nhất trước).
+ * @route   GET /api/conversation/history
+ *
+ * Không trả lời thoại trong danh sách — chỉ đủ để nhận diện phiên và xem điểm.
+ * Chi tiết đầy đủ ở `detail`.
+ */
+exports.history = async (req, res, next) => {
+    try {
+        const limit = Math.min(50, Math.max(1, parseInt(req.query.limit, 10) || 20));
+        const rows = await Conversation.find({ userId: req.user.id, status: 'done' })
+            .sort({ createdAt: -1 })
+            .limit(limit)
+            .select('topic scenario rubric level track lang reward usedWords targetWords createdAt feedback.overall feedback.muc feedback.dat feedback.label feedback.nguong')
+            .lean();
+        res.json({
+            success: true,
+            data: rows.map((c) => ({
+                id: String(c._id),
+                topic: c.topic || '',
+                scenario: c.scenario || '',
+                rubric: c.rubric || 'giaotiep',
+                level: c.level,
+                track: c.track || 'en',
+                createdAt: c.createdAt,
+                usedCount: (c.usedWords || []).length,
+                totalTargets: (c.targetWords || []).length,
+                reward: c.reward || null,
+                feedback: c.feedback?.label ? {
+                    label: c.feedback.label,
+                    overall: c.feedback.overall,
+                    muc: c.feedback.muc,
+                    dat: c.feedback.dat,
+                    nguong: c.feedback.nguong,
+                } : null,
+            })),
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
+/**
+ * @desc    Xem lại một phiên đã kết thúc (lời thoại, tình huống, kết quả chấm).
+ * @route   GET /api/conversation/:id
+ *
+ * Phiên đang chạy không mở được ở đây — để tránh nhầm với trạng thái giữa chừng.
+ * Chỉ chủ phiên mới xem được.
+ */
+exports.detail = async (req, res, next) => {
+    try {
+        const convo = await Conversation.findOne({ _id: req.params.id, userId: req.user.id, status: 'done' }).lean();
+        if (!convo) {
+            return res.status(404).json({ success: false, message: 'Không tìm thấy phiên này' });
+        }
+        res.json({
+            success: true,
+            data: {
+                id: String(convo._id),
+                topic: convo.topic || '',
+                scenario: convo.scenario || '',
+                rubric: convo.rubric || 'giaotiep',
+                level: convo.level,
+                track: convo.track || 'en',
+                lang: convo.lang,
+                createdAt: convo.createdAt,
+                targetWords: convo.targetWords || [],
+                usedWords: convo.usedWords || [],
+                reward: convo.reward || null,
+                turns: (convo.turns || []).map((t) => ({
+                    role: t.role,
+                    content: t.content,
+                    matched: t.matched || [],
+                })),
+                feedback: convo.feedback || null,
+            },
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
 exports.ENERGY_COST = ENERGY_COST;
 exports.TARGET_SIZE = TARGET_SIZE;
 exports.MAX_TURNS = MAX_TURNS;
