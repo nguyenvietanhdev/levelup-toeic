@@ -211,3 +211,27 @@ describe('mức chấm theo từng bộ', () => {
         expect(msgs[0].content).toMatch(/Expected level: HSK 4/);
     });
 });
+
+describe('ngữ pháp Giao tiếp: nới lỏng hay chuẩn viết', () => {
+    const turns = [{ role: 'user', content: 'gonna check u later' }];
+
+    test('Giao tiếp có tiêu chí Ngữ pháp', () => {
+        expect(g.BO_TIEU_CHI.giaotiep.criteria.map((c) => c.key)).toContain('ngu_phap');
+    });
+
+    test('mặc định nới lỏng: prompt không phạt văn nói', () => {
+        const sys = g.buildGradingMessages({ rubric: 'giaotiep', lang: 'en', level: 'medium', turns })[0].content;
+        expect(sys).toMatch(/spoken conversation\. Do NOT penalize/);
+        expect(sys).not.toMatch(/Count every error/);
+    });
+
+    test('bật chuẩn viết: prompt chấm mọi lỗi', () => {
+        const sys = g.buildGradingMessages({ rubric: 'giaotiep', lang: 'en', level: 'medium', turns, nghiemNguPhap: true })[0].content;
+        expect(sys).toMatch(/Count every error/);
+    });
+
+    test('luật nới lỏng chỉ áp dụng cho Giao tiếp, không lẫn vào TOEIC', () => {
+        const sys = g.buildGradingMessages({ rubric: 'toeic', lang: 'en', level: 'medium', turns })[0].content;
+        expect(sys).not.toMatch(/spoken conversation/);
+    });
+});

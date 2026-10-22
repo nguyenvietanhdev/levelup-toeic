@@ -9624,6 +9624,23 @@ mark {
     text-align: left;
     font-size: 13px;
 }
+.convo-feedback {
+    position: relative;
+}
+.convo-feedback-close {
+    position: absolute;
+    top: 6px;
+    right: 8px;
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    cursor: pointer;
+    font-size: 14px;
+    padding: 4px;
+}
+.convo-feedback-close:hover {
+    color: var(--text-primary);
+}
 .convo-feedback-head {
     margin-bottom: 8px;
     color: var(--text-secondary);

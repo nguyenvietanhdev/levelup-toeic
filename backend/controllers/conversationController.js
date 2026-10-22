@@ -245,6 +245,7 @@ exports.start = async (req, res, next) => {
         const convo = await Conversation.create({
             userId: req.user.id,
             source, part, lang, topic, scenario: ai.scenario || '', rubric, track,
+            strictGrammar: req.body.strictGrammar === true,
             targetWords,
             level,
             turns: [{ role: 'npc', content: ai.content }],
@@ -390,6 +391,7 @@ exports.finish = async (req, res, next) => {
             lang: convo.lang,
             track: convo.track,
             level: convo.level,
+            nghiemNguPhap: convo.strictGrammar === true,
             turns: convo.turns.map((t) => ({ role: t.role, content: t.content })),
             userId: req.user.id,
         });

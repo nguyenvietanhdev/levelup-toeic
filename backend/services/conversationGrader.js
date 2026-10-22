@@ -18,6 +18,7 @@ const BO_TIEU_CHI = {
             { key: 'tu_nhien', label: 'Tự nhiên', mota: 'Cách nói giống người bản xứ trong tình huống đời thường.' },
             { key: 'dung_ngu_canh', label: 'Đúng ngữ cảnh', mota: 'Phù hợp vai trò của người đối thoại và mức trang trọng.' },
             { key: 'tra_loi', label: 'Trả lời đúng câu hỏi', mota: 'Đáp đúng điều AI vừa hỏi, không lạc đề.' },
+            { key: 'ngu_phap', label: 'Ngữ pháp', mota: 'Cấu trúc câu đúng. Có thể nới lỏng theo lựa chọn của người học (xem nghiemNguPhap).' },
         ],
     },
     toeic: {
@@ -126,9 +127,16 @@ function chuanHoaBoTieuChi(ma, track = 'en') {
  * Prompt chấm. Chỉ chấm lời NGƯỜI HỌC (lượt `user`); lời AI chỉ để hiểu ngữ cảnh.
  * Nhận xét viết bằng tiếng Việt vì người học đọc tiếng Việt.
  */
-function buildGradingMessages({ rubric, lang, track, level, turns }) {
+function buildGradingMessages({ rubric, lang, track, level, turns, nghiemNguPhap = false }) {
     const ma = chuanHoaBoTieuChi(rubric, track || lang);
     const bo = BO_TIEU_CHI[ma];
+    // Ngữ pháp của Giao tiếp là văn NÓI: mặc định nới lỏng để không phạt lối nói
+    // đời thường. Người học có thể bật chấm nghiêm theo chuẩn viết.
+    const luatNguPhap = ma === 'giaotiep'
+        ? (nghiemNguPhap
+            ? 'Grammar: judge against standard written English. Count every error.'
+            : 'Grammar: this is spoken conversation. Do NOT penalize contractions, slang, abbreviations or everyday spoken forms (e.g. "gonna", "wanna", "u", dropped articles in casual speech). Lower the grammar score only for errors that actually hurt understanding.')
+        : '';
     const ngonNgu = lang === 'zh' ? 'Chinese' : 'English';
     const transcript = turns
         .map((t) => `${t.role === 'user' ? 'LEARNER' : 'PARTNER'}: ${t.content}`)
@@ -142,6 +150,7 @@ function buildGradingMessages({ rubric, lang, track, level, turns }) {
                 `You are an examiner grading a ${ngonNgu} conversation for the "${bo.label}" rubric.`,
                 'Grade ONLY the LEARNER lines. PARTNER lines show context and must not be graded.',
                 moTaMucChamPrompt(ma, level),
+                luatNguPhap,
                 'Score every criterion from 0 to 9 (integers) AGAINST THAT expected level. Do not grade pronunciation or intonation: they are not visible in text.',
                 '',
                 'Criteria:',
@@ -212,13 +221,13 @@ function parseGrading(text, rubric, track = 'en', level = MUC_MAC_DINH) {
  * Chấm cả phiên. Trả về `null` khi không chấm được — việc chấm là phần thêm vào,
  * không được làm hỏng việc nhận thưởng từ vựng.
  */
-async function gradeConversation({ rubric, lang, track, level, turns, userId = null }) {
+async function gradeConversation({ rubric, lang, track, level, turns, nghiemNguPhap = false, userId = null }) {
     const hasLearner = turns.some((t) => t.role === 'user');
     if (!hasLearner) return null;
 
     const out = await textCompletion({
         feature: 'conversation-grade',
-        messages: buildGradingMessages({ rubric, lang, track, level, turns }),
+        messages: buildGradingMessages({ rubric, lang, track, level, turns, nghiemNguPhap }),
         maxTokens: 500,
         temperature: 0,
         userId,

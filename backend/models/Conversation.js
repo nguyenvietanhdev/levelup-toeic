@@ -43,6 +43,9 @@ const conversationSchema = new mongoose.Schema(
         scenario: { type: String, default: '', maxlength: 300 },
         // Bộ tiêu chí chấm cuối phiên (giaotiep / toeic / ielts / hsk).
         rubric: { type: String, default: 'giaotiep' },
+        // Chấm ngữ pháp nghiêm (chuẩn viết) thay vì nới lỏng văn nói. Chỉ có tác dụng
+        // với bộ Giao tiếp.
+        strictGrammar: { type: Boolean, default: false },
         // Kho của phiên: en / zh / bi (song ngữ). `lang` chỉ là ngôn ngữ đối thoại
         // với AI, còn `track` quyết định được chọn bộ tiêu chí nào.
         track: { type: String, enum: ['en', 'zh', 'bi'], default: 'en' },

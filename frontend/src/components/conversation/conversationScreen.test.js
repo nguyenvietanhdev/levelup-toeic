@@ -116,8 +116,8 @@ describe('dùng đúng API sẵn có của app', () => {
         // `context` là MÃ bối cảnh người dùng chọn (server đổi thành câu mô tả),
         // cùng loại lựa chọn với `level` — không phải dữ liệu server tự đọc được.
         // `rubric` được chuẩn hoá theo ngôn ngữ trước khi gửi (xem handleStart).
-        expect(src).toMatch(/ConversationAPI\.start\(\{ context, level, rubric: bo \? bo\.key : 'giaotiep' \}\)/);
-        expect(api).toMatch(/async start\(\{ context = '', level = 'medium', rubric = 'giaotiep' \} = \{\}\)/);
+        expect(src).toMatch(/ConversationAPI\.start\(\{\s*context,\s*level,\s*rubric: rubricGui,\s*strictGrammar:/);
+        expect(api).toMatch(/async start\(\{ context = '', level = 'medium', rubric = 'giaotiep', strictGrammar = false \} = \{\}\)/);
         // Vẫn cấm ba thứ server tự đọc được.
         // Soi đúng ĐỐI SỐ của lời gọi, không soi cả file — `lang` xuất hiện hợp
         // lệ ở nhiều chỗ khác trong màn này.

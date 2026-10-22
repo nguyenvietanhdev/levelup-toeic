@@ -142,6 +142,6 @@ describe('start không gửi tham số đề/part/lang', () => {
         await ConversationAPI.start();
         const [url, body] = post.mock.calls[0];
         expect(url).toBe('/conversation/start');
-        expect(Object.keys(body).sort()).toEqual(['context', 'level', 'rubric']);
+        expect(Object.keys(body).sort()).toEqual(['context', 'level', 'rubric', 'strictGrammar']);
     });
 });

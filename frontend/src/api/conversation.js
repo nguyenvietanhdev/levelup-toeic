@@ -73,10 +73,10 @@ export const ConversationAPI = {
      * `context` (MÃ bối cảnh: office, interview, travel, shopping; '' = chung)
      * là lựa chọn của người dùng cho PHIÊN NÀY. Server đổi mã thành câu mô tả.
      */
-    async start({ context = '', level = 'medium', rubric = 'giaotiep' } = {}) {
-        // `level` và `rubric` chỉ gửi khi MỞ phiên — các lượt đáp sau đọc lại từ
-        // phiên đã lưu, để không đổi độ khó hay bộ tiêu chí giữa chừng.
-        const res = await Http.post('/conversation/start', { context, level, rubric });
+    async start({ context = '', level = 'medium', rubric = 'giaotiep', strictGrammar = false } = {}) {
+        // `level`, `rubric` và `strictGrammar` chỉ gửi khi MỞ phiên — các lượt đáp
+        // sau đọc lại từ phiên đã lưu, để không đổi giữa chừng.
+        const res = await Http.post('/conversation/start', { context, level, rubric, strictGrammar });
         return unwrap(res);
     },
 

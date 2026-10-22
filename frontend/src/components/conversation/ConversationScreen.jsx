@@ -93,6 +93,8 @@ export default function ConversationScreen({ active }) {
     const [level, setLevel] = useState('medium');
     const [context, setContext] = useState('');     // mã bối cảnh, '' = chung
     const [rubric, setRubric] = useState('giaotiep'); // bộ tiêu chí chấm cuối phiên
+    const [strictGrammar, setStrictGrammar] = useState(false); // ngữ pháp văn nói hay chuẩn viết
+    const [feedbackClosed, setFeedbackClosed] = useState(false); // người học đã đóng popup kết quả
     const [showHint, setShowHint] = useState(false);
 
     const speechRef = useRef(null);
@@ -166,7 +168,13 @@ export default function ConversationScreen({ active }) {
             // Bộ đã chọn có thể không hợp ngôn ngữ hiện tại (chọn TOEIC rồi đổi sang
             // tiếng Trung) — gửi về Giao tiếp để không lệch giữa giao diện và chấm.
             const bo = BO_TIEU_CHI_CHON.find((b) => b.key === rubric && b.langs.includes(lang));
-            const data = await ConversationAPI.start({ context, level, rubric: bo ? bo.key : 'giaotiep' });
+            const rubricGui = bo ? bo.key : 'giaotiep';
+            const data = await ConversationAPI.start({
+                context,
+                level,
+                rubric: rubricGui,
+                strictGrammar: rubricGui === 'giaotiep' && strictGrammar,
+            });
             // Chốt cuối: không có `id` thì KHÔNG phải phiên hợp lệ.
             //
             // `unwrap` đã ném lỗi cho mọi thất bại đã biết, nhưng nếu server đổi
@@ -212,7 +220,7 @@ export default function ConversationScreen({ active }) {
         } finally {
             setStarting(false);
         }
-    }, [starting, lang, speak, syncFromState, level, context, rubric]);
+    }, [starting, lang, speak, syncFromState, level, context, rubric, strictGrammar]);
 
     handleStartRef.current = handleStart;
 
@@ -265,6 +273,7 @@ export default function ConversationScreen({ active }) {
         try {
             const data = await ConversationAPI.finish(convo.id);
             setResult(data);
+            setFeedbackClosed(false);
             if (!data.alreadyClaimed) {
                 // Cộng thưởng vào state để thanh XP/xu nhảy ngay.
                 GameState.creditServerRewards?.({
@@ -352,6 +361,29 @@ export default function ConversationScreen({ active }) {
                                     </button>
                                 ))}
                             </div>
+
+                            {/* Chỉ với Giao tiếp: ngữ pháp văn nói (nới lỏng) hay chuẩn viết (nghiêm). */}
+                            {rubric === 'giaotiep' && (
+                                <>
+                                    <div className="ai-setup-title">Ngữ pháp chấm</div>
+                                    <div className="ai-setup-list tr-levels">
+                                        <button
+                                            className={`tr-level${!strictGrammar ? ' is-on' : ''}`}
+                                            onClick={() => setStrictGrammar(false)}
+                                        >
+                                            <strong>Văn nói</strong>
+                                            <em>Bỏ qua rút gọn, tiếng lóng, lối nói đời thường</em>
+                                        </button>
+                                        <button
+                                            className={`tr-level${strictGrammar ? ' is-on' : ''}`}
+                                            onClick={() => setStrictGrammar(true)}
+                                        >
+                                            <strong>Chuẩn viết</strong>
+                                            <em>Chấm theo ngữ pháp viết đầy đủ</em>
+                                        </button>
+                                    </div>
+                                </>
+                            )}
 
                             {/* Ba mức dùng CHUNG một bảng với Dịch và Đọc hiểu (server:
                                 `services/aiLevel.js`), nên "Khó" ở đây và "Khó" ở đó là
@@ -444,8 +476,18 @@ export default function ConversationScreen({ active }) {
                             )}
                             {/* Chấm theo bộ tiêu chí. Không có `feedback` (AI lỗi hoặc
                                 phiên không có lời nói) thì bỏ qua — từ vựng vẫn tính. */}
-                            {result.feedback && (
+                            {result.feedback && !feedbackClosed && (
                                 <div className="convo-feedback">
+                                    {/* Đóng chỉ ẩn khung này. Kết quả vẫn được lưu và xem lại ở tab Lịch sử. */}
+                                    <button
+                                        type="button"
+                                        className="convo-feedback-close"
+                                        onClick={() => setFeedbackClosed(true)}
+                                        aria-label="Đóng kết quả chấm"
+                                        title="Đóng"
+                                    >
+                                        <i className="fas fa-xmark"></i>
+                                    </button>
                                     <div className="convo-feedback-head">
                                         Chấm theo <strong>{result.feedback.label}</strong>
                                         {' · '}trung bình <strong>{result.feedback.overall}</strong>/9
