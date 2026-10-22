@@ -162,3 +162,28 @@ describe('Part đã bị xoá khỏi kho', () => {
         expect(r.nguon).toBe('user');
     });
 });
+
+describe('vai AI ngắn gọn để đỡ tốn token', () => {
+    test('vai ngắn giữ nguyên', () => {
+        expect(roles.rutGonVai('A café waiter taking a drink order.')).toBe('A café waiter taking a drink order.');
+    });
+
+    test('vai dài bị cắt dưới 120 ký tự, không đứt giữa chữ', () => {
+        const dai = 'A friendly waiter at a neighborhood café-bar taking the drink order of an adult English learner who is deciding among beer, coffee, juice, milk, soda, tea, water, and wine today.';
+        const r = roles.rutGonVai(dai);
+        expect(r.length).toBeLessThanOrEqual(120);
+        expect(dai.startsWith(r)).toBe(true);
+        expect(r.endsWith(' ')).toBe(false);
+    });
+
+    test('yêu cầu AI xin vai ngắn và giới hạn số token đầu ra', async () => {
+        const { textCompletion } = require('../services/aiClient');
+        textCompletion.mockClear?.();
+        await roles.deXuatVaiAI({ userId: 'u9', email: 'z@x', ...KHOA, part: 'NEWPART' }).catch(() => {});
+        const call = textCompletion.mock.calls[0]?.[0];
+        if (call) {
+            expect(call.maxTokens).toBeLessThanOrEqual(40);
+            expect(call.messages[0].content).toMatch(/max 15 words/);
+        }
+    });
+});

@@ -19,6 +19,15 @@ const logger = require('../utils/logger');
 const DO_DAI_TOI_THIEU = 10;
 const DO_DAI_TOI_DA = 400;
 
+/** Vai AI tối đa 120 ký tự, cắt ở dấu cách để không đứt chữ. Vai ngắn trả nguyên. */
+const DO_DAI_VAI_AI = 120;
+function rutGonVai(text) {
+    if (text.length <= DO_DAI_VAI_AI) return text;
+    const cat = text.slice(0, DO_DAI_VAI_AI);
+    const cham = cat.lastIndexOf(' ');
+    return (cham > 40 ? cat.slice(0, cham) : cat).replace(/[ ,;:]+$/, '');
+}
+
 function loiNhap(message) {
     const e = new Error(message);
     e.statusCode = 400;
@@ -108,16 +117,18 @@ async function deXuatVaiAI({ userId, email, source, part, lang }) {
         messages: [
             {
                 role: 'system',
-                content: 'You design one speaking-practice role for a language learner. Reply with ONE sentence only: who the AI plays and who it talks to, in the everyday situation implied by the words. No quotes, no list.',
+                // Ngắn là cốt lõi: vai này được đưa vào MỌI phiên của Part, nên dài là
+                // tốn token ở mỗi lượt. Giới hạn 15 chữ và một câu.
+                content: 'Write ONE short role line (max 15 words) for a speaking-practice chat: who the AI plays and who it talks to. Example: "A café waiter taking a drink order." No quotes, no list, no extra text.',
             },
             { role: 'user', content: `Words: ${tu.join(', ') || khoa.part}` },
         ],
-        maxTokens: 120,
+        maxTokens: 40,
         temperature: 0.7,
         userId,
     });
 
-    const text = chuanHoaVaiText(out.text);
+    const text = rutGonVai(chuanHoaVaiText(out.text));
     // upsert để hai người cùng lúc không tạo hai vai AI cho một Part.
     await AiRole.updateOne(
         { ...khoa, origin: 'ai', ownerId: null },
@@ -153,6 +164,7 @@ async function xoaVaiNguoiDung({ userId, source, part, lang }) {
 
 module.exports = {
     chuanHoaVaiText,
+    rutGonVai,
     chuanHoaKhoa,
     partConTonTai,
     layVai,
