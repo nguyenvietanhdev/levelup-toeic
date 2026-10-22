@@ -315,9 +315,11 @@ describe('app luyện tập: lựa chọn ngôn ngữ thứ ba', () => {
         expect(quick).toMatch(/const next = dich \|\|/);
     });
 
-    test('kho song ngữ chịu chung mốc Level với tiếng Trung', () => {
-        // Nó cũng có chữ Hán — mở ra khi chưa mở tiếng Trung là đi cửa sau.
-        expect(quick).toMatch(/next === 'zh' \|\| next === 'bi'/);
+    test('không còn khoá Level cho tiếng Trung và Trung–Anh (đã bỏ ở 7b769d7)', () => {
+        // Trước đây kho song ngữ chịu chung khoá Level với tiếng Trung. Nay ai
+        // cũng chọn được, nên không còn cổng `zhLock` nào trong QuickSettings.
+        expect(quick).not.toMatch(/zhLock/);
+        expect(quick).not.toMatch(/feature:lang-zh/);
     });
 
     test('nhãn chiều luyện tập KHÔNG nói "Tiếng Việt" cho kho song ngữ', () => {
