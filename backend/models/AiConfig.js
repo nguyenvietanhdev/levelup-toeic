@@ -32,6 +32,12 @@ const aiConfigSchema = new mongoose.Schema(
         // Thứ tự hãng dự phòng. Rỗng = mọi hãng còn lại theo thứ tự danh mục.
         fallbacks: { type: [String], default: [] },
 
+        // Số dư admin đã ghi nhận cho từng hãng, vd:
+        //   { openai: { balanceUsd: 20, since: <ngày ghi> } }
+        // Số dư còn lại = balanceUsd − chi phí đã ghi log từ `since`. Hãng không
+        // có API đọc số dư (OpenAI, Gemini, Anthropic) thì đây là nguồn duy nhất.
+        balances: { type: mongoose.Schema.Types.Mixed, default: {} },
+
         updatedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
     },
     { timestamps: true, collection: 'ai_config' },

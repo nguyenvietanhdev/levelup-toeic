@@ -676,6 +676,7 @@ router.get('/ai-config', admin, async (req, res) => {
         const AiConfig = require('../models/AiConfig');
         const { listProviders, DEFAULT_PROVIDER } = require('../services/aiProviders');
         const { healthSnapshot } = require('../services/aiClient');
+        const { getAiStatus } = require('../services/aiProviderStatus');
         const cfg = await AiConfig.findOne({ key: 'default' }).lean();
         res.json({
             success: true,
@@ -688,6 +689,8 @@ router.get('/ai-config', admin, async (req, res) => {
                 providers: listProviders(),
                 // Hãng nào đang nghỉ sau lỗi, và vài lần chuyển hãng gần đây.
                 health: healthSnapshot(),
+                // Trạng thái + số dư từng hãng, cảnh báo đang mở.
+                status: await getAiStatus(),
             },
         });
     } catch (err) { res.status(500).json({ success: false, message: err.message }); }
@@ -764,6 +767,41 @@ router.put('/ai-config', admin, async (req, res) => {
                 autoFailover: doc.autoFailover !== false,
                 fallbacks: doc.fallbacks || [],
             },
+        });
+    } catch (err) { res.status(400).json({ success: false, message: err.message }); }
+});
+
+// Ghi số dư hiện có của một hãng (USD). Từ mốc này hệ thống trừ dần theo chi phí
+// ước tính. Không dùng cho hãng có API đọc số dư trực tiếp (DeepSeek) — số đó
+// lấy tự động, ô nhập không có tác dụng.
+router.put('/ai-balance', admin, async (req, res) => {
+    try {
+        const AiConfig = require('../models/AiConfig');
+        const { getProvider } = require('../services/aiProviders');
+        const { clearAiConfigCache } = require('../services/aiClient');
+
+        const providerId = String(req.body.provider || '').trim();
+        const provider = getProvider(providerId);
+        if (!provider) {
+            return res.status(400).json({ success: false, message: `Nhà cung cấp không hợp lệ: ${providerId}` });
+        }
+        const balanceUsd = Number(req.body.balanceUsd);
+        if (!Number.isFinite(balanceUsd) || balanceUsd < 0 || balanceUsd > 100000) {
+            return res.status(400).json({ success: false, message: 'Số dư phải là số không âm (USD)' });
+        }
+
+        // Ghi số dư mới: mốc `since` là lúc ghi, nên chi phí cũ không bị trừ lại.
+        const since = new Date();
+        await AiConfig.updateOne(
+            { key: 'default' },
+            { $set: { [`balances.${providerId}`]: { balanceUsd, since }, updatedBy: req.user.id } },
+            { upsert: true },
+        );
+        clearAiConfigCache();
+        res.json({
+            success: true,
+            message: `Đã ghi số dư ${provider.label}: $${balanceUsd.toFixed(2)} (theo dõi từ bây giờ)`,
+            data: { provider: providerId, balanceUsd, since },
         });
     } catch (err) { res.status(400).json({ success: false, message: err.message }); }
 });

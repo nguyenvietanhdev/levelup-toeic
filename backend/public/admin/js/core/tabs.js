@@ -763,8 +763,104 @@ function renderProviderPicker(providers) {
       const auto = document.getElementById("ai-autofailover");
       if (auto) auto.checked = cur.autoFailover !== false;
       renderHealth();
+      renderStatus(cur.status);
     })
     .catch(() => {});
+}
+
+/** Vẽ banner cảnh báo, bảng trạng thái hãng và danh sách sự kiện. */
+function renderStatus(st) {
+  if (!st) return;
+
+  const banner = document.getElementById("ai-alert-banner");
+  if (banner) {
+    if (st.canhBao) {
+      const nang = st.canhBao.muc === "nghiemtrong";
+      banner.innerHTML = `<div style="padding:12px 14px;border-radius:10px;font-size:13px;font-weight:600;background:${nang ? "#fdecea" : "#fff4e5"};color:${nang ? "#b3261e" : "#8a5300"}">
+        <i class="fas fa-triangle-exclamation"></i> ${esc(st.canhBao.noiDung)}</div>`;
+    } else {
+      banner.innerHTML = "";
+    }
+  }
+
+  const tbl = document.getElementById("ai-status-table");
+  if (tbl) {
+    const tien = (n, don) => (don === "USD" ? "$" + Number(n).toFixed(2) : Number(n).toFixed(2) + " " + don);
+    tbl.innerHTML = `<table style="width:100%;border-collapse:collapse;font-size:13px">
+      <thead><tr style="text-align:left;color:var(--text-secondary)">
+        <th style="padding:6px">Hãng</th><th>Trạng thái</th><th>Số dư còn</th><th>Đã dùng (ước tính)</th><th>Nguồn số liệu</th><th>Ghi số dư hiện có</th>
+      </tr></thead>
+      <tbody>${st.providers
+        .map((p) => {
+          const c = p.credit;
+          const mau = p.ready ? (c.lowCredit ? "#e67e22" : "#27ae60") : "#c0392b";
+          const conLai = c.remaining === null ? "—" : tien(c.remaining, c.currency) + (c.lowCredit ? " ⚠" : "");
+          const daDung = c.spent === null ? "—" : tien(c.spent, "USD");
+          const nguon = c.source === "live" ? "Trực tiếp từ hãng" : c.source === "tracked" ? "Tự theo dõi (ước tính)" : "Chưa có số";
+          const nhap = p.coSoDuTrucTiep
+            ? '<span style="color:var(--text-secondary)">Tự động</span>'
+            : `<input type="number" min="0" step="0.01" class="ai-bal-input filter-select" data-provider="${esc(p.id)}" style="width:110px"> `
+              + `<button class="btn btn-sm ai-bal-save" data-provider="${esc(p.id)}">Ghi</button>`;
+          return `<tr style="border-top:1px solid var(--border-color)">
+            <td style="padding:8px 6px"><b>${esc(p.label)}</b>${p.laChinh ? ' <span style="font-size:11px;color:#8e44ad">· chính</span>' : ""}</td>
+            <td><span style="color:${mau}">●</span> ${esc(p.lyDo)}</td>
+            <td>${conLai}</td><td>${daDung}</td><td>${nguon}</td><td>${nhap}</td>
+          </tr>`;
+        })
+        .join("")}</tbody></table>`;
+  }
+
+  const ev = document.getElementById("ai-events");
+  if (ev) {
+    ev.innerHTML = st.events.length
+      ? st.events
+          .map((e) => {
+            const trang = e.closedAt
+              ? '<i class="fas fa-circle-check" style="color:#27ae60"></i> Đã hồi phục'
+              : '<i class="fas fa-circle-exclamation" style="color:#c0392b"></i> Đang lỗi';
+            const loi = e.kind === "quota" ? "hết credit" : "sai key";
+            const dong = e.closedAt ? ` · đóng ${new Date(e.closedAt).toLocaleString("vi-VN")}` : "";
+            return `<div style="padding:4px 0">${trang} · <b>${esc(e.provider)}</b> · ${loi} · mở ${new Date(e.openedAt).toLocaleString("vi-VN")}${dong}
+              <div style="color:var(--text-secondary);font-size:11px">${esc(e.message)}</div></div>`;
+          })
+          .join("")
+      : '<span style="color:var(--text-secondary)">Chưa có sự kiện nào trong 7 ngày gần đây</span>';
+  }
+
+  // Gắn nút "Ghi" MỘT lần: container được giữ nguyên, chỉ thay nội dung bên trong.
+  const box = document.getElementById("ai-status-table");
+  if (box && !box.dataset.bound) {
+    box.dataset.bound = "1";
+    box.addEventListener("click", (e) => {
+      const btn = e.target.closest(".ai-bal-save");
+      if (btn) saveBalance(btn);
+    });
+  }
+}
+
+/** Ghi số dư hiện có của một hãng, rồi tải lại trạng thái. */
+async function saveBalance(btn) {
+  const id = btn.dataset.provider;
+  const val = document.querySelector(`.ai-bal-input[data-provider="${id}"]`)?.value;
+  if (val === undefined || val === "") {
+    showToast("Nhập số dư trước khi ghi", "error");
+    return;
+  }
+  btn.disabled = true;
+  try {
+    const r = await fetch("/api/admin/ai-balance", {
+      method: "PUT",
+      headers: { Authorization: `Bearer ${authToken}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ provider: id, balanceUsd: Number(val) }),
+    });
+    const j = await r.json();
+    showToast(j.message || "Đã lưu", j.success ? "success" : "error");
+    if (j.success) loadTokenStats();
+  } catch (e) {
+    showToast(`Lưu lỗi: ${e.message}`, "error");
+  } finally {
+    btn.disabled = false;
+  }
 }
 
 async function saveAiProvider(btn) {

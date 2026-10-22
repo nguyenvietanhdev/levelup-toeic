@@ -91,6 +91,19 @@
                 </div>
               </div>
 
+              <!-- Cảnh báo + trạng thái + số dư từng hãng -->
+              <div id="ai-alert-banner" style="margin-bottom:12px"></div>
+              <div style="border:1px solid var(--border-color);border-radius:10px;padding:12px;margin-bottom:18px">
+                <div style="font-size:13px;font-weight:600;margin-bottom:6px"><i class="fas fa-wallet"></i> Số dư & khả năng dự phòng</div>
+                <div style="font-size:12px;color:var(--text-secondary);margin-bottom:10px">
+                  Hãng có API đọc số dư (DeepSeek) được cập nhật tự động. Các hãng còn lại không có API này:
+                  ghi số dư hiện có, hệ thống trừ dần theo chi phí ước tính — <b>đó là ước tính, không phải số thật trên trang hãng</b>.
+                </div>
+                <div id="ai-status-table" class="table-container"></div>
+                <div style="font-size:13px;font-weight:600;margin:14px 0 6px">Sự kiện gần đây</div>
+                <div id="ai-events" style="font-size:12px"></div>
+              </div>
+
               <!-- Breakdown theo NHÀ CUNG CẤP -->
               <h3 style="margin:18px 0 10px;font-size:15px"><i class="fas fa-coins"></i> Chi phí theo nhà cung cấp</h3>
               <div class="table-container" style="margin-bottom:18px">

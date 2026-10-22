@@ -52,6 +52,9 @@ const PROVIDERS = {
         },
         defaultModel: 'deepseek-chat',
         vision: [],                          // chưa hỗ trợ đọc ảnh
+        // Có API đọc số dư. Hình dạng lấy từ tài liệu bên thứ ba — cần xác minh
+        // với key thật trước khi tin số hiển thị.
+        balanceUrl: 'https://api.deepseek.com/user/balance',
     },
 
     google: {

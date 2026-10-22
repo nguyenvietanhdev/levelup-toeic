@@ -1,4 +1,5 @@
 const AiConfig = require('../models/AiConfig');
+const AiProviderEvent = require('../models/AiProviderEvent');
 const { getProvider, DEFAULT_PROVIDER, PROVIDERS } = require('./aiProviders');
 const { logUsage } = require('./aiUsageLogger');
 const logger = require('../utils/logger');
@@ -59,15 +60,47 @@ const _nghi = new Map();
 /** Các lần đã chuyển hãng gần đây, mới nhất ở cuối (tối đa 20). */
 const _chuyen = [];
 
+/**
+ * Hãng vừa ngừng dùng được. Hết credit hoặc sai key cần admin xử lý nên mở một
+ * sự kiện trong DB. Upsert theo "đang mở" để nhiều lượt lỗi cùng lúc không tạo
+ * ra nhiều sự kiện trùng.
+ */
+function moSuKien(providerId, cls, message) {
+    if (cls.kind !== 'quota' && cls.kind !== 'auth') return;
+    AiProviderEvent.updateOne(
+        { provider: providerId, closedAt: null },
+        { $setOnInsert: { provider: providerId, kind: cls.kind, message, openedAt: new Date(), closedAt: null } },
+        { upsert: true },
+    ).catch(() => { /* fail-soft: không để việc ghi cảnh báo làm vỡ lượt gọi */ });
+}
+
+/**
+ * Các hãng đã đóng sự kiện trong tiến trình này. Mỗi hãng chỉ cần một lần
+ * kiểm tra đóng sau khi lỗi; sau đó lượt thành công không đụng DB nữa.
+ */
+const _cansDong = new Set();
+/** Hãng đã được kiểm tra đóng cảnh báo ít nhất một lần trong tiến trình này. */
+const _daKiemTra = new Set();
+
+function dongSuKien(providerId) {
+    AiProviderEvent.updateMany(
+        { provider: providerId, closedAt: null },
+        { $set: { closedAt: new Date() } },
+    ).catch(() => {});
+}
+
 function markDown(providerId, cls, err) {
+    _cansDong.add(providerId);
     if (!cls.cooldownMs) return;
     const now = Date.now();
+    const message = String(err?.message || '').slice(0, 200);
     _nghi.set(providerId, {
         until: now + cls.cooldownMs,
         kind: cls.kind,
-        message: String(err?.message || '').slice(0, 200),
+        message,
         at: now,
     });
+    moSuKien(providerId, cls, message);
 }
 
 function isDown(providerId) {
@@ -174,6 +207,15 @@ async function runWithFailover({ feature, userId = null, vision = false }, callO
         try {
             const out = await callOne(provider, model);
             logUsage({ userId, feature, provider: provider.id, model, usage: out.usage, success: true });
+            // Hãng đã trả lời được: đóng cảnh báo còn mở cho nó. Lần đầu trong tiến
+            // trình cũng kiểm tra, để cảnh báo sót từ trước khi server khởi động lại
+            // không cứ mở mãi.
+            if (_cansDong.has(provider.id) || !_daKiemTra.has(provider.id)) {
+                _cansDong.delete(provider.id);
+                _daKiemTra.add(provider.id);
+                _nghi.delete(provider.id);
+                dongSuKien(provider.id);
+            }
             if (provider.id !== hangChinh) {
                 recordSwitch({ feature, tu: hangChinh, sang: provider.id });
                 logger.warn('AI: đã chuyển sang hãng dự phòng', { feature, tu: hangChinh, sang: provider.id });
@@ -329,5 +371,5 @@ module.exports = {
     healthSnapshot,
     apiKeyOf,
     // Chỉ để test: xoá trạng thái nghỉ của các hãng.
-    _resetHealth: () => { _nghi.clear(); _chuyen.length = 0; },
+    _resetHealth: () => { _nghi.clear(); _chuyen.length = 0; _cansDong.clear(); _daKiemTra.clear(); },
 };
