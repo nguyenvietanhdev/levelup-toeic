@@ -9667,6 +9667,68 @@ mark {
 .convo-feedback {
     position: relative;
 }
+/* Tab Vai AI: vai hiện tại, nút hành động, ô tự viết. */
+.ai-role {
+    width: 100%;
+    max-width: 720px;
+    margin: 12px auto;
+    text-align: left;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+.ai-role-current {
+    padding: 12px 14px;
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+}
+.ai-role-tag {
+    font-size: 11px;
+    text-transform: uppercase;
+    color: var(--text-secondary);
+    margin-bottom: 4px;
+}
+.ai-role-text {
+    margin: 0;
+    line-height: 1.5;
+}
+.ai-role-actions {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+.ai-role-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-secondary);
+}
+.ai-role-input {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 10px 12px;
+    border-radius: 10px;
+    border: 1px solid var(--border-color);
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    font: inherit;
+    resize: vertical;
+}
+.ai-role-foot {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 12px;
+    color: var(--text-secondary);
+}
+.ai-role-ok {
+    color: #16a34a;
+    margin: 0;
+}
+.ai-role-loi {
+    color: #dc2626;
+    margin: 0;
+}
+
 /* Lịch sử AI: danh sách phiên và khung xem lại. */
 .ai-history-list {
     display: flex;

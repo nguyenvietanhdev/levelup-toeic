@@ -116,3 +116,16 @@ describe('chọn từ mục tiêu tôn trọng bộ lọc độ khó', () => {
         expect(src).toMatch(/UserUpload\.find\(\{ \.\.\.filter, ownerEmail: email, lang \}\)\.select\('en zh vn level'\)/);
     });
 });
+
+describe('vai của Part thay vai đã chọn khi mở phiên', () => {
+    const src = fs.readFileSync(path.join(__dirname, '..', 'controllers', 'conversationController.js'), 'utf8');
+
+    test('đọc vai theo source/part/track của phiên', () => {
+        expect(src).toMatch(/roles\.layVai\(\{[\s\S]*?source, part, lang: track/);
+    });
+
+    test('vai của Part ghi đè topic; lỗi đọc vai không làm hỏng việc mở phiên', () => {
+        expect(src).toMatch(/if \(vaiPart\.vai\) topic = vaiPart\.vai;/);
+        expect(src).toMatch(/\.catch\(\(err\) => \{[\s\S]*?return \{ vai: null \};/);
+    });
+});

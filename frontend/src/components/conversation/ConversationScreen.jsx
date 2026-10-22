@@ -7,6 +7,7 @@ import { Energy } from '@game/energy.js';
 import { Notification } from '@ui/Toaster.jsx';
 import { ConversationAPI } from '@api/conversation.js';
 import LichSuMode from '../history/LichSuMode.jsx';
+import VaiAITab from '../roles/VaiAITab.jsx';
 import { getVocabLang } from '@api/vocabulary.js';
 import { EventBus, GameEvents } from '@game/eventBus.js';
 import { TopicSelector } from '@components/vocab/topic/topicSelector.js';
@@ -330,9 +331,20 @@ export default function ConversationScreen({ active }) {
                 <button className={`tr-tab${tab === 'lichsu' ? ' is-on' : ''}`} onClick={() => setTab('lichsu')}>
                     <i className="fas fa-clock-rotate-left"></i> Lịch sử
                 </button>
+                <button className={`tr-tab${tab === 'vai' ? ' is-on' : ''}`} onClick={() => setTab('vai')}>
+                    <i className="fas fa-user-tie"></i> Vai AI
+                </button>
             </div>
 
-            {tab === 'lichsu' ? <LichSuMode mode="hoithoai" /> : !convo ? (
+            {tab === 'lichsu' ? <LichSuMode mode="hoithoai" />
+                : tab === 'vai' ? (
+                    <VaiAITab
+                        source={TopicSelector.currentTopic?.source || ''}
+                        part={PartSelector.selectedPart || ''}
+                        lang={lang}
+                    />
+                )
+                : !convo ? (
                 <div className="convo-intro">
                     <p>
                         Luyện nói bằng chính bộ từ bạn vừa học. Máy sẽ trò chuyện và

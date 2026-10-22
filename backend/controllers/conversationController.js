@@ -12,6 +12,7 @@ const { matchWords, collectUsed } = require('../utils/wordMatch');
 const { awardXp } = require('../utils/userStateHelper');
 const { isVipActive } = require('../utils/energyCosts');
 const logger = require('../utils/logger');
+const roles = require('../services/aiRoles');
 
 /**
  * Chế độ HỘI THOẠI — luyện dùng lại từ vựng vừa học.
@@ -143,7 +144,7 @@ exports.start = async (req, res, next) => {
     try {
         // Bối cảnh: client gửi MÃ (`office`, `travel`...), server đổi thành câu
         // mô tả. Mã lạ hoặc thiếu thì ra chung chung, không lỗi.
-        const topic = moTaVai(req.body.context);
+        let topic = moTaVai(req.body.context);
 
         /**
          * Đề · Part · ngôn ngữ do SERVER tự đọc từ hồ sơ, KHÔNG nhận từ client.
@@ -228,6 +229,17 @@ exports.start = async (req, res, next) => {
         const level = chuanHoaMuc(req.body.level);
         // Bộ tiêu chí phải hợp với ngôn ngữ của phiên (HSK chỉ cho tiếng Trung).
         const rubric = chuanHoaBoTieuChi(req.body.rubric, track);
+        // Vai của Part (AI đề xuất hoặc người dùng tự viết) THAY vai đã chọn ở cột
+        // trái. Không có vai cho Part này thì giữ vai đã chọn. Lỗi đọc vai không
+        // được làm hỏng việc mở phiên.
+        const vaiPart = await roles.layVai({
+            userId: req.user.id, email: req.user.email, source, part, lang: track,
+        }).catch((err) => {
+            logger.warn('Không đọc được vai của Part', { error: err?.message });
+            return { vai: null };
+        });
+        if (vaiPart.vai) topic = vaiPart.vai;
+
         const ai = await openConversation({ lang, topic, targetWords, userId: req.user.id, level });
         if (!ai.success) {
             // AI lỗi thì HOÀN năng lượng — người dùng không được gì mà vẫn mất
