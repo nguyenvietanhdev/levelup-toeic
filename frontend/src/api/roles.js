@@ -50,6 +50,11 @@ export const RolesAPI = {
         return unwrap(await Http.put('/roles/mine', { source, part, lang, title, text }));
     },
 
+    /** Xoá một vai AI đã lưu. Vai này dùng chung, nên xoá cũng mất với mọi người học Part đó. */
+    async removeAi(id) {
+        return unwrap(await Http.delete(`/roles/ai/${encodeURIComponent(id)}`));
+    },
+
     /** Xoá vai riêng; sau đó quay về vai AI đang dùng của Part. */
     async remove({ source, part, lang }) {
         return unwrap(await Http.delete(`/roles/mine?${qs({ source, part, lang })}`));

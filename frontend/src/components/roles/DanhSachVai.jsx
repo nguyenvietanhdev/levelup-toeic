@@ -3,19 +3,22 @@ import { RolesAPI } from '@api/roles.js';
 
 const TIEU_DE_TOI_THIEU = 2;
 const MO_TA_TOI_THIEU = 10;
+/** Mô tả dài hơn mức này thì ẩn bớt, người học bấm "Xem thêm" mới đọc tiếp. */
+const MO_TA_NGAN = 90;
 
 /**
- * Danh sách vai của Part đang học, hiện ngay ở phần giới thiệu của mọi chế độ AI.
+ * Danh sách vai của Part đang học, nằm ở cột trái của màn Hội thoại.
  *
- *   · Vai của bạn: sửa được, xoá được.
- *   · Vai AI đã lưu: dùng chung nên KHÔNG xoá từ đây. "Dùng" đưa nó lên làm vai
- *     đang dùng; "Sửa" tạo một bản riêng của bạn để chỉnh.
+ *   · Vai đang dùng có viền dày màu nổi bật. Bấm một vai AI để chọn nó làm vai dùng.
+ *   · Vai của bạn (nếu có) luôn là vai đang dùng; muốn dùng vai AI thì xoá vai riêng.
+ *   · Mỗi thẻ có Sửa (tạo bản riêng để chỉnh) và Xoá.
+ *     Xoá vai AI đồng nghĩa xoá nó khỏi danh sách của mọi người học Part này.
  */
 export default function DanhSachVai({ source, part, lang }) {
     const [ds, setDs] = useState(null);       // { vai, ai } sau khi tải
     const [dang, setDang] = useState(false);
     const [loi, setLoi] = useState('');
-    const [soan, setSoan] = useState(null);   // { tieuDe, moTa } đang sửa, hoặc null
+    const [soan, setSoan] = useState(null);   // { id, tieuDe, moTa } đang sửa, hoặc null
 
     const coPart = !!(source && part);
 
@@ -51,19 +54,16 @@ export default function DanhSachVai({ source, part, lang }) {
 
     if (!coPart) return null;
 
-    const co = !!(ds && (ds.vai || ds.ai.length));
+    // Có vai riêng thì vai riêng là vai đang dùng; vai AI khoá chọn cho đến khi xoá vai riêng.
+    const coVaiRieng = !!ds?.vai;
     const soTieuDe = (soan?.tieuDe || '').trim().length;
     const soMoTa = (soan?.moTa || '').trim().length;
 
     return (
         <div className="ai-role-list">
-            <div className="ai-role-list-head">
-                <span>Vai của Part <strong>{part}</strong></span>
-            </div>
-
             {ds === null && !loi && <p className="tr-intro-note">Đang tải vai…</p>}
 
-            {ds && !co && (
+            {ds && !coVaiRieng && ds.ai.length === 0 && (
                 <p className="tr-intro-note">
                     Chưa có vai cho Part này. Mở tab <strong>Vai AI</strong> để AI đề xuất và lưu một vai.
                 </p>
@@ -71,7 +71,7 @@ export default function DanhSachVai({ source, part, lang }) {
 
             {ds?.vai && (
                 <VaiCard
-                    tag="Vai của bạn"
+                    loai="user"
                     dang
                     title={ds.vai.title}
                     text={ds.vai.text}
@@ -84,15 +84,14 @@ export default function DanhSachVai({ source, part, lang }) {
             {ds?.ai.map((v) => (
                 <VaiCard
                     key={v.id}
-                    tag="Vai AI đã lưu"
+                    loai="ai"
                     dang={v.dang}
+                    chonDuoc={!coVaiRieng && !v.dang}
+                    onChon={() => lam(() => RolesAPI.saveAi({ source, part, lang, title: v.title, text: v.text }))}
                     title={v.title}
                     text={v.text}
-                    onDung={!v.dang && !ds.vai
-                        ? () => lam(() => RolesAPI.saveAi({ source, part, lang, title: v.title, text: v.text }))
-                        : null}
                     onSua={() => setSoan({ id: null, tieuDe: v.title, moTa: v.text })}
-                    onXoa={null}
+                    onXoa={() => lam(() => RolesAPI.removeAi(v.id))}
                     dangLam={dang}
                 />
             ))}
@@ -105,7 +104,7 @@ export default function DanhSachVai({ source, part, lang }) {
                         value={soan.tieuDe}
                         maxLength={80}
                         onChange={(e) => setSoan({ ...soan, tieuDe: e.target.value })}
-                        placeholder="Tiêu đề"
+                        placeholder="Vai trò, ví dụ: Lễ tân"
                     />
                     <textarea
                         className="ai-role-input"
@@ -138,34 +137,48 @@ export default function DanhSachVai({ source, part, lang }) {
     );
 }
 
-/** Một thẻ vai với các nút phù hợp. Nút nào không áp dụng thì không hiện. */
-function VaiCard({ tag, dang, title, text, onDung, onSua, onXoa, dangLam }) {
+/**
+ * Một thẻ vai. Icon nhỏ góc trên bên trái cho biết loại vai (AI hay của bạn).
+ * Vai đang dùng có viền dày màu. Vai AI chưa dùng bấm được để chọn.
+ */
+function VaiCard({ loai, dang, chonDuoc = false, onChon, title, text, onSua, onXoa, dangLam }) {
+    const bamDuoc = chonDuoc && !dangLam;
+    // Mô tả dài thì ẩn bớt, bấm "Xem thêm" mới mở. Ngưỡng theo số ký tự.
+    const [moRong, setMoRong] = useState(false);
+    const dai = (text || '').length > MO_TA_NGAN;
     return (
-        <div className={`ai-role-card${dang ? ' is-dang' : ''}`}>
+        <div
+            className={`ai-role-card${dang ? ' is-dang' : ''}${bamDuoc ? ' is-chon' : ''}`}
+            onClick={bamDuoc ? onChon : undefined}
+            title={bamDuoc ? 'Bấm để dùng vai này' : undefined}
+        >
+            <i
+                className={`fas ${loai === 'user' ? 'fa-user' : 'fa-robot'} ai-role-icon`}
+                title={loai === 'user' ? 'Vai của bạn' : 'Vai AI đã lưu'}
+            ></i>
             <div className="ai-role-card-main">
-                <div className="ai-role-tag">
-                    {tag}{dang ? ' · đang dùng' : ''}
-                </div>
                 <p className="ai-role-title">{title || 'Vai'}</p>
-                <p className="ai-role-text">{text}</p>
-            </div>
-            <div className="ai-role-card-actions">
-                {onDung && (
-                    <button className="btn btn-secondary" disabled={dangLam} onClick={onDung}>Dùng</button>
+                <p className={`ai-role-text${dai && !moRong ? ' is-an' : ''}`}>{text}</p>
+                {dai && (
+                    <button
+                        type="button"
+                        className="ai-role-more"
+                        onClick={(e) => { e.stopPropagation(); setMoRong((v) => !v); }}
+                    >
+                        {moRong ? 'Thu gọn' : 'Xem thêm'}
+                    </button>
                 )}
+            </div>
+            <div className="ai-role-card-actions" onClick={(e) => e.stopPropagation()}>
                 {onSua && (
                     <button className="btn btn-secondary" disabled={dangLam} onClick={onSua}>
                         <i className="fas fa-pen"></i> Sửa
                     </button>
                 )}
-                {onXoa ? (
+                {onXoa && (
                     <button className="btn btn-secondary" disabled={dangLam} onClick={onXoa}>
                         <i className="fas fa-trash"></i> Xoá
                     </button>
-                ) : (
-                    tag === 'Vai AI đã lưu' && (
-                        <span className="ai-role-note" title="Vai AI dùng chung, không xoá từ đây">Dùng chung</span>
-                    )
                 )}
             </div>
         </div>

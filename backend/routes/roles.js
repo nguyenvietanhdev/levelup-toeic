@@ -3,6 +3,7 @@
 // ===================================
 
 const express = require('express');
+const mongoose = require('mongoose');
 const router = express.Router();
 const { protect } = require('../middleware/auth');
 const roles = require('../services/aiRoles');
@@ -20,6 +21,17 @@ router.get('/', async (req, res, next) => {
             part: req.query.part,
             lang: req.query.lang,
         });
+        res.json({ success: true, data });
+    } catch (err) { next(err); }
+});
+
+/** Xoá một vai AI đã lưu (dùng chung cho mọi người học Part đó). */
+router.delete('/ai/:id', async (req, res, next) => {
+    try {
+        if (!mongoose.isValidObjectId(req.params.id)) {
+            return res.status(400).json({ success: false, message: 'Vai không hợp lệ' });
+        }
+        const data = await roles.xoaVaiAI({ id: req.params.id });
         res.json({ success: true, data });
     } catch (err) { next(err); }
 });

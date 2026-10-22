@@ -16,13 +16,21 @@ describe('DanhSachVai', () => {
         expect(src).toMatch(/RolesAPI\.list\(/);
     });
 
-    test('vai của bạn có Sửa và Xoá; vai AI đã lưu không có nút Xoá', () => {
-        expect(src).toMatch(/onXoa=\{null\}/);
-        expect(src).toMatch(/Dùng chung/);
+    test('vai của bạn và vai AI đều có Sửa và Xoá', () => {
         expect(src).toMatch(/onSua=\{\(\) => setSoan\(\{ id: ds\.vai\.id/);
+        expect(src).toMatch(/RolesAPI\.removeAi\(v\.id\)/);
+        expect(src).not.toMatch(/Dùng chung/);
+        expect(src).not.toMatch(/Vai của Part <strong>/);
     });
 
-    test('Dùng đưa vai AI lên làm vai đang dùng bằng cách lưu lại', () => {
+    test('vai đang dùng có viền dày; bấm vai AI chưa dùng để chọn', () => {
+        expect(src).toMatch(/is-dang/);
+        expect(src).toMatch(/onChon=\{\(\) => lam\(\(\) => RolesAPI\.saveAi/);
+        expect(src).toMatch(/fa-robot/);
+        expect(src).toMatch(/fa-user/);
+    });
+
+    test('chọn vai AI bằng cách lưu lại để đưa lên đầu danh sách', () => {
         expect(src).toMatch(/RolesAPI\.saveAi\(/);
     });
 });

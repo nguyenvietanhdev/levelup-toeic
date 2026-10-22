@@ -169,7 +169,7 @@ export default function VaiAITab({ source, part, lang }) {
                 value={tieuDe}
                 onChange={(e) => setTieuDe(e.target.value)}
                 maxLength={TIEU_DE_TOI_DA}
-                placeholder="Tiêu đề, ví dụ: Strict auditor"
+                placeholder="Vai trò, ví dụ: Lễ tân"
             />
             <textarea
                 className="ai-role-input"

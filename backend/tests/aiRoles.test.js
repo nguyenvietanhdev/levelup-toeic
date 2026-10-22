@@ -304,7 +304,7 @@ describe('vai AI ngắn gọn để đỡ tốn token', () => {
         // Hai dòng TITLE + ROLE: đủ 60 token, nhưng vẫn giới hạn chữ để đỡ tốn token.
         expect(call.maxTokens).toBeLessThanOrEqual(60);
         expect(call.messages[0].content).toMatch(/at most 15 words/);
-        expect(call.messages[0].content).toMatch(/at most 6 words/);
+        expect(call.messages[0].content).toMatch(/job role or position only, 1-3 words/);
     });
 });
 
@@ -331,5 +331,26 @@ describe('danh sách vai của Part', () => {
         await roles.luuVaiAI({ email: 'a@x', ...KHOA, text: 'A café waiter taking a drink order.' });
         parts.shared = false;
         expect(await roles.danhSachVai({ userId: 'u1', email: 'a@x', ...KHOA })).toEqual({ vai: null, ai: [] });
+    });
+});
+
+describe('xoá một vai AI đã lưu', () => {
+    test('xoá đúng vai AI theo id, vai còn lại vẫn có', async () => {
+        await roles.luuVaiAI({ email: 'a@x', ...KHOA, text: 'A café waiter taking a drink order.' });
+        await roles.luuVaiAI({ email: 'a@x', ...KHOA, text: 'A hotel receptionist checking a guest in.' });
+        const ds = await roles.danhSachVai({ userId: 'u1', email: 'a@x', ...KHOA });
+        const r = await roles.xoaVaiAI({ id: ds.ai[0].id });
+        expect(r.daXoa).toBe(true);
+        const sau = await roles.danhSachVai({ userId: 'u1', email: 'a@x', ...KHOA });
+        expect(sau.ai).toHaveLength(1);
+        expect(sau.ai[0].text).toBe('A café waiter taking a drink order.');
+    });
+
+    test('không xoá được vai riêng bằng đường này', async () => {
+        await roles.luuVaiNguoiDung({ userId: 'u1', email: 'a@x', ...KHOA, text: VAI_TAY });
+        const ds = await roles.danhSachVai({ userId: 'u1', email: 'a@x', ...KHOA });
+        const r = await roles.xoaVaiAI({ id: ds.vai.id });
+        expect(r.daXoa).toBe(false);
+        expect(store.rows.some((x) => x.origin === 'user')).toBe(true);
     });
 });

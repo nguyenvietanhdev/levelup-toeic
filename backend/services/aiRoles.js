@@ -161,8 +161,10 @@ async function deXuatVaiAI({ userId, email, source, part, lang }) {
                 // Ngắn là cốt lõi: vai này đi vào MỌI phiên của Part, nên dài là tốn token.
                 content: [
                     'Write a short role for a speaking-practice chat, in exactly two lines:',
-                    'TITLE: a title of at most 6 words (e.g. "Barista at a café").',
-                    'ROLE: one sentence of at most 15 words: who the AI plays and who it talks to.',
+                    // Tiêu đề LÀ VAI TRÒ / CHỨC VỤ của người nói (vd "Receptionist", "Bartender").
+                    // Tình huống cụ thể đi vào dòng ROLE, và thay đổi theo Part.
+                    'TITLE: the speaker\'s job role or position only, 1-3 words (e.g. "Receptionist", "Bartender", "Colleague"). Never a scene or a situation.',
+                    'ROLE: one sentence of at most 15 words: the situation, and who the AI talks to.',
                     'No quotes, no extra text.',
                 ].join('\n'),
             },
@@ -268,6 +270,16 @@ async function danhSachVai({ userId, email, source, part, lang }) {
     };
 }
 
+/**
+ * Xoá MỘT vai AI đã lưu theo id. Vai này là vai dùng chung của Part, nên xoá nó
+ * cũng làm mất khỏi danh sách của mọi người học Part đó. Người gọi phải chắc chắn
+ * đây là điều họ muốn.
+ */
+async function xoaVaiAI({ id }) {
+    const r = await AiRole.deleteOne({ _id: id, origin: 'ai' });
+    return { daXoa: r.deletedCount === 1 };
+}
+
 module.exports = {
     chuanHoaVaiText,
     chuanHoaTieuDe,
@@ -278,6 +290,7 @@ module.exports = {
     partConTonTai,
     layVai,
     danhSachVai,
+    xoaVaiAI,
     deXuatVaiAI,
     luuVaiAI,
     luuVaiNguoiDung,
