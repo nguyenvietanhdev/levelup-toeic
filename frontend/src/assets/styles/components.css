@@ -9709,8 +9709,65 @@ button.ai-history-row {
 }
 .ai-history-detail {
     width: 100%;
-    max-width: 720px;
-    margin: 12px auto;
+    margin: 12px 0;
+}
+/* Hai cột: chat bên trái (cuộn riêng), nhận xét bên phải (cuộn riêng). */
+.ai-history-split {
+    display: grid;
+    grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
+    gap: 16px;
+    align-items: start;
+}
+.ai-history-chat {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    max-height: 70vh;
+    overflow-y: auto;
+    padding-right: 6px;
+}
+.ai-history-bubble {
+    max-width: 80%;
+    padding: 10px 14px;
+    border-radius: 14px;
+    line-height: 1.5;
+}
+.ai-history-bubble p {
+    margin: 0;
+}
+/* Lời AI: nền xám nhạt, căn trái. Lời người học: nền tím như màn chat, căn phải. */
+.ai-history-bubble--npc {
+    align-self: flex-start;
+    background: #e5e7eb;
+    color: #111827;
+}
+.ai-history-bubble--user {
+    align-self: flex-end;
+    background: #9333ea;
+    color: #fff;
+}
+.ai-history-who {
+    display: block;
+    font-size: 11px;
+    text-transform: uppercase;
+    opacity: 0.7;
+    margin-bottom: 2px;
+}
+.ai-history-feedback {
+    position: sticky;
+    top: 0;
+    max-height: 70vh;
+    overflow-y: auto;
+}
+@media (max-width: 760px) {
+    .ai-history-split {
+        grid-template-columns: 1fr;
+    }
+    .ai-history-chat,
+    .ai-history-feedback {
+        max-height: none;
+        position: static;
+    }
 }
 .ai-history-turns {
     display: flex;

@@ -103,6 +103,8 @@ export default function LichSuMode({ mode }) {
 
 /** Xem lại một phiên hội thoại: tình huống, kết quả chấm, lời thoại. */
 function ChiTietHoiThoai({ phien }) {
+    // Hai cột: trái là đoạn chat (bong bóng như màn luyện), phải là nhận xét.
+    // Trên màn hẹp hai cột xếp chồng (xem CSS `.ai-history-split`).
     return (
         <div className="ai-history-detail">
             <p className="tr-intro-note">
@@ -110,7 +112,21 @@ function ChiTietHoiThoai({ phien }) {
                 {phien.scenario ? ` · Tình huống: ${phien.scenario}` : ''}
             </p>
 
-            {phien.feedback && (
+            <div className="ai-history-split">
+                <div className="ai-history-chat">
+                    {phien.turns.map((t, i) => (
+                        <div key={i} className={`ai-history-bubble ai-history-bubble--${t.role === 'user' ? 'user' : 'npc'}`}>
+                            <span className="ai-history-who">{t.role === 'user' ? 'Bạn' : 'AI'}</span>
+                            <p>{t.content}</p>
+                        </div>
+                    ))}
+                </div>
+
+                <div className="ai-history-feedback">
+                    {!phien.feedback && (
+                        <p className="tr-intro-note">Phiên này chưa có kết quả chấm.</p>
+                    )}
+                    {phien.feedback && (
                 <div className="convo-feedback">
                     <div className="convo-feedback-head">
                         Chấm theo <strong>{phien.feedback.label}</strong> · trung bình <strong>{phien.feedback.overall}</strong>/9
@@ -131,15 +147,8 @@ function ChiTietHoiThoai({ phien }) {
                     ))}
                     {phien.feedback.summary && <p className="convo-feedback-summary">{phien.feedback.summary}</p>}
                 </div>
-            )}
-
-            <div className="ai-history-turns">
-                {phien.turns.map((t, i) => (
-                    <div key={i} className={`ai-history-turn ai-history-turn--${t.role}`}>
-                        <span>{t.role === 'user' ? 'Bạn' : 'AI'}</span>
-                        <p>{t.content}</p>
-                    </div>
-                ))}
+                    )}
+                </div>
             </div>
         </div>
     );
