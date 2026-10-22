@@ -9444,11 +9444,18 @@ mark {
    =================================================================== */
 
 .convo-intro {
-    max-width: 520px;
-    margin: 24px auto;
+    /* Rộng hết màn để cột phải (Kiểu chấm / Độ khó) dính mép phải. */
+    width: 100%;
+    box-sizing: border-box;
+    padding: 0 24px 24px;
+    margin: 24px 0;
     text-align: center;
     color: var(--text-secondary);
     line-height: 1.6;
+    /* Màn chọn cao hơn khung nhìn trên màn nhỏ: cuộn RIÊNG phần này, không cắt cụt. */
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
 }
 
 .convo-intro .btn {
