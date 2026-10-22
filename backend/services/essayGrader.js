@@ -168,6 +168,17 @@ function overallBand(scores = {}, lang = 'en') {
  * đúng vốn từ họ vừa học — thứ ChatGPT không làm được vì nó không biết người
  * học đang học gì.
  */
+/**
+ * Độ khó của đề tiếng Anh là CẤP TỪ VỰNG (CEFR), không phải mức "quen thuộc" của
+ * đề. Dễ = A1–A2, Vừa = B1–B2, Khó = C1–C2.
+ */
+const CEFR_DE_BAI = { easy: 'A1–A2', medium: 'B1–B2', hard: 'C1–C2' };
+
+function capTuVungDeBai(level) {
+    const k = Object.prototype.hasOwnProperty.call(CEFR_DE_BAI, level) ? level : 'medium';
+    return `Use vocabulary and grammar at CEFR level ${CEFR_DE_BAI[k]}; keep every word within that level.`;
+}
+
 async function generatePrompt({ topicHint = '', userId = null, lang = 'en', level = 'medium' } = {}) {
     const zh = lang === 'zh';
 
@@ -188,7 +199,7 @@ async function generatePrompt({ topicHint = '', userId = null, lang = 'en', leve
             'You write IELTS Writing Task 2 questions.',
             'Return ONLY valid JSON, no markdown fences, no commentary.',
             'Shape: { "prompt": "...", "type": "opinion|discussion|problem-solution|advantages-disadvantages" }',
-            chiThiMuc(level),
+            capTuVungDeBai(level),
             'The prompt must be ONE question of 2-3 sentences, in the exact',
             'style of a real IELTS Task 2 question.',
         ].join('\n');

@@ -57,9 +57,19 @@ function countUnits(text, lang) {
  * khó ở đề bài, ở vốn từ, hay ở độ dài yêu cầu.
  */
 const MUC_KHO = [
-    { key: 'easy', label: 'Dễ', desc: 'Đề quen thuộc' },
-    { key: 'medium', label: 'Vừa', desc: 'Đề công sở' },
-    { key: 'hard', label: 'Khó', desc: 'Đề trừu tượng' },
+    { key: 'easy', label: 'A1–A2', desc: 'Từ cơ bản, câu ngắn' },
+    { key: 'medium', label: 'B1–B2', desc: 'Từ công sở thường gặp' },
+    { key: 'hard', label: 'C1–C2', desc: 'Từ học thuật, ít gặp' },
+];
+
+/**
+ * Độ khó của màn viết là CẤP TỪ VỰNG: CEFR cho tiếng Anh, HSK cho tiếng Trung.
+ * Khoá vẫn là easy/medium/hard để gửi server; chỉ nhãn đổi theo ngôn ngữ.
+ */
+const MUC_KHO_ZH = [
+    { key: 'easy', label: 'HSK1–2', desc: 'Từ cơ bản, câu ngắn' },
+    { key: 'medium', label: 'HSK3–4', desc: 'Từ thường dùng, câu ghép' },
+    { key: 'hard', label: 'HSK5–6', desc: 'Từ ít gặp, câu phức' },
 ];
 
 export default function EssayScreen({ active }) {
@@ -161,7 +171,7 @@ export default function EssayScreen({ active }) {
                 <button className="back-btn-screen icon-btn" onClick={() => showScreen('home-screen')}>
                     <i className="fas fa-arrow-left"></i>
                 </button>
-                <h2><i className="fas fa-pen-nib"></i> Luyện viết luận</h2>
+                <h2><i className="fas fa-pen-nib"></i> Luyện viết</h2>
             </div>
 
             {!prompt ? (
@@ -175,8 +185,8 @@ export default function EssayScreen({ active }) {
                             </>
                         ) : (
                             <>
-                                Viết một bài luận <strong>IELTS Task 2</strong> và được chấm theo{' '}
-                                <strong>4 tiêu chí chính thức</strong>: trả lời đúng đề, mạch lạc,
+                                Viết một đoạn văn ngắn và được chấm theo{' '}
+                                <strong>4 tiêu chí IELTS</strong>: trả lời đúng đề, mạch lạc,
                                 vốn từ và ngữ pháp. Đề bài bám theo bộ từ bạn đang học.
                             </>
                         )}
@@ -185,7 +195,7 @@ export default function EssayScreen({ active }) {
                         `services/aiLevel.js`), nên "Khó" ở đây và "Khó" ở đó là
                         cùng một trình độ — người học so được giữa các chế độ. */}
                     <div className="tr-levels">
-                        {MUC_KHO.map((m) => (
+                        {(lang === 'zh' ? MUC_KHO_ZH : MUC_KHO).map((m) => (
                             <button
                                 key={m.key}
                                 className={`tr-level${level === m.key ? ' is-on' : ''}`}

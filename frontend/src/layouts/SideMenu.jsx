@@ -38,7 +38,7 @@ const MENU_GROUPS = [
         title: 'Luyện với AI',
         items: [
             { label: 'Hội thoại', icon: 'fa-comments', screen: 'conversation-screen', feature: 'feature:conversation' },
-            { label: 'Luyện viết luận', icon: 'fa-pen-nib', screen: 'essay-screen', feature: 'feature:essay' },
+            { label: 'Luyện viết', icon: 'fa-pen-nib', screen: 'essay-screen', feature: 'feature:essay' },
             // Cùng nhóm với hai chế độ AI kia vì cùng bản chất: gọi AI có phí,
             // tốn năng lượng, có màn hình riêng thay vì chạy qua PracticeManager.
             //

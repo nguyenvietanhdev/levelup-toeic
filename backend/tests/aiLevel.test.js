@@ -112,10 +112,12 @@ describe('bốn chế độ AI đều dùng mức khó', () => {
         expect(essayAi).toMatch(/chiThiMuc\(level\)/);
     });
 
-    test('Viết luận chèn chỉ thị vào CẢ HAI ngôn ngữ', () => {
-        // Hai prompt riêng (IELTS và HSK); chèn một chỗ thì bên kia im lặng bỏ
-        // qua mức khó.
-        expect(essayAi.split('chiThiMuc(level)').length - 1).toBe(2);
+    test('Viết luận chèn mức khó vào CẢ HAI ngôn ngữ', () => {
+        // Tiếng Trung (HSK) vẫn dùng chỉ thị chung; tiếng Anh dùng dải CEFR riêng
+        // (`capTuVungDeBai`). Thiếu một trong hai là bên đó im lặng bỏ qua mức khó.
+        // Đếm LẦN GỌI (có dấu phẩy sau), không đếm dòng định nghĩa hàm.
+        expect(essayAi.split('chiThiMuc(level),').length - 1).toBe(1);
+        expect(essayAi.split('capTuVungDeBai(level),').length - 1).toBe(1);
     });
 
     test('mức luôn qua `chuanHoaMuc` trước khi dùng', () => {

@@ -102,3 +102,17 @@ describe('controller dùng vai và lưu tình huống', () => {
         expect(src).toMatch(/scenario: convo\.scenario/);
     });
 });
+
+describe('chọn từ mục tiêu tôn trọng bộ lọc độ khó', () => {
+    const src = fs.readFileSync(path.join(__dirname, '..', 'controllers', 'conversationController.js'), 'utf8');
+
+    test('đọc levelFilter từ hồ sơ và lọc từ theo w.level', () => {
+        expect(src).toMatch(/st\.levelFilter/);
+        expect(src).toMatch(/levelFilter\.has\(w\.level\)/);
+    });
+
+    test('kho chung và kho riêng đều lấy trường level để lọc được', () => {
+        expect(src).toMatch(/SharedModel\.find\(filter\)\.select\('en zh vn level'\)/);
+        expect(src).toMatch(/UserUpload\.find\(\{ \.\.\.filter, ownerEmail: email, lang \}\)\.select\('en zh vn level'\)/);
+    });
+});

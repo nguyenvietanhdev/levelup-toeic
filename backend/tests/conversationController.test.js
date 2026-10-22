@@ -211,7 +211,8 @@ describe('lấy từ vựng', () => {
         expect(src).toMatch(/function faceOf/);
         expect(src).toMatch(/words\.map\(faceOf\)/);
         // Phải nằm trong `select`, không thì Mongoose không trả trường đó về.
-        expect(src).toMatch(/select\('en zh vn'\)/);
+        // `level` được lấy thêm để lọc theo bộ lọc độ khó (xem conversationContext.test).
+        expect(src).toMatch(/select\('en zh vn level'\)/);
         expect(src).not.toMatch(/words\.map\(\(w\) => w\.en\)/);
     });
 

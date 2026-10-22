@@ -62,8 +62,8 @@ async function fetchWords({ email, source, part, lang }) {
         // `zh`, còn `en` để RỖNG. Chỉ lấy `en` thì danh sách từ mục tiêu rỗng
         // trơn — mà hội thoại vẫn mở bình thường, nên trông như AI hoạt động
         // đúng trong khi người học không thể ăn điểm nào.
-        SharedModel.find(filter).select('en zh vn').lean(),
-        UserUpload.find({ ...filter, ownerEmail: email, lang }).select('en zh vn').lean(),
+        SharedModel.find(filter).select('en zh vn level').lean(),
+        UserUpload.find({ ...filter, ownerEmail: email, lang }).select('en zh vn level').lean(),
     ]);
 
     return [...shared, ...mine];
@@ -188,13 +188,24 @@ exports.start = async (req, res, next) => {
         // (Không cần kiểm `lang` nữa — phép chuẩn hoá ở trên đã đảm bảo nó chỉ
         // có thể là 'en' hoặc 'zh'.)
 
-        const words = await fetchWords({ email: req.user.email, source, part, lang });
+        // Bộ lọc độ khó ở thanh trên (`levelFilter`, vd A1–A2 hay HSK1–2) phải được
+        // tôn trọng khi chọn từ mục tiêu. Không lọc thì người học chọn "Dễ" mà vẫn
+        // bị hỏi từ C1. Rỗng/không đặt = lấy hết.
+        const levelFilter = Array.isArray(st.levelFilter) && st.levelFilter.length
+            ? new Set(st.levelFilter)
+            : null;
+        const tatCa = await fetchWords({ email: req.user.email, source, part, lang });
+        const words = levelFilter
+            ? tatCa.filter((w) => levelFilter.has(w.level))
+            : tatCa;
         if (words.length < 4) {
             // Dưới 4 từ thì hội thoại không có gì để nhắm — báo rõ thay vì mở
             // một phiên rỗng rồi để người dùng tự đoán vì sao không ăn điểm.
             return res.status(400).json({
                 success: false,
-                message: 'Bộ từ này quá ít từ để luyện hội thoại (cần ít nhất 4 từ)',
+                message: levelFilter
+                    ? `Với mức độ đang chọn chỉ có ${words.length} từ, không đủ để luyện hội thoại (cần ít nhất 4 từ). Đổi mức độ ở thanh trên.`
+                    : 'Bộ từ này quá ít từ để luyện hội thoại (cần ít nhất 4 từ)',
                 wordCount: words.length,
             });
         }
