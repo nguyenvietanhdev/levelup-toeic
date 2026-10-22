@@ -321,7 +321,9 @@ describe('bố cục cuộn được', () => {
     });
 
     test('khung hội thoại cuộn RIÊNG', () => {
-        const m = css.match(/\.convo-log\s*\{([^}]*)\}/);
+        // Chỉ khớp rule ĐỨNG ĐẦU DÒNG `.convo-log {`, không khớp rule con như
+        // `.convo-body--split .convo-log {` (chừa lề khi có panel kết quả).
+        const m = css.match(/(?:^|\n)\.convo-log\s*\{([^}]*)\}/);
         expect(m).toBeTruthy();
         expect(m[1]).toMatch(/overflow-y:\s*auto/);
         // `min-height: 0` bắt buộc với flex item có overflow — thiếu thì khung

@@ -422,7 +422,7 @@ export default function ConversationScreen({ active }) {
                     </button>
                 </div>
             ) : (
-                <>
+                <div className={`convo-body${result ? ' convo-body--split' : ''}`}>
                     {/* Bảng từ mục tiêu — tô sáng từ đã dùng được.
                         Đây là thứ cho người học biết PHẢI làm gì; không có nó thì
                         họ chỉ chat vu vơ và không hiểu điểm ở đâu ra. */}
@@ -474,7 +474,8 @@ export default function ConversationScreen({ active }) {
                     </div>
 
                     {result ? (
-                        <div className="convo-result">
+                        // Kết quả nằm sát mép phải, cuộn riêng; chat vẫn xem được bên trái.
+                        <div className="convo-result convo-side">
                             <h3>Xong!</h3>
                             <p>
                                 Dùng được <strong>{result.usedWords?.length ?? used.size}</strong>
@@ -611,7 +612,7 @@ export default function ConversationScreen({ active }) {
                         </div>
                         </>
                     )}
-                </>
+                </div>
             )}
         </div>
     );

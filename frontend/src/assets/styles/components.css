@@ -9624,6 +9624,46 @@ mark {
     text-align: left;
     font-size: 13px;
 }
+/* Khung chat: khi có kết quả, panel chấm nằm SÁT MÉP PHẢI và cuộn riêng; phần chat
+   được chừa lề phải để không bị che. Trên màn hẹp panel xếp xuống dưới chat. */
+.convo-body {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 auto;
+    min-height: 0;
+}
+.convo-result.convo-side {
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: 340px;
+    max-width: 45%;
+    overflow-y: auto;
+    box-sizing: border-box;
+    margin: 0;
+    padding: 12px;
+    background: var(--bg-primary);
+    border-left: 1px solid var(--border-color);
+    text-align: left;
+    z-index: 2;
+}
+.convo-body--split .convo-log {
+    padding-right: 360px;
+}
+@media (max-width: 640px) {
+    .convo-result.convo-side {
+        position: static;
+        width: auto;
+        max-width: none;
+        border-left: none;
+    }
+    .convo-body--split .convo-log {
+        padding-right: 0;
+    }
+}
+
 .convo-feedback {
     position: relative;
 }
