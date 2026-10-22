@@ -8384,7 +8384,57 @@ mark {
 }
 .review-nav-btn:hover:not(:disabled) { background: rgba(255,255,255,0.1); }
 .review-nav-btn:disabled { opacity: 0.35; cursor: not-allowed; }
-.review-nav-info { font-size: 13px; color: var(--text-secondary); font-weight: 500; }
+/* Trên máy tính chỉ là chữ; điện thoại thì là nút bung danh sách số câu */
+.review-nav-info {
+    font-size: 13px; color: var(--text-secondary); font-weight: 500;
+    background: none; border: none; padding: 0; font-family: inherit;
+    cursor: default;
+}
+.review-nav-chevron { display: none; }
+
+/* Điện thoại: danh sách số câu bung lên như dropdown phía trên thanh điều hướng */
+@media (max-width: 640px) {
+    .review-modal { height: min(640px, 92vh); }
+    .review-header { padding: 12px 16px; }
+    .review-body { flex-direction: column; position: relative; }
+
+    /* Ẩn mặc định; bấm "Câu sai x / y" để bung, bấm lại hoặc chọn số để đóng */
+    .review-sidebar {
+        display: none;
+        position: absolute; left: 0; right: 0; bottom: 60px; z-index: 5;
+        max-height: 55%;
+        border-right: none;
+        border-top: 1px solid var(--border-color);
+        border-radius: 14px 14px 0 0;
+        box-shadow: 0 -12px 28px rgba(0,0,0,0.35);
+    }
+    .review-sidebar.open { display: flex; }
+    .review-sidebar-legend { padding: 8px 14px 6px; }
+    .review-num-list {
+        flex: 1 1 auto; min-height: 0;
+        grid-template-columns: repeat(auto-fill, minmax(38px, 1fr));
+        overflow-y: auto; overflow-x: hidden;
+        padding: 10px 14px;
+    }
+    .review-num-btn.active { transform: none; }
+
+    .review-main { flex: 1 1 0; min-height: 0; }
+    .review-card-section { min-height: 0; padding: 14px 16px; }
+    .review-card { padding: 16px; }
+    .review-card-question { font-size: 18px; }
+
+    .review-nav { height: 60px; box-sizing: border-box; padding: 0 12px; gap: 8px; }
+    .review-nav-btn { padding: 7px 10px; font-size: 12px; white-space: nowrap; }
+    .review-nav-info {
+        display: flex; align-items: center; gap: 6px;
+        padding: 6px 10px; border-radius: 8px;
+        background: var(--bg-primary); color: var(--text-primary);
+        font-size: 12px; white-space: nowrap; cursor: pointer;
+    }
+    .review-nav-info:hover { background: rgba(255,255,255,0.1); }
+    .review-nav-chevron { display: inline-block; font-size: 11px; transition: transform 0.2s; }
+    .review-nav-info[aria-expanded="true"] .review-nav-chevron { transform: rotate(180deg); }
+}
 
 /* ── Popup Dịch nhanh (Shift+Enter ở ô tìm kiếm) ── */
 /* Nâng chiều cao để nội dung (2 select + nút lưu) không bị cuộn dọc */

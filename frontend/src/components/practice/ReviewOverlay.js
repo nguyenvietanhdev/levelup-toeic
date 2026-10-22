@@ -64,11 +64,13 @@ export const ReviewOverlay = {
                             <button class="review-nav-btn" id="review-prev" ${this.wrongPos === 0 ? 'disabled' : ''}>
                                 <i class="fas fa-chevron-left"></i> Câu trước
                             </button>
-                            <span class="review-nav-info">
-                                ${this.wrongIndices.length > 0
+                            <!-- Điện thoại: bấm để bung/thu danh sách số câu -->
+                            <button class="review-nav-info" id="review-num-open" aria-expanded="false">
+                                <span class="review-nav-text">${this.wrongIndices.length > 0
                                     ? `Câu sai ${this.wrongPos + 1} / ${this.wrongIndices.length}`
-                                    : 'Không có câu sai 🎉'}
-                            </span>
+                                    : 'Không có câu sai 🎉'}</span>
+                                <i class="fas fa-chevron-up review-nav-chevron"></i>
+                            </button>
                             <button class="review-nav-btn" id="review-next" ${this.wrongPos >= this.wrongIndices.length - 1 ? 'disabled' : ''}>
                                 Câu tiếp <i class="fas fa-chevron-right"></i>
                             </button>
@@ -85,6 +87,22 @@ export const ReviewOverlay = {
         el.querySelectorAll('.review-num-btn').forEach(btn => {
             btn.addEventListener('click', () => this._jumpTo(Number(btn.dataset.idx)));
         });
+        el.querySelector('#review-num-open').addEventListener('click', () => this._toggleList(el));
+    },
+
+    _toggleList(el) {
+        const sidebar = el.querySelector('.review-sidebar');
+        if (sidebar.classList.contains('open')) this._closeList(el);
+        else {
+            sidebar.classList.add('open');
+            el.querySelector('#review-num-open').setAttribute('aria-expanded', 'true');
+            el.querySelector('.review-num-btn.active')?.scrollIntoView({ block: 'nearest' });
+        }
+    },
+
+    _closeList(el) {
+        el.querySelector('.review-sidebar')?.classList.remove('open');
+        el.querySelector('#review-num-open')?.setAttribute('aria-expanded', 'false');
     },
 
     _buildCard() {
@@ -152,6 +170,8 @@ export const ReviewOverlay = {
         const wp = this.wrongIndices.indexOf(idx);
         if (wp >= 0) this.wrongPos = wp;
         this._update();
+        const el = document.getElementById('review-overlay');
+        if (el) this._closeList(el);
     },
 
     _update() {
@@ -170,7 +190,7 @@ export const ReviewOverlay = {
         // update nav
         el.querySelector('#review-prev').disabled = this.wrongPos === 0;
         el.querySelector('#review-next').disabled = this.wrongPos >= this.wrongIndices.length - 1;
-        el.querySelector('.review-nav-info').textContent =
+        el.querySelector('.review-nav-text').textContent =
             this.wrongIndices.length > 0
                 ? `Câu sai ${this.wrongPos + 1} / ${this.wrongIndices.length}`
                 : 'Không có câu sai 🎉';
@@ -182,7 +202,12 @@ export const ReviewOverlay = {
             if (!document.getElementById('review-overlay')) return;
             if (e.key === 'ArrowRight') { e.preventDefault(); this._navigate(1); }
             if (e.key === 'ArrowLeft') { e.preventDefault(); this._navigate(-1); }
-            if (e.key === 'Escape') this.close();
+            if (e.key === 'Escape') {
+                // Đang mở danh sách số câu thì Esc chỉ đóng danh sách
+                const sidebar = document.querySelector('#review-overlay .review-sidebar');
+                if (sidebar?.classList.contains('open')) this._closeList(document.getElementById('review-overlay'));
+                else this.close();
+            }
         };
         document.addEventListener('keydown', this._keyHandler);
     },
