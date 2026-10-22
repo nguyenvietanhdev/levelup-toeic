@@ -90,7 +90,7 @@ describe('prompt hệ thống', () => {
 
     test('không có chủ đề thì bỏ hẳn dòng đó, không để "Setting: ."', () => {
         expect(systemPrompt({ lang: 'en', words })).not.toMatch(/Setting:/);
-        expect(systemPrompt({ lang: 'en', topic: 'đi chợ', words })).toMatch(/Setting: đi chợ/);
+        expect(systemPrompt({ lang: 'en', topic: 'đi chợ', words })).toMatch(/Your role: đi chợ/);
     });
 });
 

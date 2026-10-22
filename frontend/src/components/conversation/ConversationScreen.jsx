@@ -50,11 +50,11 @@ const BO_TIEU_CHI_CHON = [
  * '' = chung chung, không đặt bối cảnh.
  */
 const BOI_CANH_CHON = [
-    { key: '', label: 'Chung', desc: 'Chủ đề tự do' },
-    { key: 'office', label: 'Văn phòng', desc: 'Họp, deadline, lịch làm việc' },
-    { key: 'interview', label: 'Phỏng vấn', desc: 'Kinh nghiệm, điểm mạnh' },
-    { key: 'travel', label: 'Du lịch', desc: 'Sân bay, khách sạn, đường đi' },
-    { key: 'shopping', label: 'Mua sắm', desc: 'Giá cả, size, đổi trả' },
+    { key: '', label: 'Tự do', desc: 'AI tự chọn giọng nói' },
+    { key: 'colleague', label: 'Đồng nghiệp', desc: 'Thân mật, bàn công việc' },
+    { key: 'customer', label: 'Khách hàng', desc: 'Lịch sự, hỏi và yêu cầu' },
+    { key: 'receptionist', label: 'Lễ tân', desc: 'Trang trọng, hỗ trợ yêu cầu' },
+    { key: 'interviewer', label: 'Người phỏng vấn', desc: 'Trang trọng, hỏi kinh nghiệm' },
 ];
 
 export default function ConversationScreen({ active }) {
@@ -299,7 +299,7 @@ export default function ConversationScreen({ active }) {
                         Trên màn hẹp hai cột xếp chồng (xem CSS `.convo-setup`). */}
                     <div className="convo-setup">
                         <div className="convo-setup-col">
-                            <div className="convo-setup-title">Bối cảnh</div>
+                            <div className="convo-setup-title">Vai của AI</div>
                             <div className="convo-setup-list tr-levels">
                                 {BOI_CANH_CHON.map((b) => (
                                     <button

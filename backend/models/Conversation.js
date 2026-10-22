@@ -38,6 +38,9 @@ const conversationSchema = new mongoose.Schema(
 
         // Chủ đề hội thoại, do AI đặt lúc mở phiên (vd "đi chợ", "hỏi đường").
         topic: { type: String, default: '' },
+        // Tình huống AI tự dựng cho phiên (một câu). Lưu để các lượt đáp sau giữ
+        // đúng tình huống, và để xem lại lịch sử.
+        scenario: { type: String, default: '', maxlength: 300 },
         // Bộ tiêu chí chấm cuối phiên (giaotiep / toeic / ielts / hsk).
         rubric: { type: String, default: 'giaotiep' },
         // Kho của phiên: en / zh / bi (song ngữ). `lang` chỉ là ngôn ngữ đối thoại

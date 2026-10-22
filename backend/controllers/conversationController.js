@@ -6,7 +6,7 @@ const Vocabulary = require('../models/Vocabulary');
 const VocabularyZh = require('../models/VocabularyZh');
 const UserUpload = require('../models/UserUpload');
 const WrongWord = require('../models/WrongWord');
-const { openConversation, replyTurn, moTaBoiCanh } = require('../services/conversationAi');
+const { openConversation, replyTurn, moTaVai } = require('../services/conversationAi');
 const { chuanHoaBoTieuChi, gradeConversation } = require('../services/conversationGrader');
 const { matchWords, collectUsed } = require('../utils/wordMatch');
 const { awardXp } = require('../utils/userStateHelper');
@@ -143,7 +143,7 @@ exports.start = async (req, res, next) => {
     try {
         // Bối cảnh: client gửi MÃ (`office`, `travel`...), server đổi thành câu
         // mô tả. Mã lạ hoặc thiếu thì ra chung chung, không lỗi.
-        const topic = moTaBoiCanh(req.body.context);
+        const topic = moTaVai(req.body.context);
 
         /**
          * Đề · Part · ngôn ngữ do SERVER tự đọc từ hồ sơ, KHÔNG nhận từ client.
@@ -233,7 +233,7 @@ exports.start = async (req, res, next) => {
 
         const convo = await Conversation.create({
             userId: req.user.id,
-            source, part, lang, topic, rubric, track,
+            source, part, lang, topic, scenario: ai.scenario || '', rubric, track,
             targetWords,
             level,
             turns: [{ role: 'npc', content: ai.content }],
@@ -292,6 +292,7 @@ exports.reply = async (req, res, next) => {
         const ai = await replyTurn({
             lang: convo.lang,
             topic: convo.topic,
+            scenario: convo.scenario,
             targetWords: convo.targetWords,
             usedWords: convo.usedWords,
             turns: convo.turns,

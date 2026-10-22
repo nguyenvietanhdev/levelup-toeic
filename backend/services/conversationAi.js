@@ -39,28 +39,42 @@ const WORDS_IN_PROMPT = 8;
 const NATIVE = 'Vietnamese';
 
 /**
- * Bối cảnh người học chọn trước khi mở phiên. Client chỉ gửi MÃ; câu mô tả nằm
- * ở đây. Không nhận chuỗi tự do vào prompt — chuỗi đó là đầu vào của người
- * dùng, không nên đi thẳng vào chỉ dẫn gửi cho AI.
+ * VAI của AI trong hội thoại — người học chọn trước khi mở phiên. Client chỉ gửi
+ * MÃ; câu mô tả nằm ở đây, không nhận chuỗi tự do vào prompt.
+ *
+ * Vai quyết định giọng điệu và mức trang trọng. TÌNH HUỐNG cụ thể do AI tự sinh
+ * từ bộ từ mục tiêu (xem `openConversation`), nên không phụ thuộc Part.
  */
-const BOI_CANH = {
-    office: 'an office: a team meeting, deadlines, emails and the daily schedule',
-    interview: 'a job interview: your background, strengths and career goals',
-    travel: 'travel: airports, hotels, directions and bookings',
-    shopping: 'shopping: prices, sizes, returns and paying at the counter',
+const VAI_AI = {
+    colleague: 'a colleague at work: casual but professional, talking about tasks and plans',
+    customer: 'a customer: polite and a little demanding, asking about a product or a service',
+    receptionist: 'a receptionist or front-desk staff: formal, helpful, handling requests',
+    interviewer: 'a job interviewer: formal, asking about experience and goals',
 };
 
-/** Mã bối cảnh hợp lệ, hoặc '' (= chung chung, không đặt bối cảnh). */
-function chuanHoaBoiCanh(ma) {
+/** Mã vai hợp lệ, hoặc '' (= không đặt vai, AI tự chọn giọng chung). */
+function chuanHoaVai(ma) {
     // Chỉ chấp nhận CHUỖI: hasOwnProperty ép kiểu khoá, nên object có `toString`
     // sẽ lọt qua và trả về chính object đó.
     if (typeof ma !== 'string') return '';
-    return Object.prototype.hasOwnProperty.call(BOI_CANH, ma) ? ma : '';
+    return Object.prototype.hasOwnProperty.call(VAI_AI, ma) ? ma : '';
 }
 
-/** Câu mô tả bối cảnh đưa vào prompt, '' nếu không chọn. */
-function moTaBoiCanh(ma) {
-    return BOI_CANH[chuanHoaBoiCanh(ma)] || '';
+/** Câu mô tả vai đưa vào prompt, '' nếu không chọn. */
+function moTaVai(ma) {
+    return VAI_AI[chuanHoaVai(ma)] || '';
+}
+
+/**
+ * Tách lời mở đầu thành TÌNH HUỐNG và LỜI NÓI. AI được yêu cầu viết theo hai
+ * dòng `SCENARIO:` và `REPLY:`; nếu không đúng định dạng thì coi cả câu trả lời
+ * là lời nói, tình huống để trống — hội thoại vẫn chạy.
+ */
+function parseOpening(content) {
+    const text = String(content || '').trim();
+    const m = text.match(/SCENARIO:\s*([\s\S]*?)\s*REPLY:\s*([\s\S]*)$/i);
+    if (!m) return { scenario: '', reply: text };
+    return { scenario: m[1].trim().slice(0, 300), reply: m[2].trim() };
 }
 
 function langName(lang) {
@@ -83,11 +97,12 @@ function pickWords(targetWords = [], usedWords = [], n = WORDS_IN_PROMPT) {
  * Viết bằng tiếng Anh vì mọi model đều bám prompt tiếng Anh tốt hơn; nội dung
  * SINH RA thì vẫn theo `lang`.
  */
-function systemPrompt({ lang, topic, words, level }) {
+function systemPrompt({ lang, topic, scenario, words, level }) {
     const L = langName(lang);
     return [
         `You are a friendly conversation partner helping a ${NATIVE} speaker practise ${L}.`,
-        topic ? `Setting: ${topic}.` : '',
+        topic ? `Your role: ${topic}.` : '',
+        scenario ? `Current situation: ${scenario}. Stay inside this situation.` : '',
         '',
         'RULES:',
         `1. Speak ONLY in ${L}. Never translate or explain — a separate button does that.`,
@@ -113,23 +128,35 @@ function systemPrompt({ lang, topic, words, level }) {
  */
 async function openConversation({ lang = 'en', topic = '', targetWords = [], userId = null, level = 'medium' } = {}) {
     const words = pickWords(targetWords, [], WORDS_IN_PROMPT);
+    // Tình huống do AI TỰ DỰNG từ bộ từ — không lấy từ Part. Yêu cầu hai dòng
+    // SCENARIO và REPLY để server tách được tình huống ra khỏi lời nói.
     const messages = [
         { role: 'system', content: systemPrompt({ lang, topic, words, level }) },
         {
             role: 'user',
-            content: 'Start the conversation. Greet me and ask one simple question.',
+            content: [
+                'Start the conversation.',
+                `First invent ONE short, realistic situation for your role that can naturally use these words: ${words.join(', ')}.`,
+                'Answer in exactly this format, two lines and nothing else:',
+                'SCENARIO: <one sentence describing the situation, in English>',
+                'REPLY: <your greeting and ONE simple question, in ' + langName(lang) + '>',
+            ].join('\n'),
         },
     ];
 
-    return chatCompletion(messages, {
+    const res = await chatCompletion(messages, {
         // Ngắn hơn `chat-tutor` (500) rất nhiều: luật số 2 bảo AI nói 1–2 câu,
         // nhưng giới hạn cứng mới là thứ chặn được prompt bị lờ đi — và nó cắt
-        // thẳng chi phí, thứ tăng theo mỗi lượt.
-        maxTokens: 120,
+        // thẳng chi phí, thứ tăng theo mỗi lượt. Thêm một dòng tình huống nên
+        // nới nhẹ so với 120.
+        maxTokens: 180,
         temperature: 0.9,   // cao để mỗi phiên một khác, không lặp lại nhàm
         feature: 'conversation-open',
         userId,
     });
+    if (!res.success) return res;
+    const { scenario, reply } = parseOpening(res.content);
+    return { ...res, content: reply, scenario };
 }
 
 /**
@@ -139,7 +166,7 @@ async function openConversation({ lang = 'en', topic = '', targetWords = [], use
  * @param {Array}  o.turns  Toàn bộ lượt đã có (`{ role: 'npc'|'user', content }`).
  */
 async function replyTurn({
-    lang = 'en', topic = '', targetWords = [], usedWords = [], turns = [], userId = null, level = 'medium',} = {}) {
+    lang = 'en', topic = '', scenario = '', targetWords = [], usedWords = [], turns = [], userId = null, level = 'medium',} = {}) {
     // Ưu tiên từ CHƯA dùng: hội thoại tự lái về phía những từ người học còn nợ,
     // thay vì lặp lại mấy từ đã ăn điểm rồi.
     const words = pickWords(targetWords, usedWords, WORDS_IN_PROMPT);
@@ -156,7 +183,7 @@ async function replyTurn({
     }));
 
     const messages = [
-        { role: 'system', content: systemPrompt({ lang, topic, words, level }) },
+        { role: 'system', content: systemPrompt({ lang, topic, scenario, words, level }) },
         ...recent,
     ];
 
@@ -175,7 +202,8 @@ module.exports = {
     pickWords,
     systemPrompt,
     WORDS_IN_PROMPT,
-    chuanHoaBoiCanh,
-    moTaBoiCanh,
-    BOI_CANH,
+    chuanHoaVai,
+    moTaVai,
+    parseOpening,
+    VAI_AI,
 };
