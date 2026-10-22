@@ -721,8 +721,48 @@ function renderProviderPicker(providers) {
             : '<i class="fas fa-triangle-exclamation"></i> Hãng này chưa đọc được ảnh — không dùng cho quét đáp án.';
         }
       };
-      fillModels();
-      pSel.onchange = fillModels;
+      // Hãng dự phòng: mọi hãng TRỪ hãng đang chọn làm chính. Ô nào được tick
+      // theo cấu hình đã lưu; khi chưa lưu danh sách nào thì tick hết.
+      const renderFallbacks = () => {
+        const box = document.getElementById("ai-fallback-list");
+        if (!box) return;
+        const chinh = pSel.value;
+        const daChon = new Set(cur.fallbacks || []);
+        const macDinh = daChon.size === 0;
+        box.innerHTML = providers
+          .filter((p) => p.id !== chinh)
+          .map(
+            (p) =>
+              `<label style="display:flex;gap:6px;align-items:center;font-size:13px;cursor:pointer;${p.configured ? "" : "opacity:.5"}">
+                 <input type="checkbox" class="ai-fallback-cb" value="${esc(p.id)}" ${p.configured ? "" : "disabled"} ${(macDinh || daChon.has(p.id)) && p.configured ? "checked" : ""}>
+                 ${esc(p.label)}${p.configured ? "" : " (chưa có key)"}
+               </label>`,
+          )
+          .join("");
+      };
+
+      const renderHealth = () => {
+        const el = document.getElementById("ai-health");
+        if (!el) return;
+        const h = cur.health || { nghi: [], chuyen: [] };
+        const nghi = (h.nghi || []).map(
+          (n) => `<span style="color:#e67e22"><i class="fas fa-pause-circle"></i> ${esc(n.provider)} đang nghỉ, thử lại sau ${Math.ceil(n.retryInSec / 60)} phút (${esc(n.kind)})</span>`,
+        );
+        const chuyen = (h.chuyen || []).slice(0, 3).map(
+          (c) => `<div>${new Date(c.at).toLocaleTimeString("vi-VN")} · ${esc(c.feature)}: ${esc(c.tu)} → ${esc(c.sang)}</div>`,
+        );
+        el.innerHTML =
+          (nghi.length ? nghi.join("<br>") : '<span style="color:#27ae60"><i class="fas fa-circle-check"></i> Không hãng nào đang nghỉ</span>') +
+          (chuyen.length ? `<div style="margin-top:6px"><b>Lần chuyển gần nhất:</b></div>${chuyen.join("")}` : "");
+      };
+
+      const fillAll = () => { fillModels(); renderFallbacks(); };
+      fillAll();
+      pSel.onchange = fillAll;
+
+      const auto = document.getElementById("ai-autofailover");
+      if (auto) auto.checked = cur.autoFailover !== false;
+      renderHealth();
     })
     .catch(() => {});
 }
@@ -741,7 +781,12 @@ async function saveAiProvider(btn) {
         Authorization: `Bearer ${authToken}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ provider, model }),
+      body: JSON.stringify({
+        provider,
+        model,
+        autoFailover: document.getElementById("ai-autofailover")?.checked !== false,
+        fallbacks: [...document.querySelectorAll(".ai-fallback-cb:checked")].map((c) => c.value),
+      }),
     });
     const j = await r.json();
     showToast(j.message || "Đã lưu", j.success ? "success" : "error");

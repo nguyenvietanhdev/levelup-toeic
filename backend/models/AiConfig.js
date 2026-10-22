@@ -25,6 +25,13 @@ const aiConfigSchema = new mongoose.Schema(
         // Sinh đề cần model mạnh, trong khi điền từ vựng thì model rẻ là đủ.
         overrides: { type: mongoose.Schema.Types.Mixed, default: {} },
 
+        // Tự chuyển sang hãng khác khi hãng đang dùng lỗi (hết credit, sai key,
+        // 5xx, mạng). Bật mặc định: một hãng hết tiền thì tính năng AI không được
+        // chết im lặng cho tới khi admin nhớ ra.
+        autoFailover: { type: Boolean, default: true },
+        // Thứ tự hãng dự phòng. Rỗng = mọi hãng còn lại theo thứ tự danh mục.
+        fallbacks: { type: [String], default: [] },
+
         updatedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
     },
     { timestamps: true, collection: 'ai_config' },

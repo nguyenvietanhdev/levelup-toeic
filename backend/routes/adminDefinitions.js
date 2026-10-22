@@ -675,6 +675,7 @@ router.get('/ai-config', admin, async (req, res) => {
     try {
         const AiConfig = require('../models/AiConfig');
         const { listProviders, DEFAULT_PROVIDER } = require('../services/aiProviders');
+        const { healthSnapshot } = require('../services/aiClient');
         const cfg = await AiConfig.findOne({ key: 'default' }).lean();
         res.json({
             success: true,
@@ -682,7 +683,11 @@ router.get('/ai-config', admin, async (req, res) => {
                 provider: cfg?.provider || DEFAULT_PROVIDER,
                 model: cfg?.model || '',
                 overrides: cfg?.overrides || {},
+                autoFailover: cfg?.autoFailover !== false,
+                fallbacks: cfg?.fallbacks || [],
                 providers: listProviders(),
+                // Hãng nào đang nghỉ sau lỗi, và vài lần chuyển hãng gần đây.
+                health: healthSnapshot(),
             },
         });
     } catch (err) { res.status(500).json({ success: false, message: err.message }); }
@@ -716,16 +721,49 @@ router.put('/ai-config', admin, async (req, res) => {
             });
         }
 
+        // Hãng dự phòng: phải là hãng khác hãng chính, có trong danh mục, và đã
+        // có key — cùng luật với hãng chính, không thì lúc tự chuyển mới lộ lỗi.
+        const $set = { provider: providerId, model, updatedBy: req.user.id };
+        if (req.body.autoFailover !== undefined) {
+            $set.autoFailover = req.body.autoFailover === true || req.body.autoFailover === 'true';
+        }
+        if (req.body.fallbacks !== undefined) {
+            const ids = Array.isArray(req.body.fallbacks) ? req.body.fallbacks : [];
+            const sach = [...new Set(ids.map(x => String(x || '').trim()).filter(Boolean))];
+            for (const id of sach) {
+                const p = getProvider(id);
+                if (!p) {
+                    return res.status(400).json({ success: false, message: `Hãng dự phòng không hợp lệ: ${id}` });
+                }
+                if (id === providerId) continue;   // bỏ qua hãng chính nếu lỡ chọn
+                if (!process.env[p.envKey]) {
+                    return res.status(400).json({
+                        success: false,
+                        message: `Chưa có ${p.envKey} trong .env nên không dùng ${p.label} làm dự phòng`,
+                    });
+                }
+            }
+            $set.fallbacks = sach.filter(id => id !== providerId);
+        }
+
         const doc = await AiConfig.findOneAndUpdate(
             { key: 'default' },
-            { $set: { provider: providerId, model, updatedBy: req.user.id } },
+            { $set },
             { new: true, upsert: true, setDefaultsOnInsert: true },
         );
         clearAiConfigCache();
+        const duPhong = doc.autoFailover !== false
+            ? (doc.fallbacks?.length ? `, dự phòng: ${doc.fallbacks.join(' → ')}` : ', dự phòng: các hãng còn lại')
+            : ', không tự chuyển';
         res.json({
             success: true,
-            message: `Đã chuyển sang ${provider.label}${model ? ` · ${model}` : ''} (áp dụng ngay)`,
-            data: { provider: doc.provider, model: doc.model },
+            message: `Đã chuyển sang ${provider.label}${model ? ` · ${model}` : ''}${duPhong} (áp dụng ngay)`,
+            data: {
+                provider: doc.provider,
+                model: doc.model,
+                autoFailover: doc.autoFailover !== false,
+                fallbacks: doc.fallbacks || [],
+            },
         });
     } catch (err) { res.status(400).json({ success: false, message: err.message }); }
 });

@@ -1,6 +1,6 @@
 const { OpenAI } = require('openai');
 const logger = require('../utils/logger');
-const { logUsage } = require('../services/aiUsageLogger');
+const { textCompletion } = require('../services/aiClient');
 
 const openai = new OpenAI({
     apiKey: process.env.OPENAI_API_KEY,
@@ -25,38 +25,32 @@ const testConnection = async () => {
 };
 
 /**
- * Generate chat completion
+ * Chat chữ cho mọi tính năng AI.
+ *
+ * Đi qua `services/aiClient` để tôn trọng cấu hình nhà cung cấp ở admin và tự
+ * chuyển hãng khi hãng đang dùng lỗi. Trước đây hàm này gọi thẳng OpenAI, nên đổi
+ * hãng ở admin không ảnh hưởng tới các tính năng chữ (hội thoại, chấm luận...).
+ *
+ * `options.model` không còn được dùng: tên model thuộc về từng hãng, truyền
+ * tên OpenAI cho Gemini sẽ hỏng. Model được chọn ở admin.
  */
 const chatCompletion = async (messages, options = {}) => {
-    const model = options.model || process.env.OPENAI_MODEL || 'gpt-4';
     const feature = options.feature || 'unknown';
-    const userId = options.userId || null;
     try {
-        const response = await openai.chat.completions.create({
-            model,
+        const out = await textCompletion({
+            feature,
             messages,
-            max_tokens: options.maxTokens || 500,
-            temperature: options.temperature || 0.7,
+            maxTokens: options.maxTokens || 500,
+            temperature: options.temperature ?? 0.7,
+            userId: options.userId || null,
         });
-
-        const usage = response.usage;
-        logger.debug('OpenAI token usage', {
-            model, feature,
-            promptTokens: usage.prompt_tokens,
-            completionTokens: usage.completion_tokens,
-            totalTokens: usage.total_tokens,
-        });
-        // Ghi log usage vào DB cho tab Token Management.
-        logUsage({ userId, feature, model, usage, success: true });
-
         return {
             success: true,
-            content: response.choices[0].message.content,
-            usage: response.usage,
+            content: out.text,
+            usage: out.usage,
         };
     } catch (error) {
-        logger.error('OpenAI API error', { error: error.message, feature });
-        logUsage({ userId, feature, model, usage: {}, success: false });
+        logger.error('AI chat error', { error: error.message, feature });
         return {
             success: false,
             error: error.message,
