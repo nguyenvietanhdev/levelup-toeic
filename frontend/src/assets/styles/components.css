@@ -9742,6 +9742,62 @@ mark {
     color: var(--text-primary);
     font: inherit;
 }
+/* Danh sách vai của Part, hiện ở phần giới thiệu các chế độ AI. */
+.ai-role-list {
+    width: 100%;
+    max-width: 720px;
+    margin: 0 auto 16px;
+    text-align: left;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+/* Khi danh sách vai nằm trong một cột (vd cột trái màn Hội thoại), lấp đầy cột. */
+.ai-setup-col .ai-role-list {
+    max-width: none;
+    margin: 0;
+}
+.ai-role-list-head {
+    font-size: 12px;
+    color: var(--text-secondary);
+}
+.ai-role-card {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 10px 12px;
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+}
+.ai-role-card.is-dang {
+    border-color: #9333ea;
+}
+.ai-role-card-main {
+    min-width: 0;
+}
+.ai-role-card-main .ai-role-title,
+.ai-role-card-main .ai-role-text {
+    margin: 2px 0 0;
+}
+.ai-role-card-actions {
+    display: flex;
+    gap: 6px;
+    align-items: flex-start;
+    flex-wrap: wrap;
+}
+.ai-role-note {
+    font-size: 11px;
+    color: var(--text-secondary);
+    align-self: center;
+}
+.ai-role-editor {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 10px 12px;
+    border: 1px dashed var(--border-color);
+    border-radius: 10px;
+}
 .ai-role-ok {
     color: #16a34a;
     margin: 0;

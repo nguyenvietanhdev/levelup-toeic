@@ -307,3 +307,29 @@ describe('vai AI ngắn gọn để đỡ tốn token', () => {
         expect(call.messages[0].content).toMatch(/at most 6 words/);
     });
 });
+
+describe('danh sách vai của Part', () => {
+    test('liệt kê mọi vai AI đã lưu, mới nhất trước, vai mới nhất là đang dùng', async () => {
+        await roles.luuVaiAI({ email: 'a@x', ...KHOA, text: 'A café waiter taking a drink order.' });
+        await roles.luuVaiAI({ email: 'a@x', ...KHOA, text: 'A hotel receptionist checking a guest in.' });
+        const ds = await roles.danhSachVai({ userId: 'u1', email: 'a@x', ...KHOA });
+        expect(ds.ai).toHaveLength(2);
+        expect(ds.ai[0].text).toBe('A hotel receptionist checking a guest in.');
+        expect(ds.ai.map((v) => v.dang)).toEqual([true, false]);
+        expect(ds.vai).toBeNull();
+    });
+
+    test('có vai riêng thì vai riêng là đang dùng, vai AI đều không đánh dấu dang', async () => {
+        await roles.luuVaiAI({ email: 'a@x', ...KHOA, text: 'A café waiter taking a drink order.' });
+        await roles.luuVaiNguoiDung({ userId: 'u1', email: 'a@x', ...KHOA, text: VAI_TAY });
+        const ds = await roles.danhSachVai({ userId: 'u1', email: 'a@x', ...KHOA });
+        expect(ds.vai).toMatchObject({ nguon: 'user', dang: true, text: VAI_TAY });
+        expect(ds.ai.every((v) => v.dang === false)).toBe(true);
+    });
+
+    test('Part đã mất thì danh sách rỗng', async () => {
+        await roles.luuVaiAI({ email: 'a@x', ...KHOA, text: 'A café waiter taking a drink order.' });
+        parts.shared = false;
+        expect(await roles.danhSachVai({ userId: 'u1', email: 'a@x', ...KHOA })).toEqual({ vai: null, ai: [] });
+    });
+});

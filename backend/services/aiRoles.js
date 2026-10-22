@@ -243,6 +243,31 @@ async function xoaVaiNguoiDung({ userId, source, part, lang }) {
     return { daXoa: r.deletedCount === 1 };
 }
 
+/**
+ * Toàn bộ vai của Part để hiện danh sách: vai riêng của người này (nếu có) và mọi
+ * vai AI đã lưu, mới nhất trước. `dang` đánh dấu vai đang áp dụng: vai riêng nếu có,
+ * không thì vai AI mới nhất.
+ */
+async function danhSachVai({ userId, email, source, part, lang }) {
+    const khoa = chuanHoaKhoa({ source, part, lang });
+    if (!(await partConTonTai({ ...khoa, email }))) {
+        await donVaiCuaPart(khoa);
+        return { vai: null, ai: [] };
+    }
+    const cua = await AiRole.findOne({ ...khoa, origin: 'user', ownerId: userId }).lean();
+    const ds = await AiRole.find({ ...khoa, origin: 'ai' }).sort({ updatedAt: -1 }).lean();
+    return {
+        vai: cua ? { id: String(cua._id), title: cua.title || '', text: cua.text, nguon: 'user', dang: true } : null,
+        ai: ds.map((r, i) => ({
+            id: String(r._id),
+            title: r.title || '',
+            text: r.text,
+            nguon: 'ai',
+            dang: !cua && i === 0,
+        })),
+    };
+}
+
 module.exports = {
     chuanHoaVaiText,
     chuanHoaTieuDe,
@@ -252,6 +277,7 @@ module.exports = {
     chuanHoaKhoa,
     partConTonTai,
     layVai,
+    danhSachVai,
     deXuatVaiAI,
     luuVaiAI,
     luuVaiNguoiDung,

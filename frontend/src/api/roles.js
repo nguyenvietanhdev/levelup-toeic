@@ -27,6 +27,11 @@ export const RolesAPI = {
         return unwrap(await Http.get(`/roles?${qs({ source, part, lang })}`));
     },
 
+    /** Mọi vai của Part: { vai (vai riêng hoặc null), ai: [vai AI đã lưu, mới nhất trước] }. */
+    async list({ source, part, lang }) {
+        return unwrap(await Http.get(`/roles/list?${qs({ source, part, lang })}`));
+    },
+
     /**
      * Nhờ AI viết một BẢN NHÁP (tiêu đề + mô tả). KHÔNG lưu: người học xem rồi mới
      * bấm "Lưu vai AI".

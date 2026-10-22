@@ -24,6 +24,20 @@ router.get('/', async (req, res, next) => {
     } catch (err) { next(err); }
 });
 
+/** Danh sách mọi vai của Part: vai riêng + các vai AI đã lưu (để sửa, xoá, chọn dùng). */
+router.get('/list', async (req, res, next) => {
+    try {
+        const data = await roles.danhSachVai({
+            userId: req.user.id,
+            email: req.user.email,
+            source: req.query.source,
+            part: req.query.part,
+            lang: req.query.lang,
+        });
+        res.json({ success: true, data });
+    } catch (err) { next(err); }
+});
+
 /** Nhờ AI đề xuất vai cho Part. Đã có thì trả lại, không gọi AI. */
 /** Lưu MỘT vai AI đã được người học xem (bản nháp từ /suggest). Trùng thì không lưu thêm. */
 router.post('/save-ai', async (req, res, next) => {

@@ -5,6 +5,10 @@ import { Energy } from '@game/energy.js';
 import { Notification } from '@ui/Toaster.jsx';
 import { EssayAPI } from '@api/essay.js';
 import LichSuMode from '../history/LichSuMode.jsx';
+import DanhSachVai from '../roles/DanhSachVai.jsx';
+import { getVocabLang } from '@api/vocabulary.js';
+import { TopicSelector } from '@components/vocab/topic/topicSelector.js';
+import { PartSelector } from '@components/vocab/part/partSelector.js';
 
 /**
  * Luyện VIẾT LUẬN — IELTS Task 2 (tiếng Anh) hoặc HSK 书写 (tiếng Trung).
@@ -187,6 +191,11 @@ export default function EssayScreen({ active }) {
 
             {tab === 'lichsu' ? <LichSuMode mode="viet" /> : !prompt ? (
                 <div className="essay-intro">
+                    <DanhSachVai
+                        source={TopicSelector.currentTopic?.source || ''}
+                        part={PartSelector.selectedPart || ''}
+                        lang={getVocabLang()}
+                    />
                     <p>
                         {lang === 'zh' ? (
                             <>

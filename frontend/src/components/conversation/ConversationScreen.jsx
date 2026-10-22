@@ -8,6 +8,7 @@ import { Notification } from '@ui/Toaster.jsx';
 import { ConversationAPI } from '@api/conversation.js';
 import LichSuMode from '../history/LichSuMode.jsx';
 import VaiAITab from '../roles/VaiAITab.jsx';
+import DanhSachVai from '../roles/DanhSachVai.jsx';
 import { getVocabLang } from '@api/vocabulary.js';
 import { EventBus, GameEvents } from '@game/eventBus.js';
 import { TopicSelector } from '@components/vocab/topic/topicSelector.js';
@@ -340,9 +341,17 @@ export default function ConversationScreen({ active }) {
                         dùng những từ đó — bạn đáp lại, càng dùng được nhiều từ
                         càng nhiều thưởng.
                     </p>
-                    {/* Vai AI không chọn ở đây nữa: mỗi Part có vai riêng (tab Vai AI).
-                        Cột này chỉ còn KIỂU CHẤM và ĐỘ KHÓ, đặt sát mép phải. */}
+                    {/* Hai cột: TRÁI là vai của Part đang học (sửa, xoá, dùng vai AI đã lưu);
+                        PHẢI là KIỂU CHẤM và ĐỘ KHÓ, sát mép phải. */}
                     <div className="ai-setup">
+                        <div className="ai-setup-col">
+                            <div className="ai-setup-title">Vai của Part</div>
+                            <DanhSachVai
+                                source={TopicSelector.currentTopic?.source || ''}
+                                part={PartSelector.selectedPart || ''}
+                                lang={lang}
+                            />
+                        </div>
                         <div className="ai-setup-col" style={{ gridColumn: 2 }}>
                             <div className="ai-setup-title">Kiểu chấm</div>
                             <div className="ai-setup-list tr-levels">

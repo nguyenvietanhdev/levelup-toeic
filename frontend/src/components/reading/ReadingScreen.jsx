@@ -6,6 +6,10 @@ import { Energy } from '@game/energy.js';
 import { Notification } from '@ui/Toaster.jsx';
 import { ReadingAPI } from '@api/reading.js';
 import LichSuMode from '../history/LichSuMode.jsx';
+import DanhSachVai from '../roles/DanhSachVai.jsx';
+import { getVocabLang } from '@api/vocabulary.js';
+import { TopicSelector } from '@components/vocab/topic/topicSelector.js';
+import { PartSelector } from '@components/vocab/part/partSelector.js';
 
 /**
  * Luyện ĐỌC HIỂU dạng TOEIC Part 7.
@@ -143,6 +147,11 @@ export default function ReadingScreen({ active }) {
 
             {tab === 'lichsu' ? <LichSuMode mode="doc" /> : !de ? (
                 <div className="essay-intro">
+                    <DanhSachVai
+                        source={TopicSelector.currentTopic?.source || ''}
+                        part={PartSelector.selectedPart || ''}
+                        lang={getVocabLang()}
+                    />
                     <p>
                         Đọc một văn bản công sở (email, thông báo, quảng cáo…) rồi trả lời
                         câu hỏi — <strong>đúng dạng TOEIC Part 7</strong>, phần chiếm tỉ

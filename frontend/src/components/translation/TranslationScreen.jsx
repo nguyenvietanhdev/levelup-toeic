@@ -7,6 +7,10 @@ import { Notification } from '@ui/Toaster.jsx';
 import { TranslationAPI } from '@api/translation.js';
 import MistakeLog from './MistakeLog.jsx';
 import LichSuMode from '../history/LichSuMode.jsx';
+import DanhSachVai from '../roles/DanhSachVai.jsx';
+import { getVocabLang } from '@api/vocabulary.js';
+import { TopicSelector } from '@components/vocab/topic/topicSelector.js';
+import { PartSelector } from '@components/vocab/part/partSelector.js';
 
 /**
  * Luyện DỊCH — đọc một đoạn tiếng Việt, viết lại bằng tiếng Anh (hoặc Trung).
@@ -195,6 +199,11 @@ export default function TranslationScreen({ active }) {
             <>
             {!de ? (
                 <div className="essay-intro">
+                    <DanhSachVai
+                        source={TopicSelector.currentTopic?.source || ''}
+                        part={PartSelector.selectedPart || ''}
+                        lang={getVocabLang()}
+                    />
                     <p>
                         Đọc một đoạn <strong>tiếng Việt</strong> rồi viết lại bằng{' '}
                         <strong>{tenNgonNgu}</strong>. Bài được chấm theo{' '}
