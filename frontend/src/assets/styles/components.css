@@ -9546,12 +9546,16 @@ mark {
    Các nút trong cột dùng `.tr-level` nhưng xếp DỌC và rộng bằng cột. */
 .convo-setup {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    /* Cột phải cố định bề rộng và dính mép phải; cột trái chiếm phần còn lại. */
+    grid-template-columns: minmax(0, 1fr) minmax(260px, 340px);
     gap: 18px;
     width: 100%;
-    max-width: 720px;
-    margin: 14px auto 18px;
+    margin: 14px 0 18px;
     text-align: left;
+}
+.convo-setup-col + .convo-setup-col {
+    justify-self: end;
+    width: 100%;
 }
 .convo-setup-col {
     display: flex;
