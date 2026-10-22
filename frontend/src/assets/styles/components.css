@@ -9720,6 +9720,28 @@ mark {
     font-size: 12px;
     color: var(--text-secondary);
 }
+.ai-role-title {
+    margin: 0 0 4px;
+    font-weight: 600;
+}
+.ai-role-draft {
+    padding: 12px 14px;
+    border: 1px dashed var(--border-color);
+    border-radius: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+.ai-role-input-title {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 8px 12px;
+    border-radius: 10px;
+    border: 1px solid var(--border-color);
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    font: inherit;
+}
 .ai-role-ok {
     color: #16a34a;
     margin: 0;

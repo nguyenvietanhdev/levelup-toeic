@@ -24,14 +24,22 @@ describe('VaiAITab', () => {
         expect(tab).toMatch(/if \(!coPart\) return;/);
     });
 
-    test('vai người học tự viết có giới hạn 10–400 ký tự', () => {
-        expect(tab).toMatch(/DO_DAI_TOI_THIEU = 10/);
-        expect(tab).toMatch(/DO_DAI_TOI_DA = 400/);
+    test('vai người học tự viết: tiêu đề 2–80 ký tự, mô tả 10–400 ký tự', () => {
+        expect(tab).toMatch(/TIEU_DE_TOI_THIEU = 2/);
+        expect(tab).toMatch(/TIEU_DE_TOI_DA = 80/);
+        expect(tab).toMatch(/MO_TA_TOI_THIEU = 10/);
+        expect(tab).toMatch(/MO_TA_TOI_DA = 400/);
+    });
+
+    test('AI đề xuất chỉ tạo bản nháp, lưu phải bấm nút riêng', () => {
+        expect(tab).toMatch(/setBanNhap\(\{ title: kq\.title, vai: kq\.vai \}\)/);
+        expect(tab).toMatch(/RolesAPI\.saveAi\(/);
+        expect(tab).toMatch(/Bản nháp AI — chưa lưu/);
     });
 
     test('nhãn nguồn phân biệt vai của bạn và vai AI', () => {
         expect(tab).toMatch(/user: 'Vai của bạn'/);
-        expect(tab).toMatch(/ai: 'Vai AI đề xuất'/);
+        expect(tab).toMatch(/ai: 'Vai AI đã lưu'/);
     });
 });
 

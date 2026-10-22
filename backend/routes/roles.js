@@ -25,6 +25,22 @@ router.get('/', async (req, res, next) => {
 });
 
 /** Nhờ AI đề xuất vai cho Part. Đã có thì trả lại, không gọi AI. */
+/** Lưu MỘT vai AI đã được người học xem (bản nháp từ /suggest). Trùng thì không lưu thêm. */
+router.post('/save-ai', async (req, res, next) => {
+    try {
+        const data = await roles.luuVaiAI({
+            email: req.user.email,
+            source: req.body.source,
+            part: req.body.part,
+            lang: req.body.lang,
+            title: req.body.title,
+            text: req.body.text,
+        });
+        res.json({ success: true, data });
+    } catch (err) { next(err); }
+});
+
+/** Đề xuất một bản nháp vai (KHÔNG lưu). Người học bấm "Lưu vai AI" để lưu. */
 router.post('/suggest', async (req, res, next) => {
     try {
         const data = await roles.deXuatVaiAI({
@@ -47,6 +63,7 @@ router.put('/mine', async (req, res, next) => {
             source: req.body.source,
             part: req.body.part,
             lang: req.body.lang,
+            title: req.body.title,
             text: req.body.text,
         });
         res.json({ success: true, data });
