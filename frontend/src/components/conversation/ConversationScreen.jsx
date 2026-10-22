@@ -6,6 +6,7 @@ import { GameLogic, ttsLang } from '@game/gameLogic.js';
 import { Energy } from '@game/energy.js';
 import { Notification } from '@ui/Toaster.jsx';
 import { ConversationAPI } from '@api/conversation.js';
+import LichSuMode from '../history/LichSuMode.jsx';
 import { getVocabLang } from '@api/vocabulary.js';
 import { EventBus, GameEvents } from '@game/eventBus.js';
 import { TopicSelector } from '@components/vocab/topic/topicSelector.js';
@@ -91,6 +92,7 @@ export default function ConversationScreen({ active }) {
     const [result, setResult] = useState(null);     // kết quả sau khi chốt
     const [speechOn, setSpeechOn] = useState(false);
     const [level, setLevel] = useState('medium');
+    const [tab, setTab] = useState('luyen'); // 'luyen' | 'lichsu'
     const [context, setContext] = useState('');     // mã bối cảnh, '' = chung
     const [rubric, setRubric] = useState('giaotiep'); // bộ tiêu chí chấm cuối phiên
     const [strictGrammar, setStrictGrammar] = useState(false); // ngữ pháp văn nói hay chuẩn viết
@@ -321,7 +323,16 @@ export default function ConversationScreen({ active }) {
                 <h2><i className="fas fa-comments"></i> Hội thoại</h2>
             </div>
 
-            {!convo ? (
+            <div className="tr-tabs">
+                <button className={`tr-tab${tab === 'luyen' ? ' is-on' : ''}`} onClick={() => setTab('luyen')}>
+                    <i className="fas fa-comments"></i> Luyện
+                </button>
+                <button className={`tr-tab${tab === 'lichsu' ? ' is-on' : ''}`} onClick={() => setTab('lichsu')}>
+                    <i className="fas fa-clock-rotate-left"></i> Lịch sử
+                </button>
+            </div>
+
+            {tab === 'lichsu' ? <LichSuMode mode="hoithoai" /> : !convo ? (
                 <div className="convo-intro">
                     <p>
                         Luyện nói bằng chính bộ từ bạn vừa học. Máy sẽ trò chuyện và

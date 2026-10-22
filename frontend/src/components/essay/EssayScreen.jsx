@@ -4,6 +4,7 @@ import { GameState } from '@game/state.js';
 import { Energy } from '@game/energy.js';
 import { Notification } from '@ui/Toaster.jsx';
 import { EssayAPI } from '@api/essay.js';
+import LichSuMode from '../history/LichSuMode.jsx';
 
 /**
  * Luyện VIẾT LUẬN — IELTS Task 2 (tiếng Anh) hoặc HSK 书写 (tiếng Trung).
@@ -81,6 +82,7 @@ export default function EssayScreen({ active }) {
     const [loadingPrompt, setLoadingPrompt] = useState(false);
     const [grading, setGrading] = useState(false);
     const [level, setLevel] = useState('medium');
+    const [tab, setTab] = useState('luyen'); // 'luyen' | 'lichsu'
 
     // `onBought` của popup nạp năng lượng gọi lại chính `handleGrade` — không
     // đưa được `handleGrade` vào deps của chính nó.
@@ -174,7 +176,16 @@ export default function EssayScreen({ active }) {
                 <h2><i className="fas fa-pen-nib"></i> Luyện viết</h2>
             </div>
 
-            {!prompt ? (
+            <div className="tr-tabs">
+                <button className={`tr-tab${tab === 'luyen' ? ' is-on' : ''}`} onClick={() => setTab('luyen')}>
+                    <i className="fas fa-pen"></i> Luyện
+                </button>
+                <button className={`tr-tab${tab === 'lichsu' ? ' is-on' : ''}`} onClick={() => setTab('lichsu')}>
+                    <i className="fas fa-clock-rotate-left"></i> Lịch sử
+                </button>
+            </div>
+
+            {tab === 'lichsu' ? <LichSuMode mode="viet" /> : !prompt ? (
                 <div className="essay-intro">
                     <p>
                         {lang === 'zh' ? (

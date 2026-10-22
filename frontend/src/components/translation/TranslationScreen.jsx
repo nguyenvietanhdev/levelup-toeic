@@ -6,6 +6,7 @@ import { Energy } from '@game/energy.js';
 import { Notification } from '@ui/Toaster.jsx';
 import { TranslationAPI } from '@api/translation.js';
 import MistakeLog from './MistakeLog.jsx';
+import LichSuMode from '../history/LichSuMode.jsx';
 
 /**
  * Luyện DỊCH — đọc một đoạn tiếng Việt, viết lại bằng tiếng Anh (hoặc Trung).
@@ -182,9 +183,15 @@ export default function TranslationScreen({ active }) {
                 >
                     <i className="fas fa-clipboard-list"></i> Nhật ký lỗi
                 </button>
+                <button
+                    className={`tr-tab${tab === 'lichsu' ? ' is-on' : ''}`}
+                    onClick={() => setTab('lichsu')}
+                >
+                    <i className="fas fa-clock-rotate-left"></i> Lịch sử
+                </button>
             </div>
 
-            {tab === 'loi' ? <MistakeLog /> : (
+            {tab === 'loi' ? <MistakeLog /> : tab === 'lichsu' ? <LichSuMode mode="dich" /> : (
             <>
             {!de ? (
                 <div className="essay-intro">

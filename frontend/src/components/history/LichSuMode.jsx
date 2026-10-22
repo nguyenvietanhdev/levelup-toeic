@@ -1,47 +1,35 @@
 import { useEffect, useState } from 'react';
-import { useGame } from '@game/GameContext.jsx';
 import { ConversationAPI } from '@api/conversation.js';
 import { EssayAPI } from '@api/essay.js';
 
 /**
- * Lịch sử các chế độ AI, chia TAB theo chế độ.
+ * Tab "Lịch sử" dùng chung cho các màn AI (giống "Nhật ký lỗi" của Dịch đoạn văn).
  *
- * Mỗi tab chỉ hiện những gì app THẬT SỰ đã lưu:
- *   · Hội thoại — danh sách + xem lại đầy đủ lời thoại và kết quả chấm.
- *   · Luyện viết — danh sách bài đã chấm (chưa xem lại được bài viết).
- *   · Dịch đoạn văn, Đọc hiểu — chưa lưu lịch sử, nên ghi rõ thay vì để trống.
+ * Chỉ hiện những gì app THẬT SỰ đã lưu:
+ *   · hoithoai — danh sách + xem lại đầy đủ lời thoại và kết quả chấm.
+ *   · viet     — danh sách bài đã chấm (chưa xem lại được bài viết).
+ *   · dich, doc — chưa lưu lịch sử, nên ghi rõ thay vì để trống.
  */
-const TAB = [
-    { key: 'hoithoai', label: 'Hội thoại' },
-    { key: 'viet', label: 'Luyện viết' },
-    { key: 'dich', label: 'Dịch đoạn văn', chuaLuu: true },
-    { key: 'doc', label: 'Đọc hiểu Part 7', chuaLuu: true },
-];
+const CHUA_LUU = { dich: 'Dịch đoạn văn', doc: 'Đọc hiểu Part 7' };
 
 const KHUNG_NGAY = (t) => (t ? new Date(t).toLocaleString('vi-VN') : '');
 
-export default function HistoryScreen({ active }) {
-    const { showScreen } = useGame();
-    const [tab, setTab] = useState('hoithoai');
-    const [rows, setRows] = useState(null);      // null = đang tải
+export default function LichSuMode({ mode }) {
+    const [rows, setRows] = useState(null);       // null = đang tải
     const [chiTiet, setChiTiet] = useState(null); // phiên hội thoại đang xem
     const [loi, setLoi] = useState('');
 
     useEffect(() => {
-        if (!active) return;
         setChiTiet(null);
         setLoi('');
+        if (CHUA_LUU[mode]) { setRows([]); return; }
         setRows(null);
         let huy = false;
-        const tai = tab === 'hoithoai'
-            ? ConversationAPI.history()
-            : tab === 'viet'
-                ? EssayAPI.history()
-                : Promise.resolve([]);
+        const tai = mode === 'hoithoai' ? ConversationAPI.history() : EssayAPI.history();
         tai.then((data) => { if (!huy) setRows(Array.isArray(data) ? data : []); })
             .catch((e) => { if (!huy) { setRows([]); setLoi(e?.message || 'Không tải được lịch sử'); } });
         return () => { huy = true; };
-    }, [tab, active]);
+    }, [mode]);
 
     const xemPhien = async (id) => {
         try {
@@ -51,42 +39,33 @@ export default function HistoryScreen({ active }) {
         }
     };
 
-    const dangTab = TAB.find((t) => t.key === tab);
+    if (CHUA_LUU[mode]) {
+        return (
+            <p className="tr-intro-note">
+                {CHUA_LUU[mode]} chưa lưu lịch sử, nên chưa có gì để xem lại.
+            </p>
+        );
+    }
+
+    if (mode === 'hoithoai' && chiTiet) {
+        return (
+            <>
+                <button className="btn btn-secondary" onClick={() => setChiTiet(null)} style={{ margin: '8px 0' }}>
+                    <i className="fas fa-arrow-left"></i> Quay lại danh sách
+                </button>
+                <ChiTietHoiThoai phien={chiTiet} />
+            </>
+        );
+    }
 
     return (
-        <div id="history-screen" className={`screen ${active ? 'active' : ''}`}>
-            <div className="screen-header">
-                <button className="back-btn-screen icon-btn" onClick={() => (chiTiet ? setChiTiet(null) : showScreen('home-screen'))}>
-                    <i className="fas fa-arrow-left"></i>
-                </button>
-                <h2><i className="fas fa-clock-rotate-left"></i> Lịch sử AI</h2>
-            </div>
-
-            <div className="tr-levels">
-                {TAB.map((t) => (
-                    <button
-                        key={t.key}
-                        className={`tr-level${tab === t.key ? ' is-on' : ''}`}
-                        onClick={() => setTab(t.key)}
-                    >
-                        <strong>{t.label}</strong>
-                    </button>
-                ))}
-            </div>
-
+        <>
             {loi && <p className="tr-intro-note">{loi}</p>}
-
-            {dangTab?.chuaLuu ? (
-                <p className="tr-intro-note">
-                    Chế độ này chưa lưu lịch sử, nên chưa có gì để xem lại.
-                </p>
-            ) : chiTiet ? (
-                <ChiTietHoiThoai phien={chiTiet} />
-            ) : rows === null ? (
+            {rows === null ? (
                 <p className="tr-intro-note"><i className="fas fa-spinner fa-spin"></i> Đang tải…</p>
             ) : rows.length === 0 ? (
                 <p className="tr-intro-note">Chưa có phiên nào. Hoàn thành một phiên để thấy lịch sử ở đây.</p>
-            ) : tab === 'hoithoai' ? (
+            ) : mode === 'hoithoai' ? (
                 <div className="ai-history-list">
                     {rows.map((r) => (
                         <button key={r.id} className="ai-history-row" onClick={() => xemPhien(r.id)}>
@@ -118,11 +97,11 @@ export default function HistoryScreen({ active }) {
                     ))}
                 </div>
             )}
-        </div>
+        </>
     );
 }
 
-/** Xem lại một phiên hội thoại: tình huống, lời thoại, kết quả chấm. */
+/** Xem lại một phiên hội thoại: tình huống, kết quả chấm, lời thoại. */
 function ChiTietHoiThoai({ phien }) {
     return (
         <div className="ai-history-detail">

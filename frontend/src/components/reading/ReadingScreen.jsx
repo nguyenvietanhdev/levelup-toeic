@@ -5,6 +5,7 @@ import { GameState } from '@game/state.js';
 import { Energy } from '@game/energy.js';
 import { Notification } from '@ui/Toaster.jsx';
 import { ReadingAPI } from '@api/reading.js';
+import LichSuMode from '../history/LichSuMode.jsx';
 
 /**
  * Luyện ĐỌC HIỂU dạng TOEIC Part 7.
@@ -52,6 +53,7 @@ export default function ReadingScreen({ active }) {
     const [chon, setChon] = useState([]);    // nhãn A–D theo thứ tự câu
     const [result, setResult] = useState(null);
     const [level, setLevel] = useState('medium');
+    const [tab, setTab] = useState('luyen'); // 'luyen' | 'lichsu'
     const [dang, setDang] = useState('');
     const [loadingDe, setLoadingDe] = useState(false);
     const [grading, setGrading] = useState(false);
@@ -130,7 +132,16 @@ export default function ReadingScreen({ active }) {
                 <h2><i className="fas fa-book-open-reader"></i> Đọc hiểu Part 7</h2>
             </div>
 
-            {!de ? (
+            <div className="tr-tabs">
+                <button className={`tr-tab${tab === 'luyen' ? ' is-on' : ''}`} onClick={() => setTab('luyen')}>
+                    <i className="fas fa-pen"></i> Luyện
+                </button>
+                <button className={`tr-tab${tab === 'lichsu' ? ' is-on' : ''}`} onClick={() => setTab('lichsu')}>
+                    <i className="fas fa-clock-rotate-left"></i> Lịch sử
+                </button>
+            </div>
+
+            {tab === 'lichsu' ? <LichSuMode mode="doc" /> : !de ? (
                 <div className="essay-intro">
                     <p>
                         Đọc một văn bản công sở (email, thông báo, quảng cáo…) rồi trả lời
