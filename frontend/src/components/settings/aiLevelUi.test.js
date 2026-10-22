@@ -53,7 +53,7 @@ describe('bốn màn AI đều cho chọn mức khó', () => {
 
 describe('mức được GỬI lên server', () => {
     test('Hội thoại gửi khi mở phiên', () => {
-        expect(MAN['Hội thoại']).toMatch(/ConversationAPI\.start\(\{ level \}\)/);
+        expect(MAN['Hội thoại']).toMatch(/ConversationAPI\.start\(\{ context, level \}\)/);
     });
 
     test('Viết luận gửi khi xin đề', () => {
@@ -63,7 +63,7 @@ describe('mức được GỬI lên server', () => {
     test('mức nằm trong deps — đổi mức là lần sau dùng mức mới', () => {
         // Thiếu deps thì `useCallback` giữ giá trị cũ: bấm "Khó" rồi bấm "Bắt
         // đầu" vẫn ra bài "Vừa", và không có gì báo.
-        expect(MAN['Hội thoại']).toMatch(/\}, \[starting[^\]]*level\]\);/);
+        expect(MAN['Hội thoại']).toMatch(/\}, \[starting[^\]]*level[^\]]*\]\);/);
         expect(MAN['Viết luận']).toMatch(/\}, \[loadingPrompt, level\]\);/);
     });
 });

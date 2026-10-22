@@ -9504,6 +9504,50 @@ mark {
     font-weight: 600;
 }
 
+/* Chip bấm được để chèn vào ô nhập (gợi ý trả lời). */
+.convo-chip--tap {
+    cursor: pointer;
+    font-family: inherit;
+}
+.convo-chip--tap:hover {
+    border-color: var(--accent-primary, #e11d48);
+    color: var(--text-primary);
+}
+
+/* Khung gợi ý cách trả lời — hiện phía trên ô nhập, không cuộn cùng hội thoại. */
+.convo-hint {
+    margin: 0 0 8px;
+    padding: 10px 12px;
+    border: 1px dashed var(--border-color);
+    border-radius: 10px;
+    background: var(--bg-secondary, transparent);
+    font-size: 13px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+.convo-hint-loai {
+    color: var(--text-secondary);
+    font-size: 12px;
+}
+.convo-hint-khung {
+    font-family: monospace;
+    font-size: 14px;
+}
+.convo-hint-tu {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    align-items: center;
+    color: var(--text-secondary);
+    font-size: 12px;
+}
+.convo-hint-btn.is-on {
+    background: #f59e0b;
+    border-color: #f59e0b;
+    color: #fff;
+}
+
 /* Màn này phải là FLEX COLUMN cao trọn khung nhìn để khung hội thoại cuộn
    RIÊNG, còn bảng từ mục tiêu và ô nhập đứng yên.
    `.screen.active` mặc định là `display: block` (layout.css) — để nguyên thì

@@ -70,13 +70,13 @@ export const ConversationAPI = {
      * Trước đây client phải gửi ba thứ đó lên, và cả ba đều từng sai kiểu hoặc
      * rỗng — bỏ hết là bỏ hết cơ hội đoán sai ở ranh giới.
      *
-     * `topic` (bối cảnh hội thoại) vẫn cho truyền: nó là lựa chọn của người
-     * dùng cho PHIÊN NÀY, không phải dữ liệu đã lưu ở đâu đó.
+     * `context` (MÃ bối cảnh: office, interview, travel, shopping; '' = chung)
+     * là lựa chọn của người dùng cho PHIÊN NÀY. Server đổi mã thành câu mô tả.
      */
-    async start({ topic = '', level = 'medium' } = {}) {
+    async start({ context = '', level = 'medium' } = {}) {
         // `level` chỉ gửi khi MỞ phiên — các lượt đáp sau đọc lại từ phiên đã
         // lưu, để không đổi được độ khó giữa chừng.
-        const res = await Http.post('/conversation/start', { topic, level });
+        const res = await Http.post('/conversation/start', { context, level });
         return unwrap(res);
     },
 

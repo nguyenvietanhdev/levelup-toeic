@@ -38,6 +38,31 @@ const WORDS_IN_PROMPT = 8;
 /** Ngôn ngữ mẹ đẻ của người dùng — dùng cho phần gợi ý/dịch. */
 const NATIVE = 'Vietnamese';
 
+/**
+ * Bối cảnh người học chọn trước khi mở phiên. Client chỉ gửi MÃ; câu mô tả nằm
+ * ở đây. Không nhận chuỗi tự do vào prompt — chuỗi đó là đầu vào của người
+ * dùng, không nên đi thẳng vào chỉ dẫn gửi cho AI.
+ */
+const BOI_CANH = {
+    office: 'an office: a team meeting, deadlines, emails and the daily schedule',
+    interview: 'a job interview: your background, strengths and career goals',
+    travel: 'travel: airports, hotels, directions and bookings',
+    shopping: 'shopping: prices, sizes, returns and paying at the counter',
+};
+
+/** Mã bối cảnh hợp lệ, hoặc '' (= chung chung, không đặt bối cảnh). */
+function chuanHoaBoiCanh(ma) {
+    // Chỉ chấp nhận CHUỖI: hasOwnProperty ép kiểu khoá, nên object có `toString`
+    // sẽ lọt qua và trả về chính object đó.
+    if (typeof ma !== 'string') return '';
+    return Object.prototype.hasOwnProperty.call(BOI_CANH, ma) ? ma : '';
+}
+
+/** Câu mô tả bối cảnh đưa vào prompt, '' nếu không chọn. */
+function moTaBoiCanh(ma) {
+    return BOI_CANH[chuanHoaBoiCanh(ma)] || '';
+}
+
 function langName(lang) {
     return LANG_NAME[lang] || LANG_NAME.en;
 }
@@ -150,4 +175,7 @@ module.exports = {
     pickWords,
     systemPrompt,
     WORDS_IN_PROMPT,
+    chuanHoaBoiCanh,
+    moTaBoiCanh,
+    BOI_CANH,
 };

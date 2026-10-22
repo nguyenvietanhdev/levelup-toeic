@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
+import { goiYCauTraLoi } from '@lib/conversationHint.js';
 import { useGame } from '@game/GameContext.jsx';
 import { GameState } from '@game/state.js';
 import { GameLogic, ttsLang } from '@game/gameLogic.js';
@@ -33,6 +34,18 @@ const MUC_KHO = [
     { key: 'hard', label: 'Khó', desc: 'Từ ít gặp, câu phức' },
 ];
 
+/**
+ * Bối cảnh hội thoại. Khoá là MÃ server nhận (`BOI_CANH` ở conversationAi.js);
+ * '' = chung chung, không đặt bối cảnh.
+ */
+const BOI_CANH_CHON = [
+    { key: '', label: 'Chung', desc: 'Chủ đề tự do' },
+    { key: 'office', label: 'Văn phòng', desc: 'Họp, deadline, lịch làm việc' },
+    { key: 'interview', label: 'Phỏng vấn', desc: 'Kinh nghiệm, điểm mạnh' },
+    { key: 'travel', label: 'Du lịch', desc: 'Sân bay, khách sạn, đường đi' },
+    { key: 'shopping', label: 'Mua sắm', desc: 'Giá cả, size, đổi trả' },
+];
+
 export default function ConversationScreen({ active }) {
     const { showScreen, syncFromState } = useGame();
 
@@ -43,6 +56,8 @@ export default function ConversationScreen({ active }) {
     const [result, setResult] = useState(null);     // kết quả sau khi chốt
     const [speechOn, setSpeechOn] = useState(false);
     const [level, setLevel] = useState('medium');
+    const [context, setContext] = useState('');     // mã bối cảnh, '' = chung
+    const [showHint, setShowHint] = useState(false);
 
     const speechRef = useRef(null);
     // Trỏ tới `handleStart` để `onBought` của popup nạp năng lượng gọi lại được.
@@ -112,7 +127,7 @@ export default function ConversationScreen({ active }) {
         setStarting(true);
         setResult(null);
         try {
-            const data = await ConversationAPI.start({ level });
+            const data = await ConversationAPI.start({ context, level });
             // Chốt cuối: không có `id` thì KHÔNG phải phiên hợp lệ.
             //
             // `unwrap` đã ném lỗi cho mọi thất bại đã biết, nhưng nếu server đổi
@@ -158,7 +173,7 @@ export default function ConversationScreen({ active }) {
         } finally {
             setStarting(false);
         }
-    }, [starting, lang, speak, syncFromState, level]);
+    }, [starting, lang, speak, syncFromState, level, context]);
 
     handleStartRef.current = handleStart;
 
@@ -265,6 +280,20 @@ export default function ConversationScreen({ active }) {
                         dùng những từ đó — bạn đáp lại, càng dùng được nhiều từ
                         càng nhiều thưởng.
                     </p>
+                    {/* Bối cảnh: AI đóng vai và đặt câu chuyện theo tình huống đã chọn. */}
+                    <div className="tr-levels">
+                        {BOI_CANH_CHON.map((b) => (
+                            <button
+                                key={b.key || 'chung'}
+                                className={`tr-level${context === b.key ? ' is-on' : ''}`}
+                                onClick={() => setContext(b.key)}
+                            >
+                                <strong>{b.label}</strong>
+                                <em>{b.desc}</em>
+                            </button>
+                        ))}
+                    </div>
+
                     {/* Ba mức dùng CHUNG một bảng với Dịch và Đọc hiểu (server:
                         `services/aiLevel.js`), nên "Khó" ở đây và "Khó" ở đó là
                         cùng một trình độ — người học so được giữa các chế độ. */}
@@ -361,7 +390,45 @@ export default function ConversationScreen({ active }) {
                             </div>
                         </div>
                     ) : (
+                        <>
+                        {/* Gợi ý cấu trúc trả lời cho câu AI vừa hỏi — tính ở client,
+                            không tốn lượt AI. Chỉ hiện khi người học bấm mở. */}
+                        {showHint && (() => {
+                            const npcCuoi = [...convo.turns].reverse().find((t) => t.role === 'npc');
+                            const goiY = goiYCauTraLoi(npcCuoi?.content, convo.targetWords, [...used]);
+                            return (
+                                <div className="convo-hint">
+                                    <div className="convo-hint-loai">Dạng câu hỏi: <strong>{goiY.loai}</strong></div>
+                                    <div className="convo-hint-khung">{goiY.khung}</div>
+                                    {goiY.tuGoiY.length > 0 ? (
+                                        <div className="convo-hint-tu">
+                                            <span>Dùng một trong các từ:</span>
+                                            {goiY.tuGoiY.map((w) => (
+                                                <button
+                                                    key={w}
+                                                    type="button"
+                                                    className="convo-chip convo-chip--tap"
+                                                    onClick={() => setDraft((d) => (d ? `${d} ${w}` : w))}
+                                                >
+                                                    {w}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    ) : (
+                                        <div className="convo-hint-tu">Bạn đã dùng hết từ cần dùng.</div>
+                                    )}
+                                </div>
+                            );
+                        })()}
                         <div className="convo-input-row">
+                            <button
+                                type="button"
+                                className={`btn btn-secondary convo-hint-btn${showHint ? ' is-on' : ''}`}
+                                onClick={() => setShowHint((v) => !v)}
+                                title="Gợi ý cách trả lời"
+                            >
+                                <i className="fas fa-lightbulb"></i>
+                            </button>
                             <input
                                 className="convo-input"
                                 value={draft}
@@ -395,6 +462,7 @@ export default function ConversationScreen({ active }) {
                                 Kết thúc
                             </button>
                         </div>
+                        </>
                     )}
                 </>
             )}

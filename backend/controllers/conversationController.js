@@ -6,7 +6,7 @@ const Vocabulary = require('../models/Vocabulary');
 const VocabularyZh = require('../models/VocabularyZh');
 const UserUpload = require('../models/UserUpload');
 const WrongWord = require('../models/WrongWord');
-const { openConversation, replyTurn } = require('../services/conversationAi');
+const { openConversation, replyTurn, moTaBoiCanh } = require('../services/conversationAi');
 const { matchWords, collectUsed } = require('../utils/wordMatch');
 const { awardXp } = require('../utils/userStateHelper');
 const { isVipActive } = require('../utils/energyCosts');
@@ -140,7 +140,9 @@ async function chargeEnergy(userId) {
  */
 exports.start = async (req, res, next) => {
     try {
-        const { topic = '' } = req.body;
+        // Bối cảnh: client gửi MÃ (`office`, `travel`...), server đổi thành câu
+        // mô tả. Mã lạ hoặc thiếu thì ra chung chung, không lỗi.
+        const topic = moTaBoiCanh(req.body.context);
 
         /**
          * Đề · Part · ngôn ngữ do SERVER tự đọc từ hồ sơ, KHÔNG nhận từ client.
