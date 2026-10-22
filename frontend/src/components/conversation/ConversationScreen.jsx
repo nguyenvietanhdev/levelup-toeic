@@ -46,6 +46,30 @@ const BO_TIEU_CHI_CHON = [
 ];
 
 /**
+ * Mức chấm theo TỪNG bộ tiêu chí. Khoá easy/medium/hard giữ nguyên để gửi server;
+ * nhãn là thang của chính bộ đó (TOEIC điểm, IELTS band, HSK cấp). Khớp `MUC_CHAM`
+ * ở services/conversationGrader.js.
+ */
+const MUC_CHAM_CHON = {
+    giaotiep: MUC_KHO,
+    toeic: [
+        { key: 'easy', label: '400–500', desc: 'Ngữ pháp cơ bản, từ công sở đơn giản' },
+        { key: 'medium', label: '600–700', desc: 'Ngữ pháp đa dạng hơn' },
+        { key: 'hard', label: '800+', desc: 'Vốn từ công sở phong phú' },
+    ],
+    ielts: [
+        { key: 'easy', label: 'Band 5.0–5.5', desc: 'Ý rõ, đủ ngữ pháp' },
+        { key: 'medium', label: 'Band 6.0–6.5', desc: 'Mạch lạc, từ đa dạng' },
+        { key: 'hard', label: 'Band 7.0+', desc: 'Từ tinh tế, ít lỗi' },
+    ],
+    hsk: [
+        { key: 'easy', label: 'HSK 2–3', desc: 'Câu đơn giản' },
+        { key: 'medium', label: 'HSK 4', desc: 'Câu dài, bổ ngữ' },
+        { key: 'hard', label: 'HSK 5+', desc: 'Câu phức, lưu loát' },
+    ],
+};
+
+/**
  * Bối cảnh hội thoại. Khoá là MÃ server nhận (`BOI_CANH` ở conversationAi.js);
  * '' = chung chung, không đặt bối cảnh.
  */
@@ -334,7 +358,7 @@ export default function ConversationScreen({ active }) {
                                 cùng một trình độ — người học so được giữa các chế độ. */}
                             <div className="convo-setup-title">Độ khó</div>
                             <div className="convo-setup-list tr-levels">
-                                {MUC_KHO.map((m) => (
+                                {(MUC_CHAM_CHON[rubric] || MUC_KHO).map((m) => (
                                     <button
                                         key={m.key}
                                         className={`tr-level${level === m.key ? ' is-on' : ''}`}
@@ -426,6 +450,15 @@ export default function ConversationScreen({ active }) {
                                         Chấm theo <strong>{result.feedback.label}</strong>
                                         {' · '}trung bình <strong>{result.feedback.overall}</strong>/9
                                     </div>
+                                    {result.feedback.muc && (
+                                        <div className="convo-feedback-head">
+                                            Mức <strong>{result.feedback.muc}</strong>:{' '}
+                                            <strong style={{ color: result.feedback.dat ? '#16a34a' : '#dc2626' }}>
+                                                {result.feedback.dat ? 'Đạt' : 'Chưa đạt'}
+                                            </strong>{' '}
+                                            (ngưỡng {result.feedback.nguong}/9)
+                                        </div>
+                                    )}
                                     {result.feedback.criteria.map((c) => (
                                         <div key={c.key} className="convo-feedback-row">
                                             <span className="convo-feedback-label">{c.label}</span>

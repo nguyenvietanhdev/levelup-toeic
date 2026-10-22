@@ -170,3 +170,44 @@ describe('gradeConversation', () => {
         expect(mockText.mock.calls[0][0].feature).toBe('conversation-grade');
     });
 });
+
+describe('mức chấm theo từng bộ', () => {
+    test('mỗi bộ có đủ 3 mức easy/medium/hard với nhãn và ngưỡng', () => {
+        for (const bo of Object.keys(g.MUC_CHAM)) {
+            for (const k of ['easy', 'medium', 'hard']) {
+                expect(g.MUC_CHAM[bo][k].label).toBeTruthy();
+                expect(g.MUC_CHAM[bo][k].nguong).toBeGreaterThan(0);
+            }
+        }
+    });
+
+    test('nhãn theo đúng thang của bộ: TOEIC điểm, IELTS band, HSK cấp', () => {
+        expect(g.MUC_CHAM.toeic.medium.label).toBe('600–700');
+        expect(g.MUC_CHAM.ielts.hard.label).toBe('Band 7.0+');
+        expect(g.MUC_CHAM.hsk.medium.label).toBe('HSK 4');
+    });
+
+    test('mức lạ hoặc thiếu → vừa', () => {
+        expect(g.chuanHoaMucCham('toeic', 'constructor')).toBe('medium');
+        expect(g.chuanHoaMucCham('toeic', undefined)).toBe('medium');
+        expect(g.chuanHoaMucCham('toeic', 'hard')).toBe('hard');
+    });
+
+    test('parseGrading cho biết đạt hay chưa theo ngưỡng của mức đã chọn', () => {
+        const raw = JSON.stringify({ criteria: [
+            { key: 'ngu_phap', score: 6 }, { key: 'mach_lac', score: 6 }, { key: 'von_tu', score: 6 }, { key: 'lien_quan', score: 6 },
+        ] });
+        const hard = g.parseGrading(raw, 'toeic', 'en', 'hard');
+        expect(hard.muc).toBe('800+');
+        expect(hard.nguong).toBe(7.5);
+        expect(hard.dat).toBe(false);
+        const medium = g.parseGrading(raw, 'toeic', 'en', 'medium');
+        expect(medium.muc).toBe('600–700');
+        expect(medium.dat).toBe(true);
+    });
+
+    test('prompt chấm ghi rõ mức kỳ vọng của bộ đã chọn', () => {
+        const msgs = g.buildGradingMessages({ rubric: 'hsk', track: 'zh', lang: 'zh', level: 'medium', turns: [{ role: 'user', content: '你好' }] });
+        expect(msgs[0].content).toMatch(/Expected level: HSK 4/);
+    });
+});

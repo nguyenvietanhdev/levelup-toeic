@@ -61,6 +61,56 @@ const BO_THEO_NGON_NGU = {
 };
 
 /**
+ * Mức chấm (easy / medium / hard) hiểu THEO TỪNG BỘ. Cùng khoá `level` được dùng
+ * cho cả hai việc: điều chỉnh độ phức tạp lời AI và quy điểm về ngưỡng đạt.
+ *
+ * `nguong` là điểm tối thiểu trên thang 0–9 để được "Đạt". Đây là quy đổi ước
+ * lượng từ mốc hiển thị (vd TOEIC 600–700 ~ 6.0), không phải chuẩn chính thức.
+ */
+const MUC_CHAM = {
+    giaotiep: {
+        easy: { label: 'Dễ', nguong: 4, mota: 'Câu ngắn, nói đủ ý, chấp nhận lỗi nhỏ.' },
+        medium: { label: 'Vừa', nguong: 5.5, mota: 'Câu đầy đủ, tự nhiên, đúng ngữ cảnh.' },
+        hard: { label: 'Khó', nguong: 7, mota: 'Câu linh hoạt, tự nhiên như người bản xứ.' },
+    },
+    toeic: {
+        easy: { label: '400–500', nguong: 4, mota: 'Ngữ pháp cơ bản đúng, từ công sở đơn giản.' },
+        medium: { label: '600–700', nguong: 6, mota: 'Ngữ pháp đa dạng hơn, từ công sở chính xác.' },
+        hard: { label: '800+', nguong: 7.5, mota: 'Ngữ pháp chắc, vốn từ công sở phong phú, mạch lạc tốt.' },
+    },
+    ielts: {
+        easy: { label: 'Band 5.0–5.5', nguong: 5, mota: 'Ý rõ, ngữ pháp và từ vựng đủ dùng.' },
+        medium: { label: 'Band 6.0–6.5', nguong: 6, mota: 'Mạch lạc, từ vựng đa dạng, ngữ pháp đa dạng.' },
+        hard: { label: 'Band 7.0+', nguong: 7, mota: 'Từ vựng tinh tế, cấu trúc phức, ít lỗi.' },
+    },
+    hsk: {
+        easy: { label: 'HSK 2–3', nguong: 4, mota: 'Câu đơn giản, từ thường dùng.' },
+        medium: { label: 'HSK 4', nguong: 5.5, mota: 'Câu dài hơn, dùng bổ ngữ và trạng ngữ.' },
+        hard: { label: 'HSK 5+', nguong: 7, mota: 'Câu phức, từ vựng rộng, lưu loát.' },
+    },
+};
+
+const MUC_MAC_DINH = 'medium';
+
+/** Bảng mức của đúng bộ đã cho (khoá đã là mã bộ, không đi qua chuẩn hoá theo ngôn ngữ). */
+function mucCuaBo(rubric) {
+    return Object.prototype.hasOwnProperty.call(MUC_CHAM, rubric)
+        ? MUC_CHAM[rubric] : MUC_CHAM[BO_MAC_DINH];
+}
+
+/** Mức chấm hợp lệ cho bộ đó, hoặc mức vừa. Chỉ nhận khoá có trong bảng. */
+function chuanHoaMucCham(rubric, level) {
+    const bo = mucCuaBo(rubric);
+    return Object.prototype.hasOwnProperty.call(bo, level) ? level : MUC_MAC_DINH;
+}
+
+/** Dòng mô tả mức cho prompt (tiếng Anh, vì prompt viết bằng tiếng Anh). */
+function moTaMucChamPrompt(rubric, level) {
+    const m = mucCuaBo(rubric)[chuanHoaMucCham(rubric, level)];
+    return `Expected level: ${m.label}. ${m.mota}`;
+}
+
+/**
  * Mã bộ tiêu chí hợp lệ CHO NGÔN NGỮ ĐÓ, hoặc mặc định. Chọn sai cặp (vd HSK
  * cho tiếng Anh) thì rơi về Giao tiếp — không báo lỗi, không chấm sai chuẩn.
  */
@@ -76,8 +126,9 @@ function chuanHoaBoTieuChi(ma, track = 'en') {
  * Prompt chấm. Chỉ chấm lời NGƯỜI HỌC (lượt `user`); lời AI chỉ để hiểu ngữ cảnh.
  * Nhận xét viết bằng tiếng Việt vì người học đọc tiếng Việt.
  */
-function buildGradingMessages({ rubric, lang, track, turns }) {
-    const bo = BO_TIEU_CHI[chuanHoaBoTieuChi(rubric, track || lang)];
+function buildGradingMessages({ rubric, lang, track, level, turns }) {
+    const ma = chuanHoaBoTieuChi(rubric, track || lang);
+    const bo = BO_TIEU_CHI[ma];
     const ngonNgu = lang === 'zh' ? 'Chinese' : 'English';
     const transcript = turns
         .map((t) => `${t.role === 'user' ? 'LEARNER' : 'PARTNER'}: ${t.content}`)
@@ -90,7 +141,8 @@ function buildGradingMessages({ rubric, lang, track, turns }) {
             content: [
                 `You are an examiner grading a ${ngonNgu} conversation for the "${bo.label}" rubric.`,
                 'Grade ONLY the LEARNER lines. PARTNER lines show context and must not be graded.',
-                'Score every criterion from 0 to 9 (integers). Do not grade pronunciation or intonation: they are not visible in text.',
+                moTaMucChamPrompt(ma, level),
+                'Score every criterion from 0 to 9 (integers) AGAINST THAT expected level. Do not grade pronunciation or intonation: they are not visible in text.',
                 '',
                 'Criteria:',
                 danhSach,
@@ -108,8 +160,10 @@ function buildGradingMessages({ rubric, lang, track, turns }) {
  * Đọc JSON từ câu trả lời của model. Model hay bọc trong ```json ... ``` nên bóc
  * hàng rào trước khi parse, rồi kiểm từng trường — không tin hình dạng đầu ra.
  */
-function parseGrading(text, rubric, track = 'en') {
+function parseGrading(text, rubric, track = 'en', level = MUC_MAC_DINH) {
     const ma = chuanHoaBoTieuChi(rubric, track);
+    const mucKey = chuanHoaMucCham(ma, level);
+    const muc = mucCuaBo(ma)[mucKey];
     const bo = BO_TIEU_CHI[ma];
     let raw = String(text || '').trim();
     const fence = raw.match(/```(?:json)?\s*([\s\S]*?)```/i);
@@ -139,11 +193,17 @@ function parseGrading(text, rubric, track = 'en') {
     const co = criteria.filter((c) => c.score !== null);
     if (co.length === 0) return null;   // không có điểm nào thì coi như không chấm được
 
+    const overall = Math.round((co.reduce((s, c) => s + c.score, 0) / co.length) * 10) / 10;
     return {
         rubric: ma,
         label: bo.label,
+        // Mức đã chọn và ngưỡng đạt của mức đó. `dat` = điểm tổng ≥ ngưỡng.
+        level: mucKey,
+        muc: muc.label,
+        nguong: muc.nguong,
+        dat: overall >= muc.nguong,
         criteria,
-        overall: Math.round((co.reduce((s, c) => s + c.score, 0) / co.length) * 10) / 10,
+        overall,
         summary: typeof obj.summary === 'string' ? obj.summary.slice(0, 600) : '',
     };
 }
@@ -152,13 +212,13 @@ function parseGrading(text, rubric, track = 'en') {
  * Chấm cả phiên. Trả về `null` khi không chấm được — việc chấm là phần thêm vào,
  * không được làm hỏng việc nhận thưởng từ vựng.
  */
-async function gradeConversation({ rubric, lang, track, turns, userId = null }) {
+async function gradeConversation({ rubric, lang, track, level, turns, userId = null }) {
     const hasLearner = turns.some((t) => t.role === 'user');
     if (!hasLearner) return null;
 
     const out = await textCompletion({
         feature: 'conversation-grade',
-        messages: buildGradingMessages({ rubric, lang, track, turns }),
+        messages: buildGradingMessages({ rubric, lang, track, level, turns }),
         maxTokens: 500,
         temperature: 0,
         userId,
@@ -167,14 +227,16 @@ async function gradeConversation({ rubric, lang, track, turns, userId = null }) 
         return null;
     });
     if (!out) return null;
-    return parseGrading(out.text, rubric, track || lang);
+    return parseGrading(out.text, rubric, track || lang, level);
 }
 
 module.exports = {
     BO_TIEU_CHI,
     BO_MAC_DINH,
     BO_THEO_NGON_NGU,
+    MUC_CHAM,
     chuanHoaBoTieuChi,
+    chuanHoaMucCham,
     buildGradingMessages,
     parseGrading,
     gradeConversation,

@@ -389,6 +389,7 @@ exports.finish = async (req, res, next) => {
             rubric: convo.rubric,
             lang: convo.lang,
             track: convo.track,
+            level: convo.level,
             turns: convo.turns.map((t) => ({ role: t.role, content: t.content })),
             userId: req.user.id,
         });
