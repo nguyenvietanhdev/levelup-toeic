@@ -71,18 +71,6 @@ const MUC_CHAM_CHON = {
     ],
 };
 
-/**
- * Bối cảnh hội thoại. Khoá là MÃ server nhận (`BOI_CANH` ở conversationAi.js);
- * '' = chung chung, không đặt bối cảnh.
- */
-const BOI_CANH_CHON = [
-    { key: '', label: 'Tự do', desc: 'AI tự chọn giọng nói' },
-    { key: 'colleague', label: 'Đồng nghiệp', desc: 'Thân mật, bàn công việc' },
-    { key: 'customer', label: 'Khách hàng', desc: 'Lịch sự, hỏi và yêu cầu' },
-    { key: 'receptionist', label: 'Lễ tân', desc: 'Trang trọng, hỗ trợ yêu cầu' },
-    { key: 'interviewer', label: 'Người phỏng vấn', desc: 'Trang trọng, hỏi kinh nghiệm' },
-];
-
 export default function ConversationScreen({ active }) {
     const { showScreen, syncFromState } = useGame();
 
@@ -94,7 +82,8 @@ export default function ConversationScreen({ active }) {
     const [speechOn, setSpeechOn] = useState(false);
     const [level, setLevel] = useState('medium');
     const [tab, setTab] = useState('luyen'); // 'luyen' | 'lichsu'
-    const [context, setContext] = useState('');     // mã bối cảnh, '' = chung
+    // Không còn chọn vai ở màn này: vai đi theo Part (tab Vai AI), nên phiên luôn gửi ''.
+    const context = '';
     const [rubric, setRubric] = useState('giaotiep'); // bộ tiêu chí chấm cuối phiên
     const [strictGrammar, setStrictGrammar] = useState(false); // ngữ pháp văn nói hay chuẩn viết
     const [feedbackClosed, setFeedbackClosed] = useState(false); // người học đã đóng popup kết quả
@@ -351,26 +340,10 @@ export default function ConversationScreen({ active }) {
                         dùng những từ đó — bạn đáp lại, càng dùng được nhiều từ
                         càng nhiều thưởng.
                     </p>
-                    {/* Hai cột: bên trái chọn BỐI CẢNH, bên phải chọn KIỂU CHẤM và ĐỘ KHÓ.
-                        Trên màn hẹp hai cột xếp chồng (xem CSS `.ai-setup`). */}
+                    {/* Vai AI không chọn ở đây nữa: mỗi Part có vai riêng (tab Vai AI).
+                        Cột này chỉ còn KIỂU CHẤM và ĐỘ KHÓ, đặt sát mép phải. */}
                     <div className="ai-setup">
-                        <div className="ai-setup-col">
-                            <div className="ai-setup-title">Vai của AI</div>
-                            <div className="ai-setup-list tr-levels">
-                                {BOI_CANH_CHON.map((b) => (
-                                    <button
-                                        key={b.key || 'chung'}
-                                        className={`tr-level${context === b.key ? ' is-on' : ''}`}
-                                        onClick={() => setContext(b.key)}
-                                    >
-                                        <strong>{b.label}</strong>
-                                        <em>{b.desc}</em>
-                                    </button>
-                                ))}
-                            </div>
-                        </div>
-
-                        <div className="ai-setup-col">
+                        <div className="ai-setup-col" style={{ gridColumn: 2 }}>
                             <div className="ai-setup-title">Kiểu chấm</div>
                             <div className="ai-setup-list tr-levels">
                                 {BO_TIEU_CHI_CHON.filter((b) => b.langs.includes(lang)).map((b) => (

@@ -54,3 +54,10 @@ describe('màn Hội thoại có tab Vai AI sau Lịch sử', () => {
         expect(conv).toMatch(/part=\{PartSelector\.selectedPart/);
     });
 });
+
+describe('API vai gỡ đúng hai lớp .data', () => {
+    test('unwrap kiểm lớp bọc của Http trước khi trả dữ liệu', () => {
+        expect(api).toMatch(/'success' in inner/);
+        expect(api).toMatch(/return inner\.data \?\? null;/);
+    });
+});

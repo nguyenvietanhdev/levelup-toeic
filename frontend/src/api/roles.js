@@ -9,7 +9,14 @@ function unwrap(res) {
     if (res && res.success === false) {
         throw new Error(res.message || 'Có lỗi khi xử lý vai');
     }
-    return res?.data ?? res;
+    // HAI lớp `.data`: Http bọc phản hồi server thành { success, data: <phản hồi> },
+    // và server trả { success, data: { vai, nguon } }. Gỡ một lớp là nhận nhầm
+    // object có `success` và giao diện báo "Chưa có vai" dù server đã có vai.
+    const inner = res?.data;
+    if (inner && typeof inner === 'object' && 'success' in inner) {
+        return inner.data ?? null;
+    }
+    return inner ?? res;
 }
 
 const qs = (o) => new URLSearchParams(o).toString();
