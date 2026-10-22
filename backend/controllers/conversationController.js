@@ -45,8 +45,13 @@ const MAX_REPLY_LEN = 500;
  * quản) và kho riêng của người dùng (`user_upload`). Cùng một `source` có thể
  * nằm ở một trong hai — chỉ dò một chỗ là mất hẳn nửa dữ liệu, mà không lỗi nào
  * báo: danh sách rỗng trông y như "part này chưa có từ".
+ *
+ * Kho riêng (`UserUpload`) khoá theo `ownerEmail`, KHÔNG có trường `userId`.
+ * Lọc theo `userId` thì Mongo không khớp bản ghi nào — bộ từ riêng của người
+ * dùng luôn ra 0 từ, dù danh sách Part vẫn đếm đủ (đúng lỗi "10 từ mà báo ít
+ * hơn 4" đã gặp).
  */
-async function fetchWords({ userId, source, part, lang }) {
+async function fetchWords({ email, source, part, lang }) {
     const filter = { source };
     if (part) filter.part = part;
 
@@ -57,7 +62,7 @@ async function fetchWords({ userId, source, part, lang }) {
         // trơn — mà hội thoại vẫn mở bình thường, nên trông như AI hoạt động
         // đúng trong khi người học không thể ăn điểm nào.
         SharedModel.find(filter).select('en zh vn').lean(),
-        UserUpload.find({ ...filter, userId, lang }).select('en zh vn').lean(),
+        UserUpload.find({ ...filter, ownerEmail: email, lang }).select('en zh vn').lean(),
     ]);
 
     return [...shared, ...mine];
@@ -177,7 +182,7 @@ exports.start = async (req, res, next) => {
         // (Không cần kiểm `lang` nữa — phép chuẩn hoá ở trên đã đảm bảo nó chỉ
         // có thể là 'en' hoặc 'zh'.)
 
-        const words = await fetchWords({ userId: req.user.id, source, part, lang });
+        const words = await fetchWords({ email: req.user.email, source, part, lang });
         if (words.length < 4) {
             // Dưới 4 từ thì hội thoại không có gì để nhắm — báo rõ thay vì mở
             // một phiên rỗng rồi để người dùng tự đoán vì sao không ăn điểm.

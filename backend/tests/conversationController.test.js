@@ -182,6 +182,13 @@ describe('lấy từ vựng', () => {
         expect(b).toMatch(/UserUpload\.find/);
     });
 
+    test('kho riêng lọc theo ownerEmail, KHÔNG theo userId (UserUpload không có trường đó)', () => {
+        const i = src.indexOf('async function fetchWords');
+        const b = src.slice(i, src.indexOf('\n}', i));
+        expect(b).toMatch(/UserUpload\.find\(\{[^}]*ownerEmail: email/);
+        expect(b).not.toMatch(/UserUpload\.find\(\{[^}]*userId/);
+    });
+
     test('chọn đúng model theo ngôn ngữ', () => {
         expect(src).toMatch(/lang === 'zh' \? VocabularyZh : Vocabulary/);
     });
