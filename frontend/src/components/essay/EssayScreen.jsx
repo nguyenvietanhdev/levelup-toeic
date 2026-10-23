@@ -91,6 +91,34 @@ const KIEU_CHAM = [
 /** Kiểu chấm mặc định của mỗi ngôn ngữ (khớp server). */
 const KIEU_MAC_DINH = { en: 'ielts', zh: 'hsk' };
 
+/**
+ * Nhãn ĐỘ KHÓ theo từng kiểu chấm — giống Hội thoại: mỗi kiểu có thang riêng
+ * (Giao tiếp Dễ/Vừa/Khó, TOEIC theo điểm, IELTS theo band, HSK theo cấp).
+ * Khoá easy/medium/hard giữ nguyên để gửi server; khớp `MUC_CHAM` ở server.
+ */
+const MUC_THEO_KIEU = {
+    giaotiep: [
+        { key: 'easy', label: 'Dễ', desc: 'Từ thông dụng, câu ngắn' },
+        { key: 'medium', label: 'Vừa', desc: 'Từ công sở' },
+        { key: 'hard', label: 'Khó', desc: 'Từ ít gặp, câu phức' },
+    ],
+    toeic: [
+        { key: 'easy', label: '400–500', desc: 'Ngữ pháp cơ bản, từ công sở đơn giản' },
+        { key: 'medium', label: '600–700', desc: 'Ngữ pháp đa dạng hơn' },
+        { key: 'hard', label: '800+', desc: 'Vốn từ công sở phong phú' },
+    ],
+    ielts: [
+        { key: 'easy', label: 'Band 5.0–5.5', desc: 'Ý rõ, đủ ngữ pháp' },
+        { key: 'medium', label: 'Band 6.0–6.5', desc: 'Mạch lạc, từ đa dạng' },
+        { key: 'hard', label: 'Band 7.0+', desc: 'Từ tinh tế, ít lỗi' },
+    ],
+    hsk: [
+        { key: 'easy', label: 'HSK 2–3', desc: 'Câu đơn giản' },
+        { key: 'medium', label: 'HSK 4', desc: 'Câu dài, bổ ngữ' },
+        { key: 'hard', label: 'HSK 5+', desc: 'Câu phức, lưu loát' },
+    ],
+};
+
 export default function EssayScreen({ active }) {
     const { showScreen, syncFromState } = useGame();
 
@@ -258,7 +286,7 @@ export default function EssayScreen({ active }) {
                             </div>
                             <div className="ai-setup-title">Độ khó</div>
                             <div className="ai-setup-list tr-levels">
-                                {(lang === 'zh' ? MUC_KHO_ZH : MUC_KHO).map((m) => (
+                                {(MUC_THEO_KIEU[kieuDangChon] || MUC_KHO).map((m) => (
                                     <button
                                         key={m.key}
                                         className={`tr-level${level === m.key ? ' is-on' : ''}`}
