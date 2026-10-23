@@ -31,23 +31,27 @@ const MENU_GROUPS = [
             { label: 'Ôn lại từ sai', icon: 'fa-repeat', mode: 'review-mistakes', badgeKey: 'reviewDue', badgeStyle: 'reward' },
         ],
     },
+    // Các chế độ AI gọi AI có phí và tốn năng lượng, khác hẳn những chế độ bấm-là-chơi.
+    // Gom theo KỸ NĂNG (Nói, Đọc, Viết) để người học thấy mình đang luyện kỹ năng nào.
+    // Chưa có chế độ Nghe với AI: sẽ thêm nhóm "Nghe" khi có.
     {
-        // Hai chế độ này gọi AI có phí và tốn năng lượng, khác hẳn những chế độ
-        // bấm-là-chơi. Gom lại để thấy rõ chúng cùng một loại — và để người dùng
-        // biết trước là chúng "đắt" hơn.
-        title: 'Luyện với AI',
+        title: 'Nói với AI',
         items: [
             { label: 'Hội thoại', icon: 'fa-comments', screen: 'conversation-screen', feature: 'feature:conversation' },
-            { label: 'Luyện viết', icon: 'fa-pen-nib', screen: 'essay-screen', feature: 'feature:essay' },
-            // Cùng nhóm với hai chế độ AI kia vì cùng bản chất: gọi AI có phí,
-            // tốn năng lượng, có màn hình riêng thay vì chạy qua PracticeManager.
-            //
-            // Vẫn giữ thẻ ở lưới trang chủ — hai lối vào cho hai tình huống:
-            // lưới là nơi người dùng THẤY chế độ khi đang chọn, sidebar là lối
-            // tắt cho người đã biết mình muốn gì. Nhật ký lỗi nằm trong màn này
-            // nên nó cũng là đường vào nhanh nhất để xem mình hay sai gì.
-            { label: 'Dịch đoạn văn', icon: 'fa-language', screen: 'translation-screen', feature: 'feature:translation' },
+        ],
+    },
+    {
+        title: 'Đọc với AI',
+        items: [
             { label: 'Đọc hiểu Part 7', icon: 'fa-book-open-reader', screen: 'reading-screen', feature: 'feature:reading' },
+        ],
+    },
+    {
+        // Dịch và viết đều là sản xuất chữ: gom chung. Dịch vẫn có Nhật ký lỗi trong màn.
+        title: 'Viết với AI',
+        items: [
+            { label: 'Luyện viết', icon: 'fa-pen-nib', screen: 'essay-screen', feature: 'feature:essay' },
+            { label: 'Dịch đoạn văn', icon: 'fa-language', screen: 'translation-screen', feature: 'feature:translation' },
         ],
     },
     {

@@ -17,14 +17,16 @@ const app = readFileSync(join(__dirname, '..', 'App.jsx'), 'utf8');
 const badges = readFileSync(join(__dirname, 'useMenuBadges.js'), 'utf8');
 
 describe('menu chia nhóm', () => {
-    test('Hội thoại và Viết luận NẰM CÙNG một nhóm', () => {
-        // Hai chế độ này gọi AI có phí và tốn năng lượng, khác hẳn các chế độ
-        // bấm-là-chơi — gom lại để thấy rõ chúng cùng một loại.
-        const i = menu.indexOf("title: 'Luyện với AI'");
-        expect(i).toBeGreaterThan(-1);
-        const group = menu.slice(i, menu.indexOf('},\n    {', i));
-        expect(group).toContain("screen: 'conversation-screen'");
-        expect(group).toContain("screen: 'essay-screen'");
+    test('Hội thoại nằm nhóm NÓI, Luyện viết nằm nhóm VIẾT (gom theo kỹ năng)', () => {
+        // Các chế độ AI gom theo kỹ năng: Nói / Đọc / Viết. Hội thoại là kỹ năng Nói,
+        // Luyện viết là kỹ năng Viết.
+        const nhom = (tieuDe) => {
+            const i = menu.indexOf(`title: '${tieuDe}'`);
+            expect(i).toBeGreaterThan(-1);
+            return menu.slice(i, menu.indexOf('},\n    {', i));
+        };
+        expect(nhom('Nói với AI')).toContain("screen: 'conversation-screen'");
+        expect(nhom('Viết với AI')).toContain("screen: 'essay-screen'");
     });
 
     test('KHÔNG mục nào bị mất khi gom nhóm', () => {
@@ -146,14 +148,21 @@ describe('số "từ cần ôn" trên ô chế độ', () => {
     });
 });
 
-describe('nhóm "Luyện với AI" ở sidebar', () => {
+describe('các nhóm chế độ AI ở sidebar (theo kỹ năng)', () => {
+    // Gom mọi nhóm AI (Nói / Đọc / Viết) lại để kiểm tra chung.
+    const nhomAI = () => ['Nói với AI', 'Đọc với AI', 'Viết với AI']
+        .map((tieuDe) => {
+            const i = menu.indexOf(`title: '${tieuDe}'`);
+            expect(i).toBeGreaterThan(-1);
+            return menu.slice(i, menu.indexOf('},\n    {', i));
+        })
+        .join('\n');
+
     test('có ĐỦ ba chế độ AI', () => {
         // Ba chế độ này cùng bản chất: gọi AI có phí, tốn năng lượng, có màn
         // hình riêng. Thiếu một cái ở đây thì nó chỉ vào được qua lưới trang
         // chủ, trong khi hai cái kia có lối tắt.
-        const i = menu.indexOf("title: 'Luyện với AI'");
-        expect(i).toBeGreaterThan(-1);
-        const nhom = menu.slice(i, menu.indexOf('},\n    {', i));
+        const nhom = nhomAI();
         for (const s of ['conversation-screen', 'essay-screen', 'translation-screen']) {
             expect(nhom).toContain(s);
         }
@@ -162,8 +171,7 @@ describe('nhóm "Luyện với AI" ở sidebar', () => {
     test('mỗi chế độ AI đều khoá theo Level ở sidebar', () => {
         // Menu chỉ là giao diện — server vẫn chặn — nhưng hiện mục cho người
         // chưa mở khoá rồi để họ bấm vào mới báo là mời rồi từ chối.
-        const i = menu.indexOf("title: 'Luyện với AI'");
-        const nhom = menu.slice(i, menu.indexOf('},\n    {', i));
+        const nhom = nhomAI();
         for (const f of ['feature:conversation', 'feature:essay', 'feature:translation']) {
             expect(nhom).toContain(f);
         }
