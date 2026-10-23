@@ -153,7 +153,12 @@ async function deXuatVaiAI({ userId, email, source, part, lang }) {
         .lean();
     const tu = mau.map((w) => (khoa.lang === 'zh' ? w.zh : w.en)).filter(Boolean);
 
-    const out = await textCompletion({
+    // Vai AI đã lưu của Part: đưa cho AI để mỗi lần đề xuất ra một NGƯỜI khác
+    // (Mother rồi Grandfather rồi Older sister…), không lặp lại vai đã có.
+    const daLuu = await AiRole.find({ ...khoa, origin: 'ai' }).sort({ updatedAt: -1 }).select('title').lean();
+    const tranh = [...new Set(daLuu.map((v) => v.title).filter(Boolean))].slice(0, MAX_VAI_AI_DA_LUU);
+
+    const hoiAI = () => textCompletion({
         feature: 'role-suggest',
         messages: [
             {
@@ -161,23 +166,50 @@ async function deXuatVaiAI({ userId, email, source, part, lang }) {
                 // Ngắn là cốt lõi: vai này đi vào MỌI phiên của Part, nên dài là tốn token.
                 content: [
                     'Write a short role for a speaking-practice chat, in exactly two lines:',
-                    // Tiêu đề LÀ VAI TRÒ / CHỨC VỤ của người nói (vd "Receptionist", "Bartender").
-                    // Tình huống cụ thể đi vào dòng ROLE, và thay đổi theo Part.
-                    'TITLE: the speaker\'s job role or position only, 1-3 words (e.g. "Receptionist", "Bartender", "Colleague"). Never a scene or a situation.',
-                    'ROLE: one sentence of at most 15 words: the situation, and who the AI talks to.',
+                    // Tiêu đề là MỘT NGƯỜI CỤ THỂ thuộc chủ đề: Part "Family" → Mother, Grandfather,
+                    // chứ không phải "Family Member" (lặp tên chủ đề, không cho biết ai đang nói).
+                    'TITLE: the specific person the AI plays, 1-3 words (e.g. "Mother", "Grandfather", "Older sister", "Receptionist", "Bartender").',
+                    'It must be a concrete person or job that belongs to the topic, never the topic name itself',
+                    'and never a vague word such as "member", "person" or "AI".',
+                    // Tình huống cụ thể, có cả vai của NGƯỜI HỌC — để cuộc trò chuyện có hướng.
+                    'ROLE: one sentence of at most 15 words: a concrete everyday situation, who the speaker is and who the learner is',
+                    '(e.g. "Mother asking her teenage son about his school day at dinner."). Never mention AI.',
+                    tranh.length ? `Choose a different person from these existing roles: ${tranh.join(', ')}.` : '',
                     'No quotes, no extra text.',
-                ].join('\n'),
+                ].filter(Boolean).join('\n'),
             },
-            { role: 'user', content: `Words: ${tu.join(', ') || khoa.part}` },
+            { role: 'user', content: `Topic: ${khoa.part}\nWords: ${tu.join(', ') || khoa.part}` },
         ],
         maxTokens: 60,
-        temperature: 0.7,
+        temperature: 0.9,
         userId,
     });
 
-    const { title, text } = tachKetQuaAI(out.text);
+    let { title, text } = tachKetQuaAI((await hoiAI()).text);
+    // Thử lại MỘT lần khi tiêu đề chung chung hoặc trùng vai đã có — đúng hai lỗi người
+    // dùng hay gặp. Lần hai vẫn vậy thì dùng luôn: một bản nháp tạm còn hơn báo lỗi.
+    if (laTieuDeChungChung(title, khoa.part) || tranh.some((t) => t.toLowerCase() === String(title).trim().toLowerCase())) {
+        ({ title, text } = tachKetQuaAI((await hoiAI()).text));
+    }
     const moTa = rutGonVai(chuanHoaVaiText(text));
     return { title: chuanHoaTieuDe(title, moTa), vai: moTa, nguon: 'nhap' };
+}
+
+/** Từ chung chung trong tiêu đề vai: không cho biết AI là AI. */
+const TU_CHUNG_CHUNG = /\b(member|members|person|people|someone|ai|assistant|chatbot|user|learner)\b/i;
+
+/**
+ * Tiêu đề vai chung chung: rỗng, có từ kiểu "member"/"person"/"AI", hoặc chỉ là tên
+ * Part ("Family", "Families"). Part "Family" mà ra "Family Member" là đúng lỗi này.
+ */
+function laTieuDeChungChung(title, part) {
+    const t = String(title || '').trim().toLowerCase();
+    const p = String(part || '').trim().toLowerCase();
+    if (!t) return true;
+    if (TU_CHUNG_CHUNG.test(t)) return true;
+    // So dạng gốc số ít để "Families" hay "Family" (Part FAMILY) không lọt qua.
+    const goc = (s) => s.replace(/ies$/, 'y').replace(/s$/, '');
+    return !!p && goc(t) === goc(p);
 }
 
 /**
@@ -292,6 +324,7 @@ module.exports = {
     danhSachVai,
     xoaVaiAI,
     deXuatVaiAI,
+    laTieuDeChungChung,
     luuVaiAI,
     luuVaiNguoiDung,
     xoaVaiNguoiDung,

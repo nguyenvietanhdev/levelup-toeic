@@ -304,7 +304,62 @@ describe('vai AI ngắn gọn để đỡ tốn token', () => {
         // Hai dòng TITLE + ROLE: đủ 60 token, nhưng vẫn giới hạn chữ để đỡ tốn token.
         expect(call.maxTokens).toBeLessThanOrEqual(60);
         expect(call.messages[0].content).toMatch(/at most 15 words/);
-        expect(call.messages[0].content).toMatch(/job role or position only, 1-3 words/);
+        expect(call.messages[0].content).toMatch(/specific person the AI plays, 1-3 words/);
+    });
+});
+
+describe('vai AI là một NGƯỜI CỤ THỂ của chủ đề, không lặp tên Part', () => {
+    const { textCompletion } = require('../services/aiClient');
+
+    test('nhận ra tiêu đề chung chung: lặp tên Part, "member", "person", "AI"', () => {
+        expect(roles.laTieuDeChungChung('Family Member', 'FAMILY')).toBe(true);
+        expect(roles.laTieuDeChungChung('Family', 'FAMILY')).toBe(true);
+        expect(roles.laTieuDeChungChung('Families', 'family')).toBe(true);
+        expect(roles.laTieuDeChungChung('Friendly AI', 'FAMILY')).toBe(true);
+        expect(roles.laTieuDeChungChung('', 'FAMILY')).toBe(true);
+        expect(roles.laTieuDeChungChung('Mother', 'FAMILY')).toBe(false);
+        expect(roles.laTieuDeChungChung('Older sister', 'FAMILY')).toBe(false);
+        expect(roles.laTieuDeChungChung('Family doctor', 'FAMILY')).toBe(false);
+    });
+
+    test('prompt có tên Part, cấm lặp tên chủ đề, và nêu vai của người học', async () => {
+        textCompletion.mockClear();
+        nextText = 'TITLE: Mother\nROLE: Mother asking her son about his school day at dinner.';
+        await roles.deXuatVaiAI({ userId: 'u1', email: 'a@x', ...KHOA });
+        const [call] = textCompletion.mock.calls[0];
+        expect(call.messages[1].content).toMatch(/^Topic: BANKING\n/);
+        expect(call.messages[0].content).toMatch(/never the topic name itself/);
+        expect(call.messages[0].content).toMatch(/who the learner is/);
+        expect(call.messages[0].content).toMatch(/Never mention AI/);
+    });
+
+    test('tiêu đề chung chung → hỏi lại MỘT lần, lấy kết quả lần hai', async () => {
+        textCompletion.mockClear();
+        textCompletion
+            .mockResolvedValueOnce({ text: 'TITLE: Bank Member\nROLE: A member discussing banking with a curious AI.' })
+            .mockResolvedValueOnce({ text: 'TITLE: Bank teller\nROLE: Teller helping a student open their first account.' });
+        const r = await roles.deXuatVaiAI({ userId: 'u1', email: 'a@x', ...KHOA });
+        expect(textCompletion).toHaveBeenCalledTimes(2);
+        expect(r.title).toBe('Bank teller');
+    });
+
+    test('vai đã lưu được đưa vào prompt để đề xuất người khác; trùng thì hỏi lại', async () => {
+        await roles.luuVaiAI({ email: 'a@x', ...KHOA, title: 'Bank teller', text: 'Teller helping a student open an account.' });
+        textCompletion.mockClear();
+        textCompletion
+            .mockResolvedValueOnce({ text: 'TITLE: Bank teller\nROLE: Teller greeting a customer.' })
+            .mockResolvedValueOnce({ text: 'TITLE: Loan officer\nROLE: Officer explaining a car loan to a young couple.' });
+        const r = await roles.deXuatVaiAI({ userId: 'u1', email: 'a@x', ...KHOA });
+        expect(textCompletion.mock.calls[0][0].messages[0].content).toMatch(/different person from these existing roles: Bank teller/);
+        expect(r.title).toBe('Loan officer');
+    });
+
+    test('lần hai vẫn chung chung thì vẫn trả bản nháp, không báo lỗi', async () => {
+        textCompletion.mockClear();
+        textCompletion.mockResolvedValue({ text: 'TITLE: Banking person\nROLE: Someone talking about banking.' });
+        await expect(roles.deXuatVaiAI({ userId: 'u1', email: 'a@x', ...KHOA })).resolves.toMatchObject({ nguon: 'nhap' });
+        expect(textCompletion).toHaveBeenCalledTimes(2);
+        textCompletion.mockImplementation(async () => { aiCalls.n += 1; return { text: nextText, providerId: 'openai' }; });
     });
 });
 
