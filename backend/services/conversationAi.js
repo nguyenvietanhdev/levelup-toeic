@@ -71,12 +71,12 @@ const MAX_KHUNG = 3;
 const MAX_DAI_KHUNG = 120;
 
 /**
- * Tách dòng `HINT:` (khung câu trả lời AI viết kèm) ra khỏi lời nói.
+ * Đọc dòng `HINT: a | b | c` mà `goiYKhung` xin AI trả về, tách ra các khung.
  *
  * Khung là MẪU CÂU có chỗ trống `___` bám đúng câu AI vừa hỏi — để người học
  * biết cách đáp và tự điền, luyện phản xạ; không phải câu trả lời hoàn chỉnh.
- * Dòng này KHÔNG được lọt vào lời nói: nó sẽ bị đọc to và lưu vào lịch sử.
- * Không có dòng HINT thì `khung` rỗng — client tự dựng khung bằng luật.
+ * Phần chữ ngoài dòng HINT trả về ở `text` (bỏ qua). Không có dòng HINT thì
+ * `khung` rỗng — client dùng khung dựng bằng luật.
  */
 function tachKhung(content) {
     const dong = String(content || '').split(/\r?\n/);
@@ -149,10 +149,6 @@ function systemPrompt({ lang, topic, scenario, words, level }) {
         `5. ${chiThiMuc(level)}`,
         '6. If the learner makes a mistake, just reply naturally. Do not correct',
         '   them mid-conversation; corrections come at the end.',
-        // Khung trả lời đi CHUNG lượt gọi này — không tốn thêm lần gọi AI nào.
-        `7. After your reply, add ONE last line: HINT: 2-3 short answer patterns in ${L} that the`,
-        '   learner could use to answer YOUR question, with ___ for the parts they fill in,',
-        '   separated by " | ". Patterns only, never a complete answer.',
     ].filter(Boolean).join('\n');
 }
 
@@ -231,10 +227,9 @@ async function openConversation({ lang = 'en', topic = '', targetWords = [], use
                     // AI dựng cảnh theo đúng loại đó, vẫn giữ vai và bộ từ.
                     ? `First set up ONE short, realistic situation for your role, of this kind: ${tinhHuong.en}. It should naturally use these words: ${words.join(', ')}. ${CHI_THI_HOP_BOI_CANH}`
                     : `First invent ONE short, realistic situation for your role that can naturally use these words: ${words.join(', ')}.`,
-                'Answer in exactly this format, three lines and nothing else:',
+                'Answer in exactly this format, two lines and nothing else:',
                 'SCENARIO: <one sentence describing the situation, in English>',
                 'REPLY: <your greeting and ONE simple question, in ' + langName(lang) + '>',
-                'HINT: <2-3 answer patterns with ___, separated by " | ">',
             ].join('\n'),
         },
     ];
@@ -244,16 +239,14 @@ async function openConversation({ lang = 'en', topic = '', targetWords = [], use
         // nhưng giới hạn cứng mới là thứ chặn được prompt bị lờ đi — và nó cắt
         // thẳng chi phí, thứ tăng theo mỗi lượt. Thêm một dòng tình huống nên
         // nới nhẹ so với 120.
-        // Thêm dòng HINT (2–3 khung câu ngắn): nới lên 200 — vẫn trong trần chi phí của hội thoại.
-        maxTokens: 200,
+        maxTokens: 180,
         temperature: 0.9,   // cao để mỗi phiên một khác, không lặp lại nhàm
         feature: 'conversation-open',
         userId,
     });
     if (!res.success) return res;
-    const { text, khung } = tachKhung(res.content);
-    const { scenario, reply } = parseOpening(text);
-    return { ...res, content: reply, scenario, khung };
+    const { scenario, reply } = parseOpening(res.content);
+    return { ...res, content: reply, scenario };
 }
 
 /**
@@ -284,21 +277,59 @@ async function replyTurn({
         ...recent,
     ];
 
-    const res = await chatCompletion(messages, {
-        // 120 cho lời nói + chỗ cho dòng HINT.
-        maxTokens: 170,
+    return chatCompletion(messages, {
+        maxTokens: 120,
         temperature: 0.9,
         feature: 'conversation-reply',
         userId,
     });
+}
+
+/**
+ * Khung câu trả lời cho câu NPC vừa nói — CHỈ gọi khi người học bấm "Gợi ý"
+ * (hoặc ngồi im quá lâu), không gọi ở mọi lượt để tiết kiệm chi phí.
+ *
+ * Trả 2–3 MẪU CÂU có chỗ trống `___` bám đúng câu AI hỏi, để người học tự điền
+ * và luyện phản xạ — không phải câu trả lời hoàn chỉnh.
+ *
+ * @returns {Promise<{success:boolean, khung?:string[], error?:string}>}
+ */
+async function goiYKhung({ lang = 'en', topic = '', scenario = '', cauAI = '', words = [], level = 'medium', userId = null } = {}) {
+    const L = langName(lang);
+    const messages = [
+        {
+            role: 'system',
+            content: [
+                `You help a ${NATIVE} learner answer a message in a ${L} conversation.`,
+                topic ? `The other speaker's role: ${topic}.` : '',
+                scenario ? `Situation: ${scenario}.` : '',
+                `Write 2-3 short answer patterns in ${L} that directly answer the message,`,
+                'with ___ for the parts the learner fills in. Patterns only, never a complete answer.',
+                words.length ? `Where natural, leave room for one of these words: ${words.join(', ')}.` : '',
+                chiThiMuc(level),
+                'Reply with ONE line only: HINT: pattern 1 | pattern 2 | pattern 3',
+            ].filter(Boolean).join('\n'),
+        },
+        { role: 'user', content: `Message: ${String(cauAI).slice(0, 500)}` },
+    ];
+    const res = await chatCompletion(messages, {
+        maxTokens: 80,
+        temperature: 0.5,
+        feature: 'conversation-hint',
+        userId,
+    });
     if (!res.success) return res;
-    const { text, khung } = tachKhung(res.content);
-    return { ...res, content: text, khung };
+    // Model có khi bỏ nhãn "HINT:" — thêm vào để `tachKhung` đọc được.
+    const raw = /\bHINT\s*:/i.test(res.content) ? res.content : `HINT: ${res.content}`;
+    const { khung } = tachKhung(raw);
+    if (!khung.length) return { success: false, error: 'AI không trả khung đọc được' };
+    return { success: true, khung };
 }
 
 module.exports = {
     openConversation,
     replyTurn,
+    goiYKhung,
     // Xuất ra để test — đây là hai chỗ quyết định chi phí và chất lượng prompt.
     pickWords,
     systemPrompt,

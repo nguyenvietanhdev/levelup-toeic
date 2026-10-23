@@ -17,7 +17,8 @@ const turnSchema = new mongoose.Schema(
         // Từ mục tiêu mà LƯỢT NÀY dùng được — lưu sẵn để khỏi tính lại khi xem
         // lịch sử, và để hiện đúng câu nào ăn điểm.
         matched: { type: [String], default: [] },
-        // Lượt NPC: khung câu trả lời AI viết kèm (có `___`), để gợi ý người học.
+        // Lượt NPC: khung câu trả lời (có `___`) — chỉ có khi người học đã bấm Gợi ý,
+        // lưu lại để bấm lần nữa không phải gọi AI lại.
         khung: { type: [String], default: undefined },
         at: { type: Date, default: Date.now },
     },
@@ -45,6 +46,8 @@ const conversationSchema = new mongoose.Schema(
         scenario: { type: String, default: '', maxlength: 300 },
         // Nhãn tình huống người học chọn/tự nhập ('' = AI tự dựng).
         tinhHuong: { type: String, default: '', maxlength: 80 },
+        // Số lần đã gọi AI tạo khung gợi ý trong phiên (giới hạn MAX_GOI_Y_AI).
+        hintCount: { type: Number, default: 0 },
         // Bộ tiêu chí chấm cuối phiên (giaotiep / toeic / ielts / hsk).
         rubric: { type: String, default: 'giaotiep' },
         // Chấm ngữ pháp nghiêm (chuẩn viết) thay vì nới lỏng văn nói. Chỉ có tác dụng

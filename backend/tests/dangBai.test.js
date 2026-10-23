@@ -176,53 +176,67 @@ describe('Hội thoại — tình huống ghép với vai', () => {
     });
 });
 
-describe('Hội thoại — khung câu trả lời AI viết kèm (HINT)', () => {
-    const { tachKhung, openConversation, replyTurn, systemPrompt } = require('../services/conversationAi');
+describe('Hội thoại — khung gợi ý CHỈ gọi AI khi người học bấm', () => {
+    const { tachKhung, openConversation, replyTurn, systemPrompt, goiYKhung } = require('../services/conversationAi');
+    const { readFileSync } = require('node:fs');
+    const { join } = require('node:path');
+    const ctrl = readFileSync(join(__dirname, '..', 'controllers', 'conversationController.js'), 'utf8');
 
-    test('tách dòng HINT khỏi lời nói, tối đa 3 khung, bỏ dấu nháy', () => {
-        const r = tachKhung('Welcome! Who are you?\nHINT: "My name is ___." | I\'m ___ from ___. | I am a ___ | Extra ___');
-        expect(r.text).toBe('Welcome! Who are you?');
-        expect(r.khung).toEqual(['My name is ___.', "I'm ___ from ___.", 'I am a ___']);
-    });
-
-    test('HINT viết cùng dòng với lời nói vẫn tách được; không có HINT thì khung rỗng', () => {
-        expect(tachKhung('Do you like tea? HINT: Yes, I like ___ | No, I prefer ___'))
-            .toEqual({ text: 'Do you like tea?', khung: ['Yes, I like ___', 'No, I prefer ___'] });
-        expect(tachKhung('Hi there!')).toEqual({ text: 'Hi there!', khung: [] });
+    test('tách dòng HINT, tối đa 3 khung, bỏ dấu nháy; HINT cùng dòng vẫn tách được', () => {
+        expect(tachKhung('HINT: "My name is ___." | I\'m ___ from ___. | I am a ___ | Extra ___').khung)
+            .toEqual(['My name is ___.', "I'm ___ from ___.", 'I am a ___']);
+        expect(tachKhung('Sure. HINT: Yes, I like ___ | No, I prefer ___'))
+            .toEqual({ text: 'Sure.', khung: ['Yes, I like ___', 'No, I prefer ___'] });
         expect(tachKhung(undefined)).toEqual({ text: '', khung: [] });
     });
 
-    test('system prompt yêu cầu khung có ___ bám câu hỏi, không phải câu trả lời hoàn chỉnh', () => {
+    test('lượt mở và lượt đáp KHÔNG xin khung nữa — tiết kiệm token mỗi lượt', async () => {
         const p = systemPrompt({ lang: 'en', topic: '', scenario: '', words: ['tea'], level: 'medium' });
-        expect(p).toMatch(/HINT: 2-3 short answer patterns in English/);
-        expect(p).toMatch(/never a complete answer/);
-    });
-
-    test('mở phiên: lời nói KHÔNG chứa HINT, khung trả về riêng', async () => {
-        chatCompletion.mockResolvedValueOnce({
-            success: true,
-            content: 'SCENARIO: A hotel lobby.\nREPLY: Good morning! Who are you, please?\nHINT: My name is ___. | I have a booking under ___.',
-        });
-        const r = await openConversation({ topic: 'Receptionist', targetWords: ['booking'] });
-        expect(r.content).toBe('Good morning! Who are you, please?');
-        expect(r.scenario).toBe('A hotel lobby.');
-        expect(r.khung).toEqual(['My name is ___.', 'I have a booking under ___.']);
-    });
-
-    test('lượt đáp: tách khung; AI lỗi thì trả nguyên kết quả lỗi', async () => {
-        chatCompletion.mockResolvedValueOnce({ success: true, content: 'Nice! How long will you stay?\nHINT: I will stay for ___.' });
+        expect(p).not.toMatch(/HINT/);
+        chatCompletion.mockResolvedValueOnce({ success: true, content: 'SCENARIO: A hotel lobby.\nREPLY: Good morning! Who are you?' });
+        await openConversation({ topic: 'Receptionist', targetWords: ['booking'] });
+        const mo = chatCompletion.mock.calls.at(-1);
+        expect(mo[0].find((m) => m.role === 'user').content).not.toMatch(/HINT/);
+        expect(mo[1].maxTokens).toBe(180);
+        chatCompletion.mockResolvedValueOnce({ success: true, content: 'How long will you stay?' });
         const r = await replyTurn({ targetWords: ['stay'], turns: [{ role: 'user', content: 'hi' }] });
-        expect(r).toMatchObject({ success: true, content: 'Nice! How long will you stay?', khung: ['I will stay for ___.'] });
-        chatCompletion.mockResolvedValueOnce({ success: false, error: 'x' });
-        await expect(replyTurn({ turns: [] })).resolves.toMatchObject({ success: false });
+        expect(r.content).toBe('How long will you stay?');
+        expect(chatCompletion.mock.calls.at(-1)[1].maxTokens).toBe(120);
     });
 
-    test('controller lưu khung vào lượt NPC và trả về cho client', () => {
-        const { readFileSync } = require('node:fs');
-        const { join } = require('node:path');
-        const src = readFileSync(join(__dirname, '..', 'controllers', 'conversationController.js'), 'utf8');
-        expect(src).toMatch(/turns: \[\{ role: 'npc', content: ai\.content, khung: ai\.khung \|\| \[\] \}\]/);
-        expect(src).toMatch(/convo\.turns\.push\(\{ role: 'npc', content: ai\.content, khung: ai\.khung \|\| \[\] \}\)/);
-        expect(src).toMatch(/npcKhung: ai\.success \? \(ai\.khung \|\| \[\]\) : \[\]/);
+    test('goiYKhung: một lượt gọi rẻ (80 token), nhãn riêng, bám đúng câu AI và trả khung có ___', async () => {
+        chatCompletion.mockResolvedValueOnce({ success: true, content: 'HINT: My name is ___. | I have a booking under ___.' });
+        const r = await goiYKhung({ cauAI: 'Good morning! Who are you, please?', topic: 'Receptionist', words: ['booking'] });
+        expect(r).toEqual({ success: true, khung: ['My name is ___.', 'I have a booking under ___.'] });
+        const [msgs, opts] = chatCompletion.mock.calls.at(-1);
+        expect(opts).toMatchObject({ maxTokens: 80, feature: 'conversation-hint' });
+        expect(msgs[1].content).toMatch(/Who are you, please\?/);
+        expect(msgs[0].content).toMatch(/never a complete answer/);
+    });
+
+    test('goiYKhung: thiếu nhãn HINT vẫn đọc được; rỗng thì báo lỗi', async () => {
+        chatCompletion.mockResolvedValueOnce({ success: true, content: 'I am ___ | My name is ___' });
+        await expect(goiYKhung({ cauAI: 'Who?' })).resolves.toMatchObject({ khung: ['I am ___', 'My name is ___'] });
+        chatCompletion.mockResolvedValueOnce({ success: true, content: '' });
+        await expect(goiYKhung({ cauAI: 'Who?' })).resolves.toMatchObject({ success: false });
+    });
+
+    test('controller: khung đã có thì trả lại (không gọi AI), giới hạn lượt mỗi phiên, lưu vào lượt NPC', () => {
+        const i = ctrl.indexOf('exports.hint = ');
+        const than = ctrl.slice(i, ctrl.indexOf('exports.MAX_GOI_Y_AI', i));
+        expect(than).toMatch(/_id: req\.params\.id, userId: req\.user\.id/);
+        expect(than.indexOf('cached: true')).toBeLessThan(than.indexOf('goiYKhung('));
+        expect(than).toMatch(/hintCount \|\| 0\) >= MAX_GOI_Y_AI/);
+        expect(than).toMatch(/status\(429\)/);
+        expect(than).toMatch(/convo\.turns\[idx\]\.khung = ai\.khung/);
+        expect(than).toMatch(/convo\.hintCount = \(convo\.hintCount \|\| 0\) \+ 1/);
+        // Lượt mở / đáp không còn tự lưu khung.
+        expect(ctrl).not.toMatch(/npcKhung/);
+    });
+
+    test('route POST /:id/hint đã đăng ký (sau protect)', () => {
+        const route = readFileSync(join(__dirname, '..', 'routes', 'conversation.js'), 'utf8');
+        expect(route).toMatch(/router\.post\('\/:id\/hint', ctrl\.hint\)/);
+        expect(route.indexOf('router.use(protect)')).toBeLessThan(route.indexOf("'/:id/hint'"));
     });
 });

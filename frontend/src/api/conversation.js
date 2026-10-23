@@ -87,6 +87,15 @@ export const ConversationAPI = {
         return unwrap(res);
     },
 
+    /**
+     * Khung câu trả lời (AI) cho câu NPC cuối — chỉ gọi khi người học mở Gợi ý.
+     * Trả `{ khung, conLai, cached }`; hết lượt thì lỗi mang `limit: true`.
+     */
+    async hint(id) {
+        const res = await Http.post(`/conversation/${id}/hint`, {});
+        return unwrap(res);
+    },
+
     /** Chốt phiên và nhận thưởng. Gọi lại nhiều lần an toàn (server chặn). */
     async finish(id) {
         const res = await Http.post(`/conversation/${id}/finish`, {});

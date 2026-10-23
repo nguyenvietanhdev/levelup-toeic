@@ -71,11 +71,11 @@ describe('lớp API', () => {
         expect(api).toMatch(/throw new Error/);
     });
 
-    test('CẢ NĂM lượt gọi đều đi qua unwrap (start, reply, finish, history, detail)', () => {
+    test('CẢ SÁU lượt gọi đều đi qua unwrap (start, reply, hint, finish, history, detail)', () => {
         // Sót một chỗ là chỗ đó vẫn để lỗi lọt qua im lặng.
         // Đếm `return unwrap(res)` chứ không đếm `unwrap(res)` trần — chuỗi sau
         // khớp cả bên trong định nghĩa hàm và cho ra 4.
-        expect((api.match(/return unwrap\(res\);/g) || []).length).toBe(5);
+        expect((api.match(/return unwrap\(res\);/g) || []).length).toBe(6);
         // Và trong ConversationAPI không còn chỗ nào trả THẲNG `res?.data ?? res`
         // — lối cũ để object lỗi lọt qua. (Bản thân `unwrap` vẫn dùng nó ở dòng
         // cuối, đó là chỗ hợp lệ duy nhất, nên chỉ dò phần sau `export const`.)
@@ -381,6 +381,31 @@ describe('gõ nhanh: tự focus, dịch câu AI, khung gợi ý theo câu AI', (
     test('gợi ý dùng khung AI của lượt NPC cuối; bấm khung là đưa vào ô nhập', () => {
         expect(src).toMatch(/goiYCauTraLoi\(npcCuoi\?\.content, convo\.targetWords, \[\.\.\.used\], npcCuoi\?\.khung\)/);
         expect(src).toMatch(/onClick=\{\(\) => \{ setDraft\(k\); inputRef\.current\?\.focus\(\); \}\}/);
-        expect(src).toMatch(/khung: data\.npcKhung \|\| \[\]/);
+    });
+
+    test('khung AI CHỈ xin khi mở gợi ý, mỗi câu AI một lần; lượt đáp không mang khung', () => {
+        expect(src).not.toMatch(/npcKhung/);
+        const i = src.indexOf('const moGoiY = useCallback(');
+        const than = src.slice(i, src.indexOf('}, [convo, dangGoiY, hetGoiY]);', i));
+        expect(than).toMatch(/setShowHint\(true\)/);
+        expect(than).toMatch(/cuoi\.role !== 'npc' \|\| cuoi\.khung\?\.length\) return;/);
+        expect(than).toMatch(/ConversationAPI\.hint\(convo\.id\)/);
+        expect(than).toMatch(/err\?\.limit/);
+        // Nút bóng đèn: đang mở thì đóng, đang đóng thì mở qua moGoiY.
+        expect(src).toMatch(/onClick=\{\(\) => \(showHint \? setShowHint\(false\) : moGoiY\(\)\)\}/);
+    });
+
+    test('mỗi lần có lượt mới thì ĐÓNG gợi ý', () => {
+        expect(src).toMatch(/useEffect\(\(\) => \{ setShowHint\(false\); \}, \[convo\?\.turns\?\.length\]\);/);
+    });
+
+    test('ngồi im quá GOI_Y_SAU_GIAY (chưa gõ gì) thì tự mở gợi ý, một lần mỗi câu AI', () => {
+        expect(src).toMatch(/const GOI_Y_SAU_GIAY = 20;/);
+        const i = src.indexOf('// Ngồi im (chưa gõ gì)');
+        const than = src.slice(i, src.indexOf('}, [convo, busy, starting, result, showHint, draft]);', i));
+        expect(than).toMatch(/if \(!convo \|\| busy \|\| starting \|\| result \|\| showHint \|\| draft\.trim\(\)\) return undefined;/);
+        expect(than).toMatch(/tuMoChoLuotRef\.current === n\) return undefined;/);
+        expect(than).toMatch(/setTimeout\(/);
+        expect(than).toMatch(/clearTimeout\(t\)/);
     });
 });

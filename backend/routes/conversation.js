@@ -32,6 +32,7 @@ router.get('/:id', ctrl.detail);
 
 router.post('/start', requireLevel('feature:conversation'), ctrl.start);
 router.post('/:id/reply', ctrl.reply);
+router.post('/:id/hint', ctrl.hint); // Khung câu trả lời (AI) cho câu NPC cuối — chỉ khi người học bấm
 router.post('/:id/finish', ctrl.finish);
 
 module.exports = router;

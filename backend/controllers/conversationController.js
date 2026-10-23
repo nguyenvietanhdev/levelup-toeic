@@ -6,7 +6,7 @@ const Vocabulary = require('../models/Vocabulary');
 const VocabularyZh = require('../models/VocabularyZh');
 const UserUpload = require('../models/UserUpload');
 const WrongWord = require('../models/WrongWord');
-const { openConversation, replyTurn, moTaVai, NHOM_TINH_HUONG } = require('../services/conversationAi');
+const { openConversation, replyTurn, goiYKhung, moTaVai, NHOM_TINH_HUONG } = require('../services/conversationAi');
 const { chonDang } = require('../services/dangBai');
 const { chuanHoaBoTieuChi, gradeConversation } = require('../services/conversationGrader');
 const { matchWords, collectUsed } = require('../utils/wordMatch');
@@ -264,7 +264,7 @@ exports.start = async (req, res, next) => {
             tinhHuong: tinhHuong ? tinhHuong.vi : '',
             targetWords,
             level,
-            turns: [{ role: 'npc', content: ai.content, khung: ai.khung || [] }],
+            turns: [{ role: 'npc', content: ai.content }],
         });
 
         res.json({
@@ -331,7 +331,7 @@ exports.reply = async (req, res, next) => {
         });
 
         if (ai.success) {
-            convo.turns.push({ role: 'npc', content: ai.content, khung: ai.khung || [] });
+            convo.turns.push({ role: 'npc', content: ai.content });
         }
 
         convo.usedWords = collectUsed(convo.turns, convo.targetWords, convo.lang);
@@ -347,8 +347,6 @@ exports.reply = async (req, res, next) => {
                 // Lượt vừa thêm của người học + (nếu có) câu đáp của AI.
                 matched,
                 npcReply: ai.success ? ai.content : null,
-                // Khung câu trả lời cho câu NPC vừa nói ([] nếu AI không viết kèm).
-                npcKhung: ai.success ? (ai.khung || []) : [],
                 // AI lỗi thì KHÔNG chặn: câu của người học đã được chấm và lưu,
                 // họ chỉ mất một câu đáp. Báo cờ để giao diện nói rõ.
                 aiFailed: !ai.success,
@@ -525,6 +523,66 @@ exports.detail = async (req, res, next) => {
 
 exports.ENERGY_COST = ENERGY_COST;
 exports.TARGET_SIZE = TARGET_SIZE;
+/** Số lần gọi AI tạo khung gợi ý tối đa mỗi phiên — chặn bấm liên tục để đốt token. */
+const MAX_GOI_Y_AI = 8;
+
+/**
+ * @desc    Khung câu trả lời cho câu NPC cuối (gọi AI khi người học bấm Gợi ý)
+ * @route   POST /api/conversation/:id/hint
+ *
+ * Lượt NPC đã có khung thì trả lại luôn, KHÔNG gọi AI và không tính lượt.
+ * Hết lượt gợi ý AI thì trả 429 — client vẫn còn khung dựng bằng luật.
+ */
+exports.hint = async (req, res, next) => {
+    try {
+        const convo = await Conversation.findOne({ _id: req.params.id, userId: req.user.id });
+        if (!convo) {
+            return res.status(404).json({ success: false, message: 'Không tìm thấy hội thoại' });
+        }
+        if (convo.status !== 'active') {
+            return res.status(400).json({ success: false, message: 'Hội thoại đã kết thúc' });
+        }
+        const idx = convo.turns.length - 1;
+        const cuoi = convo.turns[idx];
+        if (!cuoi || cuoi.role !== 'npc') {
+            return res.status(400).json({ success: false, message: 'Chưa có câu AI để gợi ý' });
+        }
+        const conLai = () => Math.max(0, MAX_GOI_Y_AI - (convo.hintCount || 0));
+        if (Array.isArray(cuoi.khung) && cuoi.khung.length) {
+            return res.json({ success: true, data: { khung: cuoi.khung, conLai: conLai(), cached: true } });
+        }
+        if ((convo.hintCount || 0) >= MAX_GOI_Y_AI) {
+            return res.status(429).json({
+                success: false, limit: true,
+                message: `Đã dùng hết ${MAX_GOI_Y_AI} lượt gợi ý AI của phiên này.`,
+            });
+        }
+
+        const ai = await goiYKhung({
+            lang: convo.lang,
+            topic: convo.topic,
+            scenario: convo.scenario,
+            cauAI: cuoi.content,
+            words: (convo.targetWords || []).filter((w) => !(convo.usedWords || []).includes(w)).slice(0, 6),
+            level: convo.level,
+            userId: req.user.id,
+        });
+        if (!ai.success) {
+            logger.error('Conversation hint: AI failed', ai.error);
+            return res.status(503).json({ success: false, message: 'Chưa tạo được gợi ý, thử lại sau.' });
+        }
+
+        convo.turns[idx].khung = ai.khung;
+        convo.markModified('turns');
+        convo.hintCount = (convo.hintCount || 0) + 1;
+        await convo.save();
+        res.json({ success: true, data: { khung: ai.khung, conLai: conLai(), cached: false } });
+    } catch (error) {
+        next(error);
+    }
+};
+
+exports.MAX_GOI_Y_AI = MAX_GOI_Y_AI;
 exports.MAX_TURNS = MAX_TURNS;
 exports.XP_PER_WORD = XP_PER_WORD;
 exports.COINS_PER_WORD = COINS_PER_WORD;

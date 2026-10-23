@@ -145,4 +145,13 @@ describe('start không gửi tham số đề/part/lang', () => {
         // `dang`/`tuChon` (tình huống) cũng là lựa chọn bấm/gõ trên màn — vẫn KHÔNG có source/part/lang.
         expect(Object.keys(body).sort()).toEqual(['context', 'dang', 'level', 'rubric', 'strictGrammar', 'tuChon']);
     });
+
+    test('hint gọi đúng endpoint, hết lượt thì lỗi mang cờ limit', async () => {
+        post.mockReset();
+        post.mockResolvedValue({ success: true, data: { success: true, data: { khung: ['I am ___'], conLai: 7 } } });
+        await expect(ConversationAPI.hint('abc')).resolves.toEqual({ khung: ['I am ___'], conLai: 7 });
+        expect(post.mock.calls[0][0]).toBe('/conversation/abc/hint');
+        post.mockResolvedValue({ success: true, data: { success: false, limit: true, message: 'Hết lượt' } });
+        await expect(ConversationAPI.hint('abc')).rejects.toMatchObject({ limit: true });
+    });
 });

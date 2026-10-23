@@ -100,6 +100,9 @@ const NHOM_DANG = [
     },
 ];
 
+/** Chưa gõ gì sau bấy nhiêu giây kể từ câu AI → tự mở gợi ý (một lần mỗi câu). */
+const GOI_Y_SAU_GIAY = 20;
+
 export default function ConversationScreen({ active }) {
     const { showScreen, syncFromState } = useGame();
 
@@ -117,6 +120,10 @@ export default function ConversationScreen({ active }) {
     const [strictGrammar, setStrictGrammar] = useState(false); // ngữ pháp văn nói hay chuẩn viết
     const [feedbackClosed, setFeedbackClosed] = useState(false); // người học đã đóng popup kết quả
     const [showHint, setShowHint] = useState(false);
+    const [dangGoiY, setDangGoiY] = useState(false);     // đang chờ AI tạo khung
+    const [conLaiGoiY, setConLaiGoiY] = useState(null);  // số lượt gợi ý AI còn lại (server báo)
+    const [hetGoiY, setHetGoiY] = useState('');          // thông báo hết lượt gợi ý AI
+    const tuMoChoLuotRef = useRef(-1);                   // đã TỰ mở gợi ý cho lượt nào
     // Bản dịch tiếng Việt theo chỉ số lượt NPC: { [i]: { dangDich, text, mo } }.
     const [banDich, setBanDich] = useState({});
     const inputRef = useRef(null);
@@ -278,7 +285,7 @@ export default function ConversationScreen({ active }) {
                 // Gắn `matched` (server chấm) vào chính lượt vừa gửi để tô sáng.
                 const last = turns.length - 1;
                 if (turns[last]?.role === 'user') turns[last] = { ...turns[last], matched: data.matched || [] };
-                if (data.npcReply) turns.push({ role: 'npc', content: data.npcReply, khung: data.npcKhung || [] });
+                if (data.npcReply) turns.push({ role: 'npc', content: data.npcReply });
                 return { ...c, turns, usedWords: data.usedWords || c.usedWords };
             });
             if (data.npcReply) speak(data.npcReply);
@@ -313,6 +320,59 @@ export default function ConversationScreen({ active }) {
             Notification.error('Không dịch được câu này');
         }
     }, [banDich]);
+
+    /**
+     * Mở bảng gợi ý. Khung dựng bằng luật hiện NGAY; khung AI chỉ được xin khi
+     * mở bảng (không phải ở mọi lượt) và chỉ một lần cho mỗi câu AI — server lưu
+     * lại, mở lần nữa không tốn thêm.
+     */
+    const moGoiY = useCallback(async () => {
+        setShowHint(true);
+        if (!convo || dangGoiY || hetGoiY) return;
+        const idx = convo.turns.length - 1;
+        const cuoi = convo.turns[idx];
+        if (!cuoi || cuoi.role !== 'npc' || cuoi.khung?.length) return;
+        setDangGoiY(true);
+        try {
+            const d = await ConversationAPI.hint(convo.id);
+            if (typeof d?.conLai === 'number') setConLaiGoiY(d.conLai);
+            if (Array.isArray(d?.khung) && d.khung.length) {
+                setConvo((c) => {
+                    if (!c || c.id !== convo.id || !c.turns[idx]) return c;
+                    const turns = [...c.turns];
+                    turns[idx] = { ...turns[idx], khung: d.khung };
+                    return { ...c, turns };
+                });
+            }
+        } catch (err) {
+            // Hết lượt hay AI lỗi: vẫn còn khung dựng bằng luật, không chặn gì.
+            if (err?.limit) setHetGoiY(String(err.message || 'Đã hết lượt gợi ý AI.'));
+        } finally {
+            setDangGoiY(false);
+        }
+    }, [convo, dangGoiY, hetGoiY]);
+    const moGoiYRef = useRef(null);
+    moGoiYRef.current = moGoiY;
+
+    // Mỗi lần AI trả lời (hay người học gửi câu) thì ĐÓNG gợi ý — để không dựa
+    // vào gợi ý cho mọi câu; muốn xem thì bấm lại.
+    useEffect(() => { setShowHint(false); }, [convo?.turns?.length]);
+
+    // Ngồi im (chưa gõ gì) quá GOI_Y_SAU_GIAY sau câu AI → tự mở gợi ý, MỘT lần
+    // cho mỗi câu AI. Đóng đi rồi thì không tự mở lại câu đó nữa.
+    useEffect(() => {
+        if (!convo || busy || starting || result || showHint || draft.trim()) return undefined;
+        const n = convo.turns.length;
+        if (convo.turns[n - 1]?.role !== 'npc' || tuMoChoLuotRef.current === n) return undefined;
+        const t = setTimeout(() => {
+            tuMoChoLuotRef.current = n;
+            moGoiYRef.current?.();
+        }, GOI_Y_SAU_GIAY * 1000);
+        return () => clearTimeout(t);
+    }, [convo, busy, starting, result, showHint, draft]);
+
+    // Phiên mới: bỏ trạng thái gợi ý của phiên cũ.
+    useEffect(() => { setHetGoiY(''); setConLaiGoiY(null); tuMoChoLuotRef.current = -1; }, [convo?.id]);
 
     // Phiên mới thì bỏ bản dịch của phiên cũ — khoá theo CHỈ SỐ lượt nên giữ lại là
     // hiện nhầm bản dịch của câu khác.
@@ -635,6 +695,15 @@ export default function ConversationScreen({ active }) {
                                             </button>
                                         ))}
                                     </div>
+                                    {dangGoiY && !goiY.tuAI && (
+                                        <div className="convo-hint-loai">
+                                            <i className="fas fa-spinner fa-spin"></i> Đang tạo khung theo đúng câu AI…
+                                        </div>
+                                    )}
+                                    {hetGoiY && !goiY.tuAI && <div className="convo-hint-loai">{hetGoiY}</div>}
+                                    {goiY.tuAI && typeof conLaiGoiY === 'number' && (
+                                        <div className="convo-hint-loai">Còn {conLaiGoiY} lượt gợi ý AI trong phiên này.</div>
+                                    )}
                                     {goiY.tuGoiY.length > 0 ? (
                                         <div className="convo-hint-tu">
                                             <span>Dùng một trong các từ:</span>
@@ -659,7 +728,7 @@ export default function ConversationScreen({ active }) {
                             <button
                                 type="button"
                                 className={`btn btn-secondary convo-hint-btn${showHint ? ' is-on' : ''}`}
-                                onClick={() => setShowHint((v) => !v)}
+                                onClick={() => (showHint ? setShowHint(false) : moGoiY())}
                                 title="Gợi ý cách trả lời"
                             >
                                 <i className="fas fa-lightbulb"></i>
