@@ -3,8 +3,6 @@ import { RolesAPI } from '@api/roles.js';
 
 const TIEU_DE_TOI_THIEU = 2;
 const MO_TA_TOI_THIEU = 10;
-/** Mô tả dài hơn mức này thì ẩn bớt, người học bấm "Xem thêm" mới đọc tiếp. */
-const MO_TA_NGAN = 90;
 
 /**
  * Danh sách vai của Part đang học, nằm ở cột trái của màn Hội thoại.
@@ -143,9 +141,8 @@ export default function DanhSachVai({ source, part, lang }) {
  */
 function VaiCard({ loai, dang, chonDuoc = false, onChon, title, text, onSua, onXoa, dangLam }) {
     const bamDuoc = chonDuoc && !dangLam;
-    // Mô tả dài thì ẩn bớt, bấm "Xem thêm" mới mở. Ngưỡng theo số ký tự.
-    const [moRong, setMoRong] = useState(false);
-    const dai = (text || '').length > MO_TA_NGAN;
+    // Mô tả có độ cao CỐ ĐỊNH (2 dòng). Quá dài thì cắt và hiện dấu "...", rê chuột
+    // xem đủ nội dung. Không có nút mở rộng, nên bố cục các nút không bao giờ đổi.
     return (
         <div
             className={`ai-role-card${dang ? ' is-dang' : ''}${bamDuoc ? ' is-chon' : ''}`}
@@ -158,16 +155,7 @@ function VaiCard({ loai, dang, chonDuoc = false, onChon, title, text, onSua, onX
             ></i>
             <div className="ai-role-card-main">
                 <p className="ai-role-title">{title || 'Vai'}</p>
-                <p className={`ai-role-text${dai && !moRong ? ' is-an' : ''}`}>{text}</p>
-                {dai && (
-                    <button
-                        type="button"
-                        className="ai-role-more"
-                        onClick={(e) => { e.stopPropagation(); setMoRong((v) => !v); }}
-                    >
-                        {moRong ? 'Thu gọn' : 'Xem thêm'}
-                    </button>
-                )}
+                <p className="ai-role-text" title={text}>{text}</p>
             </div>
             <div className="ai-role-card-actions" onClick={(e) => e.stopPropagation()}>
                 {onSua && (
