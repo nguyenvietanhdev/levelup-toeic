@@ -101,7 +101,7 @@ const NHOM_DANG = [
 ];
 
 /** Chưa gõ gì sau bấy nhiêu giây kể từ câu AI → tự mở gợi ý (một lần mỗi câu). */
-const GOI_Y_SAU_GIAY = 20;
+const GOI_Y_SAU_GIAY = 30;
 
 export default function ConversationScreen({ active }) {
     const { showScreen, syncFromState } = useGame();

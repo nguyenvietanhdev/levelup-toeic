@@ -400,7 +400,7 @@ describe('gõ nhanh: tự focus, dịch câu AI, khung gợi ý theo câu AI', (
     });
 
     test('ngồi im quá GOI_Y_SAU_GIAY (chưa gõ gì) thì tự mở gợi ý, một lần mỗi câu AI', () => {
-        expect(src).toMatch(/const GOI_Y_SAU_GIAY = 20;/);
+        expect(src).toMatch(/const GOI_Y_SAU_GIAY = 30;/);
         const i = src.indexOf('// Ngồi im (chưa gõ gì)');
         const than = src.slice(i, src.indexOf('}, [convo, busy, starting, result, showHint, draft]);', i));
         expect(than).toMatch(/if \(!convo \|\| busy \|\| starting \|\| result \|\| showHint \|\| draft\.trim\(\)\) return undefined;/);
