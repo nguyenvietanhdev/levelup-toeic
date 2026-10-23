@@ -46,7 +46,8 @@ describe('mọi chế độ AI có danh sách vai ở phần giới thiệu', ()
         test(`${file} gắn DanhSachVai trong ${cls}`, () => {
             const s = read(file);
             expect(s).toMatch(/import DanhSachVai from '\.\.\/roles\/DanhSachVai\.jsx'/);
-            const i = s.indexOf(`className="${cls}"`);
+            // Khớp đầu class (có thể kèm class phụ như essay-intro--wide).
+            const i = s.indexOf(`className="${cls}`);
             const j = s.indexOf('<DanhSachVai', i);
             expect(i).toBeGreaterThan(-1);
             expect(j).toBeGreaterThan(i);
