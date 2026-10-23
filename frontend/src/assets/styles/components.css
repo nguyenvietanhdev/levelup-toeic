@@ -9771,6 +9771,31 @@ mark {
     border: 1px solid var(--border-color);
     border-radius: 10px;
 }
+/* Hàng tiêu đề vai + nút (i) bật/tắt mô tả tình huống. */
+.ai-role-title-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    min-width: 0;
+}
+.ai-role-title-row .ai-role-title {
+    margin: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.ai-role-toggle {
+    flex: 0 0 auto;
+    background: none;
+    border: none;
+    padding: 2px 4px;
+    color: var(--text-secondary);
+    cursor: pointer;
+    font-size: 12px;
+}
+.ai-role-toggle.is-on {
+    color: #9333ea;
+}
 /* Icon nhỏ góc trên bên trái: loại vai (AI hay của bạn). */
 .ai-role-icon {
     position: absolute;

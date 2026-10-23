@@ -3,11 +3,6 @@ import { RolesAPI } from '@api/roles.js';
 
 const TIEU_DE_TOI_THIEU = 2;
 const MO_TA_TOI_THIEU = 10;
-/**
- * Tạm ẩn mô tả tình huống trên thẻ vai (chỉ hiện tiêu đề), để danh sách gọn và
- * đỡ phải cuộn. Mô tả vẫn được lưu và dùng trong hội thoại; đặt true để hiện lại.
- */
-const HIEN_MO_TA = false;
 
 /**
  * Danh sách vai của Part đang học, nằm ở cột trái của màn Hội thoại.
@@ -146,8 +141,9 @@ export default function DanhSachVai({ source, part, lang }) {
  */
 function VaiCard({ loai, dang, chonDuoc = false, onChon, title, text, onSua, onXoa, dangLam }) {
     const bamDuoc = chonDuoc && !dangLam;
-    // Mô tả có độ cao CỐ ĐỊNH (2 dòng). Quá dài thì cắt và hiện dấu "...", rê chuột
-    // xem đủ nội dung. Không có nút mở rộng, nên bố cục các nút không bao giờ đổi.
+    // Mô tả tình huống ẨN mặc định; bấm nút (i) để hiện, bấm lại để ẩn. Mô tả có độ
+    // cao cố định (2 dòng), dài hơn thì cắt "...". Bố cục nút không đổi khi bật/tắt.
+    const [xemMoTa, setXemMoTa] = useState(false);
     return (
         <div
             className={`ai-role-card${dang ? ' is-dang' : ''}${bamDuoc ? ' is-chon' : ''}`}
@@ -159,8 +155,19 @@ function VaiCard({ loai, dang, chonDuoc = false, onChon, title, text, onSua, onX
                 title={loai === 'user' ? 'Vai của bạn' : 'Vai AI đã lưu'}
             ></i>
             <div className="ai-role-card-main">
-                <p className="ai-role-title">{title || 'Vai'}</p>
-                {HIEN_MO_TA && <p className="ai-role-text" title={text}>{text}</p>}
+                <div className="ai-role-title-row">
+                    <p className="ai-role-title">{title || 'Vai'}</p>
+                    <button
+                        type="button"
+                        className={`ai-role-toggle${xemMoTa ? ' is-on' : ''}`}
+                        title={xemMoTa ? 'Ẩn mô tả tình huống' : 'Xem mô tả tình huống'}
+                        aria-expanded={xemMoTa}
+                        onClick={(e) => { e.stopPropagation(); setXemMoTa((v) => !v); }}
+                    >
+                        <i className="fas fa-circle-info"></i>
+                    </button>
+                </div>
+                {xemMoTa && <p className="ai-role-text" title={text}>{text}</p>}
             </div>
             <div className="ai-role-card-actions" onClick={(e) => e.stopPropagation()}>
                 {onSua && (
