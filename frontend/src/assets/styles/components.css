@@ -10175,12 +10175,17 @@ button.ai-history-row {
 
 .essay-intro .btn { margin-top: 16px; }
 
-/* Màn Luyện viết có hai cột (vai | độ khó): khung rộng hơn để cột trái có chỗ. */
+/* Màn Luyện viết dùng ĐÚNG khung của Hội thoại (`.convo-intro`): rộng hết màn,
+   cuộn riêng khi cao quá, để hai cột vai | độ khó giống hệt nhau. */
 .essay-intro--wide {
-    max-width: 860px;
+    max-width: none;
     width: 100%;
     box-sizing: border-box;
-    padding: 0 24px;
+    padding: 0 24px 24px;
+    margin: 24px 0;
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
 }
 
 /* ── Dịch đoạn văn ──────────────────────────────────────────────────────
