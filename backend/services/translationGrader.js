@@ -25,7 +25,7 @@ function chatCompletion(...args) {
 
 const { parseJson, clampBand, countUnits } = require('./essayGrader');
 const { chiThiPhanLoai, chuanHoaLoai } = require('./errorTaxonomy');
-const { chonDang } = require('./dangBai');
+const { chonDang, CHI_THI_HOP_BOI_CANH } = require('./dangBai');
 
 /**
  * Ba trục chấm.
@@ -167,6 +167,7 @@ async function generatePassage({ tuVung = [], userId = null, lang = 'en', level 
             `these ${zh ? 'Chinese' : 'English'} words: ${tu.join(', ')}.`,
             'Express their meaning in Vietnamese; never write them literally.',
         );
+        if (chon) system.push(CHI_THI_HOP_BOI_CANH);
     }
 
     const messages = [

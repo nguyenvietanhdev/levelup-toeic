@@ -18,7 +18,7 @@ function chatCompletion(...args) {
 }
 
 const { parseJson } = require('./essayGrader');
-const { chuanHoaTuChon } = require('./dangBai');
+const { chuanHoaTuChon, CHI_THI_HOP_BOI_CANH } = require('./dangBai');
 
 /**
  * Kho DẠNG BÀI dùng chung cho mọi kiểu chấm, chia theo nhóm.
@@ -253,7 +253,7 @@ async function generateReading({ tuVung = [], userId = null, level = 'medium', d
     ];
 
     if (tu.length) {
-        system.push(`Naturally use these words in the passage: ${tu.join(', ')}.`);
+        system.push(`Naturally use these words in the passage: ${tu.join(', ')}.`, CHI_THI_HOP_BOI_CANH);
     }
 
     const messages = [

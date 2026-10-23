@@ -67,7 +67,9 @@ describe('luồng làm bài', () => {
         // Giữ lại là người dùng nộp nhầm bản dịch của đoạn trước, và AI chấm
         // "đủ ý" rất thấp mà họ không hiểu vì sao.
         const i = src.indexOf('const handleDeMoi');
-        const than = src.slice(i, src.indexOf('}, [loadingDe, level, dang, tuChon]);', i));
+        const j = src.indexOf('}, [loadingDe, level, dang, tuChon, goiY]);', i);
+        expect(j).toBeGreaterThan(i);
+        const than = src.slice(i, j);
         expect(than).toMatch(/setBanDich\(''\)/);
         expect(than).toMatch(/setResult\(null\)/);
     });

@@ -6,6 +6,7 @@
  * Đoạn gốc chỉ nằm trên server — client chỉ nhận âm thanh, không nhận chữ.
  */
 const { textCompletion } = require('./aiClient');
+const { CHI_THI_HOP_BOI_CANH } = require('./dangBai');
 
 /** Đoạn nghe tối đa — đủ dài để nghe, không đủ dài để chép tràn. */
 const MAX_WORDS_DOAN = 45;
@@ -154,6 +155,7 @@ async function sinhDoanNghe({ targetWords = [], level = 'medium', userId = null,
                         ? `The passage is 2 to 4 sentences, at most 40 words, spoken by ONE person, in the form of: ${chon.en}.`
                         : 'The passage is 2 to 4 sentences, at most 40 words, in a realistic everyday or workplace situation.',
                     'Use the given words naturally (each at least once when possible).',
+                    ...(chon ? [CHI_THI_HOP_BOI_CANH] : []),
                     'Reply with the plain passage only: no title, no quotes, no labels.',
                 ].join('\n'),
             },

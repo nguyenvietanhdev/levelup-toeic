@@ -271,6 +271,7 @@ app.use('/api/ai', require('./routes/ai'));
 app.use('/api/conversation', require('./routes/conversation')); // Hội thoại luyện từ vựng
 app.use('/api/roles', require('./routes/roles')); // Vai của AI theo Part (AI đề xuất hoặc người dùng tự viết)
 app.use('/api/listening', require('./routes/listening')); // Nghe với AI (TTS): đoạn nghe từ bộ từ, chấm chép lại
+app.use('/api/dang-goi-y', require('./routes/dangGoiY')); // Dạng bài AI gợi ý hợp bộ từ của Part
 app.use('/api/essay', require('./routes/essay')); // Luyện viết luận (chấm IELTS Task 2)
 app.use('/api/translation', require('./routes/translation')); // Luyện dịch Việt → Anh/Trung
 app.use('/api/reading', require('./routes/reading')); // Luyện đọc hiểu (TOEIC Part 7)

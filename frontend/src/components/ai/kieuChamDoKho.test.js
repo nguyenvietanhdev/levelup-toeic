@@ -47,8 +47,8 @@ describe('ba màn dùng chung component', () => {
 
     test('Đọc hiểu gửi kiểu chấm lên server và không còn chữ cứng "đúng dạng TOEIC Part 7"', () => {
         const src = screens['Đọc hiểu'];
-        expect(src).toMatch(/ReadingAPI\.passage\(\{[^}]*rubric: kieuDangChon/);
-        expect(src).toMatch(/\[loadingDe, level, dang, tuChonGui, kieuDangChon\]/);
+        expect(src).toMatch(/ReadingAPI\.passage\(\{[\s\S]{0,200}rubric: kieuDangChon/);
+        expect(src).toMatch(/\[loadingDe, level, dang, tuChonGui, goiY, kieuDangChon\]/);
         expect(src).not.toMatch(/đúng dạng TOEIC Part 7/);
         expect(src).not.toMatch(/<h2>.*Part 7/);
     });

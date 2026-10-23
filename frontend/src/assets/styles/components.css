@@ -10442,6 +10442,14 @@ button.ai-history-row {
   background: rgba(139, 92, 246, 0.12);
 }
 .rd-group { margin-top: 8px; }
+/* Nhóm "Hợp bộ từ này" (AI gợi ý theo bộ từ của Part): khung nhạt để nổi lên đầu. */
+.rd-group--goi-y {
+  padding: 8px 10px;
+  border: 1px dashed var(--accent-color);
+  border-radius: 12px;
+  background: rgba(139, 92, 246, 0.06);
+}
+.rd-group--goi-y .rd-group-title { color: var(--accent-color); }
 .rd-group-title {
   display: flex;
   align-items: center;

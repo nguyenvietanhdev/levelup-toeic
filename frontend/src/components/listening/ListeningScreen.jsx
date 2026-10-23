@@ -4,7 +4,7 @@ import { Notification } from '@ui/Toaster.jsx';
 import { ListeningAPI } from '@api/listening.js';
 import { TopicSelector } from '@components/vocab/topic/topicSelector.js';
 import { PartSelector } from '@components/vocab/part/partSelector.js';
-import ChonDangBai from '../ai/ChonDangBai.jsx';
+import ChonDangBai, { useGoiYDang, dangGui } from '../ai/ChonDangBai.jsx';
 
 /** Mức khó của đoạn nghe (khoá gửi server; server chọn dải CEFR tương ứng). */
 const MUC = [
@@ -78,6 +78,8 @@ export default function ListeningScreen({ active }) {
     const [level, setLevel] = useState('medium');
     const [dang, setDang] = useState('');     // '' = ngẫu nhiên
     const [tuChon, setTuChon] = useState(''); // dạng/chủ đề tự nhập, ưu tiên hơn `dang`
+    // Dạng bài AI gợi ý hợp bộ từ của Part — nhóm đầu tiên, và "Ngẫu nhiên" bốc trong đó.
+    const goiY = useGoiYDang('listening', active);
     const [phien, setPhien] = useState(null);     // { id, totalTargets }
     const [tocDo, setTocDo] = useState(0.9);
     const [typed, setTyped] = useState('');
@@ -90,8 +92,7 @@ export default function ListeningScreen({ active }) {
     const batDau = async () => {
         setBusy(true);
         try {
-            const tu = tuChon.trim();
-            const d = await ListeningAPI.start({ level, dang: tu ? '' : dang, tuChon: tu });
+            const d = await ListeningAPI.start({ level, ...dangGui({ dang, tuChon, goiY }) });
             setPhien(d);
             setTyped('');
             setKetQua(null);
@@ -149,6 +150,7 @@ export default function ListeningScreen({ active }) {
                         <div className="ai-setup-col">
                             <ChonDangBai
                                 nhom={NHOM_DANG}
+                                goiY={goiY}
                                 dang={dang}
                                 onDang={setDang}
                                 tuChon={tuChon}

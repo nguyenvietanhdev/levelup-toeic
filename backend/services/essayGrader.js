@@ -381,6 +381,8 @@ async function deTheoDang({ chon, zh, rb, level, topicHint, userId }) {
         'It must be ONE instruction of 1-3 sentences that gives a concrete situation.',
         zh ? `Ask for about ${MIN_CHARS_ZH} characters.` : '',
         GIONG_DE_VIET[rb] || '',
+        // Có chủ đề của bộ từ: đặt đề vào bối cảnh hợp cả dạng bài lẫn chủ đề, không ghép gượng.
+        topicHint ? 'Set the task in a situation that fits both this kind of text and the topic naturally.' : '',
     ].filter(Boolean).join('\n');
 
     const user = topicHint

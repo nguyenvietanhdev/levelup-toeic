@@ -7,7 +7,7 @@ import { Notification } from '@ui/Toaster.jsx';
 import { ReadingAPI } from '@api/reading.js';
 import LichSuMode from '../history/LichSuMode.jsx';
 import KieuChamDoKho from '../ai/KieuChamDoKho.jsx';
-import ChonDangBai, { MAX_TU_CHON } from '../ai/ChonDangBai.jsx';
+import ChonDangBai, { MAX_TU_CHON, useGoiYDang, dangGui } from '../ai/ChonDangBai.jsx';
 import { getVocabLang } from '@api/vocabulary.js';
 import { KIEU_CHAM, kieuChoNgonNgu, doKhoChoKieu } from '@lib/kieuCham.js';
 
@@ -120,6 +120,8 @@ export default function ReadingScreen({ active }) {
     const kieuDangChon = kieu && kieuList.some((k) => k.key === kieu) ? kieu : KIEU_MAC_DINH[ngonNgu];
     const kieuMoTa = KIEU_CHAM.find((k) => k.key === kieuDangChon) || {};
     const tuChonGui = tuChon.trim();
+    // Dạng bài AI gợi ý hợp bộ từ của Part — nhóm đầu tiên, và "Ngẫu nhiên" bốc trong đó.
+    const goiY = useGoiYDang('reading', active);
 
     // `onBought` của popup nạp năng lượng gọi lại chính `handleNop` — không đưa
     // được `handleNop` vào deps của chính nó.
@@ -130,7 +132,7 @@ export default function ReadingScreen({ active }) {
         setLoadingDe(true);
         try {
             const d = await ReadingAPI.passage({
-                words: layTuGoiY(), level, dang: tuChonGui ? '' : dang, tuChon: tuChonGui, rubric: kieuDangChon,
+                words: layTuGoiY(), level, ...dangGui({ dang, tuChon: tuChonGui, goiY }), rubric: kieuDangChon,
             });
             if (!d?.questions?.length) throw new Error('Server trả về bài đọc không hợp lệ');
             setDe(d);
@@ -143,7 +145,7 @@ export default function ReadingScreen({ active }) {
         } finally {
             setLoadingDe(false);
         }
-    }, [loadingDe, level, dang, tuChonGui, kieuDangChon]);
+    }, [loadingDe, level, dang, tuChonGui, goiY, kieuDangChon]);
 
     const handleNop = useCallback(async () => {
         if (grading || !de) return;
@@ -224,6 +226,7 @@ export default function ReadingScreen({ active }) {
                         <div className="ai-setup-col">
                             <ChonDangBai
                                 nhom={NHOM_DANG}
+                                goiY={goiY}
                                 kieu={kieuDangChon}
                                 kieuLabel={kieuMoTa.label}
                                 dang={dang}

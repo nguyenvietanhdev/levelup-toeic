@@ -68,3 +68,46 @@ describe('component ChonDangBai', () => {
         expect(src).toMatch(/onDang\(d\.key\); onTuChon\(''\)/);
     });
 });
+
+describe('gợi ý "Hợp bộ từ này"', () => {
+    test('dangGui: tự nhập thắng, rồi chip, rồi Ngẫu nhiên bốc trong gợi ý', async () => {
+        const { dangGui } = await import('./ChonDangBai.jsx');
+        expect(dangGui({ dang: 'email', tuChon: ' thư ', goiY: ['review'] })).toEqual({ dang: '', tuChon: 'thư' });
+        expect(dangGui({ dang: 'email', tuChon: '', goiY: ['review'] })).toEqual({ dang: 'email', tuChon: '' });
+        for (let i = 0; i < 10; i++) {
+            expect(['review', 'recipe']).toContain(dangGui({ dang: '', tuChon: '', goiY: ['review', 'recipe'] }).dang);
+        }
+        // Không có gợi ý → Ngẫu nhiên gửi rỗng, server giữ đề như cũ.
+        expect(dangGui({ dang: '', tuChon: '' })).toEqual({ dang: '', tuChon: '' });
+    });
+
+    test('component hiện nhóm gợi ý ĐẦU TIÊN, chỉ với khoá có trong kho', () => {
+        const src = doc('components', 'ai', 'ChonDangBai.jsx');
+        expect(src).toMatch(/label: 'Hợp bộ từ này'/);
+        expect(src).toMatch(/\[\{ key: 'goi-y'.*goiY: true \}, \.\.\.nhomXep\]/);
+        expect(src).toMatch(/goiY\.map\(\(k\) => tatCaDang\.find\(\(d\) => d\.key === k\)\)\.filter\(Boolean\)/);
+    });
+
+    test('hook đọc đề/Part khi màn được mở và gọi đúng API', () => {
+        const src = doc('components', 'ai', 'ChonDangBai.jsx');
+        expect(src).toMatch(/DangGoiYAPI\.get\(\{ mode, source, part, lang: getVocabLang\(\) \}\)/);
+        expect(src).toMatch(/\}, \[mode, active\]\);/);
+        const api = doc('api', 'dangGoiY.js');
+        expect(api).toMatch(/\/dang-goi-y\?/);
+    });
+
+    const CHE_DO = [
+        ['Đọc hiểu', ['components', 'reading', 'ReadingScreen.jsx'], 'reading'],
+        ['Viết', ['components', 'essay', 'EssayScreen.jsx'], 'essay'],
+        ['Dịch', ['components', 'translation', 'TranslationScreen.jsx'], 'translation'],
+        ['Nghe', ['components', 'listening', 'ListeningScreen.jsx'], 'listening'],
+    ];
+    for (const [ten, duong, mode] of CHE_DO) {
+        test(`${ten}: lấy gợi ý đúng chế độ, truyền vào chip và dùng dangGui khi gửi`, () => {
+            const src = doc(...duong);
+            expect(src).toContain(`useGoiYDang('${mode}', active)`);
+            expect(src).toMatch(/goiY=\{goiY\}/);
+            expect(src).toMatch(/\.\.\.dangGui\(\{ dang, tuChon[^}]*goiY \}\)/);
+        });
+    }
+});

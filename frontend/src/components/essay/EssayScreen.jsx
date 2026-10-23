@@ -6,7 +6,7 @@ import { Notification } from '@ui/Toaster.jsx';
 import { EssayAPI } from '@api/essay.js';
 import LichSuMode from '../history/LichSuMode.jsx';
 import KieuChamDoKho from '../ai/KieuChamDoKho.jsx';
-import ChonDangBai from '../ai/ChonDangBai.jsx';
+import ChonDangBai, { useGoiYDang, dangGui } from '../ai/ChonDangBai.jsx';
 import { KIEU_CHAM, doKhoChoKieu } from '@lib/kieuCham.js';
 
 /**
@@ -142,6 +142,8 @@ export default function EssayScreen({ active }) {
     const [tab, setTab] = useState('luyen'); // 'luyen' | 'lichsu'
     const [dang, setDang] = useState('');     // '' = ngẫu nhiên
     const [tuChon, setTuChon] = useState(''); // dạng/chủ đề tự nhập, ưu tiên hơn `dang`
+    // Dạng bài AI gợi ý hợp bộ từ của Part — nhóm đầu tiên, và "Ngẫu nhiên" bốc trong đó.
+    const goiY = useGoiYDang('essay', active);
 
     // `onBought` của popup nạp năng lượng gọi lại chính `handleGrade` — không
     // đưa được `handleGrade` vào deps của chính nó.
@@ -172,8 +174,7 @@ export default function EssayScreen({ active }) {
         if (loadingPrompt) return;
         setLoadingPrompt(true);
         try {
-            const tu = tuChon.trim();
-            const d = await EssayAPI.prompt({ level, rubric: kieuDangChon, dang: tu ? '' : dang, tuChon: tu });
+            const d = await EssayAPI.prompt({ level, rubric: kieuDangChon, ...dangGui({ dang, tuChon, goiY }) });
             if (!d?.prompt) throw new Error('Server trả về đề không hợp lệ');
             setPrompt(d);
             // Đề mới thì bỏ bài cũ — giữ lại là người dùng nộp nhầm bài của đề
@@ -185,7 +186,7 @@ export default function EssayScreen({ active }) {
         } finally {
             setLoadingPrompt(false);
         }
-    }, [loadingPrompt, level, kieuDangChon, dang, tuChon]);
+    }, [loadingPrompt, level, kieuDangChon, dang, tuChon, goiY]);
 
     const handleGrade = useCallback(async () => {
         if (grading || !prompt) return;
@@ -277,6 +278,7 @@ export default function EssayScreen({ active }) {
                         <div className="ai-setup-col">
                             <ChonDangBai
                                 nhom={NHOM_DANG}
+                                goiY={goiY}
                                 kieu={kieuDangChon}
                                 kieuLabel={KIEU_CHAM.find((k) => k.key === kieuDangChon)?.label || ''}
                                 dang={dang}

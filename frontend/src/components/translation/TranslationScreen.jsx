@@ -8,7 +8,7 @@ import { TranslationAPI } from '@api/translation.js';
 import MistakeLog from './MistakeLog.jsx';
 import LichSuMode from '../history/LichSuMode.jsx';
 import KieuChamDoKho from '../ai/KieuChamDoKho.jsx';
-import ChonDangBai from '../ai/ChonDangBai.jsx';
+import ChonDangBai, { useGoiYDang, dangGui } from '../ai/ChonDangBai.jsx';
 
 /**
  * Luyện DỊCH — đọc một đoạn tiếng Việt, viết lại bằng tiếng Anh (hoặc Trung).
@@ -131,6 +131,8 @@ export default function TranslationScreen({ active }) {
     const [level, setLevel] = useState('medium');
     const [dang, setDang] = useState('');     // '' = ngẫu nhiên
     const [tuChon, setTuChon] = useState(''); // dạng/chủ đề tự nhập, ưu tiên hơn `dang`
+    // Dạng bài AI gợi ý hợp bộ từ của Part — nhóm đầu tiên, và "Ngẫu nhiên" bốc trong đó.
+    const goiY = useGoiYDang('translation', active);
     const [loadingDe, setLoadingDe] = useState(false);
     const [grading, setGrading] = useState(false);
     // 'lam' = làm bài · 'loi' = nhật ký lỗi. Đặt chung màn thay vì tách riêng:
@@ -157,8 +159,7 @@ export default function TranslationScreen({ active }) {
         if (loadingDe) return;
         setLoadingDe(true);
         try {
-            const tu = tuChon.trim();
-            const d = await TranslationAPI.passage({ words: layTuGoiY(), level, dang: tu ? '' : dang, tuChon: tu });
+            const d = await TranslationAPI.passage({ words: layTuGoiY(), level, ...dangGui({ dang, tuChon, goiY }) });
             if (!d?.passage) throw new Error('Server trả về đoạn văn không hợp lệ');
             setDe(d);
             // Đề mới thì bỏ bài cũ — giữ lại là người dùng nộp nhầm bản dịch của
@@ -170,7 +171,7 @@ export default function TranslationScreen({ active }) {
         } finally {
             setLoadingDe(false);
         }
-    }, [loadingDe, level, dang, tuChon]);
+    }, [loadingDe, level, dang, tuChon, goiY]);
 
     const handleGrade = useCallback(async () => {
         if (grading || !de) return;
@@ -272,6 +273,7 @@ export default function TranslationScreen({ active }) {
                         <div className="ai-setup-col">
                             <ChonDangBai
                                 nhom={NHOM_DANG}
+                                goiY={goiY}
                                 dang={dang}
                                 onDang={setDang}
                                 tuChon={tuChon}

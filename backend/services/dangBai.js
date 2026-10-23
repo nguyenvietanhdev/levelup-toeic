@@ -21,6 +21,15 @@ function chuanHoaTuChon(v) {
     return s.length >= 2 ? s : '';
 }
 
+/**
+ * Chỉ thị cho AI khi bài có CẢ dạng bài lẫn bộ từ: tìm bối cảnh hợp cả hai thay
+ * vì ép từ vào. Bộ từ quầy bar + "Sân bay" → thông báo của quầy bar trong sân bay,
+ * chứ không phải một thông báo sân bay có chữ "cocktail" chen vào vô duyên.
+ */
+const CHI_THI_HOP_BOI_CANH = 'Choose a setting where this text type and the given words fit together naturally '
+    + '(e.g. an announcement from an airport bar, a lecture at a bartending school); '
+    + 'never force a word into a sentence where it sounds unnatural.';
+
 /** Mọi dạng trong kho, phẳng. */
 function phang(nhom) {
     return nhom.flatMap((n) => n.dang);
@@ -50,4 +59,4 @@ function chonDang(nhom, { dang, tuChon } = {}) {
     return timDang(nhom, dang);
 }
 
-module.exports = { MAX_TU_CHON, chuanHoaTuChon, phang, timDang, ngauNhienTheoKieu, chonDang };
+module.exports = { MAX_TU_CHON, CHI_THI_HOP_BOI_CANH, chuanHoaTuChon, phang, timDang, ngauNhienTheoKieu, chonDang };
