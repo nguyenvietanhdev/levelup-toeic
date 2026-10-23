@@ -4,12 +4,61 @@ import { Notification } from '@ui/Toaster.jsx';
 import { ListeningAPI } from '@api/listening.js';
 import { TopicSelector } from '@components/vocab/topic/topicSelector.js';
 import { PartSelector } from '@components/vocab/part/partSelector.js';
+import ChonDangBai from '../ai/ChonDangBai.jsx';
 
 /** Mức khó của đoạn nghe (khoá gửi server; server chọn dải CEFR tương ứng). */
 const MUC = [
     { key: 'easy', label: 'Dễ', desc: 'Câu ngắn, từ thông dụng' },
     { key: 'medium', label: 'Vừa', desc: 'Câu đầy đủ, từ công sở' },
     { key: 'hard', label: 'Khó', desc: 'Câu phức, từ ít gặp' },
+];
+
+/**
+ * Kho dạng nghe — chỉ dạng MỘT người nói (TTS đọc một giọng). Nghe không có kiểu
+ * chấm nên `hop` để trống. Khoá khớp `NHOM_DANG_NGHE` ở
+ * backend/services/listeningAi.js. "Ngẫu nhiên" giữ đoạn như trước.
+ */
+const NHOM_DANG = [
+    {
+        key: 'thong-bao', label: 'Thông báo', hop: [],
+        dang: [
+            { key: 'airport', label: 'Sân bay' },
+            { key: 'station', label: 'Nhà ga / bến xe' },
+            { key: 'store', label: 'Siêu thị / cửa hàng' },
+            { key: 'voicemail', label: 'Tin nhắn thoại' },
+            { key: 'weather', label: 'Dự báo thời tiết' },
+        ],
+    },
+    {
+        key: 'tin-podcast', label: 'Tin tức & podcast', hop: [],
+        dang: [
+            { key: 'news', label: 'Bản tin' },
+            { key: 'podcast', label: 'Podcast' },
+            { key: 'radio-ad', label: 'Quảng cáo radio' },
+            { key: 'tour', label: 'Hướng dẫn viên' },
+            { key: 'traffic', label: 'Tin giao thông' },
+        ],
+    },
+    {
+        key: 'hoc-viec', label: 'Học tập & công việc', hop: [],
+        dang: [
+            { key: 'lecture', label: 'Bài giảng' },
+            { key: 'meeting', label: 'Mở đầu cuộc họp' },
+            { key: 'instructions', label: 'Hướng dẫn' },
+            { key: 'presentation', label: 'Thuyết trình' },
+            { key: 'training', label: 'Đào tạo nhân viên' },
+        ],
+    },
+    {
+        key: 'doi-thuong', label: 'Đời thường', hop: [],
+        dang: [
+            { key: 'story', label: 'Kể chuyện' },
+            { key: 'directions', label: 'Chỉ đường' },
+            { key: 'recipe', label: 'Nấu ăn' },
+            { key: 'review', label: 'Nhận xét' },
+            { key: 'speech', label: 'Lời chúc / phát biểu' },
+        ],
+    },
 ];
 
 /** Tốc độ đọc. Đổi tốc độ là đọc lại đoạn đó, không mất bài. */
@@ -27,6 +76,8 @@ export default function ListeningScreen({ active }) {
     const { showScreen, syncFromState } = useGame();
 
     const [level, setLevel] = useState('medium');
+    const [dang, setDang] = useState('');     // '' = ngẫu nhiên
+    const [tuChon, setTuChon] = useState(''); // dạng/chủ đề tự nhập, ưu tiên hơn `dang`
     const [phien, setPhien] = useState(null);     // { id, totalTargets }
     const [tocDo, setTocDo] = useState(0.9);
     const [typed, setTyped] = useState('');
@@ -39,7 +90,8 @@ export default function ListeningScreen({ active }) {
     const batDau = async () => {
         setBusy(true);
         try {
-            const d = await ListeningAPI.start({ level });
+            const tu = tuChon.trim();
+            const d = await ListeningAPI.start({ level, dang: tu ? '' : dang, tuChon: tu });
             setPhien(d);
             setTyped('');
             setKetQua(null);
@@ -92,18 +144,33 @@ export default function ListeningScreen({ active }) {
                             Chọn đề và Part ở thanh trên trước khi bắt đầu.
                         </p>
                     )}
-                    <div className="ai-setup-title">Độ khó</div>
-                    <div className="ai-setup-list tr-levels">
-                        {MUC.map((m) => (
-                            <button
-                                key={m.key}
-                                className={`tr-level${level === m.key ? ' is-on' : ''}`}
-                                onClick={() => setLevel(m.key)}
-                            >
-                                <strong>{m.label}</strong>
-                                <em>{m.desc}</em>
-                            </button>
-                        ))}
+                    {/* Hai cột như Đọc hiểu: TRÁI là dạng nghe, PHẢI là độ khó. */}
+                    <div className="ai-setup">
+                        <div className="ai-setup-col">
+                            <ChonDangBai
+                                nhom={NHOM_DANG}
+                                dang={dang}
+                                onDang={setDang}
+                                tuChon={tuChon}
+                                onTuChon={setTuChon}
+                                placeholder="Hoặc tự nhập: thông báo bệnh viện, lời chào khách sạn…"
+                            />
+                        </div>
+                        <div className="ai-setup-col">
+                            <div className="ai-setup-title">Độ khó</div>
+                            <div className="ai-setup-list tr-levels">
+                                {MUC.map((m) => (
+                                    <button
+                                        key={m.key}
+                                        className={`tr-level${level === m.key ? ' is-on' : ''}`}
+                                        onClick={() => setLevel(m.key)}
+                                    >
+                                        <strong>{m.label}</strong>
+                                        <em>{m.desc}</em>
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
                     </div>
                     <button className="btn btn-primary" onClick={batDau} disabled={busy}>
                         <i className="fas fa-play"></i> {busy ? 'Đang chuẩn bị…' : 'Bắt đầu nghe'}
@@ -112,7 +179,7 @@ export default function ListeningScreen({ active }) {
             ) : (
                 <div className="listening-body">
                     <p className="tr-intro-note">
-                        {phien.totalTargets} từ mục tiêu trong đoạn này.
+                        {phien.dangVi ? `${phien.dangVi} · ` : ''}{phien.totalTargets} từ mục tiêu trong đoạn này.
                     </p>
 
                     {/* Âm thanh: đổi tốc độ là đổi `src`, nên đoạn được đọc lại từ đầu. */}

@@ -151,7 +151,7 @@ async function generatePassage({ tuVung = [], userId = null, lang = 'en', level 
         'The "passage" MUST be written in natural Vietnamese.',
         `It must be exactly ${soCau} sentences, forming ONE coherent paragraph`,
         chon
-            ? `written as a ${chon.en} — not ${soCau} unrelated sentences.`
+            ? `written in the form of: ${chon.en} — not ${soCau} unrelated sentences.`
             : 'about a single everyday situation — not ' + soCau + ' unrelated sentences.',
         // Không cho gợi ý sẵn: kèm bản dịch trong đề là đưa luôn đáp án.
         'Do NOT include any English or Chinese words in the passage.',

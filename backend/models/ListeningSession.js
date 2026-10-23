@@ -12,6 +12,9 @@ const listeningSessionSchema = new mongoose.Schema(
         level: { type: String, enum: ['easy', 'medium', 'hard'], default: 'medium' },
         // Các từ mục tiêu đã đưa vào đoạn nghe.
         targetWords: { type: [String], default: [] },
+        // Dạng nghe người học chọn ('' = ngẫu nhiên, 'custom' = tự nhập) và nhãn hiển thị.
+        dang: { type: String, default: '', maxlength: 40 },
+        dangVi: { type: String, default: '', maxlength: 80 },
         // Đoạn gốc — ẩn mặc định, chỉ đọc khi chấm.
         passage: { type: String, required: true, select: false },
         status: { type: String, enum: ['open', 'done'], default: 'open', index: true },

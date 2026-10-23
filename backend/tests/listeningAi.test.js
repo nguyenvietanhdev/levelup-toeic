@@ -77,3 +77,37 @@ describe('sinh đoạn nghe', () => {
         await expect(L.sinhDoanNghe({ targetWords: ['hi'], level: 'easy' })).rejects.toThrow(/quá ngắn/);
     });
 });
+
+describe('dạng nghe (một người nói)', () => {
+    const { chonDang, phang } = require('../services/dangBai');
+    const OK = { text: 'Attention please, flight 204 to Hanoi is now boarding at gate five.', providerId: 'openai' };
+
+    test('kho dạng: khoá không trùng, đủ nhãn, không gợi ý theo kiểu chấm', () => {
+        const ds = phang(L.NHOM_DANG_NGHE);
+        expect(new Set(ds.map((d) => d.key)).size).toBe(ds.length);
+        expect(ds.length).toBeGreaterThanOrEqual(20);
+        for (const n of L.NHOM_DANG_NGHE) expect(n.hop).toEqual([]);
+        // Không có dạng hội thoại nhiều người: TTS chỉ đọc một giọng.
+        expect(ds.map((d) => d.en).join(' ')).not.toMatch(/conversation|dialogue/);
+    });
+
+    test('Ngẫu nhiên giữ đoạn đời thường/công sở như trước', async () => {
+        mockText.mockResolvedValue(OK);
+        await L.sinhDoanNghe({ targetWords: ['gate'], level: 'easy' });
+        expect(mockText.mock.calls[0][0].messages[0].content).toMatch(/everyday or workplace situation/);
+    });
+
+    test('chọn dạng: đoạn do MỘT người nói theo đúng dạng', async () => {
+        mockText.mockResolvedValue(OK);
+        await L.sinhDoanNghe({ targetWords: ['gate'], level: 'easy', chon: chonDang(L.NHOM_DANG_NGHE, { dang: 'airport' }) });
+        expect(mockText.mock.calls[0][0].messages[0].content).toMatch(/spoken by ONE person, in the form of: airport announcement/);
+    });
+
+    test('controller lấy dạng từ body qua chonDang và lưu dang/dangVi', () => {
+        const { readFileSync } = require('node:fs');
+        const { join } = require('node:path');
+        const src = readFileSync(join(__dirname, '..', 'controllers', 'listeningController.js'), 'utf8');
+        expect(src).toMatch(/chonDang\(NHOM_DANG_NGHE, \{ dang: req\.body\.dang, tuChon: req\.body\.tuChon \}\)/);
+        expect(src).toMatch(/dang: chon \? chon\.key : '', dangVi: chon \? chon\.vi : ''/);
+    });
+});

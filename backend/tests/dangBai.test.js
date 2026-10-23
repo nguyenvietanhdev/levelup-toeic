@@ -116,7 +116,7 @@ describe('Dịch — đoạn văn theo dạng văn bản', () => {
     test('chọn dạng: đoạn viết theo đúng dạng, trả dang/dangVi', async () => {
         chatCompletion.mockResolvedValueOnce({ success: true, content: DOAN });
         const r = await generatePassage({ lang: 'en', dang: 'news' });
-        expect(promptHeThong()).toMatch(/written as a short news report/);
+        expect(promptHeThong()).toMatch(/in the form of: short news report/);
         expect(r).toMatchObject({ dang: 'news', dangVi: 'Bản tin' });
     });
 

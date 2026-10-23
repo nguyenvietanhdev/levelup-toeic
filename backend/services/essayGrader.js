@@ -377,7 +377,7 @@ async function deTheoDang({ chon, zh, rb, level, topicHint, userId }) {
         'Return ONLY valid JSON, no markdown fences, no commentary.',
         'Shape: { "prompt": "...", "type": "" }',
         zh ? chiThiMuc(level) : capTuVungDeBai(level),
-        `The task must ask the learner to write a ${chon.en}.`,
+        `The task must ask the learner to write this kind of text: ${chon.en}.`,
         'It must be ONE instruction of 1-3 sentences that gives a concrete situation.',
         zh ? `Ask for about ${MIN_CHARS_ZH} characters.` : '',
         GIONG_DE_VIET[rb] || '',

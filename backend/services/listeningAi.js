@@ -86,10 +86,60 @@ function lamSachDoan(raw) {
 }
 
 /**
+ * Kho DẠNG NGHE — chỉ dạng MỘT người nói: TTS hiện đọc bằng một giọng, hội thoại
+ * hai người đọc một giọng nghe như độc thoại và khó phân vai. Nghe không có kiểu
+ * chấm nên `hop` để trống. Khoá khớp `NHOM_DANG` ở
+ * frontend/src/components/listening/ListeningScreen.jsx.
+ * "Ngẫu nhiên" (không chọn) giữ đoạn như trước: tình huống đời thường hoặc công sở.
+ */
+const NHOM_DANG_NGHE = [
+    {
+        key: 'thong-bao', vi: 'Thông báo', hop: [],
+        dang: [
+            { key: 'airport', vi: 'Sân bay', en: 'airport announcement' },
+            { key: 'station', vi: 'Nhà ga / bến xe', en: 'train or bus station announcement' },
+            { key: 'store', vi: 'Siêu thị / cửa hàng', en: 'in-store announcement' },
+            { key: 'voicemail', vi: 'Tin nhắn thoại', en: 'voicemail message' },
+            { key: 'weather', vi: 'Dự báo thời tiết', en: 'weather forecast' },
+        ],
+    },
+    {
+        key: 'tin-podcast', vi: 'Tin tức & podcast', hop: [],
+        dang: [
+            { key: 'news', vi: 'Bản tin', en: 'radio news headline' },
+            { key: 'podcast', vi: 'Podcast', en: 'podcast host introducing an episode' },
+            { key: 'radio-ad', vi: 'Quảng cáo radio', en: 'radio advertisement' },
+            { key: 'tour', vi: 'Hướng dẫn viên', en: 'tour guide talking to a group' },
+            { key: 'traffic', vi: 'Tin giao thông', en: 'traffic report' },
+        ],
+    },
+    {
+        key: 'hoc-viec', vi: 'Học tập & công việc', hop: [],
+        dang: [
+            { key: 'lecture', vi: 'Bài giảng', en: 'short excerpt from a lecture' },
+            { key: 'meeting', vi: 'Mở đầu cuộc họp', en: 'manager opening a meeting' },
+            { key: 'instructions', vi: 'Hướng dẫn', en: 'spoken step-by-step instructions' },
+            { key: 'presentation', vi: 'Thuyết trình', en: 'short product presentation' },
+            { key: 'training', vi: 'Đào tạo nhân viên', en: 'trainer briefing new staff' },
+        ],
+    },
+    {
+        key: 'doi-thuong', vi: 'Đời thường', hop: [],
+        dang: [
+            { key: 'story', vi: 'Kể chuyện', en: 'person telling a short personal story' },
+            { key: 'directions', vi: 'Chỉ đường', en: 'person giving directions to a place' },
+            { key: 'recipe', vi: 'Nấu ăn', en: 'person explaining how to cook a dish' },
+            { key: 'review', vi: 'Nhận xét', en: 'person giving a spoken review of a film or restaurant' },
+            { key: 'speech', vi: 'Lời chúc / phát biểu', en: 'short toast or speech at an event' },
+        ],
+    },
+];
+
+/**
  * Nhờ AI viết đoạn nghe ngắn dùng các từ mục tiêu. Trả về chuỗi đoạn văn thuần,
  * không tiêu đề, không dấu nháy. Lỗi AI được ném ra để controller hoàn năng lượng.
  */
-async function sinhDoanNghe({ targetWords = [], level = 'medium', userId = null }) {
+async function sinhDoanNghe({ targetWords = [], level = 'medium', userId = null, chon = null }) {
     const cefr = CEFR_NGHE[level] || CEFR_NGHE.medium;
     const out = await textCompletion({
         feature: 'listening-generate',
@@ -99,7 +149,10 @@ async function sinhDoanNghe({ targetWords = [], level = 'medium', userId = null 
                 content: [
                     'You write a short English passage for listening practice.',
                     `Use vocabulary at CEFR level ${cefr}.`,
-                    'The passage is 2 to 4 sentences, at most 40 words, in a realistic everyday or workplace situation.',
+                    chon
+                        // Dạng người học chọn (từ kho hoặc tự nhập, đã làm sạch ở `chonDang`).
+                        ? `The passage is 2 to 4 sentences, at most 40 words, spoken by ONE person, in the form of: ${chon.en}.`
+                        : 'The passage is 2 to 4 sentences, at most 40 words, in a realistic everyday or workplace situation.',
                     'Use the given words naturally (each at least once when possible).',
                     'Reply with the plain passage only: no title, no quotes, no labels.',
                 ].join('\n'),
@@ -121,4 +174,5 @@ module.exports = {
     tachTu,
     lamSachDoan,
     MAX_WORDS_DOAN,
+    NHOM_DANG_NGHE,
 };

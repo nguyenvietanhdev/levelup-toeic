@@ -18,8 +18,8 @@ function unwrap(res) {
 
 export const ListeningAPI = {
     /** Mở một lượt nghe: server chọn từ, trừ năng lượng, AI viết đoạn. */
-    async start({ level = 'medium' } = {}) {
-        return unwrap(await Http.post('/listening/start', { level }));
+    async start({ level = 'medium', dang = '', tuChon = '' } = {}) {
+        return unwrap(await Http.post('/listening/start', { level, dang, tuChon }));
     },
 
     /** Nộp bài chép lại và nhận kết quả (kèm đoạn gốc đã được mở khoá). */

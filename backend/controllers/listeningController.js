@@ -9,7 +9,8 @@ const UserUpload = require('../models/UserUpload');
 const UserProfile = require('../models/UserProfile');
 const UserStats = require('../models/UserStats');
 const ListeningSession = require('../models/ListeningSession');
-const { sinhDoanNghe, chamNghe } = require('../services/listeningAi');
+const { sinhDoanNghe, chamNghe, NHOM_DANG_NGHE } = require('../services/listeningAi');
+const { chonDang } = require('../services/dangBai');
 const { tongHop } = require('../services/ttsEngine');
 const { awardXp } = require('../utils/userStateHelper');
 const { isVipActive } = require('../utils/energyCosts');
@@ -110,6 +111,8 @@ exports.start = async (req, res, next) => {
             });
         }
         const targetWords = chonNgauNhien(tuKho, TU_MUC_TIEU);
+        // Dạng nghe người học chọn hoặc tự nhập; null = Ngẫu nhiên.
+        const chon = chonDang(NHOM_DANG_NGHE, { dang: req.body.dang, tuChon: req.body.tuChon });
 
         // Trừ năng lượng TRƯỚC khi gọi AI; AI lỗi thì hoàn lại.
         const charge = await truNangLuong(userId);
@@ -125,7 +128,7 @@ exports.start = async (req, res, next) => {
 
         let passage;
         try {
-            passage = await sinhDoanNghe({ targetWords, level, userId });
+            passage = await sinhDoanNghe({ targetWords, level, userId, chon });
         } catch (err) {
             if (!charge.vip) {
                 await UserStats.updateOne({ userId }, { $inc: { energy: ENERGY_COST_NGHE } });
@@ -139,12 +142,15 @@ exports.start = async (req, res, next) => {
 
         const doc = await ListeningSession.create({
             userId, source, part, level, targetWords, passage,
+            dang: chon ? chon.key : '', dangVi: chon ? chon.vi : '',
         });
         res.json({
             success: true,
             data: {
                 id: String(doc._id),
                 level,
+                dang: chon ? chon.key : '',
+                dangVi: chon ? chon.vi : '',
                 totalTargets: targetWords.length,
                 energyRemaining: charge.energyRemaining,
             },

@@ -1,5 +1,5 @@
 /**
- * Kho dạng bài (ChonDangBai) dùng chung ở Đọc hiểu, Viết, Dịch.
+ * Kho dạng bài (ChonDangBai) dùng chung ở Đọc hiểu, Viết, Dịch, Nghe.
  *
  * Mỗi màn khai báo lại kho của server để hiện chip; lệch khoá là bấm chip mà
  * server không nhận ra → âm thầm ra bài ngẫu nhiên. Test này khoá cho hai bên khớp.
@@ -28,6 +28,7 @@ const MAN = [
     ['Đọc hiểu', ['components', 'reading', 'ReadingScreen.jsx'], 'readingGrader.js', 'NHOM_DANG'],
     ['Viết', ['components', 'essay', 'EssayScreen.jsx'], 'essayGrader.js', 'NHOM_DANG_VIET'],
     ['Dịch', ['components', 'translation', 'TranslationScreen.jsx'], 'translationGrader.js', 'NHOM_DANG_DICH'],
+    ['Nghe', ['components', 'listening', 'ListeningScreen.jsx'], 'listeningAi.js', 'NHOM_DANG_NGHE'],
 ];
 
 describe('kho dạng bài khớp server', () => {
