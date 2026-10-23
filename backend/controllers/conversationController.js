@@ -6,7 +6,8 @@ const Vocabulary = require('../models/Vocabulary');
 const VocabularyZh = require('../models/VocabularyZh');
 const UserUpload = require('../models/UserUpload');
 const WrongWord = require('../models/WrongWord');
-const { openConversation, replyTurn, moTaVai } = require('../services/conversationAi');
+const { openConversation, replyTurn, moTaVai, NHOM_TINH_HUONG } = require('../services/conversationAi');
+const { chonDang } = require('../services/dangBai');
 const { chuanHoaBoTieuChi, gradeConversation } = require('../services/conversationGrader');
 const { matchWords, collectUsed } = require('../utils/wordMatch');
 const { awardXp } = require('../utils/userStateHelper');
@@ -240,7 +241,9 @@ exports.start = async (req, res, next) => {
         });
         if (vaiPart.vai) topic = vaiPart.vai;
 
-        const ai = await openConversation({ lang, topic, targetWords, userId: req.user.id, level });
+        // Tình huống người học chọn hoặc tự nhập (null = AI tự dựng như trước). Ghép với vai.
+        const tinhHuong = chonDang(NHOM_TINH_HUONG, { dang: req.body.dang, tuChon: req.body.tuChon });
+        const ai = await openConversation({ lang, topic, targetWords, userId: req.user.id, level, tinhHuong });
         if (!ai.success) {
             // AI lỗi thì HOÀN năng lượng — người dùng không được gì mà vẫn mất
             // tiền là lỗi tệ nhất trong nhóm này.
@@ -258,6 +261,7 @@ exports.start = async (req, res, next) => {
             userId: req.user.id,
             source, part, lang, topic, scenario: ai.scenario || '', rubric, track,
             strictGrammar: req.body.strictGrammar === true,
+            tinhHuong: tinhHuong ? tinhHuong.vi : '',
             targetWords,
             level,
             turns: [{ role: 'npc', content: ai.content }],

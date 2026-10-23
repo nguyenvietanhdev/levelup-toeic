@@ -23,6 +23,7 @@ const KHO = {
     essay: () => require('./essayGrader').NHOM_DANG_VIET,
     translation: () => require('./translationGrader').NHOM_DANG_DICH,
     listening: () => require('./listeningAi').NHOM_DANG_NGHE,
+    conversation: () => require('./conversationAi').NHOM_TINH_HUONG,
 };
 
 const SO_GOI_Y_TOI_THIEU = 3;

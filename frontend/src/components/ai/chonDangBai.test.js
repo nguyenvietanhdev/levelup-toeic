@@ -29,6 +29,7 @@ const MAN = [
     ['Viết', ['components', 'essay', 'EssayScreen.jsx'], 'essayGrader.js', 'NHOM_DANG_VIET'],
     ['Dịch', ['components', 'translation', 'TranslationScreen.jsx'], 'translationGrader.js', 'NHOM_DANG_DICH'],
     ['Nghe', ['components', 'listening', 'ListeningScreen.jsx'], 'listeningAi.js', 'NHOM_DANG_NGHE'],
+    ['Hội thoại', ['components', 'conversation', 'ConversationScreen.jsx'], 'conversationAi.js', 'NHOM_TINH_HUONG'],
 ];
 
 describe('kho dạng bài khớp server', () => {
@@ -101,6 +102,7 @@ describe('gợi ý "Hợp bộ từ này"', () => {
         ['Viết', ['components', 'essay', 'EssayScreen.jsx'], 'essay'],
         ['Dịch', ['components', 'translation', 'TranslationScreen.jsx'], 'translation'],
         ['Nghe', ['components', 'listening', 'ListeningScreen.jsx'], 'listening'],
+        ['Hội thoại', ['components', 'conversation', 'ConversationScreen.jsx'], 'conversation'],
     ];
     for (const [ten, duong, mode] of CHE_DO) {
         test(`${ten}: lấy gợi ý đúng chế độ, truyền vào chip và dùng dangGui khi gửi`, () => {

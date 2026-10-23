@@ -9,6 +9,7 @@ function chatCompletion(...args) {
 }
 
 const { chiThiMuc } = require('./aiLevel');
+const { CHI_THI_HOP_BOI_CANH } = require('./dangBai');
 
 /**
  * Sinh hội thoại luyện nói, ÉP dùng đúng bộ từ người học vừa luyện.
@@ -126,7 +127,62 @@ function systemPrompt({ lang, topic, scenario, words, level }) {
  *
  * @returns {{success:boolean, content?:string, error?:string}}
  */
-async function openConversation({ lang = 'en', topic = '', targetWords = [], userId = null, level = 'medium' } = {}) {
+/**
+ * Kho TÌNH HUỐNG hội thoại (cùng cách với kho dạng bài của Đọc hiểu/Viết).
+ *
+ * Ghép với VAI chứ không thay: vai là AI đóng ai (Bartender), tình huống là đang
+ * ở đâu, làm gì (khách phàn nàn đồ uống). `hop` = các kiểu chấm nhóm đó hợp nhất.
+ * Khoá khớp `NHOM_DANG` ở frontend/src/components/conversation/ConversationScreen.jsx.
+ * "Ngẫu nhiên" (không chọn) giữ như trước: AI tự dựng tình huống từ bộ từ.
+ */
+const NHOM_TINH_HUONG = [
+    {
+        key: 'doi-thuong', vi: 'Đời thường', hop: ['giaotiep', 'hsk'],
+        dang: [
+            { key: 'order-food', vi: 'Gọi món', en: 'ordering food or drinks' },
+            { key: 'directions', vi: 'Hỏi đường', en: 'asking for or giving directions' },
+            { key: 'shopping', vi: 'Mua sắm / trả giá', en: 'shopping and asking about prices' },
+            { key: 'small-talk', vi: 'Làm quen', en: 'meeting someone new and making small talk' },
+            { key: 'invite', vi: 'Rủ đi chơi', en: 'inviting someone out and making plans' },
+            { key: 'phone-friend', vi: 'Gọi điện cho bạn', en: 'a phone call to catch up with a friend' },
+        ],
+    },
+    {
+        key: 'dich-vu', vi: 'Dịch vụ', hop: ['giaotiep', 'toeic', 'hsk'],
+        dang: [
+            { key: 'hotel', vi: 'Khách sạn', en: 'checking in or out of a hotel' },
+            { key: 'booking', vi: 'Đặt chỗ', en: 'booking a table, ticket or appointment' },
+            { key: 'doctor', vi: 'Khám bệnh', en: 'describing a health problem at a clinic' },
+            { key: 'bank', vi: 'Ngân hàng', en: 'sorting out something at a bank' },
+            { key: 'airport', vi: 'Sân bay', en: 'checking in or solving a problem at the airport' },
+            { key: 'complaint', vi: 'Khiếu nại', en: 'a customer complaining about a product or service' },
+        ],
+    },
+    {
+        key: 'cong-viec', vi: 'Công việc', hop: ['toeic'],
+        dang: [
+            { key: 'interview', vi: 'Phỏng vấn xin việc', en: 'a job interview' },
+            { key: 'meeting', vi: 'Họp nhóm', en: 'a short team meeting' },
+            { key: 'negotiate', vi: 'Đàm phán', en: 'negotiating a price or deadline' },
+            { key: 'client-call', vi: 'Gọi cho khách hàng', en: 'a phone call with a client' },
+            { key: 'leave', vi: 'Xin nghỉ phép', en: 'asking a manager for time off' },
+            { key: 'progress', vi: 'Báo cáo tiến độ', en: 'reporting progress on a project' },
+        ],
+    },
+    {
+        key: 'thao-luan', vi: 'Thảo luận', hop: ['ielts'],
+        dang: [
+            { key: 'opinion', vi: 'Bày tỏ ý kiến', en: 'giving and defending an opinion on a topic' },
+            { key: 'debate', vi: 'Tranh luận hai mặt', en: 'discussing both sides of an issue' },
+            { key: 'experience', vi: 'Kể trải nghiệm', en: 'telling a personal experience' },
+            { key: 'describe', vi: 'Mô tả nơi chốn', en: 'describing a place you know well' },
+            { key: 'future', vi: 'Kế hoạch tương lai', en: 'talking about future plans' },
+            { key: 'compare', vi: 'So sánh xưa – nay', en: 'comparing the past and the present' },
+        ],
+    },
+];
+
+async function openConversation({ lang = 'en', topic = '', targetWords = [], userId = null, level = 'medium', tinhHuong = null } = {}) {
     const words = pickWords(targetWords, [], WORDS_IN_PROMPT);
     // Tình huống do AI TỰ DỰNG từ bộ từ — không lấy từ Part. Yêu cầu hai dòng
     // SCENARIO và REPLY để server tách được tình huống ra khỏi lời nói.
@@ -136,7 +192,11 @@ async function openConversation({ lang = 'en', topic = '', targetWords = [], use
             role: 'user',
             content: [
                 'Start the conversation.',
-                `First invent ONE short, realistic situation for your role that can naturally use these words: ${words.join(', ')}.`,
+                tinhHuong
+                    // Tình huống người học chọn (từ kho hoặc tự nhập, đã làm sạch ở `chonDang`):
+                    // AI dựng cảnh theo đúng loại đó, vẫn giữ vai và bộ từ.
+                    ? `First set up ONE short, realistic situation for your role, of this kind: ${tinhHuong.en}. It should naturally use these words: ${words.join(', ')}. ${CHI_THI_HOP_BOI_CANH}`
+                    : `First invent ONE short, realistic situation for your role that can naturally use these words: ${words.join(', ')}.`,
                 'Answer in exactly this format, two lines and nothing else:',
                 'SCENARIO: <one sentence describing the situation, in English>',
                 'REPLY: <your greeting and ONE simple question, in ' + langName(lang) + '>',
@@ -206,4 +266,5 @@ module.exports = {
     moTaVai,
     parseOpening,
     VAI_AI,
+    NHOM_TINH_HUONG,
 };

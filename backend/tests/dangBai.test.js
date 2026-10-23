@@ -134,3 +134,44 @@ describe('Dịch — đoạn văn theo dạng văn bản', () => {
         expect(src).toMatch(/dang: req\.body\.dang, tuChon: req\.body\.tuChon/);
     });
 });
+
+describe('Hội thoại — tình huống ghép với vai', () => {
+    const { openConversation, NHOM_TINH_HUONG } = require('../services/conversationAi');
+    const MO = 'SCENARIO: A guest complains that the cocktail is too sweet.\nREPLY: Hi! Is everything okay with your drink?';
+    const nguoiDung = () => chatCompletion.mock.calls.at(-1)[0].find((m) => m.role === 'user').content;
+
+    test('kho tình huống: khoá không trùng, đủ nhãn và mô tả, có nhóm hợp từng kiểu chấm', () => {
+        const ds = phang(NHOM_TINH_HUONG);
+        expect(new Set(ds.map((d) => d.key)).size).toBe(ds.length);
+        expect(ds.length).toBeGreaterThanOrEqual(20);
+        for (const kieu of ['giaotiep', 'toeic', 'ielts', 'hsk']) {
+            expect(NHOM_TINH_HUONG.some((n) => n.hop.includes(kieu))).toBe(true);
+        }
+    });
+
+    test('Ngẫu nhiên: AI tự dựng tình huống từ bộ từ như trước', async () => {
+        chatCompletion.mockResolvedValueOnce({ success: true, content: MO });
+        await openConversation({ topic: 'Bartender', targetWords: ['cocktail'] });
+        expect(nguoiDung()).toMatch(/First invent ONE short, realistic situation/);
+    });
+
+    test('chọn tình huống: AI dựng cảnh đúng loại đó, vẫn giữ vai (system) và bộ từ', async () => {
+        chatCompletion.mockResolvedValueOnce({ success: true, content: MO });
+        const tinhHuong = chonDang(NHOM_TINH_HUONG, { dang: 'complaint' });
+        const r = await openConversation({ topic: 'Bartender', targetWords: ['cocktail'], tinhHuong });
+        expect(nguoiDung()).toMatch(/of this kind: a customer complaining about a product or service/);
+        expect(nguoiDung()).toMatch(/cocktail/);
+        expect(nguoiDung()).toMatch(/fit together naturally/);
+        const system = chatCompletion.mock.calls.at(-1)[0].find((m) => m.role === 'system').content;
+        expect(system).toMatch(/Bartender/);
+        expect(r.scenario).toMatch(/too sweet/);
+    });
+
+    test('controller lấy tình huống qua chonDang và lưu nhãn vào phiên', () => {
+        const { readFileSync } = require('node:fs');
+        const { join } = require('node:path');
+        const src = readFileSync(join(__dirname, '..', 'controllers', 'conversationController.js'), 'utf8');
+        expect(src).toMatch(/chonDang\(NHOM_TINH_HUONG, \{ dang: req\.body\.dang, tuChon: req\.body\.tuChon \}\)/);
+        expect(src).toMatch(/tinhHuong: tinhHuong \? tinhHuong\.vi : ''/);
+    });
+});

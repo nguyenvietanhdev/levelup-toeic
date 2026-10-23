@@ -10,6 +10,7 @@ import LichSuMode from '../history/LichSuMode.jsx';
 import VaiAITab from '../roles/VaiAITab.jsx';
 import DanhSachVai from '../roles/DanhSachVai.jsx';
 import KieuChamDoKho from '../ai/KieuChamDoKho.jsx';
+import ChonDangBai, { useGoiYDang, dangGui } from '../ai/ChonDangBai.jsx';
 import { KIEU_CHAM, DO_KHO_THEO_KIEU, doKhoChoKieu } from '@lib/kieuCham.js';
 import { getVocabLang } from '@api/vocabulary.js';
 import { EventBus, GameEvents } from '@game/eventBus.js';
@@ -46,6 +47,58 @@ const MUC_KHO = [
 const BO_TIEU_CHI_CHON = KIEU_CHAM;
 const MUC_CHAM_CHON = DO_KHO_THEO_KIEU;
 
+/**
+ * Kho tình huống hội thoại — GHÉP với vai (vai = AI là ai, tình huống = đang ở
+ * đâu, làm gì). Khoá khớp `NHOM_TINH_HUONG` ở backend/services/conversationAi.js.
+ * "Ngẫu nhiên" (không gợi ý) giữ như trước: AI tự dựng tình huống từ bộ từ.
+ */
+const NHOM_DANG = [
+    {
+        key: 'doi-thuong', label: 'Đời thường', hop: ['giaotiep', 'hsk'],
+        dang: [
+            { key: 'order-food', label: 'Gọi món' },
+            { key: 'directions', label: 'Hỏi đường' },
+            { key: 'shopping', label: 'Mua sắm / trả giá' },
+            { key: 'small-talk', label: 'Làm quen' },
+            { key: 'invite', label: 'Rủ đi chơi' },
+            { key: 'phone-friend', label: 'Gọi điện cho bạn' },
+        ],
+    },
+    {
+        key: 'dich-vu', label: 'Dịch vụ', hop: ['giaotiep', 'toeic', 'hsk'],
+        dang: [
+            { key: 'hotel', label: 'Khách sạn' },
+            { key: 'booking', label: 'Đặt chỗ' },
+            { key: 'doctor', label: 'Khám bệnh' },
+            { key: 'bank', label: 'Ngân hàng' },
+            { key: 'airport', label: 'Sân bay' },
+            { key: 'complaint', label: 'Khiếu nại' },
+        ],
+    },
+    {
+        key: 'cong-viec', label: 'Công việc', hop: ['toeic'],
+        dang: [
+            { key: 'interview', label: 'Phỏng vấn xin việc' },
+            { key: 'meeting', label: 'Họp nhóm' },
+            { key: 'negotiate', label: 'Đàm phán' },
+            { key: 'client-call', label: 'Gọi cho khách hàng' },
+            { key: 'leave', label: 'Xin nghỉ phép' },
+            { key: 'progress', label: 'Báo cáo tiến độ' },
+        ],
+    },
+    {
+        key: 'thao-luan', label: 'Thảo luận', hop: ['ielts'],
+        dang: [
+            { key: 'opinion', label: 'Bày tỏ ý kiến' },
+            { key: 'debate', label: 'Tranh luận hai mặt' },
+            { key: 'experience', label: 'Kể trải nghiệm' },
+            { key: 'describe', label: 'Mô tả nơi chốn' },
+            { key: 'future', label: 'Kế hoạch tương lai' },
+            { key: 'compare', label: 'So sánh xưa – nay' },
+        ],
+    },
+];
+
 export default function ConversationScreen({ active }) {
     const { showScreen, syncFromState } = useGame();
 
@@ -63,6 +116,10 @@ export default function ConversationScreen({ active }) {
     const [strictGrammar, setStrictGrammar] = useState(false); // ngữ pháp văn nói hay chuẩn viết
     const [feedbackClosed, setFeedbackClosed] = useState(false); // người học đã đóng popup kết quả
     const [showHint, setShowHint] = useState(false);
+    const [dang, setDang] = useState('');     // tình huống; '' = ngẫu nhiên
+    const [tuChon, setTuChon] = useState(''); // tình huống tự nhập, ưu tiên hơn `dang`
+    // Tình huống AI gợi ý hợp bộ từ của Part — nhóm đầu tiên, và "Ngẫu nhiên" bốc trong đó.
+    const goiY = useGoiYDang('conversation', active);
 
     const speechRef = useRef(null);
     // Trỏ tới `handleStart` để `onBought` của popup nạp năng lượng gọi lại được.
@@ -141,6 +198,7 @@ export default function ConversationScreen({ active }) {
                 level,
                 rubric: rubricGui,
                 strictGrammar: rubricGui === 'giaotiep' && strictGrammar,
+                ...dangGui({ dang, tuChon, goiY }),
             });
             // Chốt cuối: không có `id` thì KHÔNG phải phiên hợp lệ.
             //
@@ -187,7 +245,7 @@ export default function ConversationScreen({ active }) {
         } finally {
             setStarting(false);
         }
-    }, [starting, lang, speak, syncFromState, level, context, rubric, strictGrammar]);
+    }, [starting, lang, speak, syncFromState, level, context, rubric, strictGrammar, dang, tuChon, goiY]);
 
     handleStartRef.current = handleStart;
 
@@ -315,8 +373,8 @@ export default function ConversationScreen({ active }) {
                         dùng những từ đó — bạn đáp lại, càng dùng được nhiều từ
                         càng nhiều thưởng.
                     </p>
-                    {/* Hai cột: TRÁI là vai của Part đang học (sửa, xoá, dùng vai AI đã lưu);
-                        PHẢI là KIỂU CHẤM và ĐỘ KHÓ, sát mép phải. */}
+                    {/* Hai cột: TRÁI là vai của Part đang học (sửa, xoá, dùng vai AI đã lưu)
+                        rồi TÌNH HUỐNG (ghép với vai); PHẢI là KIỂU CHẤM và ĐỘ KHÓ, sát mép phải. */}
                     <div className="ai-setup">
                         <div className="ai-setup-col">
                             <div className="ai-setup-title">Vai của Part</div>
@@ -324,6 +382,18 @@ export default function ConversationScreen({ active }) {
                                 source={TopicSelector.currentTopic?.source || ''}
                                 part={PartSelector.selectedPart || ''}
                                 lang={lang}
+                            />
+                            <ChonDangBai
+                                tieuDe="Tình huống"
+                                nhom={NHOM_DANG}
+                                goiY={goiY}
+                                kieu={rubric}
+                                kieuLabel={KIEU_CHAM.find((k) => k.key === rubric)?.label || ''}
+                                dang={dang}
+                                onDang={setDang}
+                                tuChon={tuChon}
+                                onTuChon={setTuChon}
+                                placeholder="Hoặc tự nhập: khách phàn nàn đồ uống, xin tăng lương…"
                             />
                         </div>
                         <div className="ai-setup-col" style={{ gridColumn: 2 }}>

@@ -11,7 +11,7 @@ const mongoose = require('mongoose');
  */
 const dangGoiYSchema = new mongoose.Schema(
     {
-        mode: { type: String, enum: ['reading', 'essay', 'translation', 'listening'], required: true },
+        mode: { type: String, enum: ['reading', 'essay', 'translation', 'listening', 'conversation'], required: true },
         source: { type: String, required: true, trim: true, lowercase: true, maxlength: 100 },
         part: { type: String, required: true, trim: true, maxlength: 200 },
         lang: { type: String, enum: ['en', 'zh', 'bi'], default: 'en' },

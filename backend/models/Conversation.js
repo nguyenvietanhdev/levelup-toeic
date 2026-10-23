@@ -41,6 +41,8 @@ const conversationSchema = new mongoose.Schema(
         // Tình huống AI tự dựng cho phiên (một câu). Lưu để các lượt đáp sau giữ
         // đúng tình huống, và để xem lại lịch sử.
         scenario: { type: String, default: '', maxlength: 300 },
+        // Nhãn tình huống người học chọn/tự nhập ('' = AI tự dựng).
+        tinhHuong: { type: String, default: '', maxlength: 80 },
         // Bộ tiêu chí chấm cuối phiên (giaotiep / toeic / ielts / hsk).
         rubric: { type: String, default: 'giaotiep' },
         // Chấm ngữ pháp nghiêm (chuẩn viết) thay vì nới lỏng văn nói. Chỉ có tác dụng

@@ -24,6 +24,7 @@ import { PartSelector } from '@components/vocab/part/partSelector.js';
  * @param {number}   [maxLength]   khớp MAX_TU_CHON ở server
  * @param {string}   [placeholder]
  * @param {string[]} [goiY]        khoá dạng hợp bộ từ của Part (AI gợi ý) — nhóm đầu tiên
+ * @param {string}   [tieuDe]      tiêu đề khối (Hội thoại dùng "Tình huống")
  */
 export const MAX_TU_CHON = 60;
 
@@ -77,6 +78,7 @@ export default function ChonDangBai({
     maxLength = MAX_TU_CHON,
     placeholder = 'Hoặc tự nhập dạng bài / chủ đề…',
     goiY = [],
+    tieuDe = 'Loại bài',
 }) {
     const tuNhap = tuChon.trim();
     const tatCa = nhom.flatMap((n) => n.hop);
@@ -93,7 +95,7 @@ export default function ChonDangBai({
 
     return (
         <>
-            <div className="ai-setup-title">Loại bài</div>
+            <div className="ai-setup-title">{tieuDe}</div>
             <div className="rd-chips">
                 <button
                     className={`rd-chip${!tuNhap && !dang ? ' is-on' : ''}`}

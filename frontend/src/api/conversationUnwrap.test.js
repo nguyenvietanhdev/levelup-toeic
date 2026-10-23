@@ -131,7 +131,7 @@ describe('cả ba lượt gọi dùng cùng một luật', () => {
 });
 
 describe('start không gửi tham số đề/part/lang', () => {
-    test('chỉ gửi `context` và `level`', async () => {
+    test('chỉ gửi lựa chọn trên màn (context, level, kiểu chấm, tình huống)', async () => {
         // Server tự đọc đề/part/ngôn ngữ từ hồ sơ — gửi thêm là mở lại đúng
         // ranh giới đã gây ra cả chuỗi lỗi trước đó.
         // `level` là NGOẠI LỆ có chủ ý và là tham số duy nhất được phép: nó là
@@ -142,6 +142,7 @@ describe('start không gửi tham số đề/part/lang', () => {
         await ConversationAPI.start();
         const [url, body] = post.mock.calls[0];
         expect(url).toBe('/conversation/start');
-        expect(Object.keys(body).sort()).toEqual(['context', 'level', 'rubric', 'strictGrammar']);
+        // `dang`/`tuChon` (tình huống) cũng là lựa chọn bấm/gõ trên màn — vẫn KHÔNG có source/part/lang.
+        expect(Object.keys(body).sort()).toEqual(['context', 'dang', 'level', 'rubric', 'strictGrammar', 'tuChon']);
     });
 });
