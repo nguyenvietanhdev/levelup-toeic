@@ -10175,6 +10175,14 @@ button.ai-history-row {
 
 .essay-intro .btn { margin-top: 16px; }
 
+/* Màn Luyện viết có hai cột (vai | độ khó): khung rộng hơn để cột trái có chỗ. */
+.essay-intro--wide {
+    max-width: 860px;
+    width: 100%;
+    box-sizing: border-box;
+    padding: 0 24px;
+}
+
 /* ── Dịch đoạn văn ──────────────────────────────────────────────────────
    Dùng lại toàn bộ khung của Viết luận (`.essay-*`): hai chế độ có cùng
    hình dạng — đề bài, ô nhập, điểm theo tiêu chí. Chỉ khai thêm những gì

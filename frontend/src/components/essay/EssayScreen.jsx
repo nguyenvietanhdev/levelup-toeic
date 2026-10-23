@@ -190,7 +190,7 @@ export default function EssayScreen({ active }) {
             </div>
 
             {tab === 'lichsu' ? <LichSuMode mode="viet" /> : !prompt ? (
-                <div className="essay-intro">
+                <div className="essay-intro essay-intro--wide">
                     <p>
                         {lang === 'zh' ? (
                             <>
