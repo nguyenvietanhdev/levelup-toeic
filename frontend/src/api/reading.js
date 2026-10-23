@@ -1,7 +1,7 @@
 import { Http } from './http.js';
 
 /**
- * API luyện ĐỌC HIỂU dạng TOEIC Part 7.
+ * API luyện ĐỌC HIỂU nhiều dạng bài.
  *
  * `unwrap` giống Dịch/Viết luận VÌ MỘT LÝ DO CỤ THỂ: `Http` bọc phản hồi server
  * vào `.data`, mà bản thân phản hồi server cũng là `{ success, data }` — có HAI
@@ -38,8 +38,8 @@ export const ReadingAPI = {
      * Phản hồi CHỈ có đề và bốn lựa chọn — đáp án ở lại server cho tới lúc nộp.
      * `readingId` là thứ để server tìm lại đề khi chấm.
      */
-    async passage({ words = [], level = 'medium', dang = '', rubric } = {}) {
-        return unwrap(await Http.post('/reading/passage', { words, level, dang, rubric }));
+    async passage({ words = [], level = 'medium', dang = '', tuChon = '', rubric } = {}) {
+        return unwrap(await Http.post('/reading/passage', { words, level, dang, tuChon, rubric }));
     },
 
     /** Nộp đáp án (mảng nhãn A–D theo thứ tự câu) và chấm. */

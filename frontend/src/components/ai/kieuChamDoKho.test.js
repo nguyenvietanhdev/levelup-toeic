@@ -48,24 +48,31 @@ describe('ba màn dùng chung component', () => {
     test('Đọc hiểu gửi kiểu chấm lên server và không còn chữ cứng "đúng dạng TOEIC Part 7"', () => {
         const src = screens['Đọc hiểu'];
         expect(src).toMatch(/ReadingAPI\.passage\(\{[^}]*rubric: kieuDangChon/);
-        expect(src).toMatch(/\[loadingDe, level, dangDangChon, kieuDangChon\]/);
+        expect(src).toMatch(/\[loadingDe, level, dang, tuChonGui, kieuDangChon\]/);
         expect(src).not.toMatch(/đúng dạng TOEIC Part 7/);
+        expect(src).not.toMatch(/<h2>.*Part 7/);
     });
 
-    test('Đọc hiểu: loại bài đổi theo kiểu chấm, khoá khớp server', () => {
+    test('Đọc hiểu: kho dạng bài chung (không bó theo kiểu chấm), khoá khớp server', () => {
         const src = screens['Đọc hiểu'];
         const server = readFileSync(
             join(__dirname, '..', '..', '..', '..', 'backend', 'services', 'readingGrader.js'), 'utf8');
-        const khoiCua = (s, kieu) => {
-            const i = s.indexOf(`${kieu}: [`, s.indexOf('DANG_THEO_KIEU = {'));
-            return [...s.slice(i, s.indexOf('],', i)).matchAll(/key: '([^']+)'/g)].map((m) => m[1]);
+        // Lấy [nhóm, [khoá dạng...]] theo đúng thứ tự trong khối NHOM_DANG.
+        const nhomCua = (s) => {
+            const i = s.indexOf('const NHOM_DANG = [');
+            const khoi = s.slice(i, s.indexOf('\n];', i));
+            return khoi.split(/\n    \{\n/).slice(1).map((n) => [
+                n.match(/key: '([^']+)'/)[1],
+                [...n.slice(n.indexOf('dang: [')).matchAll(/key: '([^']+)'/g)].map((m) => m[1]),
+            ]);
         };
-        for (const kieu of ['toeic', 'ielts', 'giaotiep', 'hsk']) {
-            const fe = khoiCua(src, kieu);
-            expect(fe.length).toBeGreaterThan(3);
-            expect(fe).toEqual(khoiCua(server, kieu));
-        }
-        expect(src).toMatch(/DANG_THEO_KIEU\[kieuDangChon\]/);
+        const fe = nhomCua(src);
+        expect(fe.length).toBe(4);
+        expect(fe.flatMap(([, ds]) => ds).length).toBeGreaterThanOrEqual(20);
+        expect(fe).toEqual(nhomCua(server));
+        // Có ô tự nhập và gửi nó lên server.
+        expect(src).toMatch(/tuChon: tuChonGui/);
+        expect(src).toMatch(/maxLength=\{MAX_TU_CHON\}/);
     });
 
     test('không còn khối "Kiểu chấm" viết tay trong màn Hội thoại', () => {

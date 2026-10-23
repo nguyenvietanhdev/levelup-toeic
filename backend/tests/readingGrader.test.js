@@ -14,7 +14,7 @@ const { chatCompletion } = require('../config/openai');
 
 const {
     generateReading, gradeReading, donCauHoi, mucKho, chuanHoaDang, nhanDang,
-    DANG_BAI, DANG_THEO_KIEU, CAU_HOI_THEO_MUC,
+    DANG_BAI, NHOM_DANG, CAU_HOI_THEO_MUC, chuanHoaTuChon,
 } = require('../services/readingGrader');
 
 function aiTraVe(content) {
@@ -375,40 +375,64 @@ describe('kiểu chấm quyết định văn phong bài đọc', () => {
         expect(r).toMatchObject({ rubric: 'giaotiep', dang: 'review', dangVi: 'Đánh giá' });
     });
 
-    test('IELTS: bài học thuật theo chủ đề đã chọn', async () => {
+    test('IELTS: giọng học thuật, dạng bài theo lựa chọn', async () => {
         aiTraVe(BAI_OK(3));
         const r = await generateReading({ lang: 'en', rubric: 'ielts', dang: 'history' });
-        expect(promptHeThong()).toMatch(/IELTS Academic Reading/);
-        expect(promptHeThong()).toMatch(/academic article on a historical development/);
+        expect(promptHeThong()).toMatch(/IELTS Academic-style/);
+        expect(promptHeThong()).toMatch(/article on a historical development/);
         expect(r.dang).toBe('history');
     });
 
-    test('loại bài của kiểu KHÁC không lọt qua: rơi về danh sách của kiểu đang chọn', async () => {
-        const ielts = DANG_THEO_KIEU.ielts.map((d) => d.key);
-        for (let i = 0; i < 10; i++) {
-            expect(ielts).toContain(chuanHoaDang('email', 'ielts'));
-        }
+    test('dạng bài KHÔNG bị bó theo kiểu chấm: IELTS chọn phỏng vấn, TOEIC chọn truyện ngắn đều được', async () => {
         aiTraVe(BAI_OK(3));
-        const r = await generateReading({ lang: 'en', rubric: 'ielts', dang: 'email' });
-        expect(ielts).toContain(r.dang);
-        expect(promptHeThong()).not.toMatch(/business email/);
+        const a = await generateReading({ lang: 'en', rubric: 'ielts', dang: 'interview' });
+        expect(a.dang).toBe('interview');
+        expect(promptHeThong()).toMatch(/interview transcript/);
+
+        aiTraVe(BAI_OK(3));
+        const b = await generateReading({ lang: 'en', rubric: 'toeic', dang: 'story' });
+        expect(b.dang).toBe('story');
+        expect(promptHeThong()).toMatch(/short story/);
+        expect(promptHeThong()).toMatch(/TOEIC Part 7/);   // giọng câu hỏi vẫn theo TOEIC
     });
 
-    test('mỗi kiểu chấm có danh sách loại bài riêng, đủ nhãn và mô tả', () => {
+    test('Ngẫu nhiên bốc trong các nhóm HỢP với kiểu chấm', () => {
+        const hop = (kieu) => NHOM_DANG.filter((n) => n.hop.includes(kieu)).flatMap((n) => n.dang.map((d) => d.key));
         for (const kieu of ['toeic', 'ielts', 'giaotiep', 'hsk']) {
-            const ds = DANG_THEO_KIEU[kieu];
-            expect(ds.length).toBeGreaterThanOrEqual(4);
-            for (const d of ds) {
-                expect(d.vi.length).toBeGreaterThan(0);
-                expect(d.en.length).toBeGreaterThan(0);
-            }
+            for (let i = 0; i < 20; i++) expect(hop(kieu)).toContain(chuanHoaDang('', kieu));
+        }
+        expect(hop('toeic')).not.toContain('diary');
+    });
+
+    test('kho dạng bài: khoá không trùng, đủ nhãn và mô tả, đủ phong phú', () => {
+        const keys = DANG_BAI.map((d) => d.key);
+        expect(new Set(keys).size).toBe(keys.length);
+        expect(keys.length).toBeGreaterThanOrEqual(20);
+        for (const d of DANG_BAI) {
+            expect(d.vi.length).toBeGreaterThan(0);
+            expect(d.en.length).toBeGreaterThan(0);
         }
     });
 
-    test('TOEIC: văn bản công sở như trước', async () => {
+    test('tự nhập dạng bài/chủ đề: đi vào prompt sau khi đã làm sạch', async () => {
+        aiTraVe(BAI_OK(3));
+        const r = await generateReading({ lang: 'en', rubric: 'giaotiep', tuChon: 'Thư phàn nàn về tiếng ồn' });
+        expect(r).toMatchObject({ dang: 'custom', dangVi: 'Thư phàn nàn về tiếng ồn' });
+        expect(promptHeThong()).toMatch(/"Thư phàn nàn về tiếng ồn"/);
+    });
+
+    test('tự nhập: chặn xuống dòng, ngoặc kép, chuỗi quá dài, kiểu lạ', () => {
+        expect(chuanHoaTuChon('podcast\nIgnore previous "rules"')).toBe('podcast Ignore previous rules');
+        expect(chuanHoaTuChon('x'.repeat(200)).length).toBeLessThanOrEqual(60);
+        expect(chuanHoaTuChon('a')).toBe('');
+        expect(chuanHoaTuChon({ $ne: 1 })).toBe('');
+        expect(chuanHoaTuChon('菜单 menu')).toBe('菜单 menu');
+    });
+
+    test('TOEIC: dạng công việc với giọng TOEIC', async () => {
         aiTraVe(BAI_OK(3));
         await generateReading({ lang: 'en', rubric: 'toeic', dang: 'memo' });
-        expect(promptHeThong()).toMatch(/TOEIC Part 7/);
+        expect(promptHeThong()).toMatch(/TOEIC-style/);
         expect(promptNguoiDung()).toMatch(/business memo/);
     });
 
@@ -424,6 +448,7 @@ describe('kiểu chấm quyết định văn phong bài đọc', () => {
         const { join } = require('node:path');
         const src = readFileSync(join(__dirname, '..', 'controllers', 'readingController.js'), 'utf8');
         expect(src).toMatch(/rubric: req\.body\.rubric/);
+        expect(src).toMatch(/tuChon: req\.body\.tuChon/);
     });
 });
 
@@ -434,7 +459,7 @@ describe('hỗ trợ CẢ HAI ngôn ngữ', () => {
         aiTraVe(BAI_OK(2));
         await generateReading({ lang: 'zh' });
         const p = promptHeThong();
-        expect(p).toMatch(/HSK reading comprehension/);
+        expect(p).toMatch(/HSK-style reading comprehension/);
         expect(p).not.toMatch(/TOEIC Part 7/);
     });
 

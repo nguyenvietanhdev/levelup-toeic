@@ -1,5 +1,5 @@
 /**
- * Màn hình Đọc hiểu Part 7.
+ * Màn hình Đọc hiểu.
  *
  * Đọc mã nguồn: render đủ màn này cần `useGame`, `GameLogic`, `Energy` và một
  * server giả — công lớn hơn thứ nó kiểm. Điều cần giữ là các bất biến về luồng

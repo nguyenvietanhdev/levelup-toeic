@@ -48,7 +48,7 @@ const MENU_GROUPS = [
     {
         title: 'Đọc với AI',
         items: [
-            { label: 'Đọc hiểu Part 7', icon: 'fa-book-open-reader', screen: 'reading-screen', feature: 'feature:reading' },
+            { label: 'Đọc hiểu', icon: 'fa-book-open-reader', screen: 'reading-screen', feature: 'feature:reading' },
         ],
     },
     {

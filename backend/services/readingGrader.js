@@ -1,5 +1,5 @@
 /**
- * Sinh bài ĐỌC HIỂU (TOEIC Part 7, IELTS, HSK, giao tiếp) và chấm.
+ * Sinh bài ĐỌC HIỂU nhiều dạng (đời thường, công việc, báo chí, học thuật) và chấm.
  *
  * Vì sao cần chế độ này: Part 7 là 54/200 câu Reading của đề thật — phần nặng
  * nhất — mà ngân hàng đề trong DB không có câu nào (Part 1/2/5/6 có 474 câu,
@@ -20,54 +20,86 @@ function chatCompletion(...args) {
 const { parseJson } = require('./essayGrader');
 
 /**
- * Loại văn bản theo TỪNG kiểu chấm — mỗi chuẩn đọc một kiểu văn bản khác nhau:
- * TOEIC đọc văn bản công sở, IELTS đọc bài học thuật, Giao tiếp đọc văn bản đời
- * thường, HSK đọc các dạng bài 阅读 quen thuộc.
+ * Kho DẠNG BÀI dùng chung cho mọi kiểu chấm, chia theo nhóm.
  *
- * Cố định danh sách thay vì để AI tự chọn: mỗi dạng có bố cục riêng (email có
- * người gửi/nhận, thông báo có tiêu đề và ngày) và người học cần gặp đủ các
- * dạng. Để AI tự do thì nó ra email chín lần trên mười.
+ * Đọc hiểu không còn bó trong vài dạng của TOEIC Part 7: người học chọn bất kỳ
+ * dạng nào (hoặc tự nhập), còn KIỂU CHẤM chỉ quyết định văn phong và cách ra câu
+ * hỏi. `hop` = các kiểu chấm mà nhóm này hợp nhất — "Ngẫu nhiên" bốc trong các
+ * nhóm đó, để TOEIC ngẫu nhiên vẫn ra văn bản công việc chứ không ra nhật ký.
  *
- * `en` là cụm mô tả đưa thẳng vào prompt. Khoá phải khớp `DANG_THEO_KIEU` ở
- * frontend/src/components/reading/ReadingScreen.jsx.
+ * Cố định danh sách thay vì để AI tự chọn: để AI tự do thì nó ra email chín lần
+ * trên mười. `en` là cụm mô tả đưa thẳng vào prompt. Khoá phải khớp
+ * `NHOM_DANG` ở frontend/src/components/reading/ReadingScreen.jsx.
  */
-const DANG_THEO_KIEU = {
-    toeic: [
-        { key: 'email', vi: 'Email', en: 'business email' },
-        { key: 'notice', vi: 'Thông báo', en: 'workplace notice' },
-        { key: 'advertisement', vi: 'Quảng cáo', en: 'advertisement' },
-        { key: 'article', vi: 'Bài báo', en: 'business news article' },
-        { key: 'memo', vi: 'Ghi chú nội bộ', en: 'internal business memo' },
-        { key: 'schedule', vi: 'Lịch trình', en: 'schedule or itinerary' },
-        { key: 'chat', vi: 'Chuỗi tin nhắn', en: 'text-message chat between colleagues' },
-    ],
-    ielts: [
-        { key: 'science', vi: 'Khoa học', en: 'academic article explaining a scientific topic' },
-        { key: 'history', vi: 'Lịch sử', en: 'academic article on a historical development' },
-        { key: 'society', vi: 'Xã hội', en: 'academic article weighing different views on a social issue' },
-        { key: 'environment', vi: 'Môi trường', en: 'academic article about an environmental issue' },
-        { key: 'research', vi: 'Nghiên cứu', en: 'summary of a research study and its findings' },
-    ],
-    giaotiep: [
-        { key: 'message', vi: 'Tin nhắn', en: 'everyday text-message exchange between friends' },
-        { key: 'personal-email', vi: 'Email cá nhân', en: 'personal email to a friend or relative' },
-        { key: 'social-post', vi: 'Bài đăng MXH', en: 'social media post with a few replies' },
-        { key: 'review', vi: 'Đánh giá', en: 'customer review of a restaurant, hotel or product' },
-        { key: 'invitation', vi: 'Lời mời', en: 'invitation to a party or event' },
-        { key: 'blog', vi: 'Blog', en: 'short personal blog entry' },
-    ],
-    hsk: [
-        { key: 'story', vi: 'Truyện ngắn', en: 'short narrative (记叙文)' },
-        { key: 'notice', vi: 'Thông báo', en: 'notice (通知)' },
-        { key: 'message', vi: 'Tin nhắn', en: 'text message or note (短信/留言)' },
-        { key: 'advertisement', vi: 'Quảng cáo', en: 'advertisement (广告)' },
-        { key: 'diary', vi: 'Nhật ký', en: 'diary entry (日记)' },
-        { key: 'explain', vi: 'Bài giải thích', en: 'short expository passage (说明文)' },
-    ],
-};
+const NHOM_DANG = [
+    {
+        key: 'doi-thuong', vi: 'Đời thường', hop: ['giaotiep', 'hsk'],
+        dang: [
+            { key: 'message', vi: 'Tin nhắn', en: 'text-message exchange between friends' },
+            { key: 'personal-email', vi: 'Email cá nhân', en: 'personal email to a friend or relative' },
+            { key: 'social-post', vi: 'Bài đăng MXH', en: 'social media post with a few replies' },
+            { key: 'review', vi: 'Đánh giá', en: 'customer review of a restaurant, hotel or product' },
+            { key: 'invitation', vi: 'Lời mời', en: 'invitation to a party or event' },
+            { key: 'diary', vi: 'Nhật ký', en: 'diary entry' },
+            { key: 'blog', vi: 'Blog', en: 'short personal blog entry' },
+            { key: 'recipe', vi: 'Công thức', en: 'recipe with a short introduction and steps' },
+        ],
+    },
+    {
+        key: 'cong-viec', vi: 'Công việc', hop: ['toeic'],
+        dang: [
+            { key: 'email', vi: 'Email công việc', en: 'business email' },
+            { key: 'notice', vi: 'Thông báo', en: 'public or workplace notice' },
+            { key: 'advertisement', vi: 'Quảng cáo', en: 'advertisement' },
+            { key: 'memo', vi: 'Ghi chú nội bộ', en: 'internal business memo' },
+            { key: 'schedule', vi: 'Lịch trình', en: 'schedule or itinerary' },
+            { key: 'chat', vi: 'Chuỗi tin nhắn', en: 'online chat between colleagues' },
+            { key: 'job-ad', vi: 'Tin tuyển dụng', en: 'job advertisement' },
+            { key: 'form', vi: 'Biểu mẫu / hoá đơn', en: 'form or invoice with a short covering note' },
+        ],
+    },
+    {
+        key: 'bao-chi', vi: 'Báo chí & truyện', hop: ['giaotiep', 'toeic', 'ielts', 'hsk'],
+        dang: [
+            { key: 'article', vi: 'Bài báo', en: 'news article' },
+            { key: 'interview', vi: 'Phỏng vấn', en: 'interview transcript' },
+            { key: 'story', vi: 'Truyện ngắn', en: 'short story' },
+            { key: 'biography', vi: 'Tiểu sử', en: 'short biography of a notable person' },
+            { key: 'opinion', vi: 'Bài bình luận', en: 'opinion column arguing one side' },
+            { key: 'travel', vi: 'Du lịch', en: 'travel guide to a place' },
+        ],
+    },
+    {
+        key: 'hoc-thuat', vi: 'Kiến thức & học thuật', hop: ['ielts'],
+        dang: [
+            { key: 'science', vi: 'Khoa học', en: 'article explaining a scientific topic' },
+            { key: 'history', vi: 'Lịch sử', en: 'article on a historical development' },
+            { key: 'society', vi: 'Xã hội', en: 'article weighing different views on a social issue' },
+            { key: 'environment', vi: 'Môi trường', en: 'article about an environmental issue' },
+            { key: 'technology', vi: 'Công nghệ', en: 'article about a technology and its impact' },
+            { key: 'health', vi: 'Sức khoẻ', en: 'article about health and lifestyle' },
+            { key: 'research', vi: 'Nghiên cứu', en: 'summary of a research study and its findings' },
+            { key: 'explain', vi: 'Hướng dẫn / giải thích', en: 'expository text explaining how something works' },
+        ],
+    },
+];
 
-/** Danh sách TOEIC — giữ tên cũ cho chỗ nào còn dùng. */
-const DANG_BAI = DANG_THEO_KIEU.toeic;
+/** Toàn bộ dạng bài, phẳng. */
+const DANG_BAI = NHOM_DANG.flatMap((n) => n.dang);
+
+/** Độ dài tối đa của dạng bài tự nhập. */
+const MAX_TU_CHON = 60;
+
+/**
+ * Chuẩn hoá dạng bài/chủ đề người học tự nhập. Chuỗi này đi thẳng vào prompt,
+ * nên chỉ giữ chữ (mọi thứ tiếng), số, khoảng trắng và vài dấu câu thường, gộp
+ * khoảng trắng và cắt độ dài — xuống dòng hay dấu ngoặc kép là cách chèn chỉ thị.
+ */
+function chuanHoaTuChon(v) {
+    if (typeof v !== 'string') return '';
+    const s = v.replace(/[^\p{L}\p{N} ,.'&/()-]/gu, ' ').replace(/\s+/g, ' ').trim().slice(0, MAX_TU_CHON).trim();
+    return s.length >= 2 ? s : '';
+}
 
 /** Số câu hỏi theo mức. Part 7 thật cho 2–5 câu mỗi đoạn. */
 const CAU_HOI_THEO_MUC = { easy: 2, medium: 3, hard: 4 };
@@ -95,33 +127,45 @@ function chuanHoaKieuDoc(v, lang = 'en') {
     return typeof v === 'string' && cho.includes(v) ? v : KIEU_DOC_MAC_DINH[ngonNgu];
 }
 
-/** Vai trò của model trong prompt, theo kiểu chấm và ngôn ngữ. */
+/**
+ * Kiểu chấm quyết định VAI TRÒ và GIỌNG của bài, không quyết định dạng bài:
+ * một bài phỏng vấn vẫn có thể ra theo giọng TOEIC hay IELTS.
+ */
 const MO_TA_KIEU_DOC = {
     giaotiep: {
         en: 'You write everyday English reading comprehension items for a general learner.',
         zh: 'You write everyday Chinese reading comprehension items for a general learner.',
+        giong: 'Use natural, everyday language; questions check gist, details and the writer\'s intent.',
     },
-    toeic: { en: 'You write TOEIC Part 7 reading comprehension items.' },
-    ielts: { en: 'You write IELTS Academic Reading items.' },
-    hsk: { zh: 'You write HSK reading comprehension (阅读) items.' },
+    toeic: {
+        en: 'You write TOEIC-style reading comprehension items.',
+        giong: 'Use the clear, practical register of TOEIC Reading; questions in the style of TOEIC Part 7 (purpose, detail, inference, NOT true).',
+    },
+    ielts: {
+        en: 'You write IELTS Academic-style reading comprehension items.',
+        giong: 'Use a formal, information-dense register; questions in the style of IELTS Reading (main idea, specific detail, writer\'s view).',
+    },
+    hsk: {
+        zh: 'You write HSK-style reading comprehension (阅读) items.',
+        giong: 'Use vocabulary and grammar suited to the HSK level; questions in the style of HSK 阅读.',
+    },
 };
 
 /**
- * Chuẩn hoá dạng bài trong danh sách của kiểu chấm. Không nhận ra (kể cả dạng
- * của kiểu khác) → chọn ngẫu nhiên trong danh sách đó, không trả rỗng.
+ * Chuẩn hoá dạng bài. Nhận mọi dạng trong kho chung; không nhận ra → bốc ngẫu
+ * nhiên trong các nhóm HỢP với kiểu chấm, không trả rỗng.
  */
 function chuanHoaDang(v, kieuDoc = 'toeic') {
-    const ds = DANG_THEO_KIEU[kieuDoc] || DANG_BAI;
     const k = String(v || '').trim().toLowerCase();
-    if (ds.some((d) => d.key === k)) return k;
+    if (DANG_BAI.some((d) => d.key === k)) return k;
+    const hop = NHOM_DANG.filter((n) => n.hop.includes(kieuDoc)).flatMap((n) => n.dang);
+    const ds = hop.length ? hop : DANG_BAI;
     return ds[Math.floor(Math.random() * ds.length)].key;
 }
 
-/** Nhãn tiếng Việt của một dạng bài — ưu tiên danh sách của kiểu chấm. */
-function nhanDang(key, kieuDoc = 'toeic') {
-    const d = (DANG_THEO_KIEU[kieuDoc] || []).find((x) => x.key === key)
-        || Object.values(DANG_THEO_KIEU).flat().find((x) => x.key === key);
-    return d?.vi || 'Văn bản';
+/** Nhãn tiếng Việt của một dạng bài. */
+function nhanDang(key) {
+    return (DANG_BAI.find((d) => d.key === key) || {}).vi || 'Văn bản';
 }
 
 const NHAN = ['A', 'B', 'C', 'D'];
@@ -157,18 +201,21 @@ function donCauHoi(raw) {
  * `tuVung` = các từ người học vừa luyện. Bài đọc dùng đúng vốn từ đó nên đọc
  * xong là ôn lại luôn — thay vì gặp một văn bản toàn từ chưa thấy bao giờ.
  */
-async function generateReading({ tuVung = [], userId = null, level = 'medium', dang = '', lang = 'en', rubric } = {}) {
+async function generateReading({ tuVung = [], userId = null, level = 'medium', dang = '', tuChon = '', lang = 'en', rubric } = {}) {
     const zh = lang === 'zh';
     const muc = mucKho(level);
     const soCau = CAU_HOI_THEO_MUC[muc];
     // Kiểu chấm quyết định văn phong bài đọc: Giao tiếp (đời thường), TOEIC (công sở),
     // IELTS (học thuật), HSK (tiếng Trung). Không chọn gì thì giữ TOEIC như trước.
     const kieuDoc = chuanHoaKieuDoc(rubric, lang);
-    const vaiTro = MO_TA_KIEU_DOC[kieuDoc][zh ? 'zh' : 'en'];
-    // Loại bài lấy trong danh sách CỦA kiểu chấm: TOEIC ra email công sở, IELTS ra
-    // bài học thuật, Giao tiếp ra tin nhắn/đánh giá… chứ không ép mọi kiểu vào một khuôn.
-    const kieu = chuanHoaDang(dang, kieuDoc);
-    const dangMoTa = DANG_THEO_KIEU[kieuDoc].find((d) => d.key === kieu).en;
+    const moTa = MO_TA_KIEU_DOC[kieuDoc];
+    const vaiTro = moTa[zh ? 'zh' : 'en'];
+    // Dạng bài tự nhập được ưu tiên; không có thì lấy trong kho chung.
+    const tuNhap = chuanHoaTuChon(tuChon);
+    const kieu = tuNhap ? 'custom' : chuanHoaDang(dang, kieuDoc);
+    const dangMoTa = tuNhap
+        ? `text of this type or topic: "${tuNhap}"`
+        : DANG_BAI.find((d) => d.key === kieu).en;
 
     // Lọc và cắt tại đây: danh sách từ do client gửi và đi thẳng vào prompt.
     // Không chặn thì một mảng 500 phần tử thổi bay giới hạn token, và một chuỗi
@@ -188,6 +235,7 @@ async function generateReading({ tuVung = [], userId = null, level = 'medium', d
     // tương đương là HSK 阅读, và độ dài đo bằng CHỮ HÁN chứ không phải từ.
     const system = [
         vaiTro,
+        moTa.giong,
         'Return ONLY valid JSON, no markdown fences, no commentary.',
         'Shape: {',
         '  "title": "...",',
@@ -255,7 +303,7 @@ async function generateReading({ tuVung = [], userId = null, level = 'medium', d
         title: String(parsed.title || '').trim(),
         passage: String(parsed.passage).trim(),
         dang: kieu,
-        dangVi: nhanDang(kieu, kieuDoc),
+        dangVi: tuNhap || nhanDang(kieu),
         rubric: kieuDoc,
         level: muc,
         words: tu,
@@ -303,9 +351,10 @@ module.exports = {
     mucKho,
     chuanHoaDang,
     chuanHoaKieuDoc,
+    chuanHoaTuChon,
     nhanDang,
     DANG_BAI,
-    DANG_THEO_KIEU,
+    NHOM_DANG,
     CAU_HOI_THEO_MUC,
     KIEU_DOC_THEO_NGON_NGU,
 };

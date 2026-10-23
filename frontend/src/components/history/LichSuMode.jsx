@@ -10,7 +10,7 @@ import { EssayAPI } from '@api/essay.js';
  *   · viet     — danh sách bài đã chấm (chưa xem lại được bài viết).
  *   · dich, doc — chưa lưu lịch sử, nên ghi rõ thay vì để trống.
  */
-const CHUA_LUU = { dich: 'Dịch đoạn văn', doc: 'Đọc hiểu Part 7' };
+const CHUA_LUU = { dich: 'Dịch đoạn văn', doc: 'Đọc hiểu' };
 
 const KHUNG_NGAY = (t) => (t ? new Date(t).toLocaleString('vi-VN') : '');
 

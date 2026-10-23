@@ -10394,6 +10394,63 @@ button.ai-history-row {
   margin-top: 12px;
 }
 
+/* Kho dạng bài Đọc hiểu: chip gọn theo nhóm, để hơn 30 dạng vẫn vừa một cột. */
+.rd-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.rd-chip {
+  padding: 6px 12px;
+  border: 2px solid var(--border-color);
+  border-radius: 999px;
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  font-size: 0.9em;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+.rd-chip:hover { border-color: var(--accent-color); }
+.rd-chip.is-on {
+  border-color: var(--accent-color);
+  background: rgba(139, 92, 246, 0.12);
+}
+.rd-chip i { margin-right: 4px; }
+.rd-custom {
+  width: 100%;
+  box-sizing: border-box;
+  margin-top: 4px;
+  padding: 8px 12px;
+  border: 2px solid var(--border-color);
+  border-radius: 10px;
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  font: inherit;
+}
+.rd-custom:focus { outline: none; border-color: var(--accent-color); }
+.rd-custom.is-on {
+  border-color: var(--accent-color);
+  background: rgba(139, 92, 246, 0.12);
+}
+.rd-group { margin-top: 8px; }
+.rd-group-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+  font-size: 0.85em;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+.rd-group-tag {
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: rgba(139, 92, 246, 0.15);
+  color: var(--accent-color);
+  font-size: 0.85em;
+  font-weight: 500;
+}
+
 .rd-passage {
   padding: 14px 16px;
   border: 1px solid var(--border-color);

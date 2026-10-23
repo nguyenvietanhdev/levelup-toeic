@@ -14,7 +14,9 @@ import { PartSelector } from '@components/vocab/part/partSelector.js';
 import { KIEU_CHAM, kieuChoNgonNgu, doKhoChoKieu } from '@lib/kieuCham.js';
 
 /**
- * Luyện ĐỌC HIỂU: TOEIC Part 7, IELTS, HSK, và giao tiếp.
+ * Luyện ĐỌC HIỂU nhiều dạng bài: đời thường, công việc, báo chí, học thuật —
+ * hoặc dạng/chủ đề người học tự nhập. Kiểu chấm (Giao tiếp/TOEIC/IELTS/HSK)
+ * quyết định văn phong và cách ra câu hỏi.
  *
  * Đây là phần chiếm tỉ trọng lớn nhất của đề Reading (54/200 câu) mà ngân hàng
  * đề trong app không có câu nào. Mọi chế độ khác hỏi TỪ đơn lẻ hoặc một câu;
@@ -29,44 +31,66 @@ const NHAN = ['A', 'B', 'C', 'D'];
 const KIEU_MAC_DINH = { en: 'toeic', zh: 'hsk' };
 
 /**
- * Loại bài theo TỪNG kiểu chấm — mỗi chuẩn đọc một kiểu văn bản riêng, không ép
- * chung một khuôn. Khoá khớp `DANG_THEO_KIEU` ở backend/services/readingGrader.js.
+ * Kho dạng bài dùng chung cho MỌI kiểu chấm — đọc hiểu không bó trong vài dạng
+ * của TOEIC Part 7. Kiểu chấm chỉ quyết định văn phong và cách ra câu hỏi;
+ * `hop` chỉ để xếp nhóm hợp lên đầu và để "Ngẫu nhiên" bốc đúng nhóm.
+ * Khoá khớp `NHOM_DANG` ở backend/services/readingGrader.js.
  */
-const DANG_THEO_KIEU = {
-    toeic: [
-        { key: 'email', label: 'Email' },
-        { key: 'notice', label: 'Thông báo' },
-        { key: 'advertisement', label: 'Quảng cáo' },
-        { key: 'article', label: 'Bài báo' },
-        { key: 'memo', label: 'Ghi chú nội bộ' },
-        { key: 'schedule', label: 'Lịch trình' },
-        { key: 'chat', label: 'Chuỗi tin nhắn' },
-    ],
-    ielts: [
-        { key: 'science', label: 'Khoa học' },
-        { key: 'history', label: 'Lịch sử' },
-        { key: 'society', label: 'Xã hội' },
-        { key: 'environment', label: 'Môi trường' },
-        { key: 'research', label: 'Nghiên cứu' },
-    ],
-    giaotiep: [
-        { key: 'message', label: 'Tin nhắn' },
-        { key: 'personal-email', label: 'Email cá nhân' },
-        { key: 'social-post', label: 'Bài đăng MXH' },
-        { key: 'review', label: 'Đánh giá' },
-        { key: 'invitation', label: 'Lời mời' },
-        { key: 'blog', label: 'Blog' },
-    ],
-    hsk: [
-        { key: 'story', label: 'Truyện ngắn' },
-        { key: 'notice', label: 'Thông báo' },
-        { key: 'message', label: 'Tin nhắn' },
-        { key: 'advertisement', label: 'Quảng cáo' },
-        { key: 'diary', label: 'Nhật ký' },
-        { key: 'explain', label: 'Bài giải thích' },
-    ],
-};
-const NGAU_NHIEN = { key: '', label: 'Ngẫu nhiên' };
+const NHOM_DANG = [
+    {
+        key: 'doi-thuong', label: 'Đời thường', hop: ['giaotiep', 'hsk'],
+        dang: [
+            { key: 'message', label: 'Tin nhắn' },
+            { key: 'personal-email', label: 'Email cá nhân' },
+            { key: 'social-post', label: 'Bài đăng MXH' },
+            { key: 'review', label: 'Đánh giá' },
+            { key: 'invitation', label: 'Lời mời' },
+            { key: 'diary', label: 'Nhật ký' },
+            { key: 'blog', label: 'Blog' },
+            { key: 'recipe', label: 'Công thức' },
+        ],
+    },
+    {
+        key: 'cong-viec', label: 'Công việc', hop: ['toeic'],
+        dang: [
+            { key: 'email', label: 'Email công việc' },
+            { key: 'notice', label: 'Thông báo' },
+            { key: 'advertisement', label: 'Quảng cáo' },
+            { key: 'memo', label: 'Ghi chú nội bộ' },
+            { key: 'schedule', label: 'Lịch trình' },
+            { key: 'chat', label: 'Chuỗi tin nhắn' },
+            { key: 'job-ad', label: 'Tin tuyển dụng' },
+            { key: 'form', label: 'Biểu mẫu / hoá đơn' },
+        ],
+    },
+    {
+        key: 'bao-chi', label: 'Báo chí & truyện', hop: ['giaotiep', 'toeic', 'ielts', 'hsk'],
+        dang: [
+            { key: 'article', label: 'Bài báo' },
+            { key: 'interview', label: 'Phỏng vấn' },
+            { key: 'story', label: 'Truyện ngắn' },
+            { key: 'biography', label: 'Tiểu sử' },
+            { key: 'opinion', label: 'Bài bình luận' },
+            { key: 'travel', label: 'Du lịch' },
+        ],
+    },
+    {
+        key: 'hoc-thuat', label: 'Kiến thức & học thuật', hop: ['ielts'],
+        dang: [
+            { key: 'science', label: 'Khoa học' },
+            { key: 'history', label: 'Lịch sử' },
+            { key: 'society', label: 'Xã hội' },
+            { key: 'environment', label: 'Môi trường' },
+            { key: 'technology', label: 'Công nghệ' },
+            { key: 'health', label: 'Sức khoẻ' },
+            { key: 'research', label: 'Nghiên cứu' },
+            { key: 'explain', label: 'Hướng dẫn / giải thích' },
+        ],
+    },
+];
+
+/** Khớp `MAX_TU_CHON` ở server. */
+const MAX_TU_CHON = 60;
 
 /**
  * Vài từ trong bộ đang học, để bài đọc bám vào vốn từ vừa luyện.
@@ -90,7 +114,8 @@ export default function ReadingScreen({ active }) {
     const [level, setLevel] = useState('medium');
     const [kieu, setKieu] = useState(null); // người học bấm chọn; null = mặc định theo ngôn ngữ
     const [tab, setTab] = useState('luyen'); // 'luyen' | 'lichsu'
-    const [dang, setDang] = useState('');
+    const [dang, setDang] = useState('');     // '' = ngẫu nhiên
+    const [tuChon, setTuChon] = useState(''); // dạng/chủ đề tự nhập, ưu tiên hơn `dang`
     const [loadingDe, setLoadingDe] = useState(false);
     const [grading, setGrading] = useState(false);
 
@@ -99,10 +124,10 @@ export default function ReadingScreen({ active }) {
     const kieuList = kieuChoNgonNgu(ngonNgu);
     const kieuDangChon = kieu && kieuList.some((k) => k.key === kieu) ? kieu : KIEU_MAC_DINH[ngonNgu];
     const kieuMoTa = KIEU_CHAM.find((k) => k.key === kieuDangChon) || {};
-    // Đổi kiểu chấm thì danh sách loại bài đổi theo; loại đã chọn không còn trong
-    // danh sách mới thì quay về "Ngẫu nhiên" thay vì gửi một khoá server không nhận.
-    const dsDang = [NGAU_NHIEN, ...(DANG_THEO_KIEU[kieuDangChon] || [])];
-    const dangDangChon = dsDang.some((d) => d.key === dang) ? dang : '';
+    // Mọi nhóm đều chọn được với mọi kiểu chấm; nhóm hợp kiểu đang chọn xếp lên đầu.
+    const nhomXep = [...NHOM_DANG].sort((a, b) =>
+        Number(b.hop.includes(kieuDangChon)) - Number(a.hop.includes(kieuDangChon)));
+    const tuChonGui = tuChon.trim();
 
     // `onBought` của popup nạp năng lượng gọi lại chính `handleNop` — không đưa
     // được `handleNop` vào deps của chính nó.
@@ -112,7 +137,9 @@ export default function ReadingScreen({ active }) {
         if (loadingDe) return;
         setLoadingDe(true);
         try {
-            const d = await ReadingAPI.passage({ words: layTuGoiY(), level, dang: dangDangChon, rubric: kieuDangChon });
+            const d = await ReadingAPI.passage({
+                words: layTuGoiY(), level, dang: tuChonGui ? '' : dang, tuChon: tuChonGui, rubric: kieuDangChon,
+            });
             if (!d?.questions?.length) throw new Error('Server trả về bài đọc không hợp lệ');
             setDe(d);
             // Bài mới thì xoá lựa chọn cũ — giữ lại là các câu đã tick sẵn đáp
@@ -124,7 +151,7 @@ export default function ReadingScreen({ active }) {
         } finally {
             setLoadingDe(false);
         }
-    }, [loadingDe, level, dangDangChon, kieuDangChon]);
+    }, [loadingDe, level, dang, tuChonGui, kieuDangChon]);
 
     const handleNop = useCallback(async () => {
         if (grading || !de) return;
@@ -175,7 +202,7 @@ export default function ReadingScreen({ active }) {
                 <button className="back-btn-screen icon-btn" onClick={() => showScreen('home-screen')}>
                     <i className="fas fa-arrow-left"></i>
                 </button>
-                <h2><i className="fas fa-book-open-reader"></i> Đọc hiểu Part 7</h2>
+                <h2><i className="fas fa-book-open-reader"></i> Đọc hiểu</h2>
             </div>
 
             <div className="tr-tabs">
@@ -209,17 +236,43 @@ export default function ReadingScreen({ active }) {
                     <div className="ai-setup">
                         <div className="ai-setup-col">
                             <div className="ai-setup-title">Loại bài</div>
-                            <div className="ai-setup-list rd-types">
-                                {dsDang.map((d) => (
-                                    <button
-                                        key={d.key}
-                                        className={`tr-level${dangDangChon === d.key ? ' is-on' : ''}`}
-                                        onClick={() => setDang(d.key)}
-                                    >
-                                        <strong>{d.label}</strong>
-                                    </button>
-                                ))}
+                            <div className="rd-chips">
+                                <button
+                                    className={`rd-chip${!tuChonGui && !dang ? ' is-on' : ''}`}
+                                    onClick={() => { setDang(''); setTuChon(''); }}
+                                >
+                                    <i className="fas fa-shuffle"></i> Ngẫu nhiên
+                                </button>
                             </div>
+                            <input
+                                className={`rd-custom${tuChonGui ? ' is-on' : ''}`}
+                                type="text"
+                                maxLength={MAX_TU_CHON}
+                                value={tuChon}
+                                onChange={(e) => setTuChon(e.target.value)}
+                                placeholder="Hoặc tự nhập: thư phàn nàn, podcast, thực đơn…"
+                            />
+                            {nhomXep.map((n) => (
+                                <div key={n.key} className="rd-group">
+                                    <div className="rd-group-title">
+                                        {n.label}
+                                        {n.hop.includes(kieuDangChon) && n.hop.length < 4 && (
+                                            <span className="rd-group-tag">hợp {kieuMoTa.label}</span>
+                                        )}
+                                    </div>
+                                    <div className="rd-chips">
+                                        {n.dang.map((d) => (
+                                            <button
+                                                key={d.key}
+                                                className={`rd-chip${!tuChonGui && dang === d.key ? ' is-on' : ''}`}
+                                                onClick={() => { setDang(d.key); setTuChon(''); }}
+                                            >
+                                                {d.label}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                            ))}
                         </div>
 
                         <div className="ai-setup-col">
@@ -259,7 +312,7 @@ export default function ReadingScreen({ active }) {
                         </div>
                         {/* `white-space: pre-wrap` giữ xuống dòng của email/thông báo —
                             gộp thành một khối chữ liền thì mất luôn bố cục vốn là một
-                            phần của việc đọc hiểu Part 7. */}
+                            phần của việc đọc hiểu. */}
                         <p className="rd-passage-text">{de.passage}</p>
                     </div>
 

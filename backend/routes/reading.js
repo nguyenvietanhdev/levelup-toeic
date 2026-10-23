@@ -1,5 +1,5 @@
 // ===================================
-// READING ROUTES — luyện đọc hiểu dạng TOEIC Part 7
+// READING ROUTES — luyện đọc hiểu nhiều dạng bài
 // ===================================
 
 const express = require('express');

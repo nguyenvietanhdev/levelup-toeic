@@ -8,7 +8,7 @@ const { isVipActive } = require('../utils/energyCosts');
 const logger = require('../utils/logger');
 
 /**
- * Luyện ĐỌC HIỂU dạng TOEIC Part 7.
+ * Luyện ĐỌC HIỂU nhiều dạng bài (không chỉ TOEIC Part 7).
  *
  * Hai endpoint: xin bài · nộp đáp án.
  *
@@ -88,7 +88,8 @@ exports.passage = async (req, res, next) => {
         const lang = profile?.settings?.vocabLang === 'zh' ? 'zh' : 'en';
 
         const ai = await generateReading({
-            tuVung: words, userId: req.user.id, level, dang: req.body.dang, lang,
+            tuVung: words, userId: req.user.id, level, dang: req.body.dang,
+            tuChon: req.body.tuChon, lang,
             rubric: req.body.rubric,
         });
         if (!ai.success) {
