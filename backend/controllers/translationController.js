@@ -69,7 +69,10 @@ exports.passage = async (req, res, next) => {
         const words = Array.isArray(req.body.words) ? req.body.words : [];
         const level = mucKho(req.body.level);
 
-        const ai = await generatePassage({ tuVung: words, userId: req.user.id, lang, level });
+        const ai = await generatePassage({
+            tuVung: words, userId: req.user.id, lang, level,
+            dang: req.body.dang, tuChon: req.body.tuChon,
+        });
         if (!ai.success) {
             logger.error('Translation passage: AI failed', ai.error);
             return res.status(503).json({
@@ -86,6 +89,8 @@ exports.passage = async (req, res, next) => {
                 topic: ai.topic,
                 words: ai.words,
                 level: ai.level,
+                dang: ai.dang,
+                dangVi: ai.dangVi,
                 lang,
                 // `min` là số TỪ với `en`, số CHỮ HÁN với `zh` — `lang` cho
                 // client biết dùng đơn vị nào để hiển thị.

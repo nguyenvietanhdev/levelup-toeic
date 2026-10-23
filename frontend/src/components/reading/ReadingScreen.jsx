@@ -7,6 +7,7 @@ import { Notification } from '@ui/Toaster.jsx';
 import { ReadingAPI } from '@api/reading.js';
 import LichSuMode from '../history/LichSuMode.jsx';
 import KieuChamDoKho from '../ai/KieuChamDoKho.jsx';
+import ChonDangBai, { MAX_TU_CHON } from '../ai/ChonDangBai.jsx';
 import { getVocabLang } from '@api/vocabulary.js';
 import { KIEU_CHAM, kieuChoNgonNgu, doKhoChoKieu } from '@lib/kieuCham.js';
 
@@ -86,9 +87,6 @@ const NHOM_DANG = [
     },
 ];
 
-/** Khớp `MAX_TU_CHON` ở server. */
-const MAX_TU_CHON = 60;
-
 /**
  * Vài từ trong bộ đang học, để bài đọc bám vào vốn từ vừa luyện.
  *
@@ -121,9 +119,6 @@ export default function ReadingScreen({ active }) {
     const kieuList = kieuChoNgonNgu(ngonNgu);
     const kieuDangChon = kieu && kieuList.some((k) => k.key === kieu) ? kieu : KIEU_MAC_DINH[ngonNgu];
     const kieuMoTa = KIEU_CHAM.find((k) => k.key === kieuDangChon) || {};
-    // Mọi nhóm đều chọn được với mọi kiểu chấm; nhóm hợp kiểu đang chọn xếp lên đầu.
-    const nhomXep = [...NHOM_DANG].sort((a, b) =>
-        Number(b.hop.includes(kieuDangChon)) - Number(a.hop.includes(kieuDangChon)));
     const tuChonGui = tuChon.trim();
 
     // `onBought` của popup nạp năng lượng gọi lại chính `handleNop` — không đưa
@@ -227,44 +222,17 @@ export default function ReadingScreen({ active }) {
                         Khối phải dùng CHUNG component với Hội thoại, Viết luận và Dịch. */}
                     <div className="ai-setup">
                         <div className="ai-setup-col">
-                            <div className="ai-setup-title">Loại bài</div>
-                            <div className="rd-chips">
-                                <button
-                                    className={`rd-chip${!tuChonGui && !dang ? ' is-on' : ''}`}
-                                    onClick={() => { setDang(''); setTuChon(''); }}
-                                >
-                                    <i className="fas fa-shuffle"></i> Ngẫu nhiên
-                                </button>
-                            </div>
-                            <input
-                                className={`rd-custom${tuChonGui ? ' is-on' : ''}`}
-                                type="text"
+                            <ChonDangBai
+                                nhom={NHOM_DANG}
+                                kieu={kieuDangChon}
+                                kieuLabel={kieuMoTa.label}
+                                dang={dang}
+                                onDang={setDang}
+                                tuChon={tuChon}
+                                onTuChon={setTuChon}
                                 maxLength={MAX_TU_CHON}
-                                value={tuChon}
-                                onChange={(e) => setTuChon(e.target.value)}
                                 placeholder="Hoặc tự nhập: thư phàn nàn, podcast, thực đơn…"
                             />
-                            {nhomXep.map((n) => (
-                                <div key={n.key} className="rd-group">
-                                    <div className="rd-group-title">
-                                        {n.label}
-                                        {n.hop.includes(kieuDangChon) && n.hop.length < 4 && (
-                                            <span className="rd-group-tag">hợp {kieuMoTa.label}</span>
-                                        )}
-                                    </div>
-                                    <div className="rd-chips">
-                                        {n.dang.map((d) => (
-                                            <button
-                                                key={d.key}
-                                                className={`rd-chip${!tuChonGui && dang === d.key ? ' is-on' : ''}`}
-                                                onClick={() => { setDang(d.key); setTuChon(''); }}
-                                            >
-                                                {d.label}
-                                            </button>
-                                        ))}
-                                    </div>
-                                </div>
-                            ))}
                         </div>
 
                         <div className="ai-setup-col">

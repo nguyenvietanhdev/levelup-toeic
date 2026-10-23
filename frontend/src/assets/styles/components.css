@@ -9555,9 +9555,10 @@ mark {
     display: grid;
     /* Cột phải cố định bề rộng và dính mép phải; cột trái chiếm phần còn lại. */
     grid-template-columns: minmax(0, 1fr) minmax(260px, 340px);
-    grid-template-rows: minmax(0, 1fr);
-    /* Chiều cao theo khung nhìn để MỖI CỘT tự cuộn dọc, không đẩy cả trang. */
-    height: clamp(260px, calc(100vh - 320px), 560px);
+    /* Cao theo nội dung, KHÔNG cuộn riêng từng cột: cột cao cố định từng cắt ngang
+       nhóm lựa chọn và giấu "Độ khó" dưới đáy mà người dùng không biết. Cả khung
+       giới thiệu cuộn, còn nút bắt đầu dính đáy (xem nút `.btn-primary` ngay dưới). */
+    align-items: start;
     gap: 18px;
     width: 100%;
     margin: 14px 0 18px;
@@ -9565,8 +9566,16 @@ mark {
 }
 .ai-setup-col {
     min-height: 0;
-    overflow-y: auto;
     padding-right: 6px;
+}
+/* Nút bắt đầu của màn chọn AI: dính đáy khung cuộn để luôn bấm được dù danh
+   sách lựa chọn dài. */
+.convo-intro > .btn-primary,
+.essay-intro--wide > .btn-primary {
+    position: sticky;
+    bottom: 12px;
+    z-index: 2;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35);
 }
 .ai-setup-col + .ai-setup-col {
     justify-self: end;

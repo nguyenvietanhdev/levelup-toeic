@@ -112,7 +112,7 @@ describe('lỗi mang theo DỮ LIỆU, không chỉ câu chữ', () => {
 });
 
 describe('start KHÔNG gửi chủ đề — server tự đọc', () => {
-    test('prompt CHỈ gửi `level` và `rubric` (đều là lựa chọn người dùng bấm trên màn)', async () => {
+    test('prompt CHỈ gửi `level`, `rubric` và dạng bài (đều là lựa chọn người dùng bấm trên màn)', async () => {
         // Mỗi tham số client phải tự gom là một chỗ đoán sai hình dạng dữ liệu —
         // bài học từ 5 lỗi liên tiếp của Hội thoại.
         // `level` là NGOẠI LỆ có chủ ý và là tham số duy nhất được phép: nó là
@@ -123,7 +123,8 @@ describe('start KHÔNG gửi chủ đề — server tự đọc', () => {
         await EssayAPI.prompt();
         const [url, body] = post.mock.calls[0];
         expect(url).toBe('/essay/prompt');
-        expect(Object.keys(body)).toEqual(['level', 'rubric']);
+        // `dang`/`tuChon` (dạng bài) cũng là lựa chọn bấm/gõ trên màn — vẫn KHÔNG có source/part/lang.
+        expect(Object.keys(body)).toEqual(['level', 'rubric', 'dang', 'tuChon']);
     });
 });
 

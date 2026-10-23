@@ -38,15 +38,16 @@ describe('DanhSachVai', () => {
 describe('mọi chế độ AI có danh sách vai ở phần giới thiệu', () => {
     const cases = [
         ['conversation/ConversationScreen.jsx', 'convo-intro'],
-        ['essay/EssayScreen.jsx', 'essay-intro'],
-        ['translation/TranslationScreen.jsx', 'essay-intro'],
     ];
 
-    // Đọc hiểu là bài đọc nhiều dạng, không có AI đóng vai — không dùng vai của Part.
-    test('Đọc hiểu KHÔNG dùng vai', () => {
-        const s = read('reading/ReadingScreen.jsx');
-        expect(s).not.toMatch(/DanhSachVai/);
-    });
+    // Đọc hiểu, Viết, Dịch không có AI đóng vai — cột trái là kho dạng bài, không dùng vai.
+    for (const file of ['reading/ReadingScreen.jsx', 'essay/EssayScreen.jsx', 'translation/TranslationScreen.jsx']) {
+        test(`${file} KHÔNG dùng vai, dùng ChonDangBai`, () => {
+            const s = read(file);
+            expect(s).not.toMatch(/DanhSachVai/);
+            expect(s).toMatch(/<ChonDangBai/);
+        });
+    }
     for (const [file, cls] of cases) {
         test(`${file} gắn DanhSachVai trong ${cls}`, () => {
             const s = read(file);

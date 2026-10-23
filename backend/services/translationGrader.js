@@ -25,6 +25,7 @@ function chatCompletion(...args) {
 
 const { parseJson, clampBand, countUnits } = require('./essayGrader');
 const { chiThiPhanLoai, chuanHoaLoai } = require('./errorTaxonomy');
+const { chonDang } = require('./dangBai');
 
 /**
  * Ba trục chấm.
@@ -70,6 +71,56 @@ function mucKho(v) {
 }
 
 /**
+ * Kho DẠNG VĂN BẢN để dịch (cùng cách với Đọc hiểu/Viết). Dịch chỉ có một kiểu
+ * chấm nên `hop` để trống — không gợi ý nhóm nào. Khoá khớp `NHOM_DANG` ở
+ * frontend/src/components/translation/TranslationScreen.jsx.
+ * "Ngẫu nhiên" (không chọn) giữ đề như trước: một tình huống đời thường.
+ */
+const NHOM_DANG_DICH = [
+    {
+        key: 'doi-thuong', vi: 'Đời thường', hop: [],
+        dang: [
+            { key: 'message', vi: 'Tin nhắn', en: 'text message to a friend' },
+            { key: 'personal-email', vi: 'Email cá nhân', en: 'personal email' },
+            { key: 'social-post', vi: 'Bài đăng MXH', en: 'social media post' },
+            { key: 'review', vi: 'Đánh giá', en: 'review of a restaurant or product' },
+            { key: 'diary', vi: 'Nhật ký', en: 'diary entry' },
+            { key: 'recipe', vi: 'Công thức', en: 'short recipe' },
+        ],
+    },
+    {
+        key: 'cong-viec', vi: 'Công việc', hop: [],
+        dang: [
+            { key: 'email', vi: 'Email công việc', en: 'business email' },
+            { key: 'notice', vi: 'Thông báo', en: 'public or workplace notice' },
+            { key: 'advertisement', vi: 'Quảng cáo', en: 'advertisement' },
+            { key: 'job-ad', vi: 'Tin tuyển dụng', en: 'job advertisement' },
+            { key: 'instructions', vi: 'Hướng dẫn sử dụng', en: 'product instructions' },
+        ],
+    },
+    {
+        key: 'bao-chi', vi: 'Báo chí & truyện', hop: [],
+        dang: [
+            { key: 'news', vi: 'Bản tin', en: 'short news report' },
+            { key: 'story', vi: 'Truyện ngắn', en: 'short story' },
+            { key: 'travel', vi: 'Du lịch', en: 'travel description' },
+            { key: 'biography', vi: 'Tiểu sử', en: 'short biography' },
+            { key: 'opinion', vi: 'Bài bình luận', en: 'opinion piece' },
+        ],
+    },
+    {
+        key: 'kien-thuc', vi: 'Kiến thức', hop: [],
+        dang: [
+            { key: 'science', vi: 'Khoa học', en: 'explanation of a scientific fact' },
+            { key: 'history', vi: 'Lịch sử', en: 'passage about a historical event' },
+            { key: 'health', vi: 'Sức khoẻ', en: 'health advice' },
+            { key: 'technology', vi: 'Công nghệ', en: 'passage about a technology' },
+            { key: 'culture', vi: 'Văn hoá', en: 'passage about a cultural tradition' },
+        ],
+    },
+];
+
+/**
  * Sinh một đoạn văn tiếng Việt để dịch.
  *
  * `tuVung` = các từ người học vừa luyện. Đoạn đề được yêu cầu dùng đúng những
@@ -77,8 +128,10 @@ function mucKho(v) {
  * ngẫu nhiên toàn từ chưa từng thấy. Đây là thứ ChatGPT không làm được: nó
  * không biết người học đang học bộ nào.
  */
-async function generatePassage({ tuVung = [], userId = null, lang = 'en', level = 'medium' } = {}) {
+async function generatePassage({ tuVung = [], userId = null, lang = 'en', level = 'medium', dang = '', tuChon = '' } = {}) {
     const zh = lang === 'zh';
+    // Dạng văn bản người học chọn (null = Ngẫu nhiên → một tình huống đời thường như trước).
+    const chon = chonDang(NHOM_DANG_DICH, { dang, tuChon });
     const muc = mucKho(level);
     const soCau = CAU_THEO_MUC[muc];
 
@@ -97,7 +150,9 @@ async function generatePassage({ tuVung = [], userId = null, lang = 'en', level 
         // Đoạn đề PHẢI bằng tiếng Việt — đó là bản gốc để dịch đi.
         'The "passage" MUST be written in natural Vietnamese.',
         `It must be exactly ${soCau} sentences, forming ONE coherent paragraph`,
-        'about a single everyday situation — not ' + soCau + ' unrelated sentences.',
+        chon
+            ? `written as a ${chon.en} — not ${soCau} unrelated sentences.`
+            : 'about a single everyday situation — not ' + soCau + ' unrelated sentences.',
         // Không cho gợi ý sẵn: kèm bản dịch trong đề là đưa luôn đáp án.
         'Do NOT include any English or Chinese words in the passage.',
         'Do NOT include the translation.',
@@ -118,7 +173,9 @@ async function generatePassage({ tuVung = [], userId = null, lang = 'en', level 
         { role: 'system', content: system.join('\n') },
         {
             role: 'user',
-            content: tu.length
+            content: chon
+                ? `Write one ${soCau}-sentence Vietnamese ${chon.en} for translation practice.`
+                : tu.length
                 ? `Write one ${soCau}-sentence Vietnamese paragraph for translation practice.`
                 : `Write one ${soCau}-sentence Vietnamese paragraph on a common everyday topic.`,
         },
@@ -142,6 +199,8 @@ async function generatePassage({ tuVung = [], userId = null, lang = 'en', level 
         topic: String(parsed.topic || ''),
         words: tu,
         level: muc,
+        dang: chon ? chon.key : '',
+        dangVi: chon ? chon.vi : '',
     };
 }
 
@@ -238,4 +297,5 @@ module.exports = {
     mucKho,
     CRITERIA,
     CAU_THEO_MUC,
+    NHOM_DANG_DICH,
 };

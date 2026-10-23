@@ -22,6 +22,7 @@
  */
 const { chiThiPhanLoai, chuanHoaLoai } = require('./errorTaxonomy');
 const { chiThiMuc } = require('./aiLevel');
+const { chonDang } = require('./dangBai');
 
 function chatCompletion(...args) {
     return require('../config/openai').chatCompletion(...args);
@@ -230,10 +231,74 @@ function capTuVungDeBai(level) {
     return `Use vocabulary and grammar at CEFR level ${CEFR_DE_BAI[k]}; keep every word within that level.`;
 }
 
-async function generatePrompt({ topicHint = '', userId = null, lang = 'en', level = 'medium', rubric } = {}) {
+/**
+ * Kho DẠNG BÀI VIẾT dùng chung mọi kiểu chấm (cùng cách với Đọc hiểu). Khoá phải
+ * khớp `NHOM_DANG` ở frontend/src/components/essay/EssayScreen.jsx.
+ * "Ngẫu nhiên" (không chọn dạng) giữ nguyên đề như trước: IELTS Task 2, đề thực
+ * tế cho Giao tiếp/TOEIC, đề HSK 书写.
+ */
+const NHOM_DANG_VIET = [
+    {
+        key: 'doi-thuong', vi: 'Đời thường', hop: ['giaotiep', 'hsk'],
+        dang: [
+            { key: 'message', vi: 'Tin nhắn', en: 'short text message to a friend' },
+            { key: 'personal-email', vi: 'Email cá nhân', en: 'personal email to a friend or relative' },
+            { key: 'greeting', vi: 'Thiệp / lời chúc', en: 'greeting card or congratulations message' },
+            { key: 'review', vi: 'Đánh giá', en: 'review of a restaurant, product or film' },
+            { key: 'diary', vi: 'Nhật ký', en: 'diary entry about the day' },
+            { key: 'social-post', vi: 'Bài đăng MXH', en: 'social media post' },
+        ],
+    },
+    {
+        key: 'cong-viec', vi: 'Công việc', hop: ['toeic'],
+        dang: [
+            { key: 'email', vi: 'Email công việc', en: 'business email' },
+            { key: 'complaint-reply', vi: 'Trả lời khiếu nại', en: 'reply to a customer complaint' },
+            { key: 'cover-letter', vi: 'Thư xin việc', en: 'short job application letter' },
+            { key: 'memo', vi: 'Ghi chú nội bộ', en: 'internal memo to colleagues' },
+            { key: 'report', vi: 'Báo cáo ngắn', en: 'short report on a work situation' },
+            { key: 'proposal', vi: 'Đề xuất', en: 'short proposal suggesting an improvement' },
+        ],
+    },
+    {
+        key: 'hoc-thuat', vi: 'Luận & học thuật', hop: ['ielts'],
+        dang: [
+            { key: 'opinion', vi: 'Luận ý kiến', en: 'opinion essay (agree or disagree)' },
+            { key: 'discussion', vi: 'Thảo luận hai mặt', en: 'essay discussing both views and giving an opinion' },
+            { key: 'problem-solution', vi: 'Vấn đề – giải pháp', en: 'problem and solution essay' },
+            { key: 'adv-disadv', vi: 'Ưu – nhược điểm', en: 'advantages and disadvantages essay' },
+            { key: 'chart', vi: 'Mô tả biểu đồ', en: 'description of a chart or graph whose data you state in the task' },
+            { key: 'formal-letter', vi: 'Thư trang trọng', en: 'formal letter of request or complaint' },
+        ],
+    },
+    {
+        key: 'sang-tao', vi: 'Kể & mô tả', hop: ['giaotiep', 'toeic', 'ielts', 'hsk'],
+        dang: [
+            { key: 'story', vi: 'Kể chuyện', en: 'short story or personal anecdote' },
+            { key: 'describe', vi: 'Mô tả người / nơi chốn', en: 'description of a person or place' },
+            { key: 'persuade', vi: 'Bài thuyết phục', en: 'persuasive piece convincing the reader' },
+            { key: 'how-to', vi: 'Hướng dẫn', en: 'step-by-step instructions' },
+        ],
+    },
+];
+
+/** Giọng đề theo kiểu chấm khi người học đã chọn dạng bài. */
+const GIONG_DE_VIET = {
+    giaotiep: 'Keep it realistic for everyday life.',
+    toeic: 'Keep it realistic for the workplace, in the spirit of TOEIC Writing.',
+    ielts: 'Make it as demanding and formal as an IELTS Writing task.',
+    hsk: 'Match the style of an HSK writing (书写) task.',
+};
+
+async function generatePrompt({ topicHint = '', userId = null, lang = 'en', level = 'medium', rubric, dang = '', tuChon = '' } = {}) {
     const zh = lang === 'zh';
     const rb = chuanHoaRubric(rubric, lang);
     const thucTe = laBoChungKhung(rb);
+    // Dạng người học chọn (null = Ngẫu nhiên → giữ đề như trước).
+    const chon = chonDang(NHOM_DANG_VIET, { dang, tuChon });
+    if (chon) {
+        return deTheoDang({ chon, zh, rb, level, topicHint, userId });
+    }
 
     const system = zh
         ? [
@@ -298,6 +363,46 @@ async function generatePrompt({ topicHint = '', userId = null, lang = 'en', leve
         return { success: false, error: 'AI trả về đề không đọc được' };
     }
     return { success: true, prompt: String(parsed.prompt), type: parsed.type || '' };
+}
+
+/**
+ * Đề theo DẠNG BÀI người học chọn (hoặc tự nhập). Kiểu chấm chỉ quyết định giọng
+ * đề; dạng bài quyết định viết cái gì — nên IELTS + "Email cá nhân" vẫn hợp lệ.
+ */
+async function deTheoDang({ chon, zh, rb, level, topicHint, userId }) {
+    const system = [
+        zh
+            ? 'You write Chinese writing prompts for learners. The prompt MUST be written in Simplified Chinese.'
+            : 'You write one English writing task for a learner.',
+        'Return ONLY valid JSON, no markdown fences, no commentary.',
+        'Shape: { "prompt": "...", "type": "" }',
+        zh ? chiThiMuc(level) : capTuVungDeBai(level),
+        `The task must ask the learner to write a ${chon.en}.`,
+        'It must be ONE instruction of 1-3 sentences that gives a concrete situation.',
+        zh ? `Ask for about ${MIN_CHARS_ZH} characters.` : '',
+        GIONG_DE_VIET[rb] || '',
+    ].filter(Boolean).join('\n');
+
+    const user = topicHint
+        ? `Write one such task related to: ${topicHint}`
+        : 'Write one such task on a fresh, everyday-relevant topic.';
+
+    const res = await chatCompletion([
+        { role: 'system', content: system },
+        { role: 'user', content: user },
+    ], {
+        maxTokens: 200,
+        temperature: 1.0,
+        feature: 'essay-prompt',
+        userId,
+    });
+    if (!res.success) return res;
+
+    const parsed = parseJson(res.content);
+    if (!parsed?.prompt) {
+        return { success: false, error: 'AI trả về đề không đọc được' };
+    }
+    return { success: true, prompt: String(parsed.prompt), type: chon.key, dang: chon.key, dangVi: chon.vi };
 }
 
 /**
@@ -464,4 +569,5 @@ module.exports = {
     MAX_WORDS,
     MIN_CHARS_ZH,
     MAX_CHARS_ZH,
+    NHOM_DANG_VIET,
 };

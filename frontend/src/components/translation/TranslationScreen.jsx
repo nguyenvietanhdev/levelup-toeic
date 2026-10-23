@@ -7,11 +7,8 @@ import { Notification } from '@ui/Toaster.jsx';
 import { TranslationAPI } from '@api/translation.js';
 import MistakeLog from './MistakeLog.jsx';
 import LichSuMode from '../history/LichSuMode.jsx';
-import DanhSachVai from '../roles/DanhSachVai.jsx';
 import KieuChamDoKho from '../ai/KieuChamDoKho.jsx';
-import { getVocabLang } from '@api/vocabulary.js';
-import { TopicSelector } from '@components/vocab/topic/topicSelector.js';
-import { PartSelector } from '@components/vocab/part/partSelector.js';
+import ChonDangBai from '../ai/ChonDangBai.jsx';
 
 /**
  * Luyện DỊCH — đọc một đoạn tiếng Việt, viết lại bằng tiếng Anh (hoặc Trung).
@@ -76,6 +73,55 @@ function layTuGoiY(soLuong = 6) {
     return chon.map((w) => String(w?.en || '')).filter(Boolean);
 }
 
+/**
+ * Kho dạng văn bản để dịch (cùng cách với Đọc hiểu/Viết). Dịch chỉ có một kiểu
+ * chấm nên `hop` để trống. Khoá khớp `NHOM_DANG_DICH` ở
+ * backend/services/translationGrader.js. "Ngẫu nhiên" giữ đề như trước.
+ */
+const NHOM_DANG = [
+    {
+        key: 'doi-thuong', label: 'Đời thường', hop: [],
+        dang: [
+            { key: 'message', label: 'Tin nhắn' },
+            { key: 'personal-email', label: 'Email cá nhân' },
+            { key: 'social-post', label: 'Bài đăng MXH' },
+            { key: 'review', label: 'Đánh giá' },
+            { key: 'diary', label: 'Nhật ký' },
+            { key: 'recipe', label: 'Công thức' },
+        ],
+    },
+    {
+        key: 'cong-viec', label: 'Công việc', hop: [],
+        dang: [
+            { key: 'email', label: 'Email công việc' },
+            { key: 'notice', label: 'Thông báo' },
+            { key: 'advertisement', label: 'Quảng cáo' },
+            { key: 'job-ad', label: 'Tin tuyển dụng' },
+            { key: 'instructions', label: 'Hướng dẫn sử dụng' },
+        ],
+    },
+    {
+        key: 'bao-chi', label: 'Báo chí & truyện', hop: [],
+        dang: [
+            { key: 'news', label: 'Bản tin' },
+            { key: 'story', label: 'Truyện ngắn' },
+            { key: 'travel', label: 'Du lịch' },
+            { key: 'biography', label: 'Tiểu sử' },
+            { key: 'opinion', label: 'Bài bình luận' },
+        ],
+    },
+    {
+        key: 'kien-thuc', label: 'Kiến thức', hop: [],
+        dang: [
+            { key: 'science', label: 'Khoa học' },
+            { key: 'history', label: 'Lịch sử' },
+            { key: 'health', label: 'Sức khoẻ' },
+            { key: 'technology', label: 'Công nghệ' },
+            { key: 'culture', label: 'Văn hoá' },
+        ],
+    },
+];
+
 export default function TranslationScreen({ active }) {
     const { showScreen, syncFromState } = useGame();
 
@@ -83,6 +129,8 @@ export default function TranslationScreen({ active }) {
     const [banDich, setBanDich] = useState('');
     const [result, setResult] = useState(null);
     const [level, setLevel] = useState('medium');
+    const [dang, setDang] = useState('');     // '' = ngẫu nhiên
+    const [tuChon, setTuChon] = useState(''); // dạng/chủ đề tự nhập, ưu tiên hơn `dang`
     const [loadingDe, setLoadingDe] = useState(false);
     const [grading, setGrading] = useState(false);
     // 'lam' = làm bài · 'loi' = nhật ký lỗi. Đặt chung màn thay vì tách riêng:
@@ -109,7 +157,8 @@ export default function TranslationScreen({ active }) {
         if (loadingDe) return;
         setLoadingDe(true);
         try {
-            const d = await TranslationAPI.passage({ words: layTuGoiY(), level });
+            const tu = tuChon.trim();
+            const d = await TranslationAPI.passage({ words: layTuGoiY(), level, dang: tu ? '' : dang, tuChon: tu });
             if (!d?.passage) throw new Error('Server trả về đoạn văn không hợp lệ');
             setDe(d);
             // Đề mới thì bỏ bài cũ — giữ lại là người dùng nộp nhầm bản dịch của
@@ -121,7 +170,7 @@ export default function TranslationScreen({ active }) {
         } finally {
             setLoadingDe(false);
         }
-    }, [loadingDe, level]);
+    }, [loadingDe, level, dang, tuChon]);
 
     const handleGrade = useCallback(async () => {
         if (grading || !de) return;
@@ -217,15 +266,17 @@ export default function TranslationScreen({ active }) {
                         vốn từ vừa luyện.
                     </p>
 
-                    {/* Hai cột như Luyện viết và Hội thoại: TRÁI là vai của Part đang học,
-                        PHẢI là độ khó. */}
+                    {/* Hai cột như Đọc hiểu và Viết: TRÁI là dạng văn bản cần dịch,
+                        PHẢI là kiểu chấm + độ khó. */}
                     <div className="ai-setup">
                         <div className="ai-setup-col">
-                            <div className="ai-setup-title">Vai của Part</div>
-                            <DanhSachVai
-                                source={TopicSelector.currentTopic?.source || ''}
-                                part={PartSelector.selectedPart || ''}
-                                lang={getVocabLang()}
+                            <ChonDangBai
+                                nhom={NHOM_DANG}
+                                dang={dang}
+                                onDang={setDang}
+                                tuChon={tuChon}
+                                onTuChon={setTuChon}
+                                placeholder="Hoặc tự nhập: lời bài phát biểu, thư cảm ơn, quy định…"
                             />
                         </div>
                         <div className="ai-setup-col" style={{ gridColumn: 2 }}>
@@ -253,7 +304,7 @@ export default function TranslationScreen({ active }) {
                 <div className="essay-body">
                     <div className="essay-prompt">
                         <div className="essay-prompt-head">
-                            <span>Đoạn văn cần dịch{de.topic ? ` · ${de.topic}` : ''}</span>
+                            <span>Đoạn văn cần dịch{de.dangVi || de.topic ? ` · ${de.dangVi || de.topic}` : ''}</span>
                             <button
                                 className="icon-btn"
                                 title="Đổi đoạn khác"

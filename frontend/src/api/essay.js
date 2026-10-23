@@ -39,10 +39,10 @@ export const EssayAPI = {
      * bài học từ Hội thoại: mỗi tham số client phải tự gom là một chỗ đoán sai
      * hình dạng dữ liệu.
      */
-    async prompt({ level = 'medium', rubric } = {}) {
+    async prompt({ level = 'medium', rubric, dang = '', tuChon = '' } = {}) {
         // `level` và `rubric` là lựa chọn của người dùng ngay tại màn hình, server
         // không có cách nào biết. Chủ đề và ngôn ngữ vẫn do server đọc từ hồ sơ.
-        return unwrap(await Http.post('/essay/prompt', { level, rubric }));
+        return unwrap(await Http.post('/essay/prompt', { level, rubric, dang, tuChon }));
     },
 
     /** Nộp bài và chấm theo kiểu chấm của đề (server kiểm lại tính hợp lệ). */

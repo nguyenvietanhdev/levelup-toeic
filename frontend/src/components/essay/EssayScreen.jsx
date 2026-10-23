@@ -5,12 +5,9 @@ import { Energy } from '@game/energy.js';
 import { Notification } from '@ui/Toaster.jsx';
 import { EssayAPI } from '@api/essay.js';
 import LichSuMode from '../history/LichSuMode.jsx';
-import DanhSachVai from '../roles/DanhSachVai.jsx';
 import KieuChamDoKho from '../ai/KieuChamDoKho.jsx';
+import ChonDangBai from '../ai/ChonDangBai.jsx';
 import { KIEU_CHAM, doKhoChoKieu } from '@lib/kieuCham.js';
-import { getVocabLang } from '@api/vocabulary.js';
-import { TopicSelector } from '@components/vocab/topic/topicSelector.js';
-import { PartSelector } from '@components/vocab/part/partSelector.js';
 
 /**
  * Luyện VIẾT LUẬN — IELTS Task 2 (tiếng Anh) hoặc HSK 书写 (tiếng Trung).
@@ -82,6 +79,56 @@ const MUC_KHO_ZH = [
 /** Kiểu chấm mặc định của mỗi ngôn ngữ (khớp server). Bảng kiểu chấm và độ khó: lib/kieuCham.js. */
 const KIEU_MAC_DINH = { en: 'ielts', zh: 'hsk' };
 
+/**
+ * Kho dạng bài viết dùng chung mọi kiểu chấm (cùng cách với Đọc hiểu). Khoá khớp
+ * `NHOM_DANG_VIET` ở backend/services/essayGrader.js. "Ngẫu nhiên" giữ đề như
+ * trước (IELTS Task 2, đề thực tế, HSK 书写).
+ */
+const NHOM_DANG = [
+    {
+        key: 'doi-thuong', label: 'Đời thường', hop: ['giaotiep', 'hsk'],
+        dang: [
+            { key: 'message', label: 'Tin nhắn' },
+            { key: 'personal-email', label: 'Email cá nhân' },
+            { key: 'greeting', label: 'Thiệp / lời chúc' },
+            { key: 'review', label: 'Đánh giá' },
+            { key: 'diary', label: 'Nhật ký' },
+            { key: 'social-post', label: 'Bài đăng MXH' },
+        ],
+    },
+    {
+        key: 'cong-viec', label: 'Công việc', hop: ['toeic'],
+        dang: [
+            { key: 'email', label: 'Email công việc' },
+            { key: 'complaint-reply', label: 'Trả lời khiếu nại' },
+            { key: 'cover-letter', label: 'Thư xin việc' },
+            { key: 'memo', label: 'Ghi chú nội bộ' },
+            { key: 'report', label: 'Báo cáo ngắn' },
+            { key: 'proposal', label: 'Đề xuất' },
+        ],
+    },
+    {
+        key: 'hoc-thuat', label: 'Luận & học thuật', hop: ['ielts'],
+        dang: [
+            { key: 'opinion', label: 'Luận ý kiến' },
+            { key: 'discussion', label: 'Thảo luận hai mặt' },
+            { key: 'problem-solution', label: 'Vấn đề – giải pháp' },
+            { key: 'adv-disadv', label: 'Ưu – nhược điểm' },
+            { key: 'chart', label: 'Mô tả biểu đồ' },
+            { key: 'formal-letter', label: 'Thư trang trọng' },
+        ],
+    },
+    {
+        key: 'sang-tao', label: 'Kể & mô tả', hop: ['giaotiep', 'toeic', 'ielts', 'hsk'],
+        dang: [
+            { key: 'story', label: 'Kể chuyện' },
+            { key: 'describe', label: 'Mô tả người / nơi chốn' },
+            { key: 'persuade', label: 'Bài thuyết phục' },
+            { key: 'how-to', label: 'Hướng dẫn' },
+        ],
+    },
+];
+
 export default function EssayScreen({ active }) {
     const { showScreen, syncFromState } = useGame();
 
@@ -93,6 +140,8 @@ export default function EssayScreen({ active }) {
     const [level, setLevel] = useState('medium');
     const [kieuChon, setKieuChon] = useState(null); // người học bấm chọn; null = mặc định theo ngôn ngữ
     const [tab, setTab] = useState('luyen'); // 'luyen' | 'lichsu'
+    const [dang, setDang] = useState('');     // '' = ngẫu nhiên
+    const [tuChon, setTuChon] = useState(''); // dạng/chủ đề tự nhập, ưu tiên hơn `dang`
 
     // `onBought` của popup nạp năng lượng gọi lại chính `handleGrade` — không
     // đưa được `handleGrade` vào deps của chính nó.
@@ -123,7 +172,8 @@ export default function EssayScreen({ active }) {
         if (loadingPrompt) return;
         setLoadingPrompt(true);
         try {
-            const d = await EssayAPI.prompt({ level, rubric: kieuDangChon });
+            const tu = tuChon.trim();
+            const d = await EssayAPI.prompt({ level, rubric: kieuDangChon, dang: tu ? '' : dang, tuChon: tu });
             if (!d?.prompt) throw new Error('Server trả về đề không hợp lệ');
             setPrompt(d);
             // Đề mới thì bỏ bài cũ — giữ lại là người dùng nộp nhầm bài của đề
@@ -135,7 +185,7 @@ export default function EssayScreen({ active }) {
         } finally {
             setLoadingPrompt(false);
         }
-    }, [loadingPrompt, level, kieuDangChon]);
+    }, [loadingPrompt, level, kieuDangChon, dang, tuChon]);
 
     const handleGrade = useCallback(async () => {
         if (grading || !prompt) return;
@@ -220,16 +270,20 @@ export default function EssayScreen({ active }) {
                             </>
                         )}
                     </p>
-                    {/* Hai cột như Hội thoại: TRÁI là vai của Part đang học, PHẢI là độ khó.
+                    {/* Hai cột như Đọc hiểu: TRÁI là dạng bài viết, PHẢI là kiểu chấm + độ khó.
                         Ba mức dùng CHUNG một bảng với Dịch và Đọc hiểu (server:
                         `services/aiLevel.js`), nên "Khó" ở đây và "Khó" ở đó là cùng một trình độ. */}
                     <div className="ai-setup">
                         <div className="ai-setup-col">
-                            <div className="ai-setup-title">Vai của Part</div>
-                            <DanhSachVai
-                                source={TopicSelector.currentTopic?.source || ''}
-                                part={PartSelector.selectedPart || ''}
-                                lang={getVocabLang()}
+                            <ChonDangBai
+                                nhom={NHOM_DANG}
+                                kieu={kieuDangChon}
+                                kieuLabel={KIEU_CHAM.find((k) => k.key === kieuDangChon)?.label || ''}
+                                dang={dang}
+                                onDang={setDang}
+                                tuChon={tuChon}
+                                onTuChon={setTuChon}
+                                placeholder="Hoặc tự nhập: thư cảm ơn, bài phát biểu, kế hoạch du lịch…"
                             />
                         </div>
                         <div className="ai-setup-col" style={{ gridColumn: 2 }}>
@@ -255,7 +309,7 @@ export default function EssayScreen({ active }) {
                 <div className="essay-body">
                     <div className="essay-prompt">
                         <div className="essay-prompt-head">
-                            <span>Đề bài{prompt.type ? ` · ${prompt.type}` : ''}</span>
+                            <span>Đề bài{prompt.dangVi || prompt.type ? ` · ${prompt.dangVi || prompt.type}` : ''}</span>
                             <button
                                 className="icon-btn"
                                 title="Đổi đề khác"

@@ -18,6 +18,7 @@ function chatCompletion(...args) {
 }
 
 const { parseJson } = require('./essayGrader');
+const { chuanHoaTuChon } = require('./dangBai');
 
 /**
  * Kho DẠNG BÀI dùng chung cho mọi kiểu chấm, chia theo nhóm.
@@ -86,20 +87,6 @@ const NHOM_DANG = [
 
 /** Toàn bộ dạng bài, phẳng. */
 const DANG_BAI = NHOM_DANG.flatMap((n) => n.dang);
-
-/** Độ dài tối đa của dạng bài tự nhập. */
-const MAX_TU_CHON = 60;
-
-/**
- * Chuẩn hoá dạng bài/chủ đề người học tự nhập. Chuỗi này đi thẳng vào prompt,
- * nên chỉ giữ chữ (mọi thứ tiếng), số, khoảng trắng và vài dấu câu thường, gộp
- * khoảng trắng và cắt độ dài — xuống dòng hay dấu ngoặc kép là cách chèn chỉ thị.
- */
-function chuanHoaTuChon(v) {
-    if (typeof v !== 'string') return '';
-    const s = v.replace(/[^\p{L}\p{N} ,.'&/()-]/gu, ' ').replace(/\s+/g, ' ').trim().slice(0, MAX_TU_CHON).trim();
-    return s.length >= 2 ? s : '';
-}
 
 /** Số câu hỏi theo mức. Part 7 thật cho 2–5 câu mỗi đoạn. */
 const CAU_HOI_THEO_MUC = { easy: 2, medium: 3, hard: 4 };

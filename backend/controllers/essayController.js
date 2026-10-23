@@ -73,7 +73,10 @@ exports.prompt = async (req, res, next) => {
         const level = chuanHoaMuc(req.body.level);
         // Kiểu chấm là lựa chọn của người học; server chỉ nhận mã hợp lệ cho ngôn ngữ đó.
         const rubric = chuanHoaRubric(req.body.rubric, lang);
-        const ai = await generatePrompt({ topicHint, userId: req.user.id, lang, level, rubric });
+        const ai = await generatePrompt({
+            topicHint, userId: req.user.id, lang, level, rubric,
+            dang: req.body.dang, tuChon: req.body.tuChon,
+        });
         if (!ai.success) {
             logger.error('Essay prompt: AI failed', ai.error);
             return res.status(503).json({
@@ -86,7 +89,10 @@ exports.prompt = async (req, res, next) => {
             success: true,
             // `minWords` giữ nguyên TÊN cho tương thích, nhưng với tiếng Trung
             // nó là số CHỮ HÁN — `lang` cho client biết đơn vị nào để hiển thị.
-            data: { prompt: ai.prompt, type: ai.type, topicHint, lang, minWords: min, level, rubric },
+            data: {
+                prompt: ai.prompt, type: ai.type, topicHint, lang, minWords: min, level, rubric,
+                dang: ai.dang || '', dangVi: ai.dangVi || '',
+            },
         });
     } catch (error) {
         next(error);
