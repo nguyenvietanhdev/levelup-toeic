@@ -286,3 +286,21 @@ describe('hằng số công khai cho giao diện', () => {
         expect(ctrl.COINS_PER_WORD).toBeGreaterThan(0);
     });
 });
+
+describe('từ AI đã nói được tính vào tiến độ (không thưởng)', () => {
+    test('start / reply / finish đều tính lại aiUsedWords từ turns và trả về client', () => {
+        expect(body('start')).toMatch(/convo\.aiUsedWords = collectAiUsed\(convo\.turns, convo\.targetWords, convo\.lang\)/);
+        expect(body('reply')).toMatch(/convo\.aiUsedWords = collectAiUsed\(convo\.turns, convo\.targetWords, convo\.lang\)/);
+        expect(body('reply')).toMatch(/aiUsedWords: convo\.aiUsedWords/);
+        expect(body('finish')).toMatch(/aiUsedWords: convo\.aiUsedWords/);
+    });
+
+    test('thưởng CHỈ theo từ người học dùng', () => {
+        expect(body('finish')).toMatch(/const xp = used\.length \* XP_PER_WORD;/);
+        expect(body('finish')).not.toMatch(/aiUsedWords\.length \*/);
+    });
+
+    test('AI lái câu chuyện về từ CHƯA xong — bỏ qua cả từ AI đã nói', () => {
+        expect(body('reply')).toMatch(/usedWords: \[\.\.\.convo\.usedWords, \.\.\.\(convo\.aiUsedWords \|\| \[\]\)\]/);
+    });
+});

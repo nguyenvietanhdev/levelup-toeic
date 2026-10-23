@@ -11,7 +11,7 @@
  * Test này chạy CẢ HAI chiều cho từng luật.
  */
 const {
-    normalize, hasHan, englishForms, usesWord, matchWords, collectUsed,
+    normalize, hasHan, englishForms, usesWord, matchWords, collectUsed, collectAiUsed,
 } = require('../utils/wordMatch');
 
 describe('chuẩn hoá câu', () => {
@@ -179,5 +179,33 @@ describe('gộp qua nhiều lượt — nguồn tính THƯỞNG', () => {
     test('không có lượt nào thì rỗng', () => {
         expect(collectUsed([], target)).toEqual([]);
         expect(collectUsed(undefined, target)).toEqual([]);
+    });
+});
+
+describe('từ AI đã nói (collectAiUsed): tính là xong cho tiến độ, không thưởng', () => {
+    const muc = ['booking', 'passport', 'receipt'];
+    const turns = [
+        { role: 'npc', content: 'Do you have a booking with us?' },
+        { role: 'user', content: 'Yes, here is my passport.' },
+        { role: 'npc', content: 'Thanks. Here is your receipt and your passport.' },
+    ];
+
+    test('chỉ lấy từ trong lượt NPC mà người học CHƯA tự dùng, theo thứ tự danh sách', () => {
+        expect(collectAiUsed(turns, muc, 'en')).toEqual(['booking', 'receipt']);
+    });
+
+    test('thưởng vẫn chỉ tính từ người học — AI nói không làm tăng collectUsed', () => {
+        expect(collectUsed(turns, muc, 'en')).toEqual(['passport']);
+    });
+
+    test('người học dùng lại từ AI đã nói → chuyển sang của người học', () => {
+        const them = [...turns, { role: 'user', content: 'Can I keep the receipt?' }];
+        expect(collectAiUsed(them, muc, 'en')).toEqual(['booking']);
+        expect(collectUsed(them, muc, 'en')).toEqual(expect.arrayContaining(['passport', 'receipt']));
+    });
+
+    test('không có lượt hoặc từ thì rỗng, không lỗi', () => {
+        expect(collectAiUsed()).toEqual([]);
+        expect(collectAiUsed([{ role: 'npc', content: 'hi' }], [], 'en')).toEqual([]);
     });
 });

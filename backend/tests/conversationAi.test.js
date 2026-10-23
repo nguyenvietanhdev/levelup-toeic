@@ -78,8 +78,12 @@ describe('prompt hệ thống', () => {
 
     test('CẤM liệt kê hết từ cùng lúc', () => {
         // Đây là luật giữ cho người học còn việc để làm.
+        // Chặt hơn bản cũ ("đừng dùng hết một lúc"): từ AI nói ra được tính là xong
+        // mà không có thưởng, nên AI gợi để người học tự nói, tối đa MỘT từ mỗi lượt.
         const p = systemPrompt({ lang: 'en', words });
-        expect(p).toMatch(/Do NOT use all of them/);
+        expect(p).toMatch(/make the LEARNER need them/);
+        expect(p).toMatch(/at most ONE per reply/);
+        expect(p).toMatch(/never list them/);
     });
 
     test('CẤM sửa lỗi giữa chừng', () => {

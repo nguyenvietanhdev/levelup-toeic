@@ -9510,6 +9510,18 @@ mark {
     color: #fff;
     font-weight: 600;
 }
+/* Từ AI đã nói: xong cho tiến độ nhưng không có thưởng — viền tím, nền nhạt,
+   khác hẳn màu xanh "tự dùng" để người học thấy còn thưởng nếu dùng lại. */
+.convo-chip.is-ai {
+    border-color: var(--accent-color);
+    background: rgba(139, 92, 246, 0.12);
+    color: var(--text-primary);
+}
+.convo-targets-note {
+    color: var(--text-secondary);
+    font-size: 12px;
+    font-weight: 400;
+}
 
 /* Chip bấm được để chèn vào ô nhập (gợi ý trả lời). */
 .convo-chip--tap {

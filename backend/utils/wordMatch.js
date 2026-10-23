@@ -157,4 +157,25 @@ function collectUsed(turns = [], targetWords = [], lang) {
     return [...used];
 }
 
-module.exports = { normalize, hasHan, englishForms, usesWord, matchWords, collectUsed };
+/**
+ * Từ mục tiêu mà AI (lượt NPC) đã nói ra nhưng người học CHƯA tự dùng.
+ *
+ * Tính là "đã xong" cho TIẾN ĐỘ: AI nói rồi thì người học khó lặp lại tự nhiên,
+ * bắt họ nhét lại từ đó là ép câu gượng. Nhưng KHÔNG quy ra XP/xu — thưởng vẫn chỉ
+ * tính từ người học tự dùng (`collectUsed`), để AI nói hộ không thành điểm. Người
+ * học vẫn dùng lại được: khi đó từ chuyển sang `collectUsed` và có thưởng.
+ */
+function collectAiUsed(turns = [], targetWords = [], lang) {
+    const cuaNguoiHoc = new Set(collectUsed(turns, targetWords, lang));
+    const ai = new Set();
+    for (const t of turns) {
+        if (!t || t.role !== 'npc') continue;
+        for (const w of matchWords(t.content, targetWords, lang)) {
+            if (!cuaNguoiHoc.has(w)) ai.add(w);
+        }
+    }
+    // Giữ thứ tự của danh sách mục tiêu cho ổn định khi hiển thị.
+    return targetWords.filter((w) => ai.has(w));
+}
+
+module.exports = { normalize, hasHan, englishForms, usesWord, matchWords, collectUsed, collectAiUsed };

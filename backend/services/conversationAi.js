@@ -140,9 +140,12 @@ function systemPrompt({ lang, topic, scenario, words, level }) {
         '2. Keep every reply to ONE or TWO short sentences. Long replies stop the',
         '   learner from getting a turn, which is the whole point of the exercise.',
         '3. End with a QUESTION so the learner always has something to answer.',
-        `4. Naturally work in some of these words: ${words.join(', ')}.`,
-        '   Do NOT use all of them at once, and do NOT list them — the learner',
-        '   needs words left to use themselves.',
+        // Từ AI nói ra được tính là "đã xong" (không thưởng) — AI nói nhiều là người
+        // học mất cơ hội tự dùng. Nên AI GỢI để người học nói, không nói hộ.
+        `4. These are the learner's target words: ${words.join(', ')}.`,
+        '   Ask questions that make the LEARNER need them. Avoid saying them yourself;',
+        '   use at most ONE per reply, only when the conversation really needs it,',
+        '   and never list them.',
         // Trước đây cứng ở "beginner level": người Level 18 — đúng mốc mở khoá
         // của chế độ này — vẫn nhận hội thoại vỡ lòng, và không có cách nào
         // tăng độ khó.

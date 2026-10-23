@@ -106,7 +106,7 @@ const GOI_Y_SAU_GIAY = 30;
 export default function ConversationScreen({ active }) {
     const { showScreen, syncFromState } = useGame();
 
-    const [convo, setConvo] = useState(null);       // { id, targetWords, turns, usedWords }
+    const [convo, setConvo] = useState(null);       // { id, targetWords, turns, usedWords, aiUsedWords }
     const [draft, setDraft] = useState('');
     const [busy, setBusy] = useState(false);        // đang chờ server
     const [starting, setStarting] = useState(false);
@@ -225,6 +225,7 @@ export default function ConversationScreen({ active }) {
                 targetWords: data.targetWords || [],
                 turns: data.turns || [],
                 usedWords: data.usedWords || [],
+                aiUsedWords: data.aiUsedWords || [],
             });
             // Năng lượng đã bị server trừ — đồng bộ lại ngay, không thì thanh
             // năng lượng vẫn hiện số cũ cho tới lần tải trang sau.
@@ -286,7 +287,11 @@ export default function ConversationScreen({ active }) {
                 const last = turns.length - 1;
                 if (turns[last]?.role === 'user') turns[last] = { ...turns[last], matched: data.matched || [] };
                 if (data.npcReply) turns.push({ role: 'npc', content: data.npcReply });
-                return { ...c, turns, usedWords: data.usedWords || c.usedWords };
+                return {
+                    ...c, turns,
+                    usedWords: data.usedWords || c.usedWords,
+                    aiUsedWords: data.aiUsedWords || c.aiUsedWords || [],
+                };
             });
             if (data.npcReply) speak(data.npcReply);
             if (data.aiFailed) {
@@ -431,6 +436,9 @@ export default function ConversationScreen({ active }) {
     }, [speechOn, lang]);
 
     const used = new Set(convo?.usedWords || []);
+    // Từ AI đã nói mà người học chưa dùng: tính là XONG cho tiến độ (khỏi phải lặp
+    // lại gượng), nhưng không có thưởng — server chỉ thưởng theo `usedWords`.
+    const aiUsed = new Set(convo?.aiUsedWords || []);
 
     return (
         <div id="conversation-screen" className={`screen ${active ? 'active' : ''}`}>
@@ -539,7 +547,10 @@ export default function ConversationScreen({ active }) {
                         họ chỉ chat vu vơ và không hiểu điểm ở đâu ra. */}
                     <div className="convo-targets">
                         <div className="convo-targets-head">
-                            Từ cần dùng · <strong>{used.size}/{convo.targetWords.length}</strong>
+                            Từ cần dùng · <strong>{used.size + aiUsed.size}/{convo.targetWords.length}</strong>
+                            {aiUsed.size > 0 && (
+                                <span className="convo-targets-note"> · {aiUsed.size} từ AI đã nói (dùng lại để nhận thưởng)</span>
+                            )}
                         </div>
                         <div className="convo-target-list">
                             {convo.targetWords.map((w, i) => (
@@ -548,8 +559,13 @@ export default function ConversationScreen({ active }) {
                                 // vẫn còn danh sách cũ có `地` hai lần — đọc lại
                                 // phiên đó mà key trùng là React cảnh báo và có
                                 // thể bỏ sót ô khi cập nhật.
-                                <span key={`${w}-${i}`} className={`convo-chip${used.has(w) ? ' is-used' : ''}`}>
-                                    {used.has(w) && <i className="fas fa-check"></i>} {w}
+                                <span
+                                    key={`${w}-${i}`}
+                                    className={`convo-chip${used.has(w) ? ' is-used' : aiUsed.has(w) ? ' is-ai' : ''}`}
+                                    title={!used.has(w) && aiUsed.has(w) ? 'AI đã nói từ này — tính là xong. Tự dùng lại để nhận thưởng.' : undefined}
+                                >
+                                    {used.has(w) && <i className="fas fa-check"></i>}
+                                    {!used.has(w) && aiUsed.has(w) && <i className="fas fa-robot"></i>} {w}
                                 </span>
                             ))}
                         </div>
@@ -604,6 +620,11 @@ export default function ConversationScreen({ active }) {
                                 Dùng được <strong>{result.usedWords?.length ?? used.size}</strong>
                                 /{result.totalTargets ?? convo.targetWords.length} từ
                             </p>
+                            {(result.aiUsedWords?.length ?? aiUsed.size) > 0 && (
+                                <p className="convo-targets-note">
+                                    + {result.aiUsedWords?.length ?? aiUsed.size} từ AI đã nói (tính là xong, không cộng thưởng)
+                                </p>
+                            )}
                             {!result.alreadyClaimed && (
                                 <p className="convo-reward">
                                     +{result.reward?.xp || 0} XP · +{result.reward?.coins || 0} xu
@@ -672,7 +693,7 @@ export default function ConversationScreen({ active }) {
                             không tốn lượt AI. Chỉ hiện khi người học bấm mở. */}
                         {showHint && (() => {
                             const npcCuoi = [...convo.turns].reverse().find((t) => t.role === 'npc');
-                            const goiY = goiYCauTraLoi(npcCuoi?.content, convo.targetWords, [...used], npcCuoi?.khung);
+                            const goiY = goiYCauTraLoi(npcCuoi?.content, convo.targetWords, [...used, ...aiUsed], npcCuoi?.khung);
                             return (
                                 <div className="convo-hint">
                                     <div className="convo-hint-loai">

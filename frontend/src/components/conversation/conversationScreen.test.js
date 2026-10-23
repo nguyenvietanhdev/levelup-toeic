@@ -379,7 +379,7 @@ describe('gõ nhanh: tự focus, dịch câu AI, khung gợi ý theo câu AI', (
     });
 
     test('gợi ý dùng khung AI của lượt NPC cuối; bấm khung là đưa vào ô nhập', () => {
-        expect(src).toMatch(/goiYCauTraLoi\(npcCuoi\?\.content, convo\.targetWords, \[\.\.\.used\], npcCuoi\?\.khung\)/);
+        expect(src).toMatch(/goiYCauTraLoi\(npcCuoi\?\.content, convo\.targetWords, \[\.\.\.used, \.\.\.aiUsed\], npcCuoi\?\.khung\)/);
         expect(src).toMatch(/onClick=\{\(\) => \{ setDraft\(k\); inputRef\.current\?\.focus\(\); \}\}/);
     });
 
@@ -407,5 +407,22 @@ describe('gõ nhanh: tự focus, dịch câu AI, khung gợi ý theo câu AI', (
         expect(than).toMatch(/tuMoChoLuotRef\.current === n\) return undefined;/);
         expect(than).toMatch(/setTimeout\(/);
         expect(than).toMatch(/clearTimeout\(t\)/);
+    });
+});
+
+describe('từ AI đã nói: tính là xong, không thưởng', () => {
+    test('đọc aiUsedWords từ server khi mở phiên và sau mỗi lượt', () => {
+        expect(src).toMatch(/aiUsedWords: data\.aiUsedWords \|\| \[\],/);
+        expect(src).toMatch(/aiUsedWords: data\.aiUsedWords \|\| c\.aiUsedWords \|\| \[\],/);
+    });
+
+    test('tiến độ cộng cả từ AI đã nói; chip riêng (is-ai) khác chip tự dùng', () => {
+        expect(src).toMatch(/\{used\.size \+ aiUsed\.size\}\/\{convo\.targetWords\.length\}/);
+        expect(src).toMatch(/used\.has\(w\) \? ' is-used' : aiUsed\.has\(w\) \? ' is-ai' : ''/);
+        expect(src).toMatch(/dùng lại để nhận thưởng/);
+    });
+
+    test('gợi ý từ chỉ đưa từ CHƯA xong (bỏ cả từ AI đã nói)', () => {
+        expect(src).toMatch(/\[\.\.\.used, \.\.\.aiUsed\], npcCuoi\?\.khung/);
     });
 });

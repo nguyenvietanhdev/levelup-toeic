@@ -9,7 +9,7 @@ const WrongWord = require('../models/WrongWord');
 const { openConversation, replyTurn, goiYKhung, moTaVai, NHOM_TINH_HUONG } = require('../services/conversationAi');
 const { chonDang } = require('../services/dangBai');
 const { chuanHoaBoTieuChi, gradeConversation } = require('../services/conversationGrader');
-const { matchWords, collectUsed } = require('../utils/wordMatch');
+const { matchWords, collectUsed, collectAiUsed } = require('../utils/wordMatch');
 const { awardXp } = require('../utils/userStateHelper');
 const { isVipActive } = require('../utils/energyCosts');
 const logger = require('../utils/logger');
@@ -266,6 +266,8 @@ exports.start = async (req, res, next) => {
             level,
             turns: [{ role: 'npc', content: ai.content }],
         });
+        convo.aiUsedWords = collectAiUsed(convo.turns, convo.targetWords, convo.lang);
+        if (convo.aiUsedWords.length) await convo.save();
 
         res.json({
             success: true,
@@ -274,6 +276,7 @@ exports.start = async (req, res, next) => {
                 targetWords: convo.targetWords,
                 turns: convo.turns,
                 usedWords: [],
+                aiUsedWords: convo.aiUsedWords,
                 energyRemaining: charge.energyRemaining,
                 vip: !!charge.vip,
             },
@@ -322,7 +325,7 @@ exports.reply = async (req, res, next) => {
             topic: convo.topic,
             scenario: convo.scenario,
             targetWords: convo.targetWords,
-            usedWords: convo.usedWords,
+            usedWords: [...convo.usedWords, ...(convo.aiUsedWords || [])],
             turns: convo.turns,
             userId: req.user.id,
             // Đọc lại từ phiên, không nhận từ client: client khai mức khác
@@ -335,6 +338,7 @@ exports.reply = async (req, res, next) => {
         }
 
         convo.usedWords = collectUsed(convo.turns, convo.targetWords, convo.lang);
+        convo.aiUsedWords = collectAiUsed(convo.turns, convo.targetWords, convo.lang);
         // Người dùng còn hoạt động → đẩy hạn tự xoá ra xa.
         convo.expiresAt = new Date(
             Date.now() + Conversation.ABANDONED_TTL_DAYS * 24 * 60 * 60 * 1000
@@ -351,6 +355,7 @@ exports.reply = async (req, res, next) => {
                 // họ chỉ mất một câu đáp. Báo cờ để giao diện nói rõ.
                 aiFailed: !ai.success,
                 usedWords: convo.usedWords,
+                aiUsedWords: convo.aiUsedWords,
                 turnCount: convo.turns.length,
             },
         });
@@ -413,6 +418,7 @@ exports.finish = async (req, res, next) => {
         });
 
         convo.usedWords = used;
+        convo.aiUsedWords = collectAiUsed(convo.turns, convo.targetWords, convo.lang);
         convo.status = 'done';
         convo.reward = { xp, coins, claimed: true };
         convo.feedback = feedback;
@@ -425,6 +431,7 @@ exports.finish = async (req, res, next) => {
             success: true,
             data: {
                 usedWords: used,
+                aiUsedWords: convo.aiUsedWords,
                 totalTargets: convo.targetWords.length,
                 reward: { xp, coins },
                 feedback,
@@ -507,6 +514,7 @@ exports.detail = async (req, res, next) => {
                 createdAt: convo.createdAt,
                 targetWords: convo.targetWords || [],
                 usedWords: convo.usedWords || [],
+                aiUsedWords: convo.aiUsedWords || [],
                 reward: convo.reward || null,
                 turns: (convo.turns || []).map((t) => ({
                     role: t.role,

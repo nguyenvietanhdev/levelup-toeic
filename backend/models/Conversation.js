@@ -82,6 +82,9 @@ const conversationSchema = new mongoose.Schema(
          * được request là sửa được thưởng. Cùng nguyên tắc với năng lượng và XP.
          */
         usedWords: { type: [String], default: [] },
+        // Từ mục tiêu AI đã nói mà người học chưa dùng: tính là xong cho tiến độ,
+        // KHÔNG có thưởng (xem `collectAiUsed`).
+        aiUsedWords: { type: [String], default: [] },
 
         turns: { type: [turnSchema], default: [] },
 
