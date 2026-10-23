@@ -3,6 +3,11 @@ import { RolesAPI } from '@api/roles.js';
 
 const TIEU_DE_TOI_THIEU = 2;
 const MO_TA_TOI_THIEU = 10;
+/**
+ * Tạm ẩn mô tả tình huống trên thẻ vai (chỉ hiện tiêu đề), để danh sách gọn và
+ * đỡ phải cuộn. Mô tả vẫn được lưu và dùng trong hội thoại; đặt true để hiện lại.
+ */
+const HIEN_MO_TA = false;
 
 /**
  * Danh sách vai của Part đang học, nằm ở cột trái của màn Hội thoại.
@@ -155,7 +160,7 @@ function VaiCard({ loai, dang, chonDuoc = false, onChon, title, text, onSua, onX
             ></i>
             <div className="ai-role-card-main">
                 <p className="ai-role-title">{title || 'Vai'}</p>
-                <p className="ai-role-text" title={text}>{text}</p>
+                {HIEN_MO_TA && <p className="ai-role-text" title={text}>{text}</p>}
             </div>
             <div className="ai-role-card-actions" onClick={(e) => e.stopPropagation()}>
                 {onSua && (
