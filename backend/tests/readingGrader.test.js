@@ -14,7 +14,7 @@ const { chatCompletion } = require('../config/openai');
 
 const {
     generateReading, gradeReading, donCauHoi, mucKho, chuanHoaDang, nhanDang,
-    DANG_BAI, CAU_HOI_THEO_MUC,
+    DANG_BAI, DANG_THEO_KIEU, CAU_HOI_THEO_MUC,
 } = require('../services/readingGrader');
 
 function aiTraVe(content) {
@@ -347,6 +347,83 @@ describe('controller — đáp án phải ở lại server', () => {
         const i = ctrl.indexOf('exports.history');
         const than = ctrl.slice(i);
         expect(than).toMatch(/\.select\('title dang level correct total createdAt'\)/);
+    });
+});
+
+describe('kiểu chấm quyết định văn phong bài đọc', () => {
+    const { chuanHoaKieuDoc } = require('../services/readingGrader');
+    function promptNguoiDung() {
+        const [messages] = chatCompletion.mock.calls.at(-1);
+        return messages.find((m) => m.role === 'user').content;
+    }
+
+    test('chuẩn hoá: chỉ nhận kiểu hợp lệ với ngôn ngữ, còn lại về mặc định', () => {
+        expect(chuanHoaKieuDoc('ielts', 'en')).toBe('ielts');
+        expect(chuanHoaKieuDoc('giaotiep', 'zh')).toBe('giaotiep');
+        expect(chuanHoaKieuDoc('hsk', 'en')).toBe('toeic');
+        expect(chuanHoaKieuDoc('toeic', 'zh')).toBe('hsk');
+        expect(chuanHoaKieuDoc(undefined, 'en')).toBe('toeic');
+        expect(chuanHoaKieuDoc({ $ne: 1 }, 'en')).toBe('toeic');
+    });
+
+    test('Giao tiếp: văn bản đời thường, không nhắc TOEIC', async () => {
+        aiTraVe(BAI_OK(3));
+        const r = await generateReading({ lang: 'en', rubric: 'giaotiep', dang: 'review' });
+        expect(promptHeThong()).toMatch(/everyday English/);
+        expect(promptHeThong()).toMatch(/realistic customer review/);
+        expect(promptHeThong() + promptNguoiDung()).not.toMatch(/TOEIC|business/);
+        expect(r).toMatchObject({ rubric: 'giaotiep', dang: 'review', dangVi: 'Đánh giá' });
+    });
+
+    test('IELTS: bài học thuật theo chủ đề đã chọn', async () => {
+        aiTraVe(BAI_OK(3));
+        const r = await generateReading({ lang: 'en', rubric: 'ielts', dang: 'history' });
+        expect(promptHeThong()).toMatch(/IELTS Academic Reading/);
+        expect(promptHeThong()).toMatch(/academic article on a historical development/);
+        expect(r.dang).toBe('history');
+    });
+
+    test('loại bài của kiểu KHÁC không lọt qua: rơi về danh sách của kiểu đang chọn', async () => {
+        const ielts = DANG_THEO_KIEU.ielts.map((d) => d.key);
+        for (let i = 0; i < 10; i++) {
+            expect(ielts).toContain(chuanHoaDang('email', 'ielts'));
+        }
+        aiTraVe(BAI_OK(3));
+        const r = await generateReading({ lang: 'en', rubric: 'ielts', dang: 'email' });
+        expect(ielts).toContain(r.dang);
+        expect(promptHeThong()).not.toMatch(/business email/);
+    });
+
+    test('mỗi kiểu chấm có danh sách loại bài riêng, đủ nhãn và mô tả', () => {
+        for (const kieu of ['toeic', 'ielts', 'giaotiep', 'hsk']) {
+            const ds = DANG_THEO_KIEU[kieu];
+            expect(ds.length).toBeGreaterThanOrEqual(4);
+            for (const d of ds) {
+                expect(d.vi.length).toBeGreaterThan(0);
+                expect(d.en.length).toBeGreaterThan(0);
+            }
+        }
+    });
+
+    test('TOEIC: văn bản công sở như trước', async () => {
+        aiTraVe(BAI_OK(3));
+        await generateReading({ lang: 'en', rubric: 'toeic', dang: 'memo' });
+        expect(promptHeThong()).toMatch(/TOEIC Part 7/);
+        expect(promptNguoiDung()).toMatch(/business memo/);
+    });
+
+    test('Giao tiếp tiếng Trung không bị rơi về HSK', async () => {
+        aiTraVe(BAI_OK(2));
+        await generateReading({ lang: 'zh', rubric: 'giaotiep' });
+        expect(promptHeThong()).toMatch(/everyday Chinese/);
+        expect(promptHeThong()).not.toMatch(/HSK/);
+    });
+
+    test('controller chuyển `rubric` từ client xuống bộ sinh đề', () => {
+        const { readFileSync } = require('node:fs');
+        const { join } = require('node:path');
+        const src = readFileSync(join(__dirname, '..', 'controllers', 'readingController.js'), 'utf8');
+        expect(src).toMatch(/rubric: req\.body\.rubric/);
     });
 });
 

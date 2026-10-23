@@ -25,14 +25,18 @@ const MAN = {
 
 describe('bốn màn AI đều cho chọn mức khó', () => {
     for (const [ten, src] of Object.entries(MAN)) {
+        // Màn dùng bảng chung `doKhoChoKieu` (lib/kieuCham.js) không khai báo MUC_KHO riêng;
+        // ba khoá easy/medium/hard của bảng chung đã được khoá ở kieuChamDoKho.test.js.
+        const dungBangChung = !src.includes('const MUC_KHO = [') && /doKhoList=\{doKhoChoKieu\(/.test(src);
+
         test(`${ten} có hàng chọn mức`, () => {
-            expect(src).toMatch(/const MUC_KHO = \[/);
+            expect(src).toMatch(dungBangChung ? /doKhoChoKieu/ : /const MUC_KHO = \[/);
             // Hàng chọn mức nằm trong class `tr-levels` hoặc component dùng chung KieuChamDoKho.
             expect(src).toMatch(/tr-levels|KieuChamDoKho/);
             expect(src).toMatch(/useState\('medium'\)/);
         });
 
-        test(`${ten} dùng đúng ba khoá easy/medium/hard`, () => {
+        test.skipIf(dungBangChung)(`${ten} dùng đúng ba khoá easy/medium/hard`, () => {
             // Lệch khoá thì server `chuanHoaMuc` đẩy hết về `medium` và nút
             // "Khó" không làm gì cả — im lặng.
             const i = src.indexOf('const MUC_KHO = [');
@@ -42,7 +46,7 @@ describe('bốn màn AI đều cho chọn mức khó', () => {
             }
         });
 
-        test(`${ten} mô tả nói rõ mức ảnh hưởng gì`, () => {
+        test.skipIf(dungBangChung)(`${ten} mô tả nói rõ mức ảnh hưởng gì`, () => {
             // "Dễ/Vừa/Khó" một mình không cho biết là khó ở từ vựng, ở độ dài,
             // hay ở đề bài.
             const i = src.indexOf('const MUC_KHO = [');

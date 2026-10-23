@@ -38,8 +38,8 @@ export const ReadingAPI = {
      * Phản hồi CHỈ có đề và bốn lựa chọn — đáp án ở lại server cho tới lúc nộp.
      * `readingId` là thứ để server tìm lại đề khi chấm.
      */
-    async passage({ words = [], level = 'medium', dang = '' } = {}) {
-        return unwrap(await Http.post('/reading/passage', { words, level, dang }));
+    async passage({ words = [], level = 'medium', dang = '', rubric } = {}) {
+        return unwrap(await Http.post('/reading/passage', { words, level, dang, rubric }));
     },
 
     /** Nộp đáp án (mảng nhãn A–D theo thứ tự câu) và chấm. */

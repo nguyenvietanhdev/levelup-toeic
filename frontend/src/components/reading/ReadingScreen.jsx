@@ -7,12 +7,14 @@ import { Notification } from '@ui/Toaster.jsx';
 import { ReadingAPI } from '@api/reading.js';
 import LichSuMode from '../history/LichSuMode.jsx';
 import DanhSachVai from '../roles/DanhSachVai.jsx';
+import KieuChamDoKho from '../ai/KieuChamDoKho.jsx';
 import { getVocabLang } from '@api/vocabulary.js';
 import { TopicSelector } from '@components/vocab/topic/topicSelector.js';
 import { PartSelector } from '@components/vocab/part/partSelector.js';
+import { KIEU_CHAM, kieuChoNgonNgu, doKhoChoKieu } from '@lib/kieuCham.js';
 
 /**
- * Luyện ĐỌC HIỂU dạng TOEIC Part 7.
+ * Luyện ĐỌC HIỂU: TOEIC Part 7, IELTS, HSK, và giao tiếp.
  *
  * Đây là phần chiếm tỉ trọng lớn nhất của đề Reading (54/200 câu) mà ngân hàng
  * đề trong app không có câu nào. Mọi chế độ khác hỏi TỪ đơn lẻ hoặc một câu;
@@ -23,19 +25,48 @@ import { PartSelector } from '@components/vocab/part/partSelector.js';
 
 const NHAN = ['A', 'B', 'C', 'D'];
 
-const MUC_KHO = [
-    { key: 'easy', label: 'Dễ', desc: '2 câu · bài ngắn' },
-    { key: 'medium', label: 'Vừa', desc: '3 câu' },
-    { key: 'hard', label: 'Khó', desc: '4 câu · bài dài' },
-];
+/** Mặc định theo ngôn ngữ, khớp `KIEU_DOC_MAC_DINH` ở server. */
+const KIEU_MAC_DINH = { en: 'toeic', zh: 'hsk' };
 
-const DANG = [
-    { key: '', label: 'Ngẫu nhiên' },
-    { key: 'email', label: 'Email' },
-    { key: 'notice', label: 'Thông báo' },
-    { key: 'advertisement', label: 'Quảng cáo' },
-    { key: 'article', label: 'Bài báo' },
-];
+/**
+ * Loại bài theo TỪNG kiểu chấm — mỗi chuẩn đọc một kiểu văn bản riêng, không ép
+ * chung một khuôn. Khoá khớp `DANG_THEO_KIEU` ở backend/services/readingGrader.js.
+ */
+const DANG_THEO_KIEU = {
+    toeic: [
+        { key: 'email', label: 'Email' },
+        { key: 'notice', label: 'Thông báo' },
+        { key: 'advertisement', label: 'Quảng cáo' },
+        { key: 'article', label: 'Bài báo' },
+        { key: 'memo', label: 'Ghi chú nội bộ' },
+        { key: 'schedule', label: 'Lịch trình' },
+        { key: 'chat', label: 'Chuỗi tin nhắn' },
+    ],
+    ielts: [
+        { key: 'science', label: 'Khoa học' },
+        { key: 'history', label: 'Lịch sử' },
+        { key: 'society', label: 'Xã hội' },
+        { key: 'environment', label: 'Môi trường' },
+        { key: 'research', label: 'Nghiên cứu' },
+    ],
+    giaotiep: [
+        { key: 'message', label: 'Tin nhắn' },
+        { key: 'personal-email', label: 'Email cá nhân' },
+        { key: 'social-post', label: 'Bài đăng MXH' },
+        { key: 'review', label: 'Đánh giá' },
+        { key: 'invitation', label: 'Lời mời' },
+        { key: 'blog', label: 'Blog' },
+    ],
+    hsk: [
+        { key: 'story', label: 'Truyện ngắn' },
+        { key: 'notice', label: 'Thông báo' },
+        { key: 'message', label: 'Tin nhắn' },
+        { key: 'advertisement', label: 'Quảng cáo' },
+        { key: 'diary', label: 'Nhật ký' },
+        { key: 'explain', label: 'Bài giải thích' },
+    ],
+};
+const NGAU_NHIEN = { key: '', label: 'Ngẫu nhiên' };
 
 /**
  * Vài từ trong bộ đang học, để bài đọc bám vào vốn từ vừa luyện.
@@ -57,10 +88,21 @@ export default function ReadingScreen({ active }) {
     const [chon, setChon] = useState([]);    // nhãn A–D theo thứ tự câu
     const [result, setResult] = useState(null);
     const [level, setLevel] = useState('medium');
+    const [kieu, setKieu] = useState(null); // người học bấm chọn; null = mặc định theo ngôn ngữ
     const [tab, setTab] = useState('luyen'); // 'luyen' | 'lichsu'
     const [dang, setDang] = useState('');
     const [loadingDe, setLoadingDe] = useState(false);
     const [grading, setGrading] = useState(false);
+
+    // Ngôn ngữ đề lấy từ hồ sơ ở server (`vocabLang`), nên ở đây chỉ chia hai nhánh en/zh.
+    const ngonNgu = getVocabLang() === 'zh' ? 'zh' : 'en';
+    const kieuList = kieuChoNgonNgu(ngonNgu);
+    const kieuDangChon = kieu && kieuList.some((k) => k.key === kieu) ? kieu : KIEU_MAC_DINH[ngonNgu];
+    const kieuMoTa = KIEU_CHAM.find((k) => k.key === kieuDangChon) || {};
+    // Đổi kiểu chấm thì danh sách loại bài đổi theo; loại đã chọn không còn trong
+    // danh sách mới thì quay về "Ngẫu nhiên" thay vì gửi một khoá server không nhận.
+    const dsDang = [NGAU_NHIEN, ...(DANG_THEO_KIEU[kieuDangChon] || [])];
+    const dangDangChon = dsDang.some((d) => d.key === dang) ? dang : '';
 
     // `onBought` của popup nạp năng lượng gọi lại chính `handleNop` — không đưa
     // được `handleNop` vào deps của chính nó.
@@ -70,7 +112,7 @@ export default function ReadingScreen({ active }) {
         if (loadingDe) return;
         setLoadingDe(true);
         try {
-            const d = await ReadingAPI.passage({ words: layTuGoiY(), level, dang });
+            const d = await ReadingAPI.passage({ words: layTuGoiY(), level, dang: dangDangChon, rubric: kieuDangChon });
             if (!d?.questions?.length) throw new Error('Server trả về bài đọc không hợp lệ');
             setDe(d);
             // Bài mới thì xoá lựa chọn cũ — giữ lại là các câu đã tick sẵn đáp
@@ -82,7 +124,7 @@ export default function ReadingScreen({ active }) {
         } finally {
             setLoadingDe(false);
         }
-    }, [loadingDe, level, dang]);
+    }, [loadingDe, level, dangDangChon, kieuDangChon]);
 
     const handleNop = useCallback(async () => {
         if (grading || !de) return;
@@ -146,16 +188,15 @@ export default function ReadingScreen({ active }) {
             </div>
 
             {tab === 'lichsu' ? <LichSuMode mode="doc" /> : !de ? (
-                <div className="essay-intro">
+                <div className="essay-intro essay-intro--wide">
                     <DanhSachVai
                         source={TopicSelector.currentTopic?.source || ''}
                         part={PartSelector.selectedPart || ''}
                         lang={getVocabLang()}
                     />
                     <p>
-                        Đọc một văn bản công sở (email, thông báo, quảng cáo…) rồi trả lời
-                        câu hỏi — <strong>đúng dạng TOEIC Part 7</strong>, phần chiếm tỉ
-                        trọng lớn nhất của bài Reading.
+                        Đọc một văn bản {ngonNgu === 'zh' ? 'tiếng Trung' : 'tiếng Anh'} theo
+                        văn phong <strong>{kieuMoTa.label}</strong>, rồi trả lời câu hỏi.
                     </p>
                     <p className="tr-intro-note">
                         <i className="fas fa-circle-info"></i>{' '}
@@ -163,15 +204,16 @@ export default function ReadingScreen({ active }) {
                         thích kèm dẫn chứng trong bài.
                     </p>
 
-                    {/* Hai cột như Hội thoại: trái = loại bài, phải = độ khó. */}
+                    {/* Hai cột như Hội thoại: trái = loại bài, phải = kiểu chấm + độ khó.
+                        Khối phải dùng CHUNG component với Hội thoại, Viết luận và Dịch. */}
                     <div className="ai-setup">
                         <div className="ai-setup-col">
                             <div className="ai-setup-title">Loại bài</div>
                             <div className="ai-setup-list rd-types">
-                                {DANG.map((d) => (
+                                {dsDang.map((d) => (
                                     <button
                                         key={d.key}
-                                        className={`tr-level${dang === d.key ? ' is-on' : ''}`}
+                                        className={`tr-level${dangDangChon === d.key ? ' is-on' : ''}`}
                                         onClick={() => setDang(d.key)}
                                     >
                                         <strong>{d.label}</strong>
@@ -181,19 +223,14 @@ export default function ReadingScreen({ active }) {
                         </div>
 
                         <div className="ai-setup-col">
-                            <div className="ai-setup-title">Độ khó</div>
-                            <div className="ai-setup-list tr-levels">
-                                {MUC_KHO.map((m) => (
-                                    <button
-                                        key={m.key}
-                                        className={`tr-level${level === m.key ? ' is-on' : ''}`}
-                                        onClick={() => setLevel(m.key)}
-                                    >
-                                        <strong>{m.label}</strong>
-                                        <em>{m.desc}</em>
-                                    </button>
-                                ))}
-                            </div>
+                            <KieuChamDoKho
+                                kieuList={kieuList}
+                                kieuDangChon={kieuDangChon}
+                                onKieu={setKieu}
+                                doKhoList={doKhoChoKieu(kieuDangChon)}
+                                doKhoDangChon={level}
+                                onDoKho={setLevel}
+                            />
                         </div>
                     </div>
 

@@ -36,6 +36,7 @@ describe('ba màn dùng chung component', () => {
         'Hội thoại': doc('components', 'conversation', 'ConversationScreen.jsx'),
         'Luyện viết': doc('components', 'essay', 'EssayScreen.jsx'),
         'Dịch đoạn văn': doc('components', 'translation', 'TranslationScreen.jsx'),
+        'Đọc hiểu': doc('components', 'reading', 'ReadingScreen.jsx'),
     };
     for (const [ten, src] of Object.entries(screens)) {
         test(`${ten} dùng KieuChamDoKho`, () => {
@@ -43,6 +44,29 @@ describe('ba màn dùng chung component', () => {
             expect(src).toMatch(/<KieuChamDoKho/);
         });
     }
+
+    test('Đọc hiểu gửi kiểu chấm lên server và không còn chữ cứng "đúng dạng TOEIC Part 7"', () => {
+        const src = screens['Đọc hiểu'];
+        expect(src).toMatch(/ReadingAPI\.passage\(\{[^}]*rubric: kieuDangChon/);
+        expect(src).toMatch(/\[loadingDe, level, dangDangChon, kieuDangChon\]/);
+        expect(src).not.toMatch(/đúng dạng TOEIC Part 7/);
+    });
+
+    test('Đọc hiểu: loại bài đổi theo kiểu chấm, khoá khớp server', () => {
+        const src = screens['Đọc hiểu'];
+        const server = readFileSync(
+            join(__dirname, '..', '..', '..', '..', 'backend', 'services', 'readingGrader.js'), 'utf8');
+        const khoiCua = (s, kieu) => {
+            const i = s.indexOf(`${kieu}: [`, s.indexOf('DANG_THEO_KIEU = {'));
+            return [...s.slice(i, s.indexOf('],', i)).matchAll(/key: '([^']+)'/g)].map((m) => m[1]);
+        };
+        for (const kieu of ['toeic', 'ielts', 'giaotiep', 'hsk']) {
+            const fe = khoiCua(src, kieu);
+            expect(fe.length).toBeGreaterThan(3);
+            expect(fe).toEqual(khoiCua(server, kieu));
+        }
+        expect(src).toMatch(/DANG_THEO_KIEU\[kieuDangChon\]/);
+    });
 
     test('không còn khối "Kiểu chấm" viết tay trong màn Hội thoại', () => {
         const src = screens['Hội thoại'];

@@ -89,6 +89,7 @@ exports.passage = async (req, res, next) => {
 
         const ai = await generateReading({
             tuVung: words, userId: req.user.id, level, dang: req.body.dang, lang,
+            rubric: req.body.rubric,
         });
         if (!ai.success) {
             logger.error('Reading passage: AI failed', ai.error);
@@ -114,6 +115,7 @@ exports.passage = async (req, res, next) => {
                 passage: ai.passage,
                 dang: ai.dang,
                 dangVi: ai.dangVi,
+                rubric: ai.rubric,
                 level: ai.level,
                 lang: ai.lang,
                 words: ai.words,
