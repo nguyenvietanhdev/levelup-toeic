@@ -77,15 +77,30 @@ const MUC_KHO_ZH = [
     { key: 'hard', label: 'HSK5–6', desc: 'Từ ít gặp, câu phức' },
 ];
 
+/**
+ * Kiểu chấm bài viết, khớp `RUBRICS_BY_LANG` ở server (services/essayGrader.js).
+ * Tiếng Anh: Giao tiếp, TOEIC, IELTS. Tiếng Trung: Giao tiếp, HSK.
+ */
+const KIEU_CHAM = [
+    { key: 'giaotiep', label: 'Giao tiếp', desc: 'Rõ ý, tự nhiên, đúng ngữ cảnh', langs: ['en', 'zh'] },
+    { key: 'toeic', label: 'TOEIC', desc: 'Ngữ pháp, mạch lạc, vốn từ', langs: ['en'] },
+    { key: 'ielts', label: 'IELTS', desc: 'Mạch lạc, vốn từ, ngữ pháp', langs: ['en'] },
+    { key: 'hsk', label: 'HSK', desc: 'Nội dung, bố cục, chữ Hán, ngữ pháp', langs: ['zh'] },
+];
+
+/** Kiểu chấm mặc định của mỗi ngôn ngữ (khớp server). */
+const KIEU_MAC_DINH = { en: 'ielts', zh: 'hsk' };
+
 export default function EssayScreen({ active }) {
     const { showScreen, syncFromState } = useGame();
 
-    const [prompt, setPrompt] = useState(null);   // { prompt, type, topicHint }
+    const [prompt, setPrompt] = useState(null);   // { prompt, type, topicHint, rubric }
     const [essay, setEssay] = useState('');
     const [result, setResult] = useState(null);
     const [loadingPrompt, setLoadingPrompt] = useState(false);
     const [grading, setGrading] = useState(false);
     const [level, setLevel] = useState('medium');
+    const [kieuChon, setKieuChon] = useState(null); // người học bấm chọn; null = mặc định theo ngôn ngữ
     const [tab, setTab] = useState('luyen'); // 'luyen' | 'lichsu'
 
     // `onBought` của popup nạp năng lượng gọi lại chính `handleGrade` — không
@@ -101,6 +116,12 @@ export default function EssayScreen({ active }) {
     const minUnits = Number(prompt?.minWords) || (lang === 'zh' ? MIN_ZH : MIN_EN);
     const unit = lang === 'zh' ? 'chữ' : 'từ';
 
+    // Kiểu chấm đang áp dụng: người học chọn (nếu hợp ngôn ngữ), không thì mặc định.
+    const kieuHopLe = KIEU_CHAM.filter((k) => k.langs.includes(lang)).map((k) => k.key);
+    const kieuDangChon = kieuChon && kieuHopLe.includes(kieuChon) ? kieuChon : KIEU_MAC_DINH[lang];
+    // Kiểu chấm của ĐỀ ĐANG LÀM (server trả về khi sinh đề) — bài chấm phải dùng đúng kiểu này.
+    const kieuCuaDe = prompt?.rubric || kieuDangChon;
+
     const words = countUnits(essay, lang);
     // Ngôn ngữ của BÀI ĐÃ CHẤM — không nhất thiết trùng đề hiện tại (người dùng
     // có thể đổi ngôn ngữ học sau khi chấm xong).
@@ -111,7 +132,7 @@ export default function EssayScreen({ active }) {
         if (loadingPrompt) return;
         setLoadingPrompt(true);
         try {
-            const d = await EssayAPI.prompt({ level });
+            const d = await EssayAPI.prompt({ level, rubric: kieuDangChon });
             if (!d?.prompt) throw new Error('Server trả về đề không hợp lệ');
             setPrompt(d);
             // Đề mới thì bỏ bài cũ — giữ lại là người dùng nộp nhầm bài của đề
@@ -123,7 +144,7 @@ export default function EssayScreen({ active }) {
         } finally {
             setLoadingPrompt(false);
         }
-    }, [loadingPrompt, level]);
+    }, [loadingPrompt, level, kieuDangChon]);
 
     const handleGrade = useCallback(async () => {
         if (grading || !prompt) return;
@@ -141,6 +162,7 @@ export default function EssayScreen({ active }) {
                 essay,
                 promptType: prompt.type || '',
                 topicHint: prompt.topicHint || '',
+                rubric: kieuCuaDe,
             });
             if (!d?.scores) throw new Error('Server trả về kết quả không hợp lệ');
             setResult(d);
@@ -167,7 +189,7 @@ export default function EssayScreen({ active }) {
         } finally {
             setGrading(false);
         }
-    }, [grading, prompt, essay, enough, words, minUnits, unit, syncFromState]);
+    }, [grading, prompt, essay, enough, words, minUnits, unit, syncFromState, kieuCuaDe]);
 
     gradeRef.current = handleGrade;
 
@@ -201,8 +223,9 @@ export default function EssayScreen({ active }) {
                         ) : (
                             <>
                                 Viết một đoạn văn ngắn và được chấm theo{' '}
-                                <strong>4 tiêu chí IELTS</strong>: trả lời đúng đề, mạch lạc,
-                                vốn từ và ngữ pháp. Đề bài bám theo bộ từ bạn đang học.
+                                <strong>{KIEU_CHAM.find((k) => k.key === kieuDangChon)?.label || 'IELTS'}</strong>
+                                {' '}({KIEU_CHAM.find((k) => k.key === kieuDangChon)?.desc || ''}).
+                                Đề bài bám theo bộ từ bạn đang học.
                             </>
                         )}
                     </p>
@@ -219,16 +242,19 @@ export default function EssayScreen({ active }) {
                             />
                         </div>
                         <div className="ai-setup-col" style={{ gridColumn: 2 }}>
-                            {/* Kiểu chấm của màn này cố định (IELTS, hoặc HSK với tiếng Trung),
-                                nên hiện như một chip đang chọn, giống cột phải của Hội thoại. */}
+                            {/* Kiểu chấm: các chip giống Hội thoại, lọc theo ngôn ngữ đang học. */}
                             <div className="ai-setup-title">Kiểu chấm</div>
                             <div className="ai-setup-list tr-levels">
-                                <div className="tr-level is-on">
-                                    <strong>{lang === 'zh' ? 'HSK' : 'IELTS'}</strong>
-                                    <em>{lang === 'zh'
-                                        ? 'Nội dung, bố cục, chữ Hán và ngữ pháp'
-                                        : 'Mạch lạc, vốn từ, ngữ pháp'}</em>
-                                </div>
+                                {KIEU_CHAM.filter((k) => k.langs.includes(lang)).map((k) => (
+                                    <button
+                                        key={k.key}
+                                        className={`tr-level${kieuDangChon === k.key ? ' is-on' : ''}`}
+                                        onClick={() => setKieuChon(k.key)}
+                                    >
+                                        <strong>{k.label}</strong>
+                                        <em>{k.desc}</em>
+                                    </button>
+                                ))}
                             </div>
                             <div className="ai-setup-title">Độ khó</div>
                             <div className="ai-setup-list tr-levels">
@@ -328,7 +354,7 @@ export default function EssayScreen({ active }) {
                             </p>
 
                             <div className="essay-criteria">
-                                {criteriaFor(resultLang).map(c => (
+                                {(result.criteria || criteriaFor(resultLang)).map(c => (
                                     <div key={c.key} className="essay-criterion">
                                         <div className="essay-criterion-head">
                                             <strong>{result.scores[c.key]}</strong>

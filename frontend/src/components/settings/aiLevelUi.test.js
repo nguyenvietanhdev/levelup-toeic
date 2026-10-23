@@ -57,13 +57,13 @@ describe('mức được GỬI lên server', () => {
     });
 
     test('Viết luận gửi khi xin đề', () => {
-        expect(MAN['Viết luận']).toMatch(/EssayAPI\.prompt\(\{ level \}\)/);
+        expect(MAN['Viết luận']).toMatch(/EssayAPI\.prompt\(\{ level, rubric: kieuDangChon \}\)/);
     });
 
     test('mức nằm trong deps — đổi mức là lần sau dùng mức mới', () => {
         // Thiếu deps thì `useCallback` giữ giá trị cũ: bấm "Khó" rồi bấm "Bắt
         // đầu" vẫn ra bài "Vừa", và không có gì báo.
         expect(MAN['Hội thoại']).toMatch(/\}, \[starting[^\]]*level[^\]]*\]\);/);
-        expect(MAN['Viết luận']).toMatch(/\}, \[loadingPrompt, level\]\);/);
+        expect(MAN['Viết luận']).toMatch(/\}, \[loadingPrompt, level, kieuDangChon\]\);/);
     });
 });
