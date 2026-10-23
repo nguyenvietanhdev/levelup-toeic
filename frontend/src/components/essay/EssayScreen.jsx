@@ -191,11 +191,6 @@ export default function EssayScreen({ active }) {
 
             {tab === 'lichsu' ? <LichSuMode mode="viet" /> : !prompt ? (
                 <div className="essay-intro">
-                    <DanhSachVai
-                        source={TopicSelector.currentTopic?.source || ''}
-                        part={PartSelector.selectedPart || ''}
-                        lang={getVocabLang()}
-                    />
                     <p>
                         {lang === 'zh' ? (
                             <>
@@ -211,20 +206,33 @@ export default function EssayScreen({ active }) {
                             </>
                         )}
                     </p>
-                    {/* Ba mức dùng CHUNG một bảng với Dịch và Đọc hiểu (server:
-                        `services/aiLevel.js`), nên "Khó" ở đây và "Khó" ở đó là
-                        cùng một trình độ — người học so được giữa các chế độ. */}
-                    <div className="tr-levels">
-                        {(lang === 'zh' ? MUC_KHO_ZH : MUC_KHO).map((m) => (
-                            <button
-                                key={m.key}
-                                className={`tr-level${level === m.key ? ' is-on' : ''}`}
-                                onClick={() => setLevel(m.key)}
-                            >
-                                <strong>{m.label}</strong>
-                                <em>{m.desc}</em>
-                            </button>
-                        ))}
+                    {/* Hai cột như Hội thoại: TRÁI là vai của Part đang học, PHẢI là độ khó.
+                        Ba mức dùng CHUNG một bảng với Dịch và Đọc hiểu (server:
+                        `services/aiLevel.js`), nên "Khó" ở đây và "Khó" ở đó là cùng một trình độ. */}
+                    <div className="ai-setup">
+                        <div className="ai-setup-col">
+                            <div className="ai-setup-title">Vai của Part</div>
+                            <DanhSachVai
+                                source={TopicSelector.currentTopic?.source || ''}
+                                part={PartSelector.selectedPart || ''}
+                                lang={getVocabLang()}
+                            />
+                        </div>
+                        <div className="ai-setup-col" style={{ gridColumn: 2 }}>
+                            <div className="ai-setup-title">Độ khó</div>
+                            <div className="ai-setup-list tr-levels">
+                                {(lang === 'zh' ? MUC_KHO_ZH : MUC_KHO).map((m) => (
+                                    <button
+                                        key={m.key}
+                                        className={`tr-level${level === m.key ? ' is-on' : ''}`}
+                                        onClick={() => setLevel(m.key)}
+                                    >
+                                        <strong>{m.label}</strong>
+                                        <em>{m.desc}</em>
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
                     </div>
 
                     <button className="btn btn-primary" onClick={handleNewPrompt} disabled={loadingPrompt}>
