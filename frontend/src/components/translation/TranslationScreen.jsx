@@ -198,12 +198,7 @@ export default function TranslationScreen({ active }) {
             {tab === 'loi' ? <MistakeLog /> : tab === 'lichsu' ? <LichSuMode mode="dich" /> : (
             <>
             {!de ? (
-                <div className="essay-intro">
-                    <DanhSachVai
-                        source={TopicSelector.currentTopic?.source || ''}
-                        part={PartSelector.selectedPart || ''}
-                        lang={getVocabLang()}
-                    />
+                <div className="essay-intro essay-intro--wide">
                     <p>
                         Đọc một đoạn <strong>tiếng Việt</strong> rồi viết lại bằng{' '}
                         <strong>{tenNgonNgu}</strong>. Bài được chấm theo{' '}
@@ -216,17 +211,32 @@ export default function TranslationScreen({ active }) {
                         vốn từ vừa luyện.
                     </p>
 
-                    <div className="tr-levels">
-                        {MUC_KHO.map((m) => (
-                            <button
-                                key={m.key}
-                                className={`tr-level${level === m.key ? ' is-on' : ''}`}
-                                onClick={() => setLevel(m.key)}
-                            >
-                                <strong>{m.label}</strong>
-                                <em>{m.desc}</em>
-                            </button>
-                        ))}
+                    {/* Hai cột như Luyện viết và Hội thoại: TRÁI là vai của Part đang học,
+                        PHẢI là độ khó. */}
+                    <div className="ai-setup">
+                        <div className="ai-setup-col">
+                            <div className="ai-setup-title">Vai của Part</div>
+                            <DanhSachVai
+                                source={TopicSelector.currentTopic?.source || ''}
+                                part={PartSelector.selectedPart || ''}
+                                lang={getVocabLang()}
+                            />
+                        </div>
+                        <div className="ai-setup-col" style={{ gridColumn: 2 }}>
+                            <div className="ai-setup-title">Độ khó</div>
+                            <div className="ai-setup-list tr-levels">
+                                {MUC_KHO.map((m) => (
+                                    <button
+                                        key={m.key}
+                                        className={`tr-level${level === m.key ? ' is-on' : ''}`}
+                                        onClick={() => setLevel(m.key)}
+                                    >
+                                        <strong>{m.label}</strong>
+                                        <em>{m.desc}</em>
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
                     </div>
 
                     <button className="btn btn-primary" onClick={handleDeMoi} disabled={loadingDe}>
