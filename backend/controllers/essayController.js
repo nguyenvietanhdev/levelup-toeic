@@ -2,7 +2,7 @@ const Essay = require('../models/Essay');
 const { chuanHoaMuc } = require('../services/aiLevel');
 const UserStats = require('../models/UserStats');
 const UserProfile = require('../models/UserProfile');
-const { generatePrompt, gradeEssay, countUnits, limitsFor } =
+const { generatePrompt, gradeEssay, countUnits, limitsFor, chuanHoaRubric } =
     require('../services/essayGrader');
 const { awardXp } = require('../utils/userStateHelper');
 const { isVipActive } = require('../utils/energyCosts');
@@ -71,7 +71,9 @@ exports.prompt = async (req, res, next) => {
         const { min } = limitsFor(lang);
 
         const level = chuanHoaMuc(req.body.level);
-        const ai = await generatePrompt({ topicHint, userId: req.user.id, lang, level });
+        // Kiểu chấm là lựa chọn của người học; server chỉ nhận mã hợp lệ cho ngôn ngữ đó.
+        const rubric = chuanHoaRubric(req.body.rubric, lang);
+        const ai = await generatePrompt({ topicHint, userId: req.user.id, lang, level, rubric });
         if (!ai.success) {
             logger.error('Essay prompt: AI failed', ai.error);
             return res.status(503).json({
@@ -84,7 +86,7 @@ exports.prompt = async (req, res, next) => {
             success: true,
             // `minWords` giữ nguyên TÊN cho tương thích, nhưng với tiếng Trung
             // nó là số CHỮ HÁN — `lang` cho client biết đơn vị nào để hiển thị.
-            data: { prompt: ai.prompt, type: ai.type, topicHint, lang, minWords: min, level },
+            data: { prompt: ai.prompt, type: ai.type, topicHint, lang, minWords: min, level, rubric },
         });
     } catch (error) {
         next(error);
@@ -116,6 +118,7 @@ exports.grade = async (req, res, next) => {
         const settingsOnly = await UserProfile.findOne({ userId: req.user.id })
             .select('settings').lean();
         const lang = settingsOnly?.settings?.vocabLang === 'zh' ? 'zh' : 'en';
+        const rubric = chuanHoaRubric(req.body.rubric, lang);
 
         // Đơn vị đếm khác nhau: tiếng Trung đếm CHỮ HÁN vì không có khoảng trắng
         // giữa các từ — đếm theo từ thì cả bài luận ra đúng 1 và người học không
@@ -159,7 +162,7 @@ exports.grade = async (req, res, next) => {
             });
         }
 
-        const ai = await gradeEssay({ prompt, essay, userId: req.user.id, lang });
+        const ai = await gradeEssay({ prompt, essay, userId: req.user.id, lang, rubric });
         if (!ai.success) {
             // HOÀN năng lượng — người dùng viết 250 từ mà không được chấm lại
             // còn mất năng lượng là lỗi tệ nhất ở đây.
@@ -200,6 +203,7 @@ exports.grade = async (req, res, next) => {
             essay,
             wordCount,
             lang,
+            rubric: r.rubric,
             scores: r.scores,
             overall: r.overall,
             comments: r.comments,
@@ -218,6 +222,8 @@ exports.grade = async (req, res, next) => {
             data: {
                 id: doc._id,
                 wordCount,
+                rubric: r.rubric,
+                criteria: r.criteria,
                 scores: r.scores,
                 overall: r.overall,
                 comments: r.comments,

@@ -50,9 +50,60 @@ const CRITERIA_ZH = [
     { key: 'grammar', label: '语法', vi: 'Ngữ pháp' },
 ];
 
-/** Chọn bộ tiêu chí theo ngôn ngữ. */
-function criteriaFor(lang) {
+/**
+ * Bộ chấm GIAO TIẾP cho bài viết: bài viết thực tế (email, tin nhắn, đoạn văn đời
+ * thường), không chấm theo chuẩn học thuật. Thang 0–9 như các bộ khác.
+ */
+const RUBRIC_GIAOTIEP = [
+    { key: 'ro_y', label: 'Clarity of ideas', vi: 'Rõ ý' },
+    { key: 'tu_nhien', label: 'Naturalness', vi: 'Tự nhiên' },
+    { key: 'dung_ngu_canh', label: 'Appropriateness', vi: 'Đúng ngữ cảnh' },
+    { key: 'ngu_phap', label: 'Grammar', vi: 'Ngữ pháp' },
+];
+
+/** Bộ chấm TOEIC cho bài viết (Writing): ngữ pháp, mạch lạc, từ vựng, bám đề. */
+const RUBRIC_TOEIC = [
+    { key: 'ngu_phap', label: 'Grammar', vi: 'Ngữ pháp' },
+    { key: 'mach_lac', label: 'Organization', vi: 'Mạch lạc' },
+    { key: 'von_tu', label: 'Vocabulary', vi: 'Vốn từ' },
+    { key: 'lien_quan', label: 'Relevance', vi: 'Liên quan đề' },
+];
+
+/**
+ * Kiểu chấm áp dụng cho từng ngôn ngữ bài viết. Tiếng Anh: Giao tiếp, TOEIC, IELTS.
+ * Tiếng Trung: Giao tiếp, HSK. Khớp với cách Hội thoại chọn bộ chấm.
+ */
+const RUBRICS_BY_LANG = {
+    en: ['giaotiep', 'toeic', 'ielts'],
+    zh: ['giaotiep', 'hsk'],
+};
+
+/** Kiểu chấm mặc định khi không chọn gì: IELTS cho tiếng Anh, HSK cho tiếng Trung. */
+const DEFAULT_RUBRIC = { en: 'ielts', zh: 'hsk' };
+
+/** Kiểu chấm hợp lệ cho ngôn ngữ đó, hoặc mặc định. Chỉ nhận chuỗi trong danh sách. */
+function chuanHoaRubric(rubric, lang = 'en') {
+    const ngonNgu = lang === 'zh' ? 'zh' : 'en';
+    const cho = RUBRICS_BY_LANG[ngonNgu];
+    if (typeof rubric === 'string' && cho.includes(rubric)) return rubric;
+    return DEFAULT_RUBRIC[ngonNgu];
+}
+
+/**
+ * Các tiêu chí của một kiểu chấm. Không truyền kiểu chấm thì lấy bộ mặc định của
+ * ngôn ngữ (giữ hành vi cũ cho bài đã chấm trước khi có kiểu chấm).
+ */
+function criteriaFor(lang, rubric) {
+    const rb = chuanHoaRubric(rubric, lang);
+    if (rb === 'giaotiep') return RUBRIC_GIAOTIEP;
+    if (rb === 'toeic') return RUBRIC_TOEIC;
+    if (rb === 'hsk') return CRITERIA_ZH;
     return lang === 'zh' ? CRITERIA_ZH : CRITERIA;
+}
+
+/** Bộ chấm dùng khung chung (không phải IELTS/HSK có sẵn): giao tiếp và TOEIC. */
+function laBoChungKhung(rubric) {
+    return rubric === 'giaotiep' || rubric === 'toeic';
 }
 
 /** Độ dài tối thiểu của Task 2 theo quy định thi thật. */
@@ -155,8 +206,8 @@ function clampBand(n) {
  * `characters`): lấy nhầm bộ là một tiêu chí ra `undefined` → clamp thành 0 →
  * band tổng tụt xuống 3/4 giá trị thật.
  */
-function overallBand(scores = {}, lang = 'en') {
-    const vals = criteriaFor(lang).map((c) => clampBand(scores[c.key]));
+function overallBand(scores = {}, lang = 'en', rubric) {
+    const vals = criteriaFor(lang, rubric).map((c) => clampBand(scores[c.key]));
     const avg = vals.reduce((a, b) => a + b, 0) / vals.length;
     return clampBand(avg);
 }
@@ -179,8 +230,10 @@ function capTuVungDeBai(level) {
     return `Use vocabulary and grammar at CEFR level ${CEFR_DE_BAI[k]}; keep every word within that level.`;
 }
 
-async function generatePrompt({ topicHint = '', userId = null, lang = 'en', level = 'medium' } = {}) {
+async function generatePrompt({ topicHint = '', userId = null, lang = 'en', level = 'medium', rubric } = {}) {
     const zh = lang === 'zh';
+    const rb = chuanHoaRubric(rubric, lang);
+    const thucTe = laBoChungKhung(rb);
 
     const system = zh
         ? [
@@ -195,22 +248,37 @@ async function generatePrompt({ topicHint = '', userId = null, lang = 'en', leve
             `writing task, asking the learner to write about ${MIN_CHARS_ZH} characters.`,
             'Use vocabulary and grammar appropriate for an intermediate learner.',
         ].join('\n')
-        : [
-            'You write IELTS Writing Task 2 questions.',
-            'Return ONLY valid JSON, no markdown fences, no commentary.',
-            'Shape: { "prompt": "...", "type": "opinion|discussion|problem-solution|advantages-disadvantages" }',
-            capTuVungDeBai(level),
-            'The prompt must be ONE question of 2-3 sentences, in the exact',
-            'style of a real IELTS Task 2 question.',
-        ].join('\n');
+        : thucTe
+            ? [
+                // Giao tiếp / TOEIC: đề viết thực tế (email, tin nhắn, ghi chú công việc),
+                // không phải câu hỏi luận học thuật.
+                'You write one practical English writing task for a learner.',
+                'Return ONLY valid JSON, no markdown fences, no commentary.',
+                'Shape: { "prompt": "...", "type": "" }',
+                capTuVungDeBai(level),
+                'The task must be ONE instruction of 2-3 sentences, realistic for everyday life or the office',
+                '(for example: write a short email, a message, or a note).',
+            ].join('\n')
+            : [
+                'You write IELTS Writing Task 2 questions.',
+                'Return ONLY valid JSON, no markdown fences, no commentary.',
+                'Shape: { "prompt": "...", "type": "opinion|discussion|problem-solution|advantages-disadvantages" }',
+                capTuVungDeBai(level),
+                'The prompt must be ONE question of 2-3 sentences, in the exact',
+                'style of a real IELTS Task 2 question.',
+            ].join('\n');
 
     const user = zh
         ? (topicHint
             ? `Write one HSK writing task related to: ${topicHint}`
             : 'Write one HSK writing task on a common everyday topic.')
-        : (topicHint
-            ? `Write one Task 2 question related to: ${topicHint}`
-            : 'Write one Task 2 question on a common IELTS topic.');
+        : thucTe
+            ? (topicHint
+                ? `Write one practical writing task related to: ${topicHint}`
+                : 'Write one practical writing task on a common everyday or office situation.')
+            : (topicHint
+                ? `Write one Task 2 question related to: ${topicHint}`
+                : 'Write one Task 2 question on a common IELTS topic.');
 
     const messages = [
         { role: 'system', content: system },
@@ -239,10 +307,42 @@ async function generatePrompt({ topicHint = '', userId = null, lang = 'en', leve
  * lần sau 7.5 thì điểm mất hết ý nghĩa, và người học không biết mình có tiến bộ
  * hay chỉ là AI đổi ý.
  */
-async function gradeEssay({ prompt = '', essay = '', userId = null, lang = 'en' } = {}) {
-    const zh = lang === 'zh';
+/**
+ * Khung chấm chung cho bộ không có sẵn chỉ dẫn riêng (Giao tiếp, TOEIC): liệt kê
+ * đúng các tiêu chí của bộ đó và yêu cầu JSON với đúng các khoá ấy.
+ */
+function khungChamChung(crit, zh, rb) {
+    const ngonNguBai = zh ? 'CHINESE' : 'ENGLISH';
+    const tenBo = rb === 'toeic' ? 'TOEIC Writing' : 'everyday communication';
+    return [
+        `You are an experienced ${zh ? 'Chinese' : 'English'} writing examiner judging ${tenBo}.`,
+        'Assess the piece against these criteria (key — meaning):',
+        ...crit.map((c) => `  ${c.key} — ${c.vi}`),
+        'Return ONLY valid JSON, no markdown fences, no commentary.',
+        'Shape:',
+        '{',
+        `  "scores": { ${crit.map((c) => `"${c.key}": 0-9`).join(', ')} },`,
+        `  "comments": { ${crit.map((c) => `"${c.key}": "..."`).join(', ')} },`,
+        '  "errors": [ { "quote": "text from the piece", "issue": "...", "fix": "..." } ],',
+        '  "strengths": ["..."],',
+        `  "improved": "a rewritten version of ONE weak paragraph, in ${ngonNguBai}"`,
+        '}',
+        'Scores are whole numbers from 0 to 9.',
+        'Write every comment, issue, fix and strength in VIETNAMESE.',
+        `Keep "quote" and "improved" in ${ngonNguBai} (they are the learner's text).`,
+        'Be specific: quote the actual wording, never say "some grammar errors".',
+        chiThiPhanLoai(),
+    ].join('\n');
+}
 
-    const system = zh
+async function gradeEssay({ prompt = '', essay = '', userId = null, lang = 'en', rubric } = {}) {
+    const zh = lang === 'zh';
+    const rb = chuanHoaRubric(rubric, lang);
+    const crit = criteriaFor(lang, rb);
+
+    const system = laBoChungKhung(rb)
+        ? khungChamChung(crit, zh, rb)
+        : zh
         ? [
             'You are an experienced HSK writing (书写) examiner.',
             'Assess the composition against four criteria:',
@@ -319,14 +419,17 @@ async function gradeEssay({ prompt = '', essay = '', userId = null, lang = 'en' 
     // Lặp theo bộ tiêu chí ĐÚNG ngôn ngữ: bài tiếng Trung có `characters` chứ
     // không có `lexical`, lấy nhầm bộ là mọi điểm ra 0.
     const scores = {};
-    for (const c of criteriaFor(lang)) scores[c.key] = clampBand(parsed.scores[c.key]);
+    for (const c of crit) scores[c.key] = clampBand(parsed.scores[c.key]);
 
     return {
         success: true,
         result: {
             lang,
+            rubric: rb,
+            // Danh sách tiêu chí của kiểu chấm này để giao diện hiển thị đúng nhãn.
+            criteria: crit.map(({ key, label, vi }) => ({ key, label, vi })),
             scores,
-            overall: overallBand(scores, lang),
+            overall: overallBand(scores, lang, rb),
             comments: parsed.comments || {},
             // Chuẩn hoá nhãn NGAY tại đây: `Article`/`articles`/`ARTICLE` là ba
             // chuỗi khác nhau, để nguyên thì thống kê tách thành ba dòng.
@@ -349,6 +452,11 @@ module.exports = {
     countChars,
     countUnits,
     criteriaFor,
+    chuanHoaRubric,
+    RUBRICS_BY_LANG,
+    DEFAULT_RUBRIC,
+    RUBRIC_GIAOTIEP,
+    RUBRIC_TOEIC,
     limitsFor,
     CRITERIA,
     CRITERIA_ZH,

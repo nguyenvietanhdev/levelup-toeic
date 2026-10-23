@@ -43,17 +43,12 @@ const essaySchema = new mongoose.Schema(
          * mình yếu ở đâu. Chỉ có "6.5" thì không biết nên luyện từ vựng hay
          * ngữ pháp.
          */
-        scores: {
-            taskResponse: { type: Number, default: 0 },
-            coherence: { type: Number, default: 0 },
-            // `lexical` cho IELTS, `characters` cho HSK — chỉ một trong hai được
-            // dùng tuỳ `lang`. Khai CẢ HAI vì Mongoose ở chế độ `strict` XOÁ ÂM
-            // THẦM mọi trường không khai: thiếu `characters` thì bài tiếng Trung
-            // lưu xong mất sạch điểm tiêu chí đó mà không có lỗi nào báo.
-            lexical: { type: Number, default: 0 },
-            characters: { type: Number, default: 0 },
-            grammar: { type: Number, default: 0 },
-        },
+        // Mixed: mỗi kiểu chấm có bộ khoá riêng (IELTS: taskResponse/lexical/...,
+        // Giao tiếp: ro_y/tu_nhien/..., TOEIC: ngu_phap/mach_lac/...). Khai cứng từng
+        // khoá thì Mongoose strict sẽ XOÁ ÂM THẦM điểm của kiểu chấm không khai.
+        scores: { type: mongoose.Schema.Types.Mixed, default: () => ({}) },
+        // Kiểu chấm đã dùng. Bài cũ không có trường này: suy ra từ `lang` khi đọc.
+        rubric: { type: String, default: '' },
         overall: { type: Number, default: 0, index: true },
 
         // Nhận xét từng tiêu chí (tiếng Việt).

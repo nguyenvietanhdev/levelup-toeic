@@ -156,9 +156,9 @@ describe('chỉ thị phân loại thật sự có trong prompt chấm bài', ()
     });
 
     test('bộ chấm LUẬN có gọi, cho CẢ HAI ngôn ngữ', () => {
-        // Hai prompt riêng (tiếng Anh và tiếng Trung); chèn một chỗ thì nguồn
-        // kia im lặng không gán nhãn.
-        expect(es.split('chiThiPhanLoai()').length - 1).toBe(2);
+        // Hai prompt riêng (tiếng Anh IELTS/HSK và tiếng Trung) cộng khung chấm chung
+        // cho Giao tiếp/TOEIC. Chèn thiếu một chỗ thì nguồn đó im lặng không gán nhãn.
+        expect(es.split('chiThiPhanLoai()').length - 1).toBe(3);
     });
 
     test('cả hai bộ chấm đều chuẩn hoá nhãn trước khi lưu', () => {
