@@ -9811,16 +9811,19 @@ mark {
     height: calc(1.5em * 2);
     line-height: 1.5;
 }
+/* Sửa và Xoá nằm NGANG một dòng bên phải thẻ — thẻ thấp hơn, đỡ phải cuộn. */
 .ai-role-card-actions {
     display: flex;
-    flex-direction: column;
+    flex-direction: row;
+    align-items: center;
     gap: 6px;
-    flex: 0 0 96px;
-    width: 96px;
+    flex: 0 0 auto;
+    white-space: nowrap;
 }
 .ai-role-card-actions .btn {
-    width: 100%;
-    justify-content: center;
+    width: auto;
+    padding-left: 12px;
+    padding-right: 12px;
 }
 .ai-role-note {
     font-size: 11px;
