@@ -32,8 +32,13 @@ const MENU_GROUPS = [
         ],
     },
     // Các chế độ AI gọi AI có phí và tốn năng lượng, khác hẳn những chế độ bấm-là-chơi.
-    // Gom theo KỸ NĂNG (Nói, Đọc, Viết) để người học thấy mình đang luyện kỹ năng nào.
-    // Chưa có chế độ Nghe với AI: sẽ thêm nhóm "Nghe" khi có.
+    // Gom theo KỸ NĂNG (Nghe, Nói, Đọc, Viết) để người học thấy mình đang luyện kỹ năng nào.
+    {
+        title: 'Nghe với AI',
+        items: [
+            { label: 'Nghe và chép lại', icon: 'fa-headphones', screen: 'listening-screen' },
+        ],
+    },
     {
         title: 'Nói với AI',
         items: [
