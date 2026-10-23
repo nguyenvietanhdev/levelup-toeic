@@ -219,6 +219,17 @@ export default function EssayScreen({ active }) {
                             />
                         </div>
                         <div className="ai-setup-col" style={{ gridColumn: 2 }}>
+                            {/* Kiểu chấm của màn này cố định (IELTS, hoặc HSK với tiếng Trung),
+                                nên hiện như một chip đang chọn, giống cột phải của Hội thoại. */}
+                            <div className="ai-setup-title">Kiểu chấm</div>
+                            <div className="ai-setup-list tr-levels">
+                                <div className="tr-level is-on">
+                                    <strong>{lang === 'zh' ? 'HSK' : 'IELTS'}</strong>
+                                    <em>{lang === 'zh'
+                                        ? 'Nội dung, bố cục, chữ Hán và ngữ pháp'
+                                        : 'Mạch lạc, vốn từ, ngữ pháp'}</em>
+                                </div>
+                            </div>
                             <div className="ai-setup-title">Độ khó</div>
                             <div className="ai-setup-list tr-levels">
                                 {(lang === 'zh' ? MUC_KHO_ZH : MUC_KHO).map((m) => (
