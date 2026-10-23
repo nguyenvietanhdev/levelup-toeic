@@ -51,4 +51,9 @@ export const ReadingAPI = {
     async history(limit = 20) {
         return unwrap(await Http.get(`/reading/history?limit=${limit}`));
     },
+
+    /** Xem lại một bài đọc: đoạn văn, câu hỏi, đáp án đúng và đáp án đã chọn. */
+    async detail(id) {
+        return unwrap(await Http.get(`/reading/${encodeURIComponent(id)}`));
+    },
 };

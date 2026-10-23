@@ -259,3 +259,29 @@ exports.ENERGY_COST = ENERGY_COST;
 // Xuất cho test — kiểm dọn dẹp mà không phải dựng cả HTTP.
 exports._DE_MO = DE_MO;
 exports._donDe = donDe;
+
+// ── Xem lại một bài đọc trong tab Lịch sử ──────────────────────────────────
+const mongoose = require('mongoose');
+
+/**
+ * @desc    Xem lại đầy đủ một bài đọc đã làm
+ * @route   GET /api/reading/:id
+ *
+ * Lọc theo CẢ `userId`: thiếu nó là ai đoán được id cũng đọc được bài người khác.
+ * KHÔNG khoá theo Level (cùng lý do với `history`): đây là dữ liệu của chính họ.
+ */
+exports.detail = async (req, res, next) => {
+    try {
+        if (!mongoose.isValidObjectId(req.params.id)) {
+            return res.status(400).json({ success: false, message: 'Mã bài không hợp lệ' });
+        }
+        const doc = await ReadingAttempt.findOne({ _id: req.params.id, userId: req.user.id })
+            .select('-userId -__v').lean();
+        if (!doc) {
+            return res.status(404).json({ success: false, message: 'Không tìm thấy bài này' });
+        }
+        res.json({ success: true, data: doc });
+    } catch (error) {
+        next(error);
+    }
+};

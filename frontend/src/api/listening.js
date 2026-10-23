@@ -27,6 +27,16 @@ export const ListeningAPI = {
         return unwrap(await Http.post(`/listening/${encodeURIComponent(id)}/grade`, { typed }));
     },
 
+    /** Các lượt nghe đã chấm, mới nhất trước (không kèm đoạn gốc). */
+    async history(limit = 20) {
+        return unwrap(await Http.get(`/listening/history?limit=${limit}`));
+    },
+
+    /** Xem lại một lượt đã chấm: đoạn gốc, bài đã gõ, từ thiếu / thừa. */
+    async detail(id) {
+        return unwrap(await Http.get(`/listening/${encodeURIComponent(id)}`));
+    },
+
     /** Đường dẫn âm thanh của lượt nghe, với tốc độ đọc. */
     audioUrl(id, rate = 0.9) {
         return `/api/listening/${encodeURIComponent(id)}/audio?rate=${encodeURIComponent(rate)}`;

@@ -15,4 +15,8 @@ router.get('/:id/audio', ctrl.audio);
 router.post('/start', protect, ctrl.start);
 router.post('/:id/grade', protect, ctrl.grade);
 
+// Lịch sử: chỉ lượt đã chấm. `/history` đặt TRƯỚC `/:id`.
+router.get('/history', protect, ctrl.history);
+router.get('/:id', protect, ctrl.detail);
+
 module.exports = router;

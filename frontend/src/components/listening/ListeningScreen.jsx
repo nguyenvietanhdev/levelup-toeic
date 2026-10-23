@@ -5,6 +5,7 @@ import { ListeningAPI } from '@api/listening.js';
 import { TopicSelector } from '@components/vocab/topic/topicSelector.js';
 import { PartSelector } from '@components/vocab/part/partSelector.js';
 import ChonDangBai, { useGoiYDang, dangGui } from '../ai/ChonDangBai.jsx';
+import LichSuMode from '../history/LichSuMode.jsx';
 
 /** Mức khó của đoạn nghe (khoá gửi server; server chọn dải CEFR tương ứng). */
 const MUC = [
@@ -76,6 +77,7 @@ export default function ListeningScreen({ active }) {
     const { showScreen, syncFromState } = useGame();
 
     const [level, setLevel] = useState('medium');
+    const [tab, setTab] = useState('luyen'); // 'luyen' | 'lichsu'
     const [dang, setDang] = useState('');     // '' = ngẫu nhiên
     const [tuChon, setTuChon] = useState(''); // dạng/chủ đề tự nhập, ưu tiên hơn `dang`
     // Dạng bài AI gợi ý hợp bộ từ của Part — nhóm đầu tiên, và "Ngẫu nhiên" bốc trong đó.
@@ -134,7 +136,16 @@ export default function ListeningScreen({ active }) {
                 <h2><i className="fas fa-headphones"></i> Nghe với AI</h2>
             </div>
 
-            {!phien ? (
+            <div className="tr-tabs">
+                <button className={`tr-tab${tab === 'luyen' ? ' is-on' : ''}`} onClick={() => setTab('luyen')}>
+                    <i className="fas fa-headphones"></i> Luyện
+                </button>
+                <button className={`tr-tab${tab === 'lichsu' ? ' is-on' : ''}`} onClick={() => setTab('lichsu')}>
+                    <i className="fas fa-clock-rotate-left"></i> Lịch sử
+                </button>
+            </div>
+
+            {tab === 'lichsu' ? <LichSuMode mode="nghe" /> : !phien ? (
                 <div className="essay-intro essay-intro--wide">
                     <p>
                         Nghe một đoạn ngắn do AI viết từ <strong>bộ từ bạn đang học</strong>, rồi

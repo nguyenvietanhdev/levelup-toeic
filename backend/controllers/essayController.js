@@ -269,3 +269,29 @@ exports.history = async (req, res, next) => {
 
 exports.ENERGY_COST = ENERGY_COST;
 exports.XP_BASE = XP_BASE;
+
+// ── Xem lại một bài viết trong tab Lịch sử ──────────────────────────────────
+const mongoose = require('mongoose');
+
+/**
+ * @desc    Xem lại đầy đủ một bài viết đã làm
+ * @route   GET /api/essay/:id
+ *
+ * Lọc theo CẢ `userId`: thiếu nó là ai đoán được id cũng đọc được bài người khác.
+ * KHÔNG khoá theo Level (cùng lý do với `history`): đây là dữ liệu của chính họ.
+ */
+exports.detail = async (req, res, next) => {
+    try {
+        if (!mongoose.isValidObjectId(req.params.id)) {
+            return res.status(400).json({ success: false, message: 'Mã bài không hợp lệ' });
+        }
+        const doc = await Essay.findOne({ _id: req.params.id, userId: req.user.id })
+            .select('-userId -__v').lean();
+        if (!doc) {
+            return res.status(404).json({ success: false, message: 'Không tìm thấy bài này' });
+        }
+        res.json({ success: true, data: { ...doc, criteria: require('../services/essayGrader').criteriaFor(doc.lang, doc.rubric) } });
+    } catch (error) {
+        next(error);
+    }
+};

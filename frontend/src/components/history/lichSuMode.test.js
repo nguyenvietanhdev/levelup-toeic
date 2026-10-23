@@ -1,6 +1,6 @@
 /**
- * Tab "Lịch sử" dùng chung: mỗi màn AI có tab Lịch sử gắn đúng chế độ, và chế độ
- * chưa lưu (Dịch, Đọc) được ghi rõ thay vì để trống.
+ * Tab "Lịch sử" dùng chung: mỗi màn AI có tab Lịch sử gắn đúng chế độ, và MỌI
+ * chế độ đều xem lại được từng bài đã làm (không chỉ danh sách).
  */
 import { describe, test, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
@@ -12,9 +12,25 @@ const read = (...p) => readFileSync(join(__dirname, '..', ...p), 'utf8');
 const lichSu = read('history', 'LichSuMode.jsx');
 
 describe('LichSuMode', () => {
-    test('chế độ chưa lưu được ghi rõ', () => {
-        expect(lichSu).toMatch(/CHUA_LUU = \{ dich:/);
-        expect(lichSu).toMatch(/chưa lưu lịch sử/);
+    test('cả năm chế độ đều tải danh sách VÀ mở được từng bài', () => {
+        expect(lichSu).not.toMatch(/CHUA_LUU/);
+        for (const api of ['ConversationAPI', 'EssayAPI', 'TranslationAPI', 'ReadingAPI', 'ListeningAPI']) {
+            expect(lichSu).toContain(`${api}.history()`);
+            expect(lichSu).toContain(`${api}.detail(id)`);
+        }
+    });
+
+    test('mỗi chế độ có màn xem lại riêng', () => {
+        for (const c of ['ChiTietHoiThoai', 'ChiTietViet', 'ChiTietDich', 'ChiTietDoc', 'ChiTietNghe']) {
+            expect(lichSu).toContain(`function ${c}(`);
+        }
+    });
+
+    test('Đọc hiểu hiện đáp án đúng và đáp án đã chọn; Nghe hiện đoạn gốc và bài đã gõ', () => {
+        expect(lichSu).toMatch(/q\.answer === nhan/);
+        expect(lichSu).toMatch(/q\.chose === nhan/);
+        expect(lichSu).toMatch(/bai\.passage/);
+        expect(lichSu).toMatch(/bai\.typed/);
     });
 
     test('hội thoại lấy danh sách và chi tiết từ API lịch sử', () => {
@@ -33,6 +49,7 @@ describe('mỗi màn AI có tab Lịch sử gắn đúng chế độ', () => {
         ['essay/EssayScreen.jsx', 'viet'],
         ['reading/ReadingScreen.jsx', 'doc'],
         ['translation/TranslationScreen.jsx', 'dich'],
+        ['listening/ListeningScreen.jsx', 'nghe'],
     ];
     for (const [file, mode] of cases) {
         test(`${file} → mode "${mode}"`, () => {

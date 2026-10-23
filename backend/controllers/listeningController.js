@@ -252,3 +252,49 @@ exports.grade = async (req, res, next) => {
 exports.ENERGY_COST_NGHE = ENERGY_COST_NGHE;
 exports.TU_MUC_TIEU = TU_MUC_TIEU;
 exports.GIONG_NGHE = GIONG_NGHE;
+
+// ── Lịch sử Nghe với AI ──────────────────────────────────────────────────
+const mongoose = require('mongoose');
+
+/**
+ * @desc    Các lượt nghe ĐÃ CHẤM, mới nhất trước
+ * @route   GET /api/listening/history
+ *
+ * Chỉ lượt đã chấm: lượt còn mở mà trả đoạn gốc là lộ đáp án của bài đang nghe.
+ */
+exports.history = async (req, res, next) => {
+    try {
+        const limit = Math.min(50, Math.max(1, parseInt(req.query.limit, 10) || 20));
+        const rows = await ListeningSession.find({ userId: req.user.id, status: 'done' })
+            .sort({ createdAt: -1 })
+            .limit(limit)
+            .select('level dang dangVi targetWords score createdAt')
+            .lean();
+        res.json({ success: true, data: rows });
+    } catch (error) {
+        next(error);
+    }
+};
+
+/**
+ * @desc    Xem lại một lượt nghe đã chấm: đoạn gốc, bài đã gõ, từ thiếu / thừa
+ * @route   GET /api/listening/:id
+ *
+ * Từ thiếu/thừa tính LẠI từ đoạn gốc và bài gõ (`chamNghe`) — không phải lưu thêm,
+ * và luôn khớp với cách chấm hiện tại.
+ */
+exports.detail = async (req, res, next) => {
+    try {
+        if (!mongoose.isValidObjectId(req.params.id)) {
+            return res.status(400).json({ success: false, message: 'Mã bài không hợp lệ' });
+        }
+        const doc = await ListeningSession.findOne({ _id: req.params.id, userId: req.user.id, status: 'done' })
+            .select('+passage -userId -__v').lean();
+        if (!doc) {
+            return res.status(404).json({ success: false, message: 'Không tìm thấy bài nghe này' });
+        }
+        res.json({ success: true, data: { ...doc, ketQua: chamNghe(doc.passage, doc.typed || '') } });
+    } catch (error) {
+        next(error);
+    }
+};

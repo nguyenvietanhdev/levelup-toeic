@@ -26,5 +26,6 @@ router.get('/history', ctrl.history);
 // dùng, gom từ những bài họ đã trả năng lượng để chấm. Khoá nó là giữ lại
 // thứ họ đã trả tiền.
 router.get('/mistakes', ctrl.mistakes);
+router.get('/:id', ctrl.detail); // xem lại một bài — sau `/history`, `/mistakes` để không nuốt hai đường đó
 
 module.exports = router;

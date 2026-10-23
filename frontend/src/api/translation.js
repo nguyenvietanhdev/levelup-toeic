@@ -59,6 +59,11 @@ export const TranslationAPI = {
         return unwrap(await Http.get(`/translation/history?limit=${limit}`));
     },
 
+    /** Xem lại đầy đủ một bài dịch đã chấm (kèm nhãn tiêu chí). */
+    async detail(id) {
+        return unwrap(await Http.get(`/translation/${encodeURIComponent(id)}`));
+    },
+
     /**
      * Nhật ký lỗi ngữ pháp — gom từ MỌI bài đã chấm (Dịch + Viết luận).
      *

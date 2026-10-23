@@ -21,5 +21,6 @@ router.post('/grade', requireLevel('feature:reading'), ctrl.grade);
 // `history` KHÔNG khoá: người vừa tụt Level vẫn phải xem lại được bài mình đã
 // làm — đó là dữ liệu của họ.
 router.get('/history', ctrl.history);
+router.get('/:id', ctrl.detail); // xem lại một bài — sau `/history` để không nuốt đường đó
 
 module.exports = router;

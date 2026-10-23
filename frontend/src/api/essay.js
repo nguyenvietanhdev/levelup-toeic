@@ -54,4 +54,9 @@ export const EssayAPI = {
     async history(limit = 20) {
         return unwrap(await Http.get(`/essay/history?limit=${limit}`));
     },
+
+    /** Xem lại đầy đủ một bài viết đã chấm (kèm nhãn tiêu chí). */
+    async detail(id) {
+        return unwrap(await Http.get(`/essay/${encodeURIComponent(id)}`));
+    },
 };

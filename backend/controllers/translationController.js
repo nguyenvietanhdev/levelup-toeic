@@ -308,3 +308,29 @@ exports.mistakes = async (req, res, next) => {
         next(error);
     }
 };
+
+// ── Xem lại một bài dịch trong tab Lịch sử ──────────────────────────────────
+const mongoose = require('mongoose');
+
+/**
+ * @desc    Xem lại đầy đủ một bài dịch đã làm
+ * @route   GET /api/translation/:id
+ *
+ * Lọc theo CẢ `userId`: thiếu nó là ai đoán được id cũng đọc được bài người khác.
+ * KHÔNG khoá theo Level (cùng lý do với `history`): đây là dữ liệu của chính họ.
+ */
+exports.detail = async (req, res, next) => {
+    try {
+        if (!mongoose.isValidObjectId(req.params.id)) {
+            return res.status(400).json({ success: false, message: 'Mã bài không hợp lệ' });
+        }
+        const doc = await Translation.findOne({ _id: req.params.id, userId: req.user.id })
+            .select('-userId -__v').lean();
+        if (!doc) {
+            return res.status(404).json({ success: false, message: 'Không tìm thấy bài này' });
+        }
+        res.json({ success: true, data: { ...doc, criteria: require('../services/translationGrader').CRITERIA } });
+    } catch (error) {
+        next(error);
+    }
+};
