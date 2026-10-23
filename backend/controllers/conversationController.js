@@ -264,7 +264,7 @@ exports.start = async (req, res, next) => {
             tinhHuong: tinhHuong ? tinhHuong.vi : '',
             targetWords,
             level,
-            turns: [{ role: 'npc', content: ai.content }],
+            turns: [{ role: 'npc', content: ai.content, khung: ai.khung || [] }],
         });
 
         res.json({
@@ -331,7 +331,7 @@ exports.reply = async (req, res, next) => {
         });
 
         if (ai.success) {
-            convo.turns.push({ role: 'npc', content: ai.content });
+            convo.turns.push({ role: 'npc', content: ai.content, khung: ai.khung || [] });
         }
 
         convo.usedWords = collectUsed(convo.turns, convo.targetWords, convo.lang);
@@ -347,6 +347,8 @@ exports.reply = async (req, res, next) => {
                 // Lượt vừa thêm của người học + (nếu có) câu đáp của AI.
                 matched,
                 npcReply: ai.success ? ai.content : null,
+                // Khung câu trả lời cho câu NPC vừa nói ([] nếu AI không viết kèm).
+                npcKhung: ai.success ? (ai.khung || []) : [],
                 // AI lỗi thì KHÔNG chặn: câu của người học đã được chấm và lưu,
                 // họ chỉ mất một câu đáp. Báo cờ để giao diện nói rõ.
                 aiFailed: !ai.success,

@@ -175,3 +175,54 @@ describe('Hội thoại — tình huống ghép với vai', () => {
         expect(src).toMatch(/tinhHuong: tinhHuong \? tinhHuong\.vi : ''/);
     });
 });
+
+describe('Hội thoại — khung câu trả lời AI viết kèm (HINT)', () => {
+    const { tachKhung, openConversation, replyTurn, systemPrompt } = require('../services/conversationAi');
+
+    test('tách dòng HINT khỏi lời nói, tối đa 3 khung, bỏ dấu nháy', () => {
+        const r = tachKhung('Welcome! Who are you?\nHINT: "My name is ___." | I\'m ___ from ___. | I am a ___ | Extra ___');
+        expect(r.text).toBe('Welcome! Who are you?');
+        expect(r.khung).toEqual(['My name is ___.', "I'm ___ from ___.", 'I am a ___']);
+    });
+
+    test('HINT viết cùng dòng với lời nói vẫn tách được; không có HINT thì khung rỗng', () => {
+        expect(tachKhung('Do you like tea? HINT: Yes, I like ___ | No, I prefer ___'))
+            .toEqual({ text: 'Do you like tea?', khung: ['Yes, I like ___', 'No, I prefer ___'] });
+        expect(tachKhung('Hi there!')).toEqual({ text: 'Hi there!', khung: [] });
+        expect(tachKhung(undefined)).toEqual({ text: '', khung: [] });
+    });
+
+    test('system prompt yêu cầu khung có ___ bám câu hỏi, không phải câu trả lời hoàn chỉnh', () => {
+        const p = systemPrompt({ lang: 'en', topic: '', scenario: '', words: ['tea'], level: 'medium' });
+        expect(p).toMatch(/HINT: 2-3 short answer patterns in English/);
+        expect(p).toMatch(/never a complete answer/);
+    });
+
+    test('mở phiên: lời nói KHÔNG chứa HINT, khung trả về riêng', async () => {
+        chatCompletion.mockResolvedValueOnce({
+            success: true,
+            content: 'SCENARIO: A hotel lobby.\nREPLY: Good morning! Who are you, please?\nHINT: My name is ___. | I have a booking under ___.',
+        });
+        const r = await openConversation({ topic: 'Receptionist', targetWords: ['booking'] });
+        expect(r.content).toBe('Good morning! Who are you, please?');
+        expect(r.scenario).toBe('A hotel lobby.');
+        expect(r.khung).toEqual(['My name is ___.', 'I have a booking under ___.']);
+    });
+
+    test('lượt đáp: tách khung; AI lỗi thì trả nguyên kết quả lỗi', async () => {
+        chatCompletion.mockResolvedValueOnce({ success: true, content: 'Nice! How long will you stay?\nHINT: I will stay for ___.' });
+        const r = await replyTurn({ targetWords: ['stay'], turns: [{ role: 'user', content: 'hi' }] });
+        expect(r).toMatchObject({ success: true, content: 'Nice! How long will you stay?', khung: ['I will stay for ___.'] });
+        chatCompletion.mockResolvedValueOnce({ success: false, error: 'x' });
+        await expect(replyTurn({ turns: [] })).resolves.toMatchObject({ success: false });
+    });
+
+    test('controller lưu khung vào lượt NPC và trả về cho client', () => {
+        const { readFileSync } = require('node:fs');
+        const { join } = require('node:path');
+        const src = readFileSync(join(__dirname, '..', 'controllers', 'conversationController.js'), 'utf8');
+        expect(src).toMatch(/turns: \[\{ role: 'npc', content: ai\.content, khung: ai\.khung \|\| \[\] \}\]/);
+        expect(src).toMatch(/convo\.turns\.push\(\{ role: 'npc', content: ai\.content, khung: ai\.khung \|\| \[\] \}\)/);
+        expect(src).toMatch(/npcKhung: ai\.success \? \(ai\.khung \|\| \[\]\) : \[\]/);
+    });
+});

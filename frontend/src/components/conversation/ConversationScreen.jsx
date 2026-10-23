@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { goiYCauTraLoi } from '@lib/conversationHint.js';
+import { dichSangViet } from '@lib/dichNhanh.js';
 import { useGame } from '@game/GameContext.jsx';
 import { GameState } from '@game/state.js';
 import { GameLogic, ttsLang } from '@game/gameLogic.js';
@@ -116,6 +117,9 @@ export default function ConversationScreen({ active }) {
     const [strictGrammar, setStrictGrammar] = useState(false); // ngữ pháp văn nói hay chuẩn viết
     const [feedbackClosed, setFeedbackClosed] = useState(false); // người học đã đóng popup kết quả
     const [showHint, setShowHint] = useState(false);
+    // Bản dịch tiếng Việt theo chỉ số lượt NPC: { [i]: { dangDich, text, mo } }.
+    const [banDich, setBanDich] = useState({});
+    const inputRef = useRef(null);
     const [dang, setDang] = useState('');     // tình huống; '' = ngẫu nhiên
     const [tuChon, setTuChon] = useState(''); // tình huống tự nhập, ưu tiên hơn `dang`
     // Tình huống AI gợi ý hợp bộ từ của Part — nhóm đầu tiên, và "Ngẫu nhiên" bốc trong đó.
@@ -274,7 +278,7 @@ export default function ConversationScreen({ active }) {
                 // Gắn `matched` (server chấm) vào chính lượt vừa gửi để tô sáng.
                 const last = turns.length - 1;
                 if (turns[last]?.role === 'user') turns[last] = { ...turns[last], matched: data.matched || [] };
-                if (data.npcReply) turns.push({ role: 'npc', content: data.npcReply });
+                if (data.npcReply) turns.push({ role: 'npc', content: data.npcReply, khung: data.npcKhung || [] });
                 return { ...c, turns, usedWords: data.usedWords || c.usedWords };
             });
             if (data.npcReply) speak(data.npcReply);
@@ -291,6 +295,37 @@ export default function ConversationScreen({ active }) {
         // `speechOn` PHẢI có trong deps: thiếu thì closure giữ giá trị của lần
         // render đầu (luôn false) và micro không bao giờ được tắt.
     }, [draft, busy, convo, speak, speechOn]);
+
+    /** Bật/tắt bản dịch tiếng Việt của một lượt NPC. Dịch một lần, bấm lại chỉ ẩn/hiện. */
+    const toggleDich = useCallback(async (i, text) => {
+        const cu = banDich[i];
+        if (cu?.text) {
+            setBanDich((b) => ({ ...b, [i]: { ...cu, mo: !cu.mo } }));
+            return;
+        }
+        if (cu?.dangDich) return;
+        setBanDich((b) => ({ ...b, [i]: { dangDich: true, text: '', mo: true } }));
+        try {
+            const vi = await dichSangViet(text);
+            setBanDich((b) => ({ ...b, [i]: { dangDich: false, text: vi || '(Không có bản dịch)', mo: true } }));
+        } catch {
+            setBanDich((b) => ({ ...b, [i]: undefined }));
+            Notification.error('Không dịch được câu này');
+        }
+    }, [banDich]);
+
+    // Phiên mới thì bỏ bản dịch của phiên cũ — khoá theo CHỈ SỐ lượt nên giữ lại là
+    // hiện nhầm bản dịch của câu khác.
+    useEffect(() => { setBanDich({}); }, [convo?.id]);
+
+    // AI trả lời xong → con trỏ về ô nhập để gõ luôn, khỏi phải bấm chuột.
+    // Chỉ trên máy có chuột (pointer: fine): trên điện thoại, focus là bật bàn
+    // phím ảo che mất câu AI vừa nói.
+    useEffect(() => {
+        if (busy || starting || !convo || result) return;
+        if (!window.matchMedia?.('(pointer: fine)')?.matches) return;
+        inputRef.current?.focus();
+    }, [busy, starting, convo?.id, convo?.turns?.length, result]);
 
     const handleFinish = useCallback(async () => {
         if (!convo || busy) return;
@@ -474,7 +509,19 @@ export default function ConversationScreen({ active }) {
                                             <i className="fas fa-volume-up"></i>
                                         </button>
                                     )}
+                                    {t.role === 'npc' && (
+                                        <button
+                                            className={`convo-speak convo-dich-btn${banDich[i]?.mo ? ' is-on' : ''}`}
+                                            title="Dịch sang tiếng Việt"
+                                            onClick={() => toggleDich(i, t.content)}
+                                        >
+                                            <i className={`fas ${banDich[i]?.dangDich ? 'fa-spinner fa-spin' : 'fa-language'}`}></i>
+                                        </button>
+                                    )}
                                 </div>
+                                {t.role === 'npc' && banDich[i]?.mo && banDich[i]?.text && (
+                                    <div className="convo-dich">{banDich[i].text}</div>
+                                )}
                                 {t.matched?.length > 0 && (
                                     <div className="convo-matched">
                                         +{t.matched.length} từ: {t.matched.join(', ')}
@@ -565,11 +612,29 @@ export default function ConversationScreen({ active }) {
                             không tốn lượt AI. Chỉ hiện khi người học bấm mở. */}
                         {showHint && (() => {
                             const npcCuoi = [...convo.turns].reverse().find((t) => t.role === 'npc');
-                            const goiY = goiYCauTraLoi(npcCuoi?.content, convo.targetWords, [...used]);
+                            const goiY = goiYCauTraLoi(npcCuoi?.content, convo.targetWords, [...used], npcCuoi?.khung);
                             return (
                                 <div className="convo-hint">
-                                    <div className="convo-hint-loai">Dạng câu hỏi: <strong>{goiY.loai}</strong></div>
-                                    <div className="convo-hint-khung">{goiY.khung}</div>
+                                    <div className="convo-hint-loai">
+                                        {goiY.cauHoi && <>Trả lời câu: <strong>“{goiY.cauHoi}”</strong> · </>}
+                                        {goiY.tuAI
+                                            ? <><i className="fas fa-wand-magic-sparkles"></i> Khung theo đúng câu AI hỏi</>
+                                            : <>Dạng: <strong>{goiY.loai}</strong></>}
+                                    </div>
+                                    {/* Bấm một khung để đưa vào ô nhập rồi tự điền chỗ ___ — luyện phản xạ. */}
+                                    <div className="convo-hint-khung-list">
+                                        {goiY.cacKhung.map((k) => (
+                                            <button
+                                                key={k}
+                                                type="button"
+                                                className="convo-hint-khung"
+                                                title="Đưa khung này vào ô nhập"
+                                                onClick={() => { setDraft(k); inputRef.current?.focus(); }}
+                                            >
+                                                {k}
+                                            </button>
+                                        ))}
+                                    </div>
                                     {goiY.tuGoiY.length > 0 ? (
                                         <div className="convo-hint-tu">
                                             <span>Dùng một trong các từ:</span>
@@ -600,6 +665,7 @@ export default function ConversationScreen({ active }) {
                                 <i className="fas fa-lightbulb"></i>
                             </button>
                             <input
+                                ref={inputRef}
                                 className="convo-input"
                                 value={draft}
                                 onChange={e => setDraft(e.target.value)}

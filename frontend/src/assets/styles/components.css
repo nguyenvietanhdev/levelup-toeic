@@ -9537,9 +9537,26 @@ mark {
     color: var(--text-secondary);
     font-size: 12px;
 }
+.convo-hint-khung-list {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+/* Mỗi khung là một nút: bấm để đưa vào ô nhập rồi tự điền chỗ ___. */
 .convo-hint-khung {
     font-family: monospace;
     font-size: 14px;
+    text-align: left;
+    padding: 4px 8px;
+    border: 1px solid transparent;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--text-primary);
+    cursor: pointer;
+}
+.convo-hint-khung:hover {
+    border-color: var(--accent-color);
+    background: rgba(139, 92, 246, 0.08);
 }
 .convo-hint-tu {
     display: flex;
@@ -10103,6 +10120,18 @@ button.ai-history-row {
     border-bottom-right-radius: 4px;
 }
 
+/* Bản dịch tiếng Việt hiện dưới bong bóng NPC khi bấm nút Dịch. */
+.convo-dich {
+    margin: 4px 0 0 4px;
+    padding: 6px 10px;
+    border-left: 3px solid var(--accent-color);
+    border-radius: 6px;
+    background: rgba(139, 92, 246, 0.08);
+    color: var(--text-secondary);
+    font-size: 13px;
+    line-height: 1.5;
+}
+.convo-dich-btn.is-on { background: rgba(139, 92, 246, 0.35); }
 .convo-speak {
     flex-shrink: 0;
     width: 26px;

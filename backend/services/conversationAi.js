@@ -66,6 +66,36 @@ function moTaVai(ma) {
     return VAI_AI[chuanHoaVai(ma)] || '';
 }
 
+/** Số khung gợi ý tối đa và độ dài tối đa mỗi khung. */
+const MAX_KHUNG = 3;
+const MAX_DAI_KHUNG = 120;
+
+/**
+ * Tách dòng `HINT:` (khung câu trả lời AI viết kèm) ra khỏi lời nói.
+ *
+ * Khung là MẪU CÂU có chỗ trống `___` bám đúng câu AI vừa hỏi — để người học
+ * biết cách đáp và tự điền, luyện phản xạ; không phải câu trả lời hoàn chỉnh.
+ * Dòng này KHÔNG được lọt vào lời nói: nó sẽ bị đọc to và lưu vào lịch sử.
+ * Không có dòng HINT thì `khung` rỗng — client tự dựng khung bằng luật.
+ */
+function tachKhung(content) {
+    const dong = String(content || '').split(/\r?\n/);
+    const khung = [];
+    const conLai = [];
+    for (const d of dong) {
+        // Model đôi khi viết HINT ngay sau lời nói trên CÙNG một dòng — cắt tại đó.
+        const i = d.search(/\bHINT\s*:/i);
+        if (i < 0) { conLai.push(d); continue; }
+        if (d.slice(0, i).trim()) conLai.push(d.slice(0, i));
+        const sau = d.slice(i).replace(/^HINT\s*:\s*/i, '');
+        for (const k of sau.split('|')) {
+            const t = k.trim().replace(/^["'“”]+|["'“”]+$/g, '').trim();
+            if (t.length >= 3 && t.length <= MAX_DAI_KHUNG && khung.length < MAX_KHUNG) khung.push(t);
+        }
+    }
+    return { text: conLai.join('\n').trim(), khung };
+}
+
 /**
  * Tách lời mở đầu thành TÌNH HUỐNG và LỜI NÓI. AI được yêu cầu viết theo hai
  * dòng `SCENARIO:` và `REPLY:`; nếu không đúng định dạng thì coi cả câu trả lời
@@ -119,14 +149,13 @@ function systemPrompt({ lang, topic, scenario, words, level }) {
         `5. ${chiThiMuc(level)}`,
         '6. If the learner makes a mistake, just reply naturally. Do not correct',
         '   them mid-conversation; corrections come at the end.',
+        // Khung trả lời đi CHUNG lượt gọi này — không tốn thêm lần gọi AI nào.
+        `7. After your reply, add ONE last line: HINT: 2-3 short answer patterns in ${L} that the`,
+        '   learner could use to answer YOUR question, with ___ for the parts they fill in,',
+        '   separated by " | ". Patterns only, never a complete answer.',
     ].filter(Boolean).join('\n');
 }
 
-/**
- * Mở một hội thoại mới.
- *
- * @returns {{success:boolean, content?:string, error?:string}}
- */
 /**
  * Kho TÌNH HUỐNG hội thoại (cùng cách với kho dạng bài của Đọc hiểu/Viết).
  *
@@ -182,6 +211,11 @@ const NHOM_TINH_HUONG = [
     },
 ];
 
+/**
+ * Mở một hội thoại mới.
+ *
+ * @returns {{success:boolean, content?:string, scenario?:string, khung?:string[], error?:string}}
+ */
 async function openConversation({ lang = 'en', topic = '', targetWords = [], userId = null, level = 'medium', tinhHuong = null } = {}) {
     const words = pickWords(targetWords, [], WORDS_IN_PROMPT);
     // Tình huống do AI TỰ DỰNG từ bộ từ — không lấy từ Part. Yêu cầu hai dòng
@@ -197,9 +231,10 @@ async function openConversation({ lang = 'en', topic = '', targetWords = [], use
                     // AI dựng cảnh theo đúng loại đó, vẫn giữ vai và bộ từ.
                     ? `First set up ONE short, realistic situation for your role, of this kind: ${tinhHuong.en}. It should naturally use these words: ${words.join(', ')}. ${CHI_THI_HOP_BOI_CANH}`
                     : `First invent ONE short, realistic situation for your role that can naturally use these words: ${words.join(', ')}.`,
-                'Answer in exactly this format, two lines and nothing else:',
+                'Answer in exactly this format, three lines and nothing else:',
                 'SCENARIO: <one sentence describing the situation, in English>',
                 'REPLY: <your greeting and ONE simple question, in ' + langName(lang) + '>',
+                'HINT: <2-3 answer patterns with ___, separated by " | ">',
             ].join('\n'),
         },
     ];
@@ -209,14 +244,16 @@ async function openConversation({ lang = 'en', topic = '', targetWords = [], use
         // nhưng giới hạn cứng mới là thứ chặn được prompt bị lờ đi — và nó cắt
         // thẳng chi phí, thứ tăng theo mỗi lượt. Thêm một dòng tình huống nên
         // nới nhẹ so với 120.
-        maxTokens: 180,
+        // Thêm dòng HINT (2–3 khung câu ngắn): nới lên 200 — vẫn trong trần chi phí của hội thoại.
+        maxTokens: 200,
         temperature: 0.9,   // cao để mỗi phiên một khác, không lặp lại nhàm
         feature: 'conversation-open',
         userId,
     });
     if (!res.success) return res;
-    const { scenario, reply } = parseOpening(res.content);
-    return { ...res, content: reply, scenario };
+    const { text, khung } = tachKhung(res.content);
+    const { scenario, reply } = parseOpening(text);
+    return { ...res, content: reply, scenario, khung };
 }
 
 /**
@@ -247,12 +284,16 @@ async function replyTurn({
         ...recent,
     ];
 
-    return chatCompletion(messages, {
-        maxTokens: 120,
+    const res = await chatCompletion(messages, {
+        // 120 cho lời nói + chỗ cho dòng HINT.
+        maxTokens: 170,
         temperature: 0.9,
         feature: 'conversation-reply',
         userId,
     });
+    if (!res.success) return res;
+    const { text, khung } = tachKhung(res.content);
+    return { ...res, content: text, khung };
 }
 
 module.exports = {
@@ -265,6 +306,7 @@ module.exports = {
     chuanHoaVai,
     moTaVai,
     parseOpening,
+    tachKhung,
     VAI_AI,
     NHOM_TINH_HUONG,
 };

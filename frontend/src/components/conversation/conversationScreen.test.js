@@ -357,3 +357,30 @@ describe('cắm vào app', () => {
         expect(app).toMatch(/'conversation-screen': ConversationScreen/);
     });
 });
+
+describe('gõ nhanh: tự focus, dịch câu AI, khung gợi ý theo câu AI', () => {
+    test('AI trả lời xong thì focus ô nhập — chỉ trên máy có chuột', () => {
+        expect(src).toMatch(/ref=\{inputRef\}/);
+        const i = src.indexOf('// AI trả lời xong → con trỏ về ô nhập');
+        const than = src.slice(i, src.indexOf('}, [busy', i));
+        expect(than).toMatch(/if \(busy \|\| starting \|\| !convo \|\| result\) return;/);
+        expect(than).toMatch(/\(pointer: fine\)/);
+        expect(than).toMatch(/inputRef\.current\?\.focus\(\)/);
+    });
+
+    test('nút Dịch nằm cạnh nút phát âm ở lượt NPC, bản dịch hiện dưới bong bóng', () => {
+        const i = src.indexOf('title="Đọc lại"');
+        const j = src.indexOf('title="Dịch sang tiếng Việt"');
+        expect(i).toBeGreaterThan(-1);
+        expect(j).toBeGreaterThan(i);
+        expect(src).toMatch(/onClick=\{\(\) => toggleDich\(i, t\.content\)\}/);
+        expect(src).toMatch(/className="convo-dich"/);
+        expect(src).toMatch(/import \{ dichSangViet \} from '@lib\/dichNhanh\.js'/);
+    });
+
+    test('gợi ý dùng khung AI của lượt NPC cuối; bấm khung là đưa vào ô nhập', () => {
+        expect(src).toMatch(/goiYCauTraLoi\(npcCuoi\?\.content, convo\.targetWords, \[\.\.\.used\], npcCuoi\?\.khung\)/);
+        expect(src).toMatch(/onClick=\{\(\) => \{ setDraft\(k\); inputRef\.current\?\.focus\(\); \}\}/);
+        expect(src).toMatch(/khung: data\.npcKhung \|\| \[\]/);
+    });
+});

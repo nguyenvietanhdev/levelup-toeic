@@ -17,6 +17,8 @@ const turnSchema = new mongoose.Schema(
         // Từ mục tiêu mà LƯỢT NÀY dùng được — lưu sẵn để khỏi tính lại khi xem
         // lịch sử, và để hiện đúng câu nào ăn điểm.
         matched: { type: [String], default: [] },
+        // Lượt NPC: khung câu trả lời AI viết kèm (có `___`), để gợi ý người học.
+        khung: { type: [String], default: undefined },
         at: { type: Date, default: Date.now },
     },
     { _id: false }

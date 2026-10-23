@@ -144,6 +144,30 @@ describe('dọn dẹp sau khi mở', () => {
 
 describe('người dùng biết tính năng tồn tại', () => {
     test('gợi ý trong ô tìm kiếm', () => {
-        expect(src).toMatch(/bôi đen \+ Shift\+Z: tra nghĩa/);
+        // Cách chính giờ là giữ Ctrl + bôi đen (Shift+Z vẫn chạy, nhưng ô tìm kiếm
+        // chỉ đủ chỗ cho một cách — chọn cách dễ nhớ hơn).
+        expect(src).toMatch(/giữ Ctrl \+ bôi đen: dịch/);
+    });
+});
+
+describe('giữ Ctrl (Cmd) + bôi đen bằng chuột = dịch', () => {
+    const i = src.indexOf('const onMouseUp = (e) =>');
+    const than = src.slice(i, src.indexOf('};', i));
+
+    test('chỉ khi giữ Ctrl/Cmd và bấm chuột trái; chặn khi đang thi', () => {
+        expect(i).toBeGreaterThan(-1);
+        expect(than).toMatch(/e\.button !== 0 \|\| !\(e\.ctrlKey \|\| e\.metaKey\) \|\| isInExam/);
+    });
+
+    test('đọc vùng chọn qua readSelection (lọc ô nhập, popup, đoạn dài) và mở qua openTranslateRef', () => {
+        expect(than).toMatch(/readSelection\(\)/);
+        expect(than).toMatch(/removeAllRanges\(\)/);
+        expect(than).toMatch(/openTranslateRef\.current\?\.\(picked\)/);
+        expect(than).not.toMatch(/setTranslateText/);
+    });
+
+    test('đăng ký và gỡ listener mouseup cùng các phím tắt khác', () => {
+        expect(src).toMatch(/window\.addEventListener\('mouseup', onMouseUp\)/);
+        expect(src).toMatch(/window\.removeEventListener\('mouseup', onMouseUp\)/);
     });
 });

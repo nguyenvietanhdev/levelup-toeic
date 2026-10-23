@@ -543,13 +543,34 @@ export default function TopNav() {
         // micro sẽ kẹt ở trạng thái nghe. Dừng chủ động.
         const onBlur = () => { gesture.reset(); stopSpeech(); };
 
+        // ── Giữ Ctrl (Cmd trên Mac) + bôi đen bằng chuột = dịch ngay khi thả chuột ──
+        //
+        // Cùng luật với Shift+Z: dùng `readSelection` (bỏ qua ô nhập, popup dịch,
+        // đoạn quá dài), chặn khi đang THI, và mở qua `openTranslateRef` để vẫn
+        // chịu khoá theo Level. Bôi đen KHÔNG giữ Ctrl thì không làm gì — người
+        // dùng bôi đen để copy là chuyện thường, tự bật popup lúc đó là phiền.
+        //
+        // `setTimeout(0)`: lúc `mouseup` chạy, trình duyệt có thể chưa chốt xong
+        // vùng chọn — đọc ngay là ra chuỗi cũ hoặc rỗng.
+        const onMouseUp = (e) => {
+            if (e.button !== 0 || !(e.ctrlKey || e.metaKey) || isInExam) return;
+            setTimeout(() => {
+                const picked = readSelection();
+                if (!picked) return;
+                window.getSelection?.()?.removeAllRanges();
+                openTranslateRef.current?.(picked);
+            }, 0);
+        };
+
         window.addEventListener('keydown', onKeyDown);
         window.addEventListener('keyup', onKeyUp);
         window.addEventListener('blur', onBlur);
+        window.addEventListener('mouseup', onMouseUp);
         return () => {
             window.removeEventListener('keydown', onKeyDown);
             window.removeEventListener('keyup', onKeyUp);
             window.removeEventListener('blur', onBlur);
+            window.removeEventListener('mouseup', onMouseUp);
             gesture.reset();
         };
         // `isInExam` phải có mặt: listener đóng gói giá trị của lần render này,
@@ -692,7 +713,7 @@ export default function TopNav() {
                                 ? '🎤 Đang nghe... nói từ bạn muốn tìm'
                                 : translateLock.locked
                                     ? `Tìm từ vựng... (Dịch nhanh mở ở Level ${translateLock.requiredLevel})`
-                                    : 'Tìm từ vựng... (Enter: dịch · giữ Shift: nói · bôi đen + Shift+Z: tra nghĩa)'}
+                                    : 'Tìm từ vựng... (Enter: dịch · giữ Shift: nói · giữ Ctrl + bôi đen: dịch)'}
                         /* "off" bị Chrome/Edge bỏ qua cho ô trông giống ô đăng
                            nhập; token vô nghĩa thì chúng không biết điền gì.
                            `readOnly` bên dưới là lớp chắc chắn, đây là lớp hai. */
