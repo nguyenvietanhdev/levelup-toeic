@@ -8,6 +8,7 @@ import { TranslationAPI } from '@api/translation.js';
 import MistakeLog from './MistakeLog.jsx';
 import LichSuMode from '../history/LichSuMode.jsx';
 import DanhSachVai from '../roles/DanhSachVai.jsx';
+import KieuChamDoKho from '../ai/KieuChamDoKho.jsx';
 import { getVocabLang } from '@api/vocabulary.js';
 import { TopicSelector } from '@components/vocab/topic/topicSelector.js';
 import { PartSelector } from '@components/vocab/part/partSelector.js';
@@ -30,6 +31,11 @@ const CRITERIA = [
     { key: 'accuracy', vi: 'Đủ ý & đúng nghĩa', icon: 'fa-bullseye' },
     { key: 'grammar', vi: 'Ngữ pháp & chính tả', icon: 'fa-spell-check' },
     { key: 'naturalness', vi: 'Tự nhiên như người bản ngữ', icon: 'fa-comment-dots' },
+];
+
+/** Dịch chỉ có một kiểu chấm: đủ ý, ngữ pháp, mức tự nhiên (khớp server). */
+const KIEU_CHAM_DICH = [
+    { key: 'dich', label: 'Dịch', desc: 'Đủ ý, ngữ pháp, mức tự nhiên' },
 ];
 
 const MUC_KHO = [
@@ -223,29 +229,17 @@ export default function TranslationScreen({ active }) {
                             />
                         </div>
                         <div className="ai-setup-col" style={{ gridColumn: 2 }}>
-                            {/* Kiểu chấm của dịch đoạn văn: bộ tiêu chí riêng của bài dịch
-                                (đủ ý, ngữ pháp, mức tự nhiên). Hiện như chip đang chọn để
-                                bố cục giống Luyện viết và Hội thoại. */}
-                            <div className="ai-setup-title">Kiểu chấm</div>
-                            <div className="ai-setup-list tr-levels">
-                                <div className="tr-level is-on">
-                                    <strong>Dịch</strong>
-                                    <em>Đủ ý, ngữ pháp, mức tự nhiên</em>
-                                </div>
-                            </div>
-                            <div className="ai-setup-title">Độ khó</div>
-                            <div className="ai-setup-list tr-levels">
-                                {MUC_KHO.map((m) => (
-                                    <button
-                                        key={m.key}
-                                        className={`tr-level${level === m.key ? ' is-on' : ''}`}
-                                        onClick={() => setLevel(m.key)}
-                                    >
-                                        <strong>{m.label}</strong>
-                                        <em>{m.desc}</em>
-                                    </button>
-                                ))}
-                            </div>
+                            {/* Kiểu chấm + độ khó: dùng CHUNG component với Hội thoại và Luyện viết.
+                                Dịch chỉ có một bộ chấm (đủ ý, ngữ pháp, mức tự nhiên), nên
+                                kiểu chấm là một mục đang chọn. Độ khó tính theo số câu. */}
+                            <KieuChamDoKho
+                                kieuList={KIEU_CHAM_DICH}
+                                kieuDangChon="dich"
+                                onKieu={() => {}}
+                                doKhoList={MUC_KHO}
+                                doKhoDangChon={level}
+                                onDoKho={setLevel}
+                            />
                         </div>
                     </div>
 

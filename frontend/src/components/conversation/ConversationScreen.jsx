@@ -9,6 +9,8 @@ import { ConversationAPI } from '@api/conversation.js';
 import LichSuMode from '../history/LichSuMode.jsx';
 import VaiAITab from '../roles/VaiAITab.jsx';
 import DanhSachVai from '../roles/DanhSachVai.jsx';
+import KieuChamDoKho from '../ai/KieuChamDoKho.jsx';
+import { KIEU_CHAM, DO_KHO_THEO_KIEU, doKhoChoKieu } from '@lib/kieuCham.js';
 import { getVocabLang } from '@api/vocabulary.js';
 import { EventBus, GameEvents } from '@game/eventBus.js';
 import { TopicSelector } from '@components/vocab/topic/topicSelector.js';
@@ -38,39 +40,11 @@ const MUC_KHO = [
 ];
 
 /**
- * Bộ tiêu chí chấm cuối phiên. Khoá khớp `BO_TIEU_CHI` ở server
- * (services/conversationGrader.js).
+ * Kiểu chấm và độ khó dùng chung cho mọi chế độ AI (lib/kieuCham.js). Đặt tên ngắn
+ * ở đây để phần còn lại của màn không đổi.
  */
-const BO_TIEU_CHI_CHON = [
-    { key: 'giaotiep', label: 'Giao tiếp', desc: 'Rõ ý, tự nhiên, đúng ngữ cảnh', langs: ['en', 'zh', 'bi'] },
-    { key: 'toeic', label: 'TOEIC', desc: 'Ngữ pháp, mạch lạc, vốn từ', langs: ['en', 'bi'] },
-    { key: 'ielts', label: 'IELTS', desc: 'Mạch lạc, vốn từ, ngữ pháp', langs: ['en', 'bi'] },
-    { key: 'hsk', label: 'HSK', desc: 'Từ vựng, ngữ pháp, lưu loát', langs: ['zh', 'bi'] },
-];
-
-/**
- * Mức chấm theo TỪNG bộ tiêu chí. Khoá easy/medium/hard giữ nguyên để gửi server;
- * nhãn là thang của chính bộ đó (TOEIC điểm, IELTS band, HSK cấp). Khớp `MUC_CHAM`
- * ở services/conversationGrader.js.
- */
-const MUC_CHAM_CHON = {
-    giaotiep: MUC_KHO,
-    toeic: [
-        { key: 'easy', label: '400–500', desc: 'Ngữ pháp cơ bản, từ công sở đơn giản' },
-        { key: 'medium', label: '600–700', desc: 'Ngữ pháp đa dạng hơn' },
-        { key: 'hard', label: '800+', desc: 'Vốn từ công sở phong phú' },
-    ],
-    ielts: [
-        { key: 'easy', label: 'Band 5.0–5.5', desc: 'Ý rõ, đủ ngữ pháp' },
-        { key: 'medium', label: 'Band 6.0–6.5', desc: 'Mạch lạc, từ đa dạng' },
-        { key: 'hard', label: 'Band 7.0+', desc: 'Từ tinh tế, ít lỗi' },
-    ],
-    hsk: [
-        { key: 'easy', label: 'HSK 2–3', desc: 'Câu đơn giản' },
-        { key: 'medium', label: 'HSK 4', desc: 'Câu dài, bổ ngữ' },
-        { key: 'hard', label: 'HSK 5+', desc: 'Câu phức, lưu loát' },
-    ],
-};
+const BO_TIEU_CHI_CHON = KIEU_CHAM;
+const MUC_CHAM_CHON = DO_KHO_THEO_KIEU;
 
 export default function ConversationScreen({ active }) {
     const { showScreen, syncFromState } = useGame();
@@ -353,59 +327,37 @@ export default function ConversationScreen({ active }) {
                             />
                         </div>
                         <div className="ai-setup-col" style={{ gridColumn: 2 }}>
-                            <div className="ai-setup-title">Kiểu chấm</div>
-                            <div className="ai-setup-list tr-levels">
-                                {BO_TIEU_CHI_CHON.filter((b) => b.langs.includes(lang)).map((b) => (
-                                    <button
-                                        key={b.key}
-                                        className={`tr-level${rubric === b.key ? ' is-on' : ''}`}
-                                        onClick={() => setRubric(b.key)}
-                                    >
-                                        <strong>{b.label}</strong>
-                                        <em>{b.desc}</em>
-                                    </button>
-                                ))}
-                            </div>
-
-                            {/* Chỉ với Giao tiếp: ngữ pháp văn nói (nới lỏng) hay chuẩn viết (nghiêm). */}
-                            {rubric === 'giaotiep' && (
-                                <>
-                                    <div className="ai-setup-title">Ngữ pháp chấm</div>
-                                    <div className="ai-setup-list tr-levels">
-                                        <button
-                                            className={`tr-level${!strictGrammar ? ' is-on' : ''}`}
-                                            onClick={() => setStrictGrammar(false)}
-                                        >
-                                            <strong>Văn nói</strong>
-                                            <em>Bỏ qua rút gọn, tiếng lóng, lối nói đời thường</em>
-                                        </button>
-                                        <button
-                                            className={`tr-level${strictGrammar ? ' is-on' : ''}`}
-                                            onClick={() => setStrictGrammar(true)}
-                                        >
-                                            <strong>Chuẩn viết</strong>
-                                            <em>Chấm theo ngữ pháp viết đầy đủ</em>
-                                        </button>
-                                    </div>
-                                </>
-                            )}
-
-                            {/* Ba mức dùng CHUNG một bảng với Dịch và Đọc hiểu (server:
-                                `services/aiLevel.js`), nên "Khó" ở đây và "Khó" ở đó là
-                                cùng một trình độ — người học so được giữa các chế độ. */}
-                            <div className="ai-setup-title">Độ khó</div>
-                            <div className="ai-setup-list tr-levels">
-                                {(MUC_CHAM_CHON[rubric] || MUC_KHO).map((m) => (
-                                    <button
-                                        key={m.key}
-                                        className={`tr-level${level === m.key ? ' is-on' : ''}`}
-                                        onClick={() => setLevel(m.key)}
-                                    >
-                                        <strong>{m.label}</strong>
-                                        <em>{m.desc}</em>
-                                    </button>
-                                ))}
-                            </div>
+                            {/* Kiểu chấm + độ khó: dùng CHUNG component với Luyện viết và Dịch.
+                                Riêng Giao tiếp có thêm "Ngữ pháp chấm" (văn nói hay chuẩn viết). */}
+                            <KieuChamDoKho
+                                kieuList={BO_TIEU_CHI_CHON.filter((b) => b.langs.includes(lang))}
+                                kieuDangChon={rubric}
+                                onKieu={setRubric}
+                                doKhoList={doKhoChoKieu(rubric)}
+                                doKhoDangChon={level}
+                                onDoKho={setLevel}
+                                giua={rubric === 'giaotiep' ? (
+                                    <>
+                                        <div className="ai-setup-title">Ngữ pháp chấm</div>
+                                        <div className="ai-setup-list tr-levels">
+                                            <button
+                                                className={`tr-level${!strictGrammar ? ' is-on' : ''}`}
+                                                onClick={() => setStrictGrammar(false)}
+                                            >
+                                                <strong>Văn nói</strong>
+                                                <em>Bỏ qua rút gọn, tiếng lóng, lối nói đời thường</em>
+                                            </button>
+                                            <button
+                                                className={`tr-level${strictGrammar ? ' is-on' : ''}`}
+                                                onClick={() => setStrictGrammar(true)}
+                                            >
+                                                <strong>Chuẩn viết</strong>
+                                                <em>Chấm theo ngữ pháp viết đầy đủ</em>
+                                            </button>
+                                        </div>
+                                    </>
+                                ) : null}
+                            />
                         </div>
                     </div>
 

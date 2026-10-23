@@ -27,7 +27,8 @@ describe('bốn màn AI đều cho chọn mức khó', () => {
     for (const [ten, src] of Object.entries(MAN)) {
         test(`${ten} có hàng chọn mức`, () => {
             expect(src).toMatch(/const MUC_KHO = \[/);
-            expect(src).toMatch(/tr-levels/);
+            // Hàng chọn mức nằm trong class `tr-levels` hoặc component dùng chung KieuChamDoKho.
+            expect(src).toMatch(/tr-levels|KieuChamDoKho/);
             expect(src).toMatch(/useState\('medium'\)/);
         });
 

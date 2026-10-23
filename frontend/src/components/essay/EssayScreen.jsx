@@ -6,6 +6,8 @@ import { Notification } from '@ui/Toaster.jsx';
 import { EssayAPI } from '@api/essay.js';
 import LichSuMode from '../history/LichSuMode.jsx';
 import DanhSachVai from '../roles/DanhSachVai.jsx';
+import KieuChamDoKho from '../ai/KieuChamDoKho.jsx';
+import { KIEU_CHAM, doKhoChoKieu } from '@lib/kieuCham.js';
 import { getVocabLang } from '@api/vocabulary.js';
 import { TopicSelector } from '@components/vocab/topic/topicSelector.js';
 import { PartSelector } from '@components/vocab/part/partSelector.js';
@@ -77,47 +79,8 @@ const MUC_KHO_ZH = [
     { key: 'hard', label: 'HSK5–6', desc: 'Từ ít gặp, câu phức' },
 ];
 
-/**
- * Kiểu chấm bài viết, khớp `RUBRICS_BY_LANG` ở server (services/essayGrader.js).
- * Tiếng Anh: Giao tiếp, TOEIC, IELTS. Tiếng Trung: Giao tiếp, HSK.
- */
-const KIEU_CHAM = [
-    { key: 'giaotiep', label: 'Giao tiếp', desc: 'Rõ ý, tự nhiên, đúng ngữ cảnh', langs: ['en', 'zh'] },
-    { key: 'toeic', label: 'TOEIC', desc: 'Ngữ pháp, mạch lạc, vốn từ', langs: ['en'] },
-    { key: 'ielts', label: 'IELTS', desc: 'Mạch lạc, vốn từ, ngữ pháp', langs: ['en'] },
-    { key: 'hsk', label: 'HSK', desc: 'Nội dung, bố cục, chữ Hán, ngữ pháp', langs: ['zh'] },
-];
-
-/** Kiểu chấm mặc định của mỗi ngôn ngữ (khớp server). */
+/** Kiểu chấm mặc định của mỗi ngôn ngữ (khớp server). Bảng kiểu chấm và độ khó: lib/kieuCham.js. */
 const KIEU_MAC_DINH = { en: 'ielts', zh: 'hsk' };
-
-/**
- * Nhãn ĐỘ KHÓ theo từng kiểu chấm — giống Hội thoại: mỗi kiểu có thang riêng
- * (Giao tiếp Dễ/Vừa/Khó, TOEIC theo điểm, IELTS theo band, HSK theo cấp).
- * Khoá easy/medium/hard giữ nguyên để gửi server; khớp `MUC_CHAM` ở server.
- */
-const MUC_THEO_KIEU = {
-    giaotiep: [
-        { key: 'easy', label: 'Dễ', desc: 'Từ thông dụng, câu ngắn' },
-        { key: 'medium', label: 'Vừa', desc: 'Từ công sở' },
-        { key: 'hard', label: 'Khó', desc: 'Từ ít gặp, câu phức' },
-    ],
-    toeic: [
-        { key: 'easy', label: '400–500', desc: 'Ngữ pháp cơ bản, từ công sở đơn giản' },
-        { key: 'medium', label: '600–700', desc: 'Ngữ pháp đa dạng hơn' },
-        { key: 'hard', label: '800+', desc: 'Vốn từ công sở phong phú' },
-    ],
-    ielts: [
-        { key: 'easy', label: 'Band 5.0–5.5', desc: 'Ý rõ, đủ ngữ pháp' },
-        { key: 'medium', label: 'Band 6.0–6.5', desc: 'Mạch lạc, từ đa dạng' },
-        { key: 'hard', label: 'Band 7.0+', desc: 'Từ tinh tế, ít lỗi' },
-    ],
-    hsk: [
-        { key: 'easy', label: 'HSK 2–3', desc: 'Câu đơn giản' },
-        { key: 'medium', label: 'HSK 4', desc: 'Câu dài, bổ ngữ' },
-        { key: 'hard', label: 'HSK 5+', desc: 'Câu phức, lưu loát' },
-    ],
-};
 
 export default function EssayScreen({ active }) {
     const { showScreen, syncFromState } = useGame();
@@ -270,33 +233,15 @@ export default function EssayScreen({ active }) {
                             />
                         </div>
                         <div className="ai-setup-col" style={{ gridColumn: 2 }}>
-                            {/* Kiểu chấm: các chip giống Hội thoại, lọc theo ngôn ngữ đang học. */}
-                            <div className="ai-setup-title">Kiểu chấm</div>
-                            <div className="ai-setup-list tr-levels">
-                                {KIEU_CHAM.filter((k) => k.langs.includes(lang)).map((k) => (
-                                    <button
-                                        key={k.key}
-                                        className={`tr-level${kieuDangChon === k.key ? ' is-on' : ''}`}
-                                        onClick={() => setKieuChon(k.key)}
-                                    >
-                                        <strong>{k.label}</strong>
-                                        <em>{k.desc}</em>
-                                    </button>
-                                ))}
-                            </div>
-                            <div className="ai-setup-title">Độ khó</div>
-                            <div className="ai-setup-list tr-levels">
-                                {(MUC_THEO_KIEU[kieuDangChon] || MUC_KHO).map((m) => (
-                                    <button
-                                        key={m.key}
-                                        className={`tr-level${level === m.key ? ' is-on' : ''}`}
-                                        onClick={() => setLevel(m.key)}
-                                    >
-                                        <strong>{m.label}</strong>
-                                        <em>{m.desc}</em>
-                                    </button>
-                                ))}
-                            </div>
+                            {/* Kiểu chấm + độ khó: dùng CHUNG component với Hội thoại và Dịch. */}
+                            <KieuChamDoKho
+                                kieuList={KIEU_CHAM.filter((k) => k.langs.includes(lang))}
+                                kieuDangChon={kieuDangChon}
+                                onKieu={setKieuChon}
+                                doKhoList={doKhoChoKieu(kieuDangChon)}
+                                doKhoDangChon={level}
+                                onDoKho={setLevel}
+                            />
                         </div>
                     </div>
 
