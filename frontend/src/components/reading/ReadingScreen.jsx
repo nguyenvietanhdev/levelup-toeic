@@ -6,11 +6,8 @@ import { Energy } from '@game/energy.js';
 import { Notification } from '@ui/Toaster.jsx';
 import { ReadingAPI } from '@api/reading.js';
 import LichSuMode from '../history/LichSuMode.jsx';
-import DanhSachVai from '../roles/DanhSachVai.jsx';
 import KieuChamDoKho from '../ai/KieuChamDoKho.jsx';
 import { getVocabLang } from '@api/vocabulary.js';
-import { TopicSelector } from '@components/vocab/topic/topicSelector.js';
-import { PartSelector } from '@components/vocab/part/partSelector.js';
 import { KIEU_CHAM, kieuChoNgonNgu, doKhoChoKieu } from '@lib/kieuCham.js';
 
 /**
@@ -216,11 +213,6 @@ export default function ReadingScreen({ active }) {
 
             {tab === 'lichsu' ? <LichSuMode mode="doc" /> : !de ? (
                 <div className="essay-intro essay-intro--wide">
-                    <DanhSachVai
-                        source={TopicSelector.currentTopic?.source || ''}
-                        part={PartSelector.selectedPart || ''}
-                        lang={getVocabLang()}
-                    />
                     <p>
                         Đọc một văn bản {ngonNgu === 'zh' ? 'tiếng Trung' : 'tiếng Anh'} theo
                         văn phong <strong>{kieuMoTa.label}</strong>, rồi trả lời câu hỏi.

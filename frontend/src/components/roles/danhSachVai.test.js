@@ -39,9 +39,14 @@ describe('mọi chế độ AI có danh sách vai ở phần giới thiệu', ()
     const cases = [
         ['conversation/ConversationScreen.jsx', 'convo-intro'],
         ['essay/EssayScreen.jsx', 'essay-intro'],
-        ['reading/ReadingScreen.jsx', 'essay-intro'],
         ['translation/TranslationScreen.jsx', 'essay-intro'],
     ];
+
+    // Đọc hiểu là bài đọc nhiều dạng, không có AI đóng vai — không dùng vai của Part.
+    test('Đọc hiểu KHÔNG dùng vai', () => {
+        const s = read('reading/ReadingScreen.jsx');
+        expect(s).not.toMatch(/DanhSachVai/);
+    });
     for (const [file, cls] of cases) {
         test(`${file} gắn DanhSachVai trong ${cls}`, () => {
             const s = read(file);
