@@ -16,6 +16,7 @@ import { WrongWordsManager } from '@components/vocab/wrongWords/wrongWordsManage
 import { SessionService } from '@components/practice/sessionService.js';
 import { PracticeManager } from '@components/practice/practiceManager.js';
 import { getToeicExitGuard } from '@components/toeic/toeicRunGuard.js';
+import { getAiExitGuard } from '@components/ai/aiExitGuard.js';
 import { luuViTri, docViTri, quenViTri, khoiPhucCuon } from '@game/screenScroll.js';
 
 const GameContext = createContext(null);
@@ -174,6 +175,14 @@ export function GameProvider({ children }) {
         if (screenId !== 'toeic-screen' && toeicConfirm) {
             setMenuOpen(false);
             toeicConfirm(() => doiMan(screenId, opts));
+            return;
+        }
+        // Cùng logic cho các chế độ AI (Hội thoại, Đọc, Viết, Dịch, Nghe): rời màn
+        // khi đang làm dở → hỏi trước (xem components/ai/aiExitGuard.js).
+        const aiGuard = getAiExitGuard();
+        if (aiGuard && screenId !== aiGuard.screen) {
+            setMenuOpen(false);
+            aiGuard.fn(() => doiMan(screenId, opts));
             return;
         }
         doiMan(screenId, opts);

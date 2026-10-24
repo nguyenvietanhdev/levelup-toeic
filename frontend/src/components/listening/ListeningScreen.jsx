@@ -7,6 +7,7 @@ import { PartSelector } from '@components/vocab/part/partSelector.js';
 import ChonDangBai, { useGoiYDang, dangGui } from '../ai/ChonDangBai.jsx';
 import LichSuMode from '../history/LichSuMode.jsx';
 import NutBatDau from '../ai/NutBatDau.jsx';
+import { useHoiKhiThoat } from '../ai/aiExitGuard.js';
 
 /** Mức khó của đoạn nghe (khoá gửi server; server chọn dải CEFR tương ứng). */
 const MUC = [
@@ -127,6 +128,12 @@ export default function ListeningScreen({ active }) {
         setKetQua(null);
         setTyped('');
     };
+
+    // Đang làm dở mà rời màn (quay về, menu, Trang chủ…) → hỏi trước, như 16 chế độ luyện tập.
+    useHoiKhiThoat('listening-screen', !!phien && !ketQua, {
+        tieuDe: 'Thoát bài nghe?',
+        noiDung: 'Bài nghe chưa nộp sẽ bị bỏ. Năng lượng đã trừ khi bắt đầu sẽ không được hoàn lại. Bạn có chắc chắn muốn thoát?',
+    });
 
     return (
         <div id="listening-screen" className={`screen ${active ? 'active' : ''}`}>

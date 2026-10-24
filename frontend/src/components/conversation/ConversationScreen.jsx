@@ -19,6 +19,7 @@ import { TopicSelector } from '@components/vocab/topic/topicSelector.js';
 import { PartSelector } from '@components/vocab/part/partSelector.js';
 import { isSpeechSupported, speechLangFor, createSpeechInput } from '@lib/speechInput.js';
 import NutBatDau from '../ai/NutBatDau.jsx';
+import { useHoiKhiThoat } from '../ai/aiExitGuard.js';
 
 /**
  * Chế độ HỘI THOẠI — luyện dùng lại từ vựng vừa học.
@@ -440,6 +441,12 @@ export default function ConversationScreen({ active }) {
     // Từ AI đã nói mà người học chưa dùng: tính là XONG cho tiến độ (khỏi phải lặp
     // lại gượng), nhưng không có thưởng — server chỉ thưởng theo `usedWords`.
     const aiUsed = new Set(convo?.aiUsedWords || []);
+
+    // Đang làm dở mà rời màn (quay về, menu, Trang chủ…) → hỏi trước, như 16 chế độ luyện tập.
+    useHoiKhiThoat('conversation-screen', !!convo && !result, {
+        tieuDe: 'Thoát hội thoại?',
+        noiDung: 'Phiên hội thoại chưa kết thúc sẽ không được chấm và không nhận thưởng. Năng lượng đã trừ khi bắt đầu sẽ không được hoàn lại. Bạn có chắc chắn muốn thoát?',
+    });
 
     return (
         <div id="conversation-screen" className={`screen ${active ? 'active' : ''}`}>

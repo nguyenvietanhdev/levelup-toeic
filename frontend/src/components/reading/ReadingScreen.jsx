@@ -11,6 +11,7 @@ import ChonDangBai, { MAX_TU_CHON, useGoiYDang, dangGui } from '../ai/ChonDangBa
 import { getVocabLang } from '@api/vocabulary.js';
 import { KIEU_CHAM, kieuChoNgonNgu, doKhoChoKieu } from '@lib/kieuCham.js';
 import NutBatDau from '../ai/NutBatDau.jsx';
+import { useHoiKhiThoat } from '../ai/aiExitGuard.js';
 
 /**
  * Luyện ĐỌC HIỂU nhiều dạng bài: đời thường, công việc, báo chí, học thuật —
@@ -190,6 +191,12 @@ export default function ReadingScreen({ active }) {
 
     const daLam = chon.filter(Boolean).length;
     const tongCau = de?.questions?.length || 0;
+
+    // Đang làm dở mà rời màn (quay về, menu, Trang chủ…) → hỏi trước, như 16 chế độ luyện tập.
+    useHoiKhiThoat('reading-screen', !!de && !result, {
+        tieuDe: 'Thoát đọc hiểu?',
+        noiDung: 'Bài đọc đang làm sẽ bị bỏ và các câu đã chọn không được lưu. Bạn có chắc chắn muốn thoát?',
+    });
 
     return (
         <div id="reading-screen" className={`screen ${active ? 'active' : ''}`}>

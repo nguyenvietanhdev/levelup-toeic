@@ -10,6 +10,7 @@ import LichSuMode from '../history/LichSuMode.jsx';
 import KieuChamDoKho from '../ai/KieuChamDoKho.jsx';
 import ChonDangBai, { useGoiYDang, dangGui } from '../ai/ChonDangBai.jsx';
 import NutBatDau from '../ai/NutBatDau.jsx';
+import { useHoiKhiThoat } from '../ai/aiExitGuard.js';
 
 /**
  * Luyện DỊCH — đọc một đoạn tiếng Việt, viết lại bằng tiếng Anh (hoặc Trung).
@@ -221,6 +222,12 @@ export default function TranslationScreen({ active }) {
     }, [grading, de, banDich, enough, soDonVi, minUnits, unit, syncFromState]);
 
     gradeRef.current = handleGrade;
+
+    // Đang làm dở mà rời màn (quay về, menu, Trang chủ…) → hỏi trước, như 16 chế độ luyện tập.
+    useHoiKhiThoat('translation-screen', !!de && !result, {
+        tieuDe: 'Thoát dịch đoạn văn?',
+        noiDung: 'Bản dịch chưa nộp sẽ bị mất. Bạn có chắc chắn muốn thoát?',
+    });
 
     return (
         <div id="translation-screen" className={`screen ${active ? 'active' : ''}`}>

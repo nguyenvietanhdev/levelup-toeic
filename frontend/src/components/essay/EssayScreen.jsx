@@ -9,6 +9,7 @@ import KieuChamDoKho from '../ai/KieuChamDoKho.jsx';
 import ChonDangBai, { useGoiYDang, dangGui } from '../ai/ChonDangBai.jsx';
 import { KIEU_CHAM, doKhoChoKieu } from '@lib/kieuCham.js';
 import NutBatDau from '../ai/NutBatDau.jsx';
+import { useHoiKhiThoat } from '../ai/aiExitGuard.js';
 
 /**
  * Luyện VIẾT LUẬN — IELTS Task 2 (tiếng Anh) hoặc HSK 书写 (tiếng Trung).
@@ -235,6 +236,12 @@ export default function EssayScreen({ active }) {
     }, [grading, prompt, essay, enough, words, minUnits, unit, syncFromState, kieuCuaDe]);
 
     gradeRef.current = handleGrade;
+
+    // Đang làm dở mà rời màn (quay về, menu, Trang chủ…) → hỏi trước, như 16 chế độ luyện tập.
+    useHoiKhiThoat('essay-screen', !!prompt && !result, {
+        tieuDe: 'Thoát luyện viết?',
+        noiDung: 'Bài viết chưa nộp sẽ bị mất. Bạn có chắc chắn muốn thoát?',
+    });
 
     return (
         <div id="essay-screen" className={`screen ${active ? 'active' : ''}`}>
