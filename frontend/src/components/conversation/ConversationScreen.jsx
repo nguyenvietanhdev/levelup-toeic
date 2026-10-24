@@ -18,6 +18,8 @@ import { EventBus, GameEvents } from '@game/eventBus.js';
 import { TopicSelector } from '@components/vocab/topic/topicSelector.js';
 import { PartSelector } from '@components/vocab/part/partSelector.js';
 import { isSpeechSupported, speechLangFor, createSpeechInput } from '@lib/speechInput.js';
+import { useGhiAm } from './useGhiAm.js';
+import { BongThoaiAI, BongThoaiCuaToi } from './BongThoai.jsx';
 import NutBatDau from '../ai/NutBatDau.jsx';
 import { useHoiKhiThoat } from '../ai/aiExitGuard.js';
 
@@ -105,8 +107,15 @@ const NHOM_DANG = [
 /** Chưa gõ gì sau bấy nhiêu giây kể từ câu AI → tự mở gợi ý (một lần mỗi câu). */
 const GOI_Y_SAU_GIAY = 30;
 
-export default function ConversationScreen({ active }) {
+/**
+ * `voice` = Hội thoại GIỌNG NÓI: AI gửi tin nhắn thoại (chỉ nút phát, không chữ),
+ * người học trả lời bằng ghi âm. Không có `voice` = Chat chữ như trước. Hai chế độ
+ * dùng chung toàn bộ phần chọn vai/tình huống/kiểu chấm, chấm điểm và lịch sử.
+ */
+export default function ConversationScreen({ active, voice = false }) {
     const { showScreen, syncFromState } = useGame();
+    // Mã màn của ROUTE (khác nhau giữa Chat và Hội thoại) — dùng cho chốt chặn thoát.
+    const screenId = voice ? 'voice-conversation-screen' : 'conversation-screen';
 
     const [convo, setConvo] = useState(null);       // { id, targetWords, turns, usedWords, aiUsedWords }
     const [draft, setDraft] = useState('');
@@ -140,6 +149,10 @@ export default function ConversationScreen({ active }) {
     const handleStartRef = useRef(null);
     const scrollRef = useRef(null);
     const lang = getVocabLang();
+    // Hội thoại giọng nói: tin nhắn thoại AI đang phát (chỉ số lượt) và bộ ghi âm.
+    const [dangPhat, setDangPhat] = useState(null);
+    const ghiAm = useGhiAm(speechLangFor(lang));
+    const coNhanGiong = isSpeechSupported();
 
     // Cuộn xuống lượt mới nhất. Không cuộn thì câu vừa hiện nằm dưới màn và
     // người dùng tưởng máy chưa trả lời.
@@ -163,11 +176,22 @@ export default function ConversationScreen({ active }) {
      * chính tiếng loa, và câu của NPC bị ghi vào ô nhập như thể họ vừa nói ra.
      * Cùng lỗi với chế độ Phát âm (xem `PronunciationMode.speakSample`).
      */
-    const speak = useCallback((text) => {
+    const speak = useCallback((text, onEnd) => {
         if (!text) return;
         speechRef.current?.stop?.();
         setSpeechOn(false);
-        try { GameLogic.speakWord(text, ttsLang()); } catch { /* không đọc được thì thôi */ }
+        try { GameLogic.speakWord(text, ttsLang(), onEnd); } catch { /* không đọc được thì thôi */ }
+    }, []);
+
+    /** Phát tin nhắn thoại thứ `i` của AI (Hội thoại giọng nói), giữ trạng thái nút. */
+    const phatTin = useCallback((i, text) => {
+        try { GameLogic.stopSpeaking?.(); } catch { /* chưa phát gì */ }
+        setDangPhat(i);
+        speak(text, () => setDangPhat((d) => (d === i ? null : d)));
+    }, [speak]);
+    const dungPhat = useCallback(() => {
+        try { GameLogic.stopSpeaking?.(); } catch { /* chưa phát gì */ }
+        setDangPhat(null);
     }, []);
 
     const handleStart = useCallback(async () => {
@@ -212,6 +236,7 @@ export default function ConversationScreen({ active }) {
                 rubric: rubricGui,
                 strictGrammar: rubricGui === 'giaotiep' && strictGrammar,
                 ...dangGui({ dang, tuChon, goiY }),
+                voice,
             });
             // Chốt cuối: không có `id` thì KHÔNG phải phiên hợp lệ.
             //
@@ -235,7 +260,8 @@ export default function ConversationScreen({ active }) {
                 GameState.setEnergy?.(data.energyRemaining);
                 syncFromState?.();
             }
-            speak(data.turns?.[0]?.content);
+            if (voice) phatTin(0, data.turns?.[0]?.content);
+            else speak(data.turns?.[0]?.content);
         } catch (err) {
             // THIẾU NĂNG LƯỢNG → mở popup nạp, y như các chế độ luyện tập.
             //
@@ -259,13 +285,18 @@ export default function ConversationScreen({ active }) {
         } finally {
             setStarting(false);
         }
-    }, [starting, lang, speak, syncFromState, level, context, rubric, strictGrammar, dang, tuChon, goiY]);
+    }, [starting, lang, speak, phatTin, voice, syncFromState, level, context, rubric, strictGrammar, dang, tuChon, goiY]);
 
     handleStartRef.current = handleStart;
 
-    const handleSend = useCallback(async () => {
-        const text = draft.trim();
+    // `chuGui`: chữ gửi thay cho ô nhập (Hội thoại giọng nói gửi chữ nhận dạng được);
+    // `them`: dữ liệu gắn vào lượt của người học (vd `audioUrl` để phát lại giọng).
+    // Gắn thẳng vào onClick thì đối số đầu là sự kiện chuột — nên kiểm kiểu chuỗi.
+    const handleSend = useCallback(async (chuGui, them) => {
+        const text = (typeof chuGui === 'string' ? chuGui : draft).trim();
         if (!text || busy || !convo) return;
+        // Chỉ số lượt AI sắp đáp: sau lượt của người học vừa thêm.
+        const viTriDap = convo.turns.length + 1;
 
         // Gửi thì DỪNG ghi âm. Để micro chạy tiếp có ba cái hại: nó ghi đè ô
         // nhập vừa xoá bằng câu đang nghe dở, nó nghe luôn câu NPC đọc ra loa,
@@ -278,7 +309,7 @@ export default function ConversationScreen({ active }) {
         setBusy(true);
         // Hiện câu của mình NGAY, không chờ server: chờ round-trip mới thấy chữ
         // thì cảm giác như máy treo.
-        setConvo(c => ({ ...c, turns: [...c.turns, { role: 'user', content: text }] }));
+        setConvo(c => ({ ...c, turns: [...c.turns, { role: 'user', content: text, ...(them || {}) }] }));
         setDraft('');
 
         try {
@@ -295,7 +326,10 @@ export default function ConversationScreen({ active }) {
                     aiUsedWords: data.aiUsedWords || c.aiUsedWords || [],
                 };
             });
-            if (data.npcReply) speak(data.npcReply);
+            if (data.npcReply) {
+                if (voice) phatTin(viTriDap, data.npcReply);
+                else speak(data.npcReply);
+            }
             if (data.aiFailed) {
                 // Câu của người học VẪN được chấm và lưu — chỉ mất câu đáp. Nói
                 // rõ để họ không tưởng mất lượt.
@@ -308,7 +342,7 @@ export default function ConversationScreen({ active }) {
         }
         // `speechOn` PHẢI có trong deps: thiếu thì closure giữ giá trị của lần
         // render đầu (luôn false) và micro không bao giờ được tắt.
-    }, [draft, busy, convo, speak, speechOn]);
+    }, [draft, busy, convo, speak, phatTin, voice, speechOn]);
 
     /** Bật/tắt bản dịch tiếng Việt của một lượt NPC. Dịch một lần, bấm lại chỉ ẩn/hiện. */
     const toggleDich = useCallback(async (i, text) => {
@@ -443,18 +477,24 @@ export default function ConversationScreen({ active }) {
     const aiUsed = new Set(convo?.aiUsedWords || []);
 
     // Đang làm dở mà rời màn (quay về, menu, Trang chủ…) → hỏi trước, như 16 chế độ luyện tập.
-    useHoiKhiThoat('conversation-screen', !!convo && !result, {
+    useHoiKhiThoat(screenId, !!convo && !result, {
         tieuDe: 'Thoát hội thoại?',
         noiDung: 'Phiên hội thoại chưa kết thúc sẽ không được chấm và không nhận thưởng. Năng lượng đã trừ khi bắt đầu sẽ không được hoàn lại. Bạn có chắc chắn muốn thoát?',
     });
 
     return (
-        <div id="conversation-screen" className={`screen ${active ? 'active' : ''}`}>
+        // Cùng id DOM cho Chat và Hội thoại: hai màn không bao giờ cùng mount, và CSS bố cục
+        // toàn màn (`#conversation-screen.active`) dùng chung.
+        <div id="conversation-screen" className={`screen ${active ? 'active' : ''}${voice ? ' is-thoai' : ''}`}>
             <div className="screen-header">
                 <button className="back-btn-screen icon-btn" onClick={() => showScreen('home-screen')}>
                     <i className="fas fa-arrow-left"></i>
                 </button>
-                <h2><i className="fas fa-comments"></i> Hội thoại</h2>
+                <h2>
+                    {voice
+                        ? <><i className="fas fa-microphone-lines"></i> Hội thoại</>
+                        : <><i className="fas fa-comments"></i> Chat</>}
+                </h2>
             </div>
 
             <div className="tr-tabs">
@@ -479,11 +519,25 @@ export default function ConversationScreen({ active }) {
                 )
                 : !convo ? (
                 <div className="convo-intro">
-                    <p>
-                        Luyện nói bằng chính bộ từ bạn vừa học. Máy sẽ trò chuyện và
-                        dùng những từ đó — bạn đáp lại, càng dùng được nhiều từ
-                        càng nhiều thưởng.
-                    </p>
+                    {voice ? (
+                        <p>
+                            AI gửi <strong>tin nhắn thoại</strong> — chỉ có nút phát, không có chữ. Nghe
+                            hiểu rồi <strong>trả lời bằng giọng nói</strong> như gọi điện thật; lời
+                            thoại hiện ra sau khi kết thúc. Càng dùng được nhiều từ càng nhiều thưởng.
+                        </p>
+                    ) : (
+                        <p>
+                            Luyện nói bằng chính bộ từ bạn vừa học. Máy sẽ trò chuyện và
+                            dùng những từ đó — bạn đáp lại, càng dùng được nhiều từ
+                            càng nhiều thưởng.
+                        </p>
+                    )}
+                    {voice && !coNhanGiong && (
+                        <p className="tr-intro-note">
+                            <i className="fas fa-circle-info"></i>{' '}
+                            Trình duyệt này chưa nhận được giọng nói — hãy dùng Chrome hoặc Edge.
+                        </p>
+                    )}
                     {/* Hai cột: TRÁI là vai của Part đang học (sửa, xoá, dùng vai AI đã lưu)
                         rồi TÌNH HUỐNG (ghép với vai); PHẢI là KIỂU CHẤM và ĐỘ KHÓ, sát mép phải. */}
                     <div className="ai-setup">
@@ -543,7 +597,7 @@ export default function ConversationScreen({ active }) {
                     </div>
 
                     {/* Nút bắt đầu nổi cố định giữa đáy khung nhìn (portal vào body). */}
-                    <NutBatDau active={active} onClick={handleStart} disabled={starting}>
+                    <NutBatDau active={active} onClick={handleStart} disabled={starting || (voice && !coNhanGiong)}>
                         {starting
                             ? <><i className="fas fa-spinner fa-spin"></i> Đang tạo…</>
                             : <><i className="fas fa-play"></i> Bắt đầu</>}
@@ -583,6 +637,21 @@ export default function ConversationScreen({ active }) {
                     <div className="convo-log" ref={scrollRef}>
                         {convo.turns.map((t, i) => (
                             <div key={i} className={`convo-turn convo-turn--${t.role}`}>
+                                {voice && t.role === 'npc' ? (
+                                    <>
+                                        <BongThoaiAI
+                                            dangPhat={dangPhat === i}
+                                            onBam={() => (dangPhat === i ? dungPhat() : phatTin(i, t.content))}
+                                        />
+                                        {/* Lời thoại chỉ hiện SAU khi kết thúc — trong lúc nói phải nghe hiểu. */}
+                                        {result && <div className="convo-thoai-chu">{t.content}</div>}
+                                    </>
+                                ) : voice && t.role === 'user' && t.audioUrl ? (
+                                    <>
+                                        <BongThoaiCuaToi url={t.audioUrl} />
+                                        <div className="convo-thoai-nghe">Máy nghe được: “{t.content}”</div>
+                                    </>
+                                ) : (
                                 <div className="convo-bubble">
                                     {t.content}
                                     {t.role === 'npc' && (
@@ -604,7 +673,8 @@ export default function ConversationScreen({ active }) {
                                         </button>
                                     )}
                                 </div>
-                                {t.role === 'npc' && banDich[i]?.mo && banDich[i]?.text && (
+                                )}
+                                {!voice && t.role === 'npc' && banDich[i]?.mo && banDich[i]?.text && (
                                     <div className="convo-dich">{banDich[i].text}</div>
                                 )}
                                 {t.matched?.length > 0 && (
@@ -706,7 +776,8 @@ export default function ConversationScreen({ active }) {
                             return (
                                 <div className="convo-hint">
                                     <div className="convo-hint-loai">
-                                        {goiY.cauHoi && <>Trả lời câu: <strong>“{goiY.cauHoi}”</strong> · </>}
+                                        {/* Hội thoại giọng nói: KHÔNG hiện lại câu hỏi bằng chữ. */}
+                                        {!voice && goiY.cauHoi && <>Trả lời câu: <strong>“{goiY.cauHoi}”</strong> · </>}
                                         {goiY.tuAI
                                             ? <><i className="fas fa-wand-magic-sparkles"></i> Khung theo đúng câu AI hỏi</>
                                             : <>Dạng: <strong>{goiY.loai}</strong></>}
@@ -719,7 +790,7 @@ export default function ConversationScreen({ active }) {
                                                 type="button"
                                                 className="convo-hint-khung"
                                                 title="Đưa khung này vào ô nhập"
-                                                onClick={() => { setDraft(k); inputRef.current?.focus(); }}
+                                                onClick={() => { if (!voice) { setDraft(k); inputRef.current?.focus(); } }}
                                             >
                                                 {k}
                                             </button>
@@ -742,7 +813,7 @@ export default function ConversationScreen({ active }) {
                                                     key={w}
                                                     type="button"
                                                     className="convo-chip convo-chip--tap"
-                                                    onClick={() => setDraft((d) => (d ? `${d} ${w}` : w))}
+                                                    onClick={() => { if (!voice) setDraft((d) => (d ? `${d} ${w}` : w)); }}
                                                 >
                                                     {w}
                                                 </button>
@@ -754,6 +825,71 @@ export default function ConversationScreen({ active }) {
                                 </div>
                             );
                         })()}
+                        {voice ? (
+                        <>
+                        {ghiAm.loi && <p className="tr-intro-note convo-thoai-loi">{ghiAm.loi}</p>}
+                        <div className="convo-input-row convo-input-row--thoai">
+                            <button
+                                type="button"
+                                className={`btn btn-secondary convo-hint-btn${showHint ? ' is-on' : ''}`}
+                                onClick={() => (showHint ? setShowHint(false) : moGoiY())}
+                                title="Gợi ý cách trả lời"
+                            >
+                                <i className="fas fa-lightbulb"></i>
+                            </button>
+                            {ghiAm.trangThai === 'xong' ? (
+                                <>
+                                    {/* Nghe lại / xem máy nghe được gì trước khi gửi. */}
+                                    <div className="convo-thoai-xem">
+                                        {ghiAm.url && <BongThoaiCuaToi url={ghiAm.url} />}
+                                        <span className="convo-thoai-nghe">
+                                            {ghiAm.chu ? `Máy nghe được: “${ghiAm.chu}”` : 'Không nghe rõ — hãy ghi lại.'}
+                                        </span>
+                                    </div>
+                                    <button type="button" className="btn btn-secondary" onClick={ghiAm.lamLai} disabled={busy}>
+                                        <i className="fas fa-rotate-left"></i> Ghi lại
+                                    </button>
+                                    <button
+                                        type="button"
+                                        className="btn btn-primary"
+                                        disabled={busy || !ghiAm.chu.trim()}
+                                        onClick={() => {
+                                            handleSend(ghiAm.chu, ghiAm.url ? { audioUrl: ghiAm.url } : undefined);
+                                            ghiAm.xongGui();
+                                        }}
+                                    >
+                                        <i className="fas fa-paper-plane"></i> Gửi
+                                    </button>
+                                </>
+                            ) : (
+                                <>
+                                    <button
+                                        type="button"
+                                        className={`convo-ghi-am${ghiAm.trangThai === 'ghi' ? ' is-ghi' : ''}`}
+                                        disabled={busy}
+                                        onClick={() => {
+                                            if (ghiAm.trangThai === 'ghi') { ghiAm.dung(); return; }
+                                            // Dừng giọng AI trước khi ghi: micro không thu lại tiếng loa.
+                                            dungPhat();
+                                            ghiAm.batDau();
+                                        }}
+                                    >
+                                        <i className={`fas ${ghiAm.trangThai === 'ghi' ? 'fa-stop' : 'fa-microphone'}`}></i>
+                                        {ghiAm.trangThai === 'ghi'
+                                            ? ` Dừng · ${Math.floor(ghiAm.giay / 60)}:${String(ghiAm.giay % 60).padStart(2, '0')}`
+                                            : ' Bấm để trả lời'}
+                                    </button>
+                                    {ghiAm.trangThai === 'ghi' && ghiAm.chu && (
+                                        <span className="convo-thoai-tam">{ghiAm.chu}</span>
+                                    )}
+                                </>
+                            )}
+                            <button className="btn btn-secondary convo-finish" onClick={handleFinish} disabled={busy}>
+                                Kết thúc
+                            </button>
+                        </div>
+                        </>
+                        ) : (
                         <div className="convo-input-row">
                             <button
                                 type="button"
@@ -797,6 +933,7 @@ export default function ConversationScreen({ active }) {
                                 Kết thúc
                             </button>
                         </div>
+                        )}
                         </>
                     )}
                 </div>

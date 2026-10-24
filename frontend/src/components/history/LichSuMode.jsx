@@ -35,7 +35,8 @@ const CHE_DO = {
         dong: (r) => ({
             id: r.id,
             tieuDe: r.scenario || r.topic || 'Hội thoại tự do',
-            phu: `dùng ${r.usedCount}/${r.totalTargets} từ`,
+            // Chat và Hội thoại giọng nói chung một danh sách — ghi rõ phiên nào là giọng nói.
+            phu: `${r.voice ? 'Giọng nói · ' : 'Chat · '}dùng ${r.usedCount}/${r.totalTargets} từ`,
             diem: <DiemHoiThoai fb={r.feedback} />,
         }),
         ChiTiet: ({ bai }) => <ChiTietHoiThoai phien={bai} />,

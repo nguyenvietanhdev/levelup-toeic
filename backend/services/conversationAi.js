@@ -128,10 +128,13 @@ function pickWords(targetWords = [], usedWords = [], n = WORDS_IN_PROMPT) {
  * Viết bằng tiếng Anh vì mọi model đều bám prompt tiếng Anh tốt hơn; nội dung
  * SINH RA thì vẫn theo `lang`.
  */
-function systemPrompt({ lang, topic, scenario, words, level }) {
+function systemPrompt({ lang, topic, scenario, words, level, voice = false }) {
     const L = langName(lang);
     return [
         `You are a friendly conversation partner helping a ${NATIVE} speaker practise ${L}.`,
+        // Hội thoại GIỌNG NÓI: lời AI được đọc bằng TTS và người học chỉ NGHE, không
+        // thấy chữ — emoji, ký hiệu, gạch đầu dòng đọc lên thành tiếng vô nghĩa.
+        voice ? 'This is a SPOKEN conversation: your words are read aloud and the learner cannot see them. Use plain spoken sentences only: no emojis, symbols, lists or abbreviations.' : '',
         topic ? `Your role: ${topic}.` : '',
         scenario ? `Current situation: ${scenario}. Stay inside this situation.` : '',
         '',
@@ -215,12 +218,12 @@ const NHOM_TINH_HUONG = [
  *
  * @returns {{success:boolean, content?:string, scenario?:string, khung?:string[], error?:string}}
  */
-async function openConversation({ lang = 'en', topic = '', targetWords = [], userId = null, level = 'medium', tinhHuong = null } = {}) {
+async function openConversation({ lang = 'en', topic = '', targetWords = [], userId = null, level = 'medium', tinhHuong = null, voice = false } = {}) {
     const words = pickWords(targetWords, [], WORDS_IN_PROMPT);
     // Tình huống do AI TỰ DỰNG từ bộ từ — không lấy từ Part. Yêu cầu hai dòng
     // SCENARIO và REPLY để server tách được tình huống ra khỏi lời nói.
     const messages = [
-        { role: 'system', content: systemPrompt({ lang, topic, words, level }) },
+        { role: 'system', content: systemPrompt({ lang, topic, words, level, voice }) },
         {
             role: 'user',
             content: [
@@ -259,7 +262,8 @@ async function openConversation({ lang = 'en', topic = '', targetWords = [], use
  * @param {Array}  o.turns  Toàn bộ lượt đã có (`{ role: 'npc'|'user', content }`).
  */
 async function replyTurn({
-    lang = 'en', topic = '', scenario = '', targetWords = [], usedWords = [], turns = [], userId = null, level = 'medium',} = {}) {
+    lang = 'en', topic = '', scenario = '', targetWords = [], usedWords = [], turns = [], userId = null, level = 'medium', voice = false,
+} = {}) {
     // Ưu tiên từ CHƯA dùng: hội thoại tự lái về phía những từ người học còn nợ,
     // thay vì lặp lại mấy từ đã ăn điểm rồi.
     const words = pickWords(targetWords, usedWords, WORDS_IN_PROMPT);
@@ -276,7 +280,7 @@ async function replyTurn({
     }));
 
     const messages = [
-        { role: 'system', content: systemPrompt({ lang, topic, scenario, words, level }) },
+        { role: 'system', content: systemPrompt({ lang, topic, scenario, words, level, voice }) },
         ...recent,
     ];
 

@@ -48,6 +48,8 @@ const conversationSchema = new mongoose.Schema(
         tinhHuong: { type: String, default: '', maxlength: 80 },
         // Số lần đã gọi AI tạo khung gợi ý trong phiên (giới hạn MAX_GOI_Y_AI).
         hintCount: { type: Number, default: 0 },
+        // Hội thoại GIỌNG NÓI (true) hay Chat chữ (false): AI viết câu để đọc thành tiếng.
+        voice: { type: Boolean, default: false },
         // Bộ tiêu chí chấm cuối phiên (giaotiep / toeic / ielts / hsk).
         rubric: { type: String, default: 'giaotiep' },
         // Chấm ngữ pháp nghiêm (chuẩn viết) thay vì nới lỏng văn nói. Chỉ có tác dụng

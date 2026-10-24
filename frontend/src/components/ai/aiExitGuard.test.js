@@ -44,7 +44,8 @@ describe('guard', () => {
 
 describe('cả 5 màn AI đăng ký guard với đúng điều kiện "đang làm dở"', () => {
     const CASES = [
-        ['conversation', 'ConversationScreen.jsx', 'conversation-screen', '!!convo && !result'],
+        // Chat và Hội thoại giọng nói dùng chung màn: mã màn theo route (`screenId`).
+        ['conversation', 'ConversationScreen.jsx', null, '!!convo && !result'],
         ['reading', 'ReadingScreen.jsx', 'reading-screen', '!!de && !result'],
         ['essay', 'EssayScreen.jsx', 'essay-screen', '!!prompt && !result'],
         ['translation', 'TranslationScreen.jsx', 'translation-screen', '!!de && !result'],
@@ -53,7 +54,8 @@ describe('cả 5 màn AI đăng ký guard với đúng điều kiện "đang là
     for (const [thuMuc, file, screen, dk] of CASES) {
         test(`${file}`, () => {
             const src = doc('components', thuMuc, file);
-            expect(src).toContain(`useHoiKhiThoat('${screen}', ${dk}, {`);
+            expect(src).toContain(screen ? `useHoiKhiThoat('${screen}', ${dk}, {` : `useHoiKhiThoat(screenId, ${dk}, {`);
+            if (!screen) expect(src).toMatch(/const screenId = voice \? 'voice-conversation-screen' : 'conversation-screen';/);
             expect(src).toMatch(/import \{ useHoiKhiThoat \} from '\.\.\/ai\/aiExitGuard\.js';/);
             // Hook đứng TRƯỚC mọi return của component (luật gọi hook).
             const i = src.indexOf('export default function');

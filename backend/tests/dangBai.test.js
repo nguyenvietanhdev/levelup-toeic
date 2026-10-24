@@ -240,3 +240,24 @@ describe('Hội thoại — khung gợi ý CHỈ gọi AI khi người học b�
         expect(route.indexOf('router.use(protect)')).toBeLessThan(route.indexOf("'/:id/hint'"));
     });
 });
+
+describe('Hội thoại giọng nói (voice): AI viết câu để đọc thành tiếng', () => {
+    const { systemPrompt } = require('../services/conversationAi');
+    const { readFileSync } = require('node:fs');
+    const { join } = require('node:path');
+
+    test('voice: dặn câu nói thường, cấm emoji/ký hiệu/liệt kê; Chat thì không', () => {
+        const v = systemPrompt({ lang: 'en', words: ['tea'], level: 'medium', voice: true });
+        expect(v).toMatch(/SPOKEN conversation/);
+        expect(v).toMatch(/no emojis, symbols, lists/);
+        expect(systemPrompt({ lang: 'en', words: ['tea'], level: 'medium' })).not.toMatch(/SPOKEN/);
+    });
+
+    test('controller: nhận voice khi mở phiên, lưu vào phiên, đọc lại ở mỗi lượt và trong lịch sử', () => {
+        const src = readFileSync(join(__dirname, '..', 'controllers', 'conversationController.js'), 'utf8');
+        expect(src).toMatch(/const voice = req\.body\.voice === true;/);
+        expect(src).toMatch(/openConversation\(\{[^}]*voice \}\)/);
+        expect(src).toMatch(/voice: convo\.voice === true,\s*\}\);/);
+        expect(src).toMatch(/voice: c\.voice === true,/);
+    });
+});

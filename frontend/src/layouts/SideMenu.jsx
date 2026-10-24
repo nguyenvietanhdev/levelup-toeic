@@ -42,7 +42,9 @@ const MENU_GROUPS = [
     {
         title: 'Nói với AI',
         items: [
-            { label: 'Hội thoại', icon: 'fa-comments', screen: 'conversation-screen', feature: 'feature:conversation' },
+            { label: 'Chat', icon: 'fa-comments', screen: 'conversation-screen', feature: 'feature:conversation' },
+            // Hội thoại GIỌNG NÓI: AI gửi tin nhắn thoại, trả lời bằng ghi âm. Cùng khoá Level với Chat.
+            { label: 'Hội thoại', icon: 'fa-microphone-lines', screen: 'voice-conversation-screen', feature: 'feature:conversation' },
         ],
     },
     {

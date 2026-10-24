@@ -117,7 +117,7 @@ describe('dùng đúng API sẵn có của app', () => {
         // cùng loại lựa chọn với `level` — không phải dữ liệu server tự đọc được.
         // `rubric` được chuẩn hoá theo ngôn ngữ trước khi gửi (xem handleStart).
         expect(src).toMatch(/ConversationAPI\.start\(\{\s*context,\s*level,\s*rubric: rubricGui,\s*strictGrammar:/);
-        expect(api).toMatch(/async start\(\{ context = '', level = 'medium', rubric = 'giaotiep', strictGrammar = false, dang = '', tuChon = '' \} = \{\}\)/);
+        expect(api).toMatch(/async start\(\{ context = '', level = 'medium', rubric = 'giaotiep', strictGrammar = false, dang = '', tuChon = '', voice = false \} = \{\}\)/);
         // Vẫn cấm ba thứ server tự đọc được.
         // Soi đúng ĐỐI SỐ của lời gọi, không soi cả file — `lang` xuất hiện hợp
         // lệ ở nhiều chỗ khác trong màn này.
@@ -189,7 +189,8 @@ describe('dùng đúng API sẵn có của app', () => {
     });
 
     test('dùng TTS sẵn có để đọc câu NPC', () => {
-        expect(src).toMatch(/GameLogic\.speakWord\(text, ttsLang\(\)\)/);
+        // `onEnd` để bong bóng thoại (Hội thoại giọng nói) biết lúc nào phát xong.
+        expect(src).toMatch(/GameLogic\.speakWord\(text, ttsLang\(\), onEnd\)/);
     });
 
     test('dùng speechLangFor để chọn ngôn ngữ nhận dạng', () => {
@@ -305,7 +306,7 @@ describe('gửi thì DỪNG ghi âm', () => {
         // KHÔNG BAO GIỜ được tắt — lỗi im lặng.
         const i = src.indexOf('const handleSend');
         const j = src.indexOf('const handleFinish', i);
-        expect(src.slice(i, j)).toMatch(/\}, \[draft, busy, convo, speak, speechOn\]\)/);
+        expect(src.slice(i, j)).toMatch(/\}, \[draft, busy, convo, [^\]]*speechOn\]\)/);
     });
 });
 
@@ -380,7 +381,8 @@ describe('gõ nhanh: tự focus, dịch câu AI, khung gợi ý theo câu AI', (
 
     test('gợi ý dùng khung AI của lượt NPC cuối; bấm khung là đưa vào ô nhập', () => {
         expect(src).toMatch(/goiYCauTraLoi\(npcCuoi\?\.content, convo\.targetWords, \[\.\.\.used, \.\.\.aiUsed\], npcCuoi\?\.khung\)/);
-        expect(src).toMatch(/onClick=\{\(\) => \{ setDraft\(k\); inputRef\.current\?\.focus\(\); \}\}/);
+        // Hội thoại giọng nói không có ô nhập chữ → khung chỉ để đọc.
+        expect(src).toMatch(/onClick=\{\(\) => \{ if \(!voice\) \{ setDraft\(k\); inputRef\.current\?\.focus\(\); \} \}\}/);
     });
 
     test('khung AI CHỈ xin khi mở gợi ý, mỗi câu AI một lần; lượt đáp không mang khung', () => {

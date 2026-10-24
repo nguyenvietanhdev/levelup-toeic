@@ -243,7 +243,10 @@ exports.start = async (req, res, next) => {
 
         // Tình huống người học chọn hoặc tự nhập (null = AI tự dựng như trước). Ghép với vai.
         const tinhHuong = chonDang(NHOM_TINH_HUONG, { dang: req.body.dang, tuChon: req.body.tuChon });
-        const ai = await openConversation({ lang, topic, targetWords, userId: req.user.id, level, tinhHuong });
+        // Hội thoại GIỌNG NÓI (AI gửi tin nhắn thoại, người học trả lời bằng ghi âm)
+        // hay Chat chữ. Chỉ khác cách AI viết câu; chấm điểm giữ nguyên.
+        const voice = req.body.voice === true;
+        const ai = await openConversation({ lang, topic, targetWords, userId: req.user.id, level, tinhHuong, voice });
         if (!ai.success) {
             // AI lỗi thì HOÀN năng lượng — người dùng không được gì mà vẫn mất
             // tiền là lỗi tệ nhất trong nhóm này.
@@ -262,6 +265,7 @@ exports.start = async (req, res, next) => {
             source, part, lang, topic, scenario: ai.scenario || '', rubric, track,
             strictGrammar: req.body.strictGrammar === true,
             tinhHuong: tinhHuong ? tinhHuong.vi : '',
+            voice,
             targetWords,
             level,
             turns: [{ role: 'npc', content: ai.content }],
@@ -331,6 +335,7 @@ exports.reply = async (req, res, next) => {
             // Đọc lại từ phiên, không nhận từ client: client khai mức khác
             // giữa chừng là đổi độ khó sau khi đã bắt đầu.
             level: convo.level,
+            voice: convo.voice === true,
         });
 
         if (ai.success) {
@@ -459,7 +464,7 @@ exports.history = async (req, res, next) => {
         const rows = await Conversation.find({ userId: req.user.id, status: 'done' })
             .sort({ createdAt: -1 })
             .limit(limit)
-            .select('topic scenario rubric level track lang reward usedWords targetWords createdAt feedback.overall feedback.muc feedback.dat feedback.label feedback.nguong')
+            .select('topic scenario rubric level track lang voice reward usedWords targetWords createdAt feedback.overall feedback.muc feedback.dat feedback.label feedback.nguong')
             .lean();
         res.json({
             success: true,
@@ -470,6 +475,7 @@ exports.history = async (req, res, next) => {
                 rubric: c.rubric || 'giaotiep',
                 level: c.level,
                 track: c.track || 'en',
+                voice: c.voice === true,
                 createdAt: c.createdAt,
                 usedCount: (c.usedWords || []).length,
                 totalTargets: (c.targetWords || []).length,
@@ -507,6 +513,7 @@ exports.detail = async (req, res, next) => {
                 id: String(convo._id),
                 topic: convo.topic || '',
                 scenario: convo.scenario || '',
+                voice: convo.voice === true,
                 rubric: convo.rubric || 'giaotiep',
                 level: convo.level,
                 track: convo.track || 'en',

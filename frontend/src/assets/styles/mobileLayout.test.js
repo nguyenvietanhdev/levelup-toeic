@@ -434,9 +434,13 @@ describe('Hội thoại trên điện thoại', () => {
         const jsx = readFileSync(
             join(__dirname, '..', '..', 'components', 'conversation', 'ConversationScreen.jsx'),
             'utf8');
-        const mic = jsx.indexOf('convo-mic');
-        const send = jsx.indexOf('fa-paper-plane');
-        const finish = jsx.indexOf('convo-finish');
+        // Soi đúng HÀNG NHẬP CHỮ (Chat): hàng trả lời bằng giọng nói của Hội thoại
+        // đứng trước trong file và có nút Gửi / Kết thúc riêng.
+        const hang = jsx.indexOf('className="convo-input"');
+        expect(hang).toBeGreaterThan(-1);
+        const mic = jsx.indexOf('convo-mic', hang);
+        const send = jsx.indexOf('fa-paper-plane', hang);
+        const finish = jsx.indexOf('convo-finish', hang);
         expect(mic).toBeLessThan(send);
         expect(send).toBeLessThan(finish);
     });

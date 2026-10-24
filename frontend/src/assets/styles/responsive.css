@@ -1039,6 +1039,17 @@
         justify-content: flex-end;
     }
 
+    /* Hội thoại giọng nói: hàng trả lời xuống dòng — nút ghi âm trọn hàng trên,
+       Gợi ý / Kết thúc (hoặc Ghi lại / Gửi) chia hàng dưới. */
+    .convo-input-row--thoai {
+        flex-wrap: wrap;
+    }
+    .convo-ghi-am,
+    .convo-thoai-xem {
+        flex: 1 0 100%;
+        order: -1;
+    }
+
     /* Gợi ý trả lời: không cho chiếm hết màn, khung hội thoại phải còn thấy. */
     .convo-hint {
         max-height: 38dvh;
