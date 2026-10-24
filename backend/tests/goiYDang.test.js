@@ -80,10 +80,23 @@ describe('gợi ý dạng bài', () => {
         expect(mockUpdate).not.toHaveBeenCalled();
     });
 
-    test('AI trả quá ít khoá hợp lệ → trả về nhưng không lưu (lần sau hỏi lại)', async () => {
+    test('AI trả ít khoá hợp lệ (1–2) → vẫn LƯU, để không gọi AI lại mỗi lần mở màn', async () => {
         mockFindOne.mockReturnValue(null);
         mockText.mockResolvedValue({ text: 'review, bia-hoi' });
         await expect(goiYDang(HOI)).resolves.toEqual(['review']);
+        expect(mockUpdate).toHaveBeenCalledWith(expect.anything(), { $set: { keys: ['review'] } }, { upsert: true });
+    });
+
+    test('cache chỉ còn 1 dạng sau khi lọc kho → vẫn dùng cache, KHÔNG gọi AI', async () => {
+        mockFindOne.mockReturnValue({ keys: ['review', 'da-bi-xoa'] });
+        await expect(goiYDang(HOI)).resolves.toEqual(['review']);
+        expect(mockText).not.toHaveBeenCalled();
+    });
+
+    test('AI không trả khoá hợp lệ nào → rỗng, không lưu (lần sau hỏi lại)', async () => {
+        mockFindOne.mockReturnValue(null);
+        mockText.mockResolvedValue({ text: 'bia-hoi, khong-co' });
+        await expect(goiYDang(HOI)).resolves.toEqual([]);
         expect(mockUpdate).not.toHaveBeenCalled();
     });
 

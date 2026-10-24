@@ -92,7 +92,9 @@ async function goiYDang({ mode, source, part, lang, email, userId }) {
     if (daLuu) {
         // Lọc theo kho HIỆN TẠI: dạng đã bị xoá khỏi kho thì không hiện nữa.
         const con = tachKhoa(daLuu.keys.join(' '), nhom);
-        if (con.length >= SO_GOI_Y_TOI_THIEU) return con;
+        // Còn ÍT NHẤT một dạng là dùng cache — đòi đủ 3 thì Part nào AI chỉ ghép
+        // được 1–2 dạng sẽ gọi AI lại MỖI lần mở màn, mãi mãi.
+        if (con.length) return con;
     }
 
     let keys = [];
@@ -121,7 +123,9 @@ async function goiYDang({ mode, source, part, lang, email, userId }) {
         logger.warn('Gợi ý dạng bài: AI lỗi', { mode, error: err?.message });
         return [];
     }
-    if (keys.length < SO_GOI_Y_TOI_THIEU) return keys;
+    // Không có dạng nào hợp lệ thì không lưu (lần sau hỏi lại). Có dù chỉ 1–2 dạng
+    // vẫn lưu: lưu thì mỗi Part chỉ tốn đúng một lần gọi AI.
+    if (!keys.length) return keys;
 
     await DangGoiY.updateOne(loc, { $set: { keys } }, { upsert: true }).catch((err) => {
         // Hai người mở cùng lúc: bản kia đã lưu — bỏ qua, gợi ý vẫn trả về.
