@@ -107,7 +107,8 @@ describe('gợi ý "Hợp bộ từ này"', () => {
     for (const [ten, duong, mode] of CHE_DO) {
         test(`${ten}: lấy gợi ý đúng chế độ, truyền vào chip và dùng dangGui khi gửi`, () => {
             const src = doc(...duong);
-            expect(src).toContain(`useGoiYDang('${mode}', active)`);
+            // `active` có thể kèm điều kiện (vd Nghe bỏ qua khi học tiếng Trung).
+            expect(src).toContain(`useGoiYDang('${mode}', active`);
             expect(src).toMatch(/goiY=\{goiY\}/);
             expect(src).toMatch(/\.\.\.dangGui\(\{ dang, tuChon[^}]*goiY \}\)/);
         });

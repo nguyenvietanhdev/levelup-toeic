@@ -6,7 +6,9 @@ import { Http } from './http.js';
  */
 function unwrap(res) {
     if (res && res.success === false) {
-        throw new Error(res.message || 'Có lỗi khi xử lý bài nghe');
+        // `Http` đặt câu lỗi ở `error` (không phải `message`) khi server trả mã lỗi —
+        // chỉ đọc `message` là mọi lỗi thành câu chung chung, mất lý do thật.
+        throw new Error(res.error || res.message || 'Có lỗi khi xử lý bài nghe');
     }
     // Hai lớp `.data` (Http bọc phản hồi server): gỡ đúng hai lớp như các API khác.
     const inner = res?.data;

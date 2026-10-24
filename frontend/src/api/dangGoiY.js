@@ -6,7 +6,8 @@ import { Http } from './http.js';
  */
 function unwrap(res) {
     if (res && res.success === false) {
-        throw new Error(res.message || 'Không lấy được gợi ý dạng bài');
+        // `Http` đặt câu lỗi ở `error` (không phải `message`) khi server trả mã lỗi.
+        throw new Error(res.error || res.message || 'Không lấy được gợi ý dạng bài');
     }
     // HAI lớp `.data` như mọi API khác: Http bọc { success, data: <phản hồi server> }.
     const inner = res?.data;

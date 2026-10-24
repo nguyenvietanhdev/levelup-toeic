@@ -7,7 +7,8 @@ import { Http } from './http.js';
  */
 function unwrap(res) {
     if (res && res.success === false) {
-        throw new Error(res.message || 'Có lỗi khi xử lý vai');
+        // `Http` đặt câu lỗi ở `error` (không phải `message`) khi server trả mã lỗi.
+        throw new Error(res.error || res.message || 'Có lỗi khi xử lý vai');
     }
     // HAI lớp `.data`: Http bọc phản hồi server thành { success, data: <phản hồi> },
     // và server trả { success, data: { title, vai, nguon } }. Gỡ một lớp là nhận

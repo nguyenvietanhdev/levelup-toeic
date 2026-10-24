@@ -46,3 +46,21 @@ describe('API nghe', () => {
         expect(api).toMatch(/\/api\/listening\/\$\{encodeURIComponent\(id\)\}\/audio/);
     });
 });
+
+describe('học tiếng Trung: báo trước, không bấm rồi mới lỗi', () => {
+    test('hiện ghi chú "chỉ có tiếng Anh" và khoá nút bắt đầu', () => {
+        expect(screen).toMatch(/const chuaHoTro = getVocabLang\(\) === 'zh';/);
+        expect(screen).toMatch(/\{chuaHoTro && \(/);
+        expect(screen).toMatch(/disabled=\{busy \|\| chuaHoTro\}/);
+    });
+
+    test('không gọi AI gợi ý dạng nghe khi đang học tiếng Trung', () => {
+        expect(screen).toMatch(/useGoiYDang\('listening', active && getVocabLang\(\) !== 'zh'\)/);
+    });
+});
+
+describe('lỗi server hiện đúng lý do', () => {
+    test('API Nghe đọc câu lỗi ở `error` (Http đặt ở đó), không chỉ `message`', () => {
+        expect(api).toMatch(/throw new Error\(res\.error \|\| res\.message \|\| /);
+    });
+});
