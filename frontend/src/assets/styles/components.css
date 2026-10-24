@@ -5077,6 +5077,26 @@ mark {
   gap: 8px;
   /* Trên lớp nội dung để bấm được khi thẻ dài và có cuộn. */
   z-index: 2;
+  /* Đổi ẩn/hiện ĐÚNG lúc thẻ lật được nửa vòng (flip 0.6s) — xem quy tắc dưới. */
+  transition: visibility 0s linear 0.3s;
+}
+
+/* Cụm góc của mặt ĐANG QUAY ĐI phải ẩn hẳn.
+   Mặt thẻ có `overflow-y: auto` nên Chrome tách nó thành lớp cuộn riêng, và
+   `backface-visibility: hidden` của mặt KHÔNG còn ẩn được phần tử con định vị
+   (cụm góc có `position: absolute; z-index`). Kết quả: cụm góc mặt trước hiện
+   xuyên sang mặt sau, LẬT GƯƠNG — badge "ZH" thành "HZ", và có hai nút tim.
+   Ẩn bằng `visibility` theo trạng thái lật thì không phụ thuộc lỗi đó. */
+.flashcard-inner.flipped .flashcard-front .card-corner-group,
+.flashcard-inner:not(.flipped) .flashcard-back .card-corner-group {
+  visibility: hidden;
+}
+
+/* Chừa chỗ cho hàng góc (badge + tim) để chữ đầu thẻ không đè lên nó khi nội
+   dung dài và bám mép trên (`justify-content: flex-start`). */
+.flashcard-front:has(.card-corner-group),
+.flashcard-back:has(.card-corner-group) {
+  padding-top: calc(var(--spacing-md) + 44px);
 }
 
 /* Trong cụm thì badge thôi vị trí tuyệt đối — cụm đã lo chỗ đứng. */
