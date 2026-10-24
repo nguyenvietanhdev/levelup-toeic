@@ -8,6 +8,7 @@ import { UploadVocabAPI } from '@api/uploadVocab.js';
 import { openUploadModal } from '@components/vocab/upload/openUploadModal.js';
 import { Notification } from '@ui/Toaster.jsx';
 import { TtsAPI } from '@api/tts.js';
+import { giongVietTrinhDuyet, laTiengViet } from '@lib/giongViet.js';
 
 // Ngôn ngữ học của hệ thống (en/zh) → mã đích ưu tiên khi dịch.
 const studyTargetLang = () => (getVocabLang() === 'zh' ? 'zh-CN' : 'en');
@@ -35,6 +36,9 @@ const speakLangOf = (code) => SPEAK_LANG[code] || (code ? `${code}` : 'en-US');
 // không có nên vẫn qua Google TTS, lỗi thì rơi về giọng hệ điều hành.
 function fallbackSpeak(text, code) {
     try {
+        // Tiếng Việt: không có giọng Việt thì KHÔNG đọc — để trình duyệt tự chọn
+        // là nó lấy giọng mặc định (thường là Anh) đọc tiếng Việt.
+        if (laTiengViet(code) && !giongVietTrinhDuyet()) return;
         const u = new SpeechSynthesisUtterance(text);
         u.lang = speakLangOf(code);
         const base = String(code || '').split('-')[0];

@@ -9,6 +9,7 @@ import { Notification } from '@ui/Toaster.jsx';
 import { PartSelector } from '@components/vocab/part/partSelector.js';
 import { logger } from '@lib/logger.js';
 import { MA_GIONG } from '@lib/giongDaChon.js';
+import { giongVietTrinhDuyet } from '@lib/giongViet.js';
 import { batDauPhat, ketThucPhat } from '@lib/nutPhatAm.js';
 import { nhanKho, nhanKhoThuong } from '@lib/nhanKho.js';
 
@@ -511,6 +512,14 @@ export const GameLogic = {
         // Tiền tố ngôn ngữ để lọc giọng — khai một lần, dùng ở cả ba nhánh dưới.
         const tienToNgonNgu = lang === 'zh-CN' ? 'zh' : lang === 'vi-VN' ? 'vi' : 'en';
 
+        // Tiếng Việt: CHỈ đọc khi trình duyệt có giọng Việt. Không có mà vẫn đọc
+        // thì trình duyệt dùng giọng mặc định (thường là giọng Anh) đọc tiếng Việt.
+        const giongViet = tienToNgonNgu === 'vi' ? giongVietTrinhDuyet() : null;
+        if (tienToNgonNgu === 'vi' && !giongViet) {
+            onEnd();
+            return;
+        }
+
         if (savedVoiceName === '__random__' && voices.length > 0) {
             const toeicAccents = lang === 'zh-CN' ? ['zh-CN', 'zh-Hans', 'zh']
                 : lang === 'vi-VN' ? ['vi-VN', 'vi']
@@ -538,6 +547,9 @@ export const GameLogic = {
                 if (thayThe) utterance.voice = thayThe;
             }
         }
+        // Chưa chọn giọng nào (không có giọng lưu) → gán thẳng giọng Việt, đừng để
+        // trình duyệt tự lấy giọng mặc định.
+        if (giongViet && !utterance.voice) utterance.voice = giongViet;
 
         window.speechSynthesis.speak(utterance);
     },
@@ -612,7 +624,17 @@ export const GameLogic = {
             if (!('speechSynthesis' in window)) { if (onEnd) onEnd(); return; }
             const utterance = new SpeechSynthesisUtterance(text);
             const isZhVoice = lang.startsWith('zh');
-            utterance.lang = isZhVoice ? 'zh-CN' : 'en-US';
+            // Trước đây chỉ phân Trung / còn lại → tiếng Việt rơi vào `en-US` và bị
+            // đọc bằng giọng Anh. Tiếng Việt: dùng giọng Việt của trình duyệt, không
+            // có thì KHÔNG đọc.
+            if (lang.startsWith('vi')) {
+                const giongViet = giongVietTrinhDuyet();
+                if (!giongViet) { if (onEnd) onEnd(); return; }
+                utterance.lang = 'vi-VN';
+                utterance.voice = giongViet;
+            } else {
+                utterance.lang = isZhVoice ? 'zh-CN' : 'en-US';
+            }
             utterance.rate = rate;
             if (onEnd) {
                 utterance.onend = onEnd;
