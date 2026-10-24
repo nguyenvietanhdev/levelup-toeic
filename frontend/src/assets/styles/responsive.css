@@ -972,6 +972,102 @@
         flex: 1 0 100%;
     }
 
+    /* ── MÀN CHỌN CỦA CÁC CHẾ ĐỘ AI (Hội thoại, Đọc, Viết, Dịch, Nghe) ─────
+       Hai cột (trái: vai / dạng bài, phải: kiểu chấm + độ khó) đã xếp chồng ở
+       640px (components.css). Ở đây dồn lề và cỡ chữ cho màn ~360px. */
+    .essay-intro--wide,
+    .convo-intro {
+        margin: 12px 0;
+        padding: 0 12px 16px;
+    }
+
+    .ai-setup {
+        gap: 14px;
+        margin: 10px 0 14px;
+    }
+
+    .ai-setup-col {
+        padding-right: 0;
+    }
+
+    /* Nút bắt đầu dính đáy khung cuộn — trên điện thoại phải nằm TRÊN nav
+       đáy (56px), rộng trọn hàng để dễ chạm. */
+    .convo-intro > .btn-primary,
+    .essay-intro--wide > .btn-primary {
+        width: 100%;
+        bottom: calc(56px + 8px);
+    }
+
+    /* Chip dạng bài nhỏ lại để một hàng chứa được 2–3 chip thay vì 1. */
+    .rd-chip {
+        padding: 6px 10px;
+        font-size: 13px;
+    }
+
+    /* 16px: Safari iOS tự phóng to cả trang khi chạm ô nhập chữ dưới 16px. */
+    .rd-custom,
+    .listening-body .ai-role-input {
+        font-size: 16px;
+    }
+
+    /* Tab (Luyện · Lịch sử · Vai AI / Nhật ký lỗi): không đủ chỗ thì CUỘN NGANG
+       chứ không bóp chữ xuống hai dòng. */
+    .tr-tabs {
+        overflow-x: auto;
+        scrollbar-width: none;
+        gap: 4px;
+    }
+    .tr-tabs::-webkit-scrollbar {
+        display: none;
+    }
+    .tr-tab {
+        flex: 0 0 auto;
+        white-space: nowrap;
+        padding: 8px 10px;
+    }
+
+    /* Thẻ vai: hai nút Sửa / Xoá xuống DÒNG RIÊNG — cạnh nhau với tiêu đề thì
+       tiêu đề chỉ còn ~120px. */
+    .ai-role-card {
+        flex-wrap: wrap;
+    }
+    .ai-role-card-actions {
+        width: 100%;
+        justify-content: flex-end;
+    }
+
+    /* Gợi ý trả lời: không cho chiếm hết màn, khung hội thoại phải còn thấy. */
+    .convo-hint {
+        max-height: 38dvh;
+        overflow-y: auto;
+    }
+    .convo-hint-khung {
+        font-size: 13px;
+    }
+
+    /* Lịch sử: tiêu đề dài xuống dòng, điểm số nằm dưới thay vì bóp ngang. */
+    .ai-history-row {
+        flex-wrap: wrap;
+        align-items: flex-start;
+    }
+    .ai-history-main strong {
+        overflow-wrap: anywhere;
+    }
+    .ai-history-score {
+        white-space: normal;
+    }
+    .ai-history-doc {
+        padding: 0 10px;
+    }
+
+    /* Nghe: dồn lề, hai nút dưới ô chép chia đều hàng. */
+    .listening-body {
+        padding: 0 10px 16px;
+    }
+    .listening-body .ai-role-actions .btn {
+        flex: 1 1 auto;
+    }
+
     /* Nút quay về ở màn luyện tập. Android có nút Back của hệ thống, iOS có
        vuốt mép — nút này là bản sao thứ ba của cùng một hành động, trong khi
        hàng tiêu đề đang phải chứa cả tên chế độ, nhãn Part và điểm số. */

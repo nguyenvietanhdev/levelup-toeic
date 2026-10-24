@@ -746,6 +746,52 @@ describe('chiều cao vùng nhìn thật (ngoài block mobile)', () => {
     });
 });
 
+describe('các màn AI trên điện thoại', () => {
+    const comp = readFileSync(join(__dirname, 'components.css'), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
+    const doc = (...p) => readFileSync(join(__dirname, '..', '..', 'components', ...p), 'utf8');
+
+    test('KHÔNG ép cột phải bằng style inline gridColumn — ép là hỏng lưới 1 cột trên điện thoại', () => {
+        // `style={{ gridColumn: 2 }}` thắng mọi quy tắc CSS không có !important:
+        // ở 640px lưới còn 1 cột mà cột phải vẫn bị đẩy sang cột 2 → hai cột bị
+        // bóp cạnh nhau, tràn ngang.
+        for (const f of [['conversation', 'ConversationScreen.jsx'], ['essay', 'EssayScreen.jsx'],
+            ['translation', 'TranslationScreen.jsx'], ['reading', 'ReadingScreen.jsx'],
+            ['listening', 'ListeningScreen.jsx']]) {
+            expect(doc(...f)).not.toMatch(/gridColumn/);
+        }
+    });
+
+    test('nút bắt đầu dính đáy nằm TRÊN nav đáy và rộng trọn hàng', () => {
+        const r = ruleFor('.convo-intro > .btn-primary, .essay-intro--wide > .btn-primary');
+        expect(r).toMatch(/bottom:\s*calc\(56px/);
+        expect(r).toMatch(/width:\s*100%/);
+    });
+
+    test('ô tự nhập dạng bài và ô chép Nghe dùng chữ 16px (chống iOS tự phóng to)', () => {
+        expect(ruleFor('.rd-custom, .listening-body .ai-role-input')).toMatch(/font-size:\s*16px/);
+    });
+
+    test('hàng tab cuộn ngang thay vì bóp chữ', () => {
+        expect(ruleFor('.tr-tabs')).toMatch(/overflow-x:\s*auto/);
+        expect(ruleFor('.tr-tab')).toMatch(/white-space:\s*nowrap/);
+    });
+
+    test('thẻ vai: nút Sửa/Xoá xuống dòng riêng', () => {
+        expect(ruleFor('.ai-role-card')).toMatch(/flex-wrap:\s*wrap/);
+        expect(ruleFor('.ai-role-card-actions')).toMatch(/width:\s*100%/);
+    });
+
+    test('gợi ý trả lời không chiếm hết màn', () => {
+        expect(ruleFor('.convo-hint')).toMatch(/max-height:\s*38dvh/);
+    });
+
+    test('màn Nghe có kiểu cơ bản (trước đây không có dòng CSS nào)', () => {
+        for (const sel of ['.listening-body {', '.listening-player {', '.listening-speed {', '.listening-passage {']) {
+            expect(comp).toContain(sel);
+        }
+    });
+});
+
 describe('tự kiểm', () => {
     test('quy tắc dời-xuống-đáy đứng SAU quy tắc nav hàng ngang', () => {
         // Cùng selector, cùng độ đặc hiệu → cái sau thắng. Ai đó chuyển khối mới

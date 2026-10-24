@@ -207,7 +207,7 @@ export default function ListeningScreen({ active }) {
                             {TOC_DO.map((t) => (
                                 <button
                                     key={t.v}
-                                    className={`tr-level${tocDo === t.v ? ' is-on' : ''}`}
+                                    className={`tr-level listening-speed-btn${tocDo === t.v ? ' is-on' : ''}`}
                                     onClick={() => setTocDo(t.v)}
                                 >
                                     <strong>{t.label}</strong>

@@ -288,7 +288,7 @@ export default function EssayScreen({ active }) {
                                 placeholder="Hoặc tự nhập: thư cảm ơn, bài phát biểu, kế hoạch du lịch…"
                             />
                         </div>
-                        <div className="ai-setup-col" style={{ gridColumn: 2 }}>
+                        <div className="ai-setup-col">
                             {/* Kiểu chấm + độ khó: dùng CHUNG component với Hội thoại và Dịch. */}
                             <KieuChamDoKho
                                 kieuList={KIEU_CHAM.filter((k) => k.langs.includes(lang))}

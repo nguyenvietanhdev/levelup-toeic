@@ -499,7 +499,7 @@ export default function ConversationScreen({ active }) {
                                 placeholder="Hoặc tự nhập: khách phàn nàn đồ uống, xin tăng lương…"
                             />
                         </div>
-                        <div className="ai-setup-col" style={{ gridColumn: 2 }}>
+                        <div className="ai-setup-col">
                             {/* Kiểu chấm + độ khó: dùng CHUNG component với Luyện viết và Dịch.
                                 Riêng Giao tiếp có thêm "Ngữ pháp chấm" (văn nói hay chuẩn viết). */}
                             <KieuChamDoKho

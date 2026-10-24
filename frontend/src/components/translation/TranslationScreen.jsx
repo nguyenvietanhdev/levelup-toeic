@@ -281,7 +281,7 @@ export default function TranslationScreen({ active }) {
                                 placeholder="Hoặc tự nhập: lời bài phát biểu, thư cảm ơn, quy định…"
                             />
                         </div>
-                        <div className="ai-setup-col" style={{ gridColumn: 2 }}>
+                        <div className="ai-setup-col">
                             {/* Kiểu chấm + độ khó: dùng CHUNG component với Hội thoại và Luyện viết.
                                 Dịch chỉ có một bộ chấm (đủ ý, ngữ pháp, mức tự nhiên), nên
                                 kiểu chấm là một mục đang chọn. Độ khó tính theo số câu. */}
