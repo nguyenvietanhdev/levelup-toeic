@@ -990,12 +990,15 @@
         padding-right: 0;
     }
 
-    /* Nút bắt đầu dính đáy khung cuộn — trên điện thoại phải nằm TRÊN nav
-       đáy (56px), rộng trọn hàng để dễ chạm. */
-    .convo-intro > .btn-primary,
-    .essay-intro--wide > .btn-primary {
-        width: 100%;
-        bottom: calc(56px + 8px);
+    /* Nút bắt đầu nổi cố định — trên điện thoại phải nằm TRÊN nav đáy (56px)
+       và trên bàn phím ảo (`--kb`), gần trọn hàng để dễ chạm. */
+    .ai-start-float {
+        width: calc(100% - 24px);
+        bottom: calc(56px + 10px + var(--kb, 0px));
+    }
+    .convo-intro,
+    .essay-intro.essay-intro--wide {
+        padding-bottom: 130px;
     }
 
     /* Chip dạng bài nhỏ lại để một hàng chứa được 2–3 chip thay vì 1. */

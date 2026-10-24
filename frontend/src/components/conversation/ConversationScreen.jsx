@@ -18,6 +18,7 @@ import { EventBus, GameEvents } from '@game/eventBus.js';
 import { TopicSelector } from '@components/vocab/topic/topicSelector.js';
 import { PartSelector } from '@components/vocab/part/partSelector.js';
 import { isSpeechSupported, speechLangFor, createSpeechInput } from '@lib/speechInput.js';
+import NutBatDau from '../ai/NutBatDau.jsx';
 
 /**
  * Chế độ HỘI THOẠI — luyện dùng lại từ vựng vừa học.
@@ -534,11 +535,12 @@ export default function ConversationScreen({ active }) {
                         </div>
                     </div>
 
-                    <button className="btn btn-primary" onClick={handleStart} disabled={starting}>
+                    {/* Nút bắt đầu nổi cố định giữa đáy khung nhìn (portal vào body). */}
+                    <NutBatDau active={active} onClick={handleStart} disabled={starting}>
                         {starting
                             ? <><i className="fas fa-spinner fa-spin"></i> Đang tạo…</>
                             : <><i className="fas fa-play"></i> Bắt đầu</>}
-                    </button>
+                    </NutBatDau>
                 </div>
             ) : (
                 <div className={`convo-body${result ? ' convo-body--split' : ''}`}>

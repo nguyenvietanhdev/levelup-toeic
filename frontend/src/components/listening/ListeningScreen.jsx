@@ -6,6 +6,7 @@ import { TopicSelector } from '@components/vocab/topic/topicSelector.js';
 import { PartSelector } from '@components/vocab/part/partSelector.js';
 import ChonDangBai, { useGoiYDang, dangGui } from '../ai/ChonDangBai.jsx';
 import LichSuMode from '../history/LichSuMode.jsx';
+import NutBatDau from '../ai/NutBatDau.jsx';
 
 /** Mức khó của đoạn nghe (khoá gửi server; server chọn dải CEFR tương ứng). */
 const MUC = [
@@ -185,9 +186,10 @@ export default function ListeningScreen({ active }) {
                             </div>
                         </div>
                     </div>
-                    <button className="btn btn-primary" onClick={batDau} disabled={busy}>
+                    {/* Nút bắt đầu nổi cố định giữa đáy khung nhìn (portal vào body). */}
+                    <NutBatDau active={active} onClick={batDau} disabled={busy}>
                         <i className="fas fa-play"></i> {busy ? 'Đang chuẩn bị…' : 'Bắt đầu nghe'}
-                    </button>
+                    </NutBatDau>
                 </div>
             ) : (
                 <div className="listening-body">

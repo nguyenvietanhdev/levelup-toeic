@@ -9,6 +9,7 @@ import MistakeLog from './MistakeLog.jsx';
 import LichSuMode from '../history/LichSuMode.jsx';
 import KieuChamDoKho from '../ai/KieuChamDoKho.jsx';
 import ChonDangBai, { useGoiYDang, dangGui } from '../ai/ChonDangBai.jsx';
+import NutBatDau from '../ai/NutBatDau.jsx';
 
 /**
  * Luyện DỊCH — đọc một đoạn tiếng Việt, viết lại bằng tiếng Anh (hoặc Trung).
@@ -296,11 +297,12 @@ export default function TranslationScreen({ active }) {
                         </div>
                     </div>
 
-                    <button className="btn btn-primary" onClick={handleDeMoi} disabled={loadingDe}>
+                    {/* Nút bắt đầu nổi cố định giữa đáy khung nhìn (portal vào body). */}
+                    <NutBatDau active={active} onClick={handleDeMoi} disabled={loadingDe}>
                         {loadingDe
                             ? <><i className="fas fa-spinner fa-spin"></i> Đang lấy đoạn văn…</>
                             : <><i className="fas fa-file-lines"></i> Lấy đoạn văn</>}
-                    </button>
+                    </NutBatDau>
                 </div>
             ) : (
                 <div className="essay-body">

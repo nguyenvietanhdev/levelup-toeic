@@ -761,10 +761,41 @@ describe('các màn AI trên điện thoại', () => {
         }
     });
 
-    test('nút bắt đầu dính đáy nằm TRÊN nav đáy và rộng trọn hàng', () => {
-        const r = ruleFor('.convo-intro > .btn-primary, .essay-intro--wide > .btn-primary');
-        expect(r).toMatch(/bottom:\s*calc\(56px/);
-        expect(r).toMatch(/width:\s*100%/);
+    test('nút bắt đầu nổi cố định: nằm TRÊN nav đáy và bàn phím ảo, gần trọn hàng', () => {
+        const r = ruleFor('.ai-start-float');
+        expect(r).toMatch(/bottom:\s*calc\(56px \+ 10px \+ var\(--kb, 0px\)\)/);
+        expect(r).toMatch(/width:\s*calc\(100% - 24px\)/);
+        // Chừa chỗ cuối danh sách để hàng chip cuối không nằm khuất dưới nút.
+        expect(ruleFor('.convo-intro, .essay-intro.essay-intro--wide')).toMatch(/padding-bottom:\s*130px/);
+    });
+
+    test('nút bắt đầu FIXED (không sticky) ở mọi khổ, căn giữa khung nhìn', () => {
+        const i = comp.indexOf('.ai-start-float {');
+        expect(i).toBeGreaterThan(-1);
+        const r = comp.slice(i, comp.indexOf('}', i));
+        expect(r).toMatch(/position:\s*fixed/);
+        expect(r).not.toMatch(/sticky/);
+        expect(r).toMatch(/left:\s*50%/);
+        expect(r).toMatch(/translateX\(-50%\)/);
+        // Hai class để thắng `.essay-intro--wide { padding }` khai báo sau trong file.
+        expect(comp).toMatch(/\.convo-intro,\s*\.essay-intro\.essay-intro--wide\s*\{\s*padding-bottom:\s*88px/);
+    });
+
+    test('bấm nút không làm nút nhảy lệch (giữ translateX khi :active)', () => {
+        expect(comp).toMatch(/\.btn\.ai-start-float:active\s*\{\s*transform:\s*translateX\(-50%\) scale\(0\.98\)/);
+    });
+
+    test('cả 5 màn AI dùng NutBatDau: vẽ vào body (portal), chỉ khi màn đang mở', () => {
+        const nut = doc('ai', 'NutBatDau.jsx');
+        expect(nut).toMatch(/createPortal\(/);
+        expect(nut).toMatch(/document\.body/);
+        expect(nut).toMatch(/if \(!active/);
+        expect(nut).toMatch(/ai-start-float/);
+        for (const f of [['conversation', 'ConversationScreen.jsx'], ['essay', 'EssayScreen.jsx'],
+            ['translation', 'TranslationScreen.jsx'], ['reading', 'ReadingScreen.jsx'],
+            ['listening', 'ListeningScreen.jsx']]) {
+            expect(doc(...f)).toMatch(/<NutBatDau active=\{active\}/);
+        }
     });
 
     test('ô tự nhập dạng bài và ô chép Nghe dùng chữ 16px (chống iOS tự phóng to)', () => {

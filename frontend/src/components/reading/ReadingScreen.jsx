@@ -10,6 +10,7 @@ import KieuChamDoKho from '../ai/KieuChamDoKho.jsx';
 import ChonDangBai, { MAX_TU_CHON, useGoiYDang, dangGui } from '../ai/ChonDangBai.jsx';
 import { getVocabLang } from '@api/vocabulary.js';
 import { KIEU_CHAM, kieuChoNgonNgu, doKhoChoKieu } from '@lib/kieuCham.js';
+import NutBatDau from '../ai/NutBatDau.jsx';
 
 /**
  * Luyện ĐỌC HIỂU nhiều dạng bài: đời thường, công việc, báo chí, học thuật —
@@ -250,11 +251,12 @@ export default function ReadingScreen({ active }) {
                         </div>
                     </div>
 
-                    <button className="btn btn-primary" onClick={handleDeMoi} disabled={loadingDe}>
+                    {/* Nút bắt đầu nổi cố định giữa đáy khung nhìn (portal vào body). */}
+                    <NutBatDau active={active} onClick={handleDeMoi} disabled={loadingDe}>
                         {loadingDe
                             ? <><i className="fas fa-spinner fa-spin"></i> Đang soạn bài…</>
                             : <><i className="fas fa-file-lines"></i> Lấy bài đọc</>}
-                    </button>
+                    </NutBatDau>
                 </div>
             ) : (
                 <div className="essay-body">

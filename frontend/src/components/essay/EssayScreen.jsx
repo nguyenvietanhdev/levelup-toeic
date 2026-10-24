@@ -8,6 +8,7 @@ import LichSuMode from '../history/LichSuMode.jsx';
 import KieuChamDoKho from '../ai/KieuChamDoKho.jsx';
 import ChonDangBai, { useGoiYDang, dangGui } from '../ai/ChonDangBai.jsx';
 import { KIEU_CHAM, doKhoChoKieu } from '@lib/kieuCham.js';
+import NutBatDau from '../ai/NutBatDau.jsx';
 
 /**
  * Luyện VIẾT LUẬN — IELTS Task 2 (tiếng Anh) hoặc HSK 书写 (tiếng Trung).
@@ -301,11 +302,12 @@ export default function EssayScreen({ active }) {
                         </div>
                     </div>
 
-                    <button className="btn btn-primary" onClick={handleNewPrompt} disabled={loadingPrompt}>
+                    {/* Nút bắt đầu nổi cố định giữa đáy khung nhìn (portal vào body). */}
+                    <NutBatDau active={active} onClick={handleNewPrompt} disabled={loadingPrompt}>
                         {loadingPrompt
                             ? <><i className="fas fa-spinner fa-spin"></i> Đang lấy đề…</>
                             : <><i className="fas fa-file-lines"></i> Lấy đề</>}
-                    </button>
+                    </NutBatDau>
                 </div>
             ) : (
                 <div className="essay-body">

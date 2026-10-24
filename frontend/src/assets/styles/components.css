@@ -9597,14 +9597,35 @@ mark {
     min-height: 0;
     padding-right: 6px;
 }
-/* Nút bắt đầu của màn chọn AI: dính đáy khung cuộn để luôn bấm được dù danh
-   sách lựa chọn dài. */
-.convo-intro > .btn-primary,
-.essay-intro--wide > .btn-primary {
-    position: sticky;
-    bottom: 12px;
-    z-index: 2;
+/* Nút bắt đầu của màn chọn AI (`NutBatDau`): NỔI CỐ ĐỊNH giữa đáy khung nhìn,
+   cuộn tới đâu cũng thấy và bấm được.
+
+   `fixed` chứ không `sticky`: sticky chỉ dính khi chính khung giới thiệu là thứ
+   đang cuộn, mà ở nhiều màn cả TRANG cuộn — nút nằm im ở cuối danh sách chip.
+   Nút được vẽ thẳng vào `<body>` (portal) nên không lớp cha nào làm lệch `fixed`.
+
+   Khung giới thiệu chừa `padding-bottom` bằng chiều cao nút + lề để hàng chip
+   cuối cùng không nằm khuất dưới nút. */
+.ai-start-float {
+    position: fixed;
+    left: 50%;
+    bottom: 20px;
+    transform: translateX(-50%);
+    z-index: 50;
+    margin: 0;
+    white-space: nowrap;
     box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35);
+}
+/* `.btn:active { transform: scale(0.98) }` ghi đè MẤT `translateX(-50%)` → nút
+   nhảy lệch sang phải lúc bấm. Gộp cả hai vào một transform. */
+.btn.ai-start-float:active {
+    transform: translateX(-50%) scale(0.98);
+}
+/* Hai class (`.essay-intro.essay-intro--wide`) để thắng `.essay-intro--wide
+   { padding: … }` khai báo SAU trong file — cùng độ đặc hiệu thì cái sau thắng. */
+.convo-intro,
+.essay-intro.essay-intro--wide {
+    padding-bottom: 88px;
 }
 .ai-setup-col + .ai-setup-col {
     justify-self: end;
