@@ -5,11 +5,12 @@
  *   · grade  — chấm bài người học gõ lại, cộng thưởng một lần.
  */
 const Vocabulary = require('../models/Vocabulary');
+const VocabularyZh = require('../models/VocabularyZh');
 const UserUpload = require('../models/UserUpload');
 const UserProfile = require('../models/UserProfile');
 const UserStats = require('../models/UserStats');
 const ListeningSession = require('../models/ListeningSession');
-const { sinhDoanNghe, chamNghe, NHOM_DANG_NGHE } = require('../services/listeningAi');
+const { sinhDoanNghe, chamNghe, NHOM_DANG_NGHE, GIONG_THEO_NGON_NGU } = require('../services/listeningAi');
 const { chonDang } = require('../services/dangBai');
 const { tongHop } = require('../services/ttsEngine');
 const { awardXp } = require('../utils/userStateHelper');
@@ -21,8 +22,8 @@ const logger = require('../utils/logger');
 const ENERGY_COST_NGHE = 10;
 /** Số từ mục tiêu đưa vào đoạn nghe. */
 const TU_MUC_TIEU = 8;
-/** Giọng đọc cố định cho đoạn nghe: tiếng Anh, giọng nữ tự nhiên. */
-const GIONG_NGHE = 'en-US-AriaNeural';
+/** Giọng đọc mặc định (tiếng Anh) — phiên tiếng Trung dùng `GIONG_THEO_NGON_NGU.zh`. */
+const GIONG_NGHE = GIONG_THEO_NGON_NGU.en;
 /** Tốc độ đọc cho phép (kẹp lại để không bị đọc quá nhanh hoặc quá chậm). */
 function kepTocDo(raw) {
     const v = parseFloat(raw);
@@ -44,23 +45,32 @@ async function truNangLuong(userId) {
     return { vip: false, energyRemaining: updated.energy };
 }
 
-/** Từ tiếng Anh của Part (kho chung + kho riêng), lọc theo bộ lọc độ khó nếu có. */
-async function layTuMucTieu({ email, source, part, levelFilter }) {
+/**
+ * Từ của Part (kho chung + kho riêng) theo ngôn ngữ, lọc theo bộ lọc độ khó nếu có.
+ * Kho tiếng Trung lưu chữ Hán ở trường `zh` (`en` để rỗng) — chỉ đọc `en` là ra rỗng.
+ */
+async function layTuMucTieu({ email, source, part, levelFilter, lang = 'en' }) {
     const filter = { source, part };
+    const zh = lang === 'zh';
+    const Shared = zh ? VocabularyZh : Vocabulary;
     const [shared, mine] = await Promise.all([
-        Vocabulary.find(filter).select('en level').lean(),
-        email ? UserUpload.find({ ...filter, ownerEmail: email, lang: 'en' }).select('en level').lean() : [],
+        Shared.find(filter).select('en zh level').lean(),
+        email ? UserUpload.find({ ...filter, ownerEmail: email, lang }).select('en zh level').lean() : [],
     ]);
+    const mat = (w) => {
+        const t = zh ? (w.zh || w.en) : w.en;
+        return typeof t === 'string' ? t.trim() : '';
+    };
     const ds = [...shared, ...mine]
-        .filter((w) => typeof w.en === 'string' && w.en.trim())
+        .filter((w) => mat(w))
         .filter((w) => !levelFilter || levelFilter.has(w.level));
     const seen = new Set();
     const tu = [];
     for (const w of ds) {
-        const key = w.en.trim().toLowerCase();
+        const key = mat(w).toLowerCase();
         if (seen.has(key)) continue;
         seen.add(key);
-        tu.push(w.en.trim());
+        tu.push(mat(w));
     }
     return tu;
 }
@@ -85,10 +95,8 @@ exports.start = async (req, res, next) => {
         const profile = await UserProfile.findOne({ userId }).select('settings').lean();
         const st = profile?.settings || {};
 
-        // Nghe bằng TTS hiện chỉ có tiếng Anh: đoạn TTS và cách chấm theo từ đều dựa vào chữ Latin.
-        if (st.vocabLang === 'zh') {
-            return res.status(400).json({ success: false, message: 'Nghe với AI hiện chỉ có tiếng Anh.' });
-        }
+        // Tiếng Anh hoặc tiếng Trung (kho song ngữ 'bi' nghe bằng tiếng Anh).
+        const lang = st.vocabLang === 'zh' ? 'zh' : 'en';
         const source = typeof st.selectedSource === 'string' ? st.selectedSource.trim().toLowerCase() : '';
         const part = typeof st.selectedPart === 'string' ? st.selectedPart.trim() : '';
         if (!source) {
@@ -101,7 +109,7 @@ exports.start = async (req, res, next) => {
         const level = chuanHoaMuc(req.body.level);
         const levelFilter = Array.isArray(st.levelFilter) && st.levelFilter.length
             ? new Set(st.levelFilter) : null;
-        const tuKho = await layTuMucTieu({ email: req.user.email, source, part, levelFilter });
+        const tuKho = await layTuMucTieu({ email: req.user.email, source, part, levelFilter, lang });
         if (tuKho.length < 4) {
             return res.status(400).json({
                 success: false,
@@ -128,7 +136,7 @@ exports.start = async (req, res, next) => {
 
         let passage;
         try {
-            passage = await sinhDoanNghe({ targetWords, level, userId, chon });
+            passage = await sinhDoanNghe({ targetWords, level, userId, chon, lang });
         } catch (err) {
             if (!charge.vip) {
                 await UserStats.updateOne({ userId }, { $inc: { energy: ENERGY_COST_NGHE } });
@@ -141,7 +149,7 @@ exports.start = async (req, res, next) => {
         }
 
         const doc = await ListeningSession.create({
-            userId, source, part, level, targetWords, passage,
+            userId, source, part, level, lang, targetWords, passage,
             dang: chon ? chon.key : '', dangVi: chon ? chon.vi : '',
         });
         res.json({
@@ -149,6 +157,7 @@ exports.start = async (req, res, next) => {
             data: {
                 id: String(doc._id),
                 level,
+                lang,
                 dang: chon ? chon.key : '',
                 dangVi: chon ? chon.vi : '',
                 totalTargets: targetWords.length,
@@ -171,7 +180,9 @@ exports.audio = async (req, res, next) => {
         if (!phien) {
             return res.status(404).json({ success: false, message: 'Không tìm thấy lượt nghe này' });
         }
-        const { buffer } = await tongHop(GIONG_NGHE, phien.passage, kepTocDo(req.query.rate));
+        // Giọng theo ngôn ngữ của PHIÊN (phiên cũ không có `lang` → tiếng Anh).
+        const giong = GIONG_THEO_NGON_NGU[phien.lang] || GIONG_NGHE;
+        const { buffer } = await tongHop(giong, phien.passage, kepTocDo(req.query.rate));
         if (!buffer || !buffer.length) {
             return res.status(500).json({ success: false, message: 'Không tạo được âm thanh' });
         }
@@ -268,7 +279,7 @@ exports.history = async (req, res, next) => {
         const rows = await ListeningSession.find({ userId: req.user.id, status: 'done' })
             .sort({ createdAt: -1 })
             .limit(limit)
-            .select('level dang dangVi targetWords score createdAt')
+            .select('level lang dang dangVi targetWords score createdAt')
             .lean();
         res.json({ success: true, data: rows });
     } catch (error) {

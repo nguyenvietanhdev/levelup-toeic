@@ -10,6 +10,8 @@ const listeningSessionSchema = new mongoose.Schema(
         source: { type: String, default: '', trim: true, lowercase: true },
         part: { type: String, default: '', trim: true },
         level: { type: String, enum: ['easy', 'medium', 'hard'], default: 'medium' },
+        // Ngôn ngữ đoạn nghe: quyết định giọng đọc và cách chấm (zh chấm theo chữ Hán).
+        lang: { type: String, enum: ['en', 'zh'], default: 'en' },
         // Các từ mục tiêu đã đưa vào đoạn nghe.
         targetWords: { type: [String], default: [] },
         // Dạng nghe người học chọn ('' = ngẫu nhiên, 'custom' = tự nhập) và nhãn hiển thị.

@@ -47,15 +47,19 @@ describe('API nghe', () => {
     });
 });
 
-describe('học tiếng Trung: báo trước, không bấm rồi mới lỗi', () => {
-    test('hiện ghi chú "chỉ có tiếng Anh" và khoá nút bắt đầu', () => {
-        expect(screen).toMatch(/const chuaHoTro = getVocabLang\(\) === 'zh';/);
-        expect(screen).toMatch(/\{chuaHoTro && \(/);
-        expect(screen).toMatch(/disabled=\{busy \|\| chuaHoTro\}/);
+describe('nghe tiếng Trung', () => {
+    test('không còn chặn hay khoá nút khi học tiếng Trung', () => {
+        expect(screen).not.toMatch(/chuaHoTro/);
+        expect(screen).not.toMatch(/chỉ có tiếng Anh/);
+        expect(screen).toMatch(/disabled=\{busy\}/);
+        expect(screen).toMatch(/useGoiYDang\('listening', active\)/);
     });
 
-    test('không gọi AI gợi ý dạng nghe khi đang học tiếng Trung', () => {
-        expect(screen).toMatch(/useGoiYDang\('listening', active && getVocabLang\(\) !== 'zh'\)/);
+    test('ngôn ngữ theo phiên (server trả), đơn vị chấm là chữ với tiếng Trung', () => {
+        expect(screen).toMatch(/const zh = \(phien\?\.lang \|\| \(getVocabLang\(\) === 'zh' \? 'zh' : 'en'\)\) === 'zh';/);
+        expect(screen).toMatch(/const donVi = zh \? 'chữ' : 'từ';/);
+        expect(screen).toMatch(/\{ketQua\.total\} \{donVi\}/);
+        expect(screen).toMatch(/zh \? 'Gõ đoạn bạn nghe được bằng chữ Hán…'/);
     });
 });
 

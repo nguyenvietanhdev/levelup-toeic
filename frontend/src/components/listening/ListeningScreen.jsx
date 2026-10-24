@@ -84,7 +84,7 @@ export default function ListeningScreen({ active }) {
     const [dang, setDang] = useState('');     // '' = ngẫu nhiên
     const [tuChon, setTuChon] = useState(''); // dạng/chủ đề tự nhập, ưu tiên hơn `dang`
     // Dạng bài AI gợi ý hợp bộ từ của Part — nhóm đầu tiên, và "Ngẫu nhiên" bốc trong đó.
-    const goiY = useGoiYDang('listening', active && getVocabLang() !== 'zh'); // tiếng Trung chưa hỗ trợ → không tốn lượt AI gợi ý
+    const goiY = useGoiYDang('listening', active);
     const [phien, setPhien] = useState(null);     // { id, totalTargets }
     const [tocDo, setTocDo] = useState(0.9);
     const [typed, setTyped] = useState('');
@@ -92,9 +92,10 @@ export default function ListeningScreen({ active }) {
     const [busy, setBusy] = useState(false);
 
     const source = TopicSelector.currentTopic?.source || '';
-    // Nghe hiện chỉ có tiếng Anh (server cũng chặn). Báo trước và khoá nút bắt đầu,
-    // thay vì để người học tiếng Trung bấm rồi mới nhận lỗi.
-    const chuaHoTro = getVocabLang() === 'zh';
+    // Ngôn ngữ của bài đang nghe (server trả về khi mở phiên); trước khi mở thì theo
+    // bộ từ đang học. Tiếng Trung chấm theo từng CHỮ HÁN, tiếng Anh theo TỪ.
+    const zh = (phien?.lang || (getVocabLang() === 'zh' ? 'zh' : 'en')) === 'zh';
+    const donVi = zh ? 'chữ' : 'từ';
     const part = PartSelector.selectedPart || '';
 
     const batDau = async () => {
@@ -163,13 +164,6 @@ export default function ListeningScreen({ active }) {
                         Nghe một đoạn ngắn do AI viết từ <strong>bộ từ bạn đang học</strong>, rồi
                         gõ lại những gì bạn nghe được. Bạn có thể nghe lại và đổi tốc độ.
                     </p>
-                    {chuaHoTro && (
-                        <p className="tr-intro-note">
-                            <i className="fas fa-circle-info"></i>{' '}
-                            Nghe với AI hiện <strong>chỉ có tiếng Anh</strong>. Bạn đang học bộ từ
-                            tiếng Trung — đổi sang bộ từ tiếng Anh ở thanh trên để dùng chế độ này.
-                        </p>
-                    )}
                     {!source && (
                         <p className="tr-intro-note">
                             Chọn đề và Part ở thanh trên trước khi bắt đầu.
@@ -205,7 +199,7 @@ export default function ListeningScreen({ active }) {
                         </div>
                     </div>
                     {/* Nút bắt đầu nổi cố định giữa đáy khung nhìn (portal vào body). */}
-                    <NutBatDau active={active} onClick={batDau} disabled={busy || chuaHoTro}>
+                    <NutBatDau active={active} onClick={batDau} disabled={busy}>
                         <i className="fas fa-play"></i> {busy ? 'Đang chuẩn bị…' : 'Bắt đầu nghe'}
                     </NutBatDau>
                 </div>
@@ -245,7 +239,7 @@ export default function ListeningScreen({ active }) {
                                 maxLength={1000}
                                 value={typed}
                                 onChange={(e) => setTyped(e.target.value)}
-                                placeholder="Gõ đoạn bạn nghe được bằng tiếng Anh…"
+                                placeholder={zh ? 'Gõ đoạn bạn nghe được bằng chữ Hán…' : 'Gõ đoạn bạn nghe được bằng tiếng Anh…'}
                             />
                             <div className="ai-role-actions">
                                 <button className="btn btn-primary" onClick={nop} disabled={busy || !typed.trim()}>
@@ -260,7 +254,7 @@ export default function ListeningScreen({ active }) {
                         <div className="listening-result">
                             <p>
                                 Điểm <strong>{ketQua.score}</strong>/100 · đúng{' '}
-                                <strong>{ketQua.correct}</strong>/{ketQua.total} từ
+                                <strong>{ketQua.correct}</strong>/{ketQua.total} {donVi}
                             </p>
                             {ketQua.reward && !ketQua.alreadyClaimed && (
                                 <p className="convo-reward">

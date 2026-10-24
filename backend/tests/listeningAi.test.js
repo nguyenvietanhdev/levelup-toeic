@@ -111,3 +111,49 @@ describe('dạng nghe (một người nói)', () => {
         expect(src).toMatch(/dang: chon \? chon\.key : '', dangVi: chon \? chon\.vi : ''/);
     });
 });
+
+describe('nghe tiếng Trung: chấm theo từng chữ Hán', () => {
+    test('tách: mỗi chữ Hán một đơn vị, bỏ dấu câu; tiếng Anh vẫn theo từ', () => {
+        expect(L.tachTu('我很震惊，真的！')).toEqual(['我', '很', '震', '惊', '真', '的']);
+        expect(L.tachTu("I'm fine, thanks.")).toEqual(["i'm", 'fine', 'thanks']);
+    });
+
+    test('chép đúng hết 100 điểm; thiếu / sai chữ thì thấy đúng chữ nào', () => {
+        expect(L.chamNghe('这个消息令人震惊。', '这个消息令人震惊')).toMatchObject({ score: 100, total: 8, correct: 8 });
+        const r = L.chamNghe('这个消息令人震惊。', '这个消息让人震京');
+        expect(r).toMatchObject({ total: 8, correct: 6, missing: ['令', '惊'], extra: ['让', '京'] });
+    });
+
+    test('đoạn tiếng Trung cắt theo ký tự, không theo dấu cách', () => {
+        const dai = '你好'.repeat(80);
+        expect([...L.lamSachDoan(dai, 'zh')]).toHaveLength(L.MAX_KY_TU_DOAN_ZH);
+    });
+
+    test('prompt tiếng Trung: chữ Hán giản thể, cấp HSK, đo bằng chữ, cấm pinyin', async () => {
+        mockText.mockResolvedValue({ text: '各位旅客请注意，前往北京的航班开始登机了。', providerId: 'openai' });
+        const doan = await L.sinhDoanNghe({ targetWords: ['航班'], level: 'easy', lang: 'zh' });
+        expect(doan).toBe('各位旅客请注意，前往北京的航班开始登机了。');
+        const p = mockText.mock.calls[0][0].messages[0].content;
+        expect(p).toMatch(/Simplified Chinese/);
+        expect(p).toMatch(/HSK 1–2/);
+        expect(p).toMatch(/at most 60 Chinese characters/);
+        expect(p).toMatch(/no pinyin/);
+        expect(p).not.toMatch(/CEFR/);
+    });
+
+    test('giọng đọc theo ngôn ngữ', () => {
+        expect(L.GIONG_THEO_NGON_NGU).toEqual({ en: 'en-US-AriaNeural', zh: 'zh-CN-XiaoxiaoNeural' });
+    });
+
+    test('controller: không còn chặn tiếng Trung; lấy từ kho Trung (trường zh); giọng theo phiên', () => {
+        const { readFileSync } = require('node:fs');
+        const { join } = require('node:path');
+        const src = readFileSync(join(__dirname, '..', 'controllers', 'listeningController.js'), 'utf8');
+        expect(src).not.toMatch(/chỉ có tiếng Anh/);
+        expect(src).toMatch(/const lang = st\.vocabLang === 'zh' \? 'zh' : 'en';/);
+        expect(src).toMatch(/const Shared = zh \? VocabularyZh : Vocabulary;/);
+        expect(src).toMatch(/zh \? \(w\.zh \|\| w\.en\) : w\.en/);
+        expect(src).toMatch(/sinhDoanNghe\(\{ targetWords, level, userId, chon, lang \}\)/);
+        expect(src).toMatch(/GIONG_THEO_NGON_NGU\[phien\.lang\] \|\| GIONG_NGHE/);
+    });
+});

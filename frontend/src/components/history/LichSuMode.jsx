@@ -374,7 +374,9 @@ function ChiTietNghe({ bai }) {
             </p>
             <div className="essay-band">
                 <div className="essay-band-num">{bai.score ?? kq.score ?? 0}</div>
-                <div className="essay-band-label">Điểm /100 · đúng {kq.correct ?? 0}/{kq.total ?? 0} từ</div>
+                <div className="essay-band-label">
+                    Điểm /100 · đúng {kq.correct ?? 0}/{kq.total ?? 0} {bai.lang === 'zh' ? 'chữ' : 'từ'}
+                </div>
             </div>
             {kq.missing?.length > 0 && <p className="tr-intro-note"><strong>Bỏ sót:</strong> {kq.missing.join(', ')}</p>}
             {kq.extra?.length > 0 && <p className="tr-intro-note"><strong>Gõ thừa:</strong> {kq.extra.join(', ')}</p>}
