@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { Modal } from '@ui/Modal.jsx';
+import { GameLogic } from '@game/gameLogic.js';
 
 /**
  * Chốt chặn rời màn khi ĐANG LÀM DỞ một chế độ AI (Hội thoại, Đọc hiểu, Viết,
@@ -11,6 +12,20 @@ import { Modal } from '@ui/Modal.jsx';
  * một guard ở đây; `showScreen` gọi nó trước khi rời màn đó (giống TOEIC).
  */
 let guard = null; // { screen, fn(proceed) }
+
+/**
+ * Dừng MỌI âm thanh đang phát của màn AI.
+ *
+ * Giọng đọc phát qua một đối tượng `Audio` KHÔNG gắn vào trang (`GameLogic`) — gỡ
+ * màn khỏi DOM không dừng được nó, nên thoát rồi mà tiếng vẫn chạy. Dừng cả ba
+ * đường: giọng TTS của GameLogic (kèm bỏ qua lượt đang tải dở), giọng trình duyệt,
+ * và các thẻ <audio> trên trang (trình phát của bài Nghe).
+ */
+export function dungMoiAmThanh() {
+    try { GameLogic.stopSpeaking?.(); } catch { /* chưa phát gì */ }
+    try { window.speechSynthesis?.cancel(); } catch { /* không hỗ trợ */ }
+    try { document.querySelectorAll('audio').forEach((a) => a.pause()); } catch { /* không có */ }
+}
 
 /** GameContext.showScreen dùng: guard đang bật (hoặc null). */
 export function getAiExitGuard() {
@@ -40,6 +55,8 @@ export function useHoiKhiThoat(screen, dangLamDo, { tieuDe = 'Thoát chế độ
                         text: 'Thoát',
                         className: 'btn-primary',
                         onClick: () => {
+                            // Dừng tiếng NGAY khi bấm Thoát, như luyện tập (`stopAllSounds`).
+                            dungMoiAmThanh();
                             Modal.close();
                             // Đóng popup xong mới chuyển màn, như luyện tập.
                             setTimeout(proceed, 0);
@@ -52,4 +69,8 @@ export function useHoiKhiThoat(screen, dangLamDo, { tieuDe = 'Thoát chế độ
         // Chỉ gỡ guard CỦA MÌNH: màn khác có thể đã đăng ký guard mới trong lúc này.
         return () => { if (guard === g) guard = null; };
     }, [screen, dangLamDo]);
+
+    // Rời màn bằng BẤT KỲ đường nào (kể cả khi đã làm xong, không có popup) thì
+    // cũng dừng tiếng — màn đã gỡ mà giọng đọc vẫn phát là lỗi người dùng gặp.
+    useEffect(() => () => dungMoiAmThanh(), []);
 }

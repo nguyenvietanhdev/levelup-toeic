@@ -64,3 +64,21 @@ describe('cả 5 màn AI đăng ký guard với đúng điều kiện "đang là
         });
     }
 });
+
+describe('thoát thì dừng âm thanh', () => {
+    test('dừng cả ba đường phát: GameLogic (Audio ngoài DOM), giọng trình duyệt, thẻ <audio>', () => {
+        const i = guard.indexOf('export function dungMoiAmThanh()');
+        const than = guard.slice(i, guard.indexOf('\n}', i));
+        expect(than).toMatch(/GameLogic\.stopSpeaking\?\.\(\)/);
+        expect(than).toMatch(/speechSynthesis\?\.cancel\(\)/);
+        expect(than).toMatch(/querySelectorAll\('audio'\)\.forEach\(\(a\) => a\.pause\(\)\)/);
+    });
+
+    test('bấm Thoát trong popup dừng tiếng NGAY, trước khi chuyển màn', () => {
+        expect(guard).toMatch(/dungMoiAmThanh\(\);\s*Modal\.close\(\);[\s\S]*setTimeout\(proceed, 0\)/);
+    });
+
+    test('rời màn bằng đường nào (kể cả đã làm xong) cũng dừng tiếng', () => {
+        expect(guard).toMatch(/useEffect\(\(\) => \(\) => dungMoiAmThanh\(\), \[\]\);/);
+    });
+});
