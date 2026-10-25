@@ -72,6 +72,9 @@ const translationSchema = new mongoose.Schema(
                 // là trường biến mất — cùng loại bẫy đã khiến `errors` phải đổi
                 // tên thành `issues` trong Essay.
                 loai: { type: String, default: 'other' },
+                // Mức độ khi chữa bài: 'loi' (sai) / 'nen' (nên sửa cho tự nhiên).
+                // Khai rõ vì chế độ `strict` xoá âm thầm trường chưa khai.
+                muc: { type: String, enum: ['loi', 'nen'], default: 'loi' },
             }],
             default: [],
             _id: false,

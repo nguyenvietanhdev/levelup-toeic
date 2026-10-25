@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import ChuaBai from '../chuaBai/ChuaBai.jsx';
 import { ConversationAPI } from '@api/conversation.js';
 import { EssayAPI } from '@api/essay.js';
 import { TranslationAPI } from '@api/translation.js';
@@ -257,18 +258,8 @@ function ChiTietViet({ bai }) {
                     <ul>{bai.strengths.map((s, i) => <li key={i}>{s}</li>)}</ul>
                 </div>
             )}
-            {bai.issues?.length > 0 && (
-                <div className="essay-section">
-                    <h4><i className="fas fa-triangle-exclamation"></i> Lỗi cần sửa</h4>
-                    {bai.issues.map((e, i) => (
-                        <div key={i} className="essay-issue">
-                            {e?.quote && <code>{e.quote}</code>}
-                            <div className="essay-issue-note">{e?.issue}</div>
-                            {e?.fix && <div className="essay-issue-fix">→ {e.fix}</div>}
-                        </div>
-                    ))}
-                </div>
-            )}
+            {/* Bài cũ cũng chữa trên bài; `fix` tiếng Việt (chấm trước đây) chỉ hiện như ghi chú. */}
+            <ChuaBai text={bai.essay} loi={bai.issues} />
             {bai.improved && (
                 <div className="essay-section">
                     <h4><i className="fas fa-wand-magic-sparkles"></i> Gợi ý viết lại</h4>
@@ -300,18 +291,7 @@ function ChiTietDich({ bai }) {
             </div>
             <DiemTieuChi criteria={bai.criteria} scores={bai.scores} />
             {bai.summary && <p className="tr-summary">{bai.summary}</p>}
-            {bai.notes?.length > 0 && (
-                <div className="essay-section">
-                    <h4><i className="fas fa-triangle-exclamation"></i> Chỗ cần sửa</h4>
-                    {bai.notes.map((n, i) => (
-                        <div key={i} className="essay-issue">
-                            {n.quote && <code>{n.quote}</code>}
-                            <div className="essay-issue-note">{n.issue}</div>
-                            {n.better && <div className="essay-issue-fix">→ {n.better}</div>}
-                        </div>
-                    ))}
-                </div>
-            )}
+            <ChuaBai text={bai.translation} loi={bai.notes} tieuDe="Chữa bản dịch" />
             {bai.reference && (
                 <div className="essay-section">
                     <h4><i className="fas fa-book"></i> Bản dịch tham khảo</h4>

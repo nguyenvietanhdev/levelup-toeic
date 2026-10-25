@@ -20,7 +20,7 @@
  * `OPENAI_API_KEY`. Nạp lười để phần thuần tuý (dựng prompt, đọc JSON, kẹp
  * band) kiểm thử được mà không cần khoá API — đó là chỗ dễ sai nhất.
  */
-const { chiThiPhanLoai, chuanHoaLoai } = require('./errorTaxonomy');
+const { chiThiPhanLoai, chuanHoaLoai, chiThiChuaBai, chuanHoaMuc } = require('./errorTaxonomy');
 const { chiThiMuc } = require('./aiLevel');
 const { chonDang } = require('./dangBai');
 const { chiThiNham } = require('./nhamDiemYeu');
@@ -439,10 +439,11 @@ function khungChamChung(crit, zh, rb) {
         `  "improved": "a rewritten version of ONE weak paragraph, in ${ngonNguBai}"`,
         '}',
         'Scores are whole numbers from 0 to 9.',
-        'Write every comment, issue, fix and strength in VIETNAMESE.',
-        `Keep "quote" and "improved" in ${ngonNguBai} (they are the learner's text).`,
+        'Write every comment, issue and strength in VIETNAMESE.',
+        `Keep "quote", "fix" and "improved" in ${ngonNguBai} (they are the learner's text).`,
         'Be specific: quote the actual wording, never say "some grammar errors".',
         chiThiPhanLoai(),
+        chiThiChuaBai('fix'),
     ].join('\n');
 }
 
@@ -475,10 +476,11 @@ async function gradeEssay({ prompt = '', essay = '', userId = null, lang = 'en',
             '  "improved": "a rewritten version of ONE weak paragraph, in Chinese"',
             '}',
             'Scores must be whole or half numbers (6.0, 6.5, 7.0).',
-            'Write every comment, issue, fix and strength in VIETNAMESE.',
-            'Keep "quote" and "improved" in CHINESE (they are the composition text).',
+            'Write every comment, issue and strength in VIETNAMESE.',
+            'Keep "quote", "fix" and "improved" in CHINESE (they are the composition text).',
             'Be specific: quote the actual wording, never say "some grammar errors".',
             chiThiPhanLoai(),
+            chiThiChuaBai('fix'),
         ].join('\n')
         : [
             'You are an experienced IELTS Writing examiner.',
@@ -496,10 +498,11 @@ async function gradeEssay({ prompt = '', essay = '', userId = null, lang = 'en',
             // Nhận xét bằng TIẾNG VIỆT: người học Việt Nam đọc nhận xét
             // tiếng Anh học thuật thì mất luôn phần giá trị nhất của việc
             // chấm — họ hiểu được điểm nhưng không hiểu vì sao.
-            'Write every comment, issue, fix and strength in VIETNAMESE.',
-            'Keep "quote" and "improved" in English (they are the essay text).',
+            'Write every comment, issue and strength in VIETNAMESE.',
+            'Keep "quote", "fix" and "improved" in English (they are the essay text).',
             'Be specific: quote the actual wording, never say "some grammar errors".',
             chiThiPhanLoai(),
+            chiThiChuaBai('fix'),
         ].join('\n');
 
     const messages = [
@@ -545,7 +548,8 @@ async function gradeEssay({ prompt = '', essay = '', userId = null, lang = 'en',
             // Chuẩn hoá nhãn NGAY tại đây: `Article`/`articles`/`ARTICLE` là ba
             // chuỗi khác nhau, để nguyên thì thống kê tách thành ba dòng.
             errors: (Array.isArray(parsed.errors) ? parsed.errors.slice(0, 12) : [])
-                .map((e) => ({ ...e, type: chuanHoaLoai(e?.type) })),
+                // `muc`: 'loi' (sai) / 'nen' (nên sửa cho tự nhiên) — tô màu khi chữa bài.
+                .map((e) => ({ ...e, type: chuanHoaLoai(e?.type), muc: chuanHoaMuc(e?.level) })),
             strengths: Array.isArray(parsed.strengths) ? parsed.strengths.slice(0, 5) : [],
             improved: typeof parsed.improved === 'string' ? parsed.improved : '',
         },

@@ -89,6 +89,16 @@ export const NHOM_PHIM_TAT = [
         ],
     },
     {
+        key: 'chua-bai',
+        ten: 'Chữa bài (Viết, Dịch)',
+        icon: 'fa-marker',
+        screens: ['essay-screen', 'translation-screen'],
+        phim: [
+            { phim: ['←'], hoac: ['→'], viec: 'Lỗi trước / lỗi sau' },
+            { phim: ['Enter'], viec: 'Kiểm tra câu tự sửa' },
+        ],
+    },
+    {
         key: 'hoi-thoai',
         ten: 'Hội thoại giọng nói',
         icon: 'fa-microphone-lines',

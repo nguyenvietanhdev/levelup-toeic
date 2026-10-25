@@ -19,6 +19,11 @@ export const TienBoAPI = {
         return unwrap(await Http.get('/tien-bo'));
     },
 
+    /** Sổ tay lỗi: mọi lỗi đã chữa trong Viết và Dịch, kèm cách sửa. */
+    async soTayLoi() {
+        return unwrap(await Http.get('/tien-bo/so-tay-loi'));
+    },
+
     /** Tổng kết tuần này đã có chưa — chỉ đọc, không gọi AI. */
     async tongKet() {
         return unwrap(await Http.get('/tien-bo/tong-ket'));

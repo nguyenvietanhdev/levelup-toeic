@@ -5,6 +5,7 @@ import { loadUnlocks, lockInfo } from '@game/featureUnlocks.js';
 import { EventBus, GameEvents } from '@game/eventBus.js';
 import { Notification } from '@ui/Toaster.jsx';
 import { TienBoAPI } from '@api/tienBo.js';
+import SoTayLoi from './SoTayLoi.jsx';
 
 /**
  * Tiến bộ của tôi — hồ sơ năng lực gom từ MỌI chế độ, 8 tuần gần nhất.
@@ -80,6 +81,8 @@ export default function TienBoScreen({ active }) {
     const { isLoggedIn } = useAuth();
     const [data, setData] = useState(null);
     const [loi, setLoi] = useState('');
+    // Hai tab: số liệu tiến bộ, và sổ tay lỗi (mọi chỗ đã chữa, kèm cách sửa).
+    const [tab, setTab] = useState('tong-quan');
     const [, setMoKhoa] = useState(0); // vẽ lại khi đã nạp xong bảng khoá Level
     const [tongKet, setTongKet] = useState(null);
     const [dangTongKet, setDangTongKet] = useState(false);
@@ -143,6 +146,17 @@ export default function TienBoScreen({ active }) {
                     <p className="tr-intro-note">Đăng nhập để theo dõi tiến bộ qua các tuần.</p>
                 ) : (
                     <>
+                        <div className="cb-tab tb-tab" role="tablist">
+                            <button type="button" role="tab" aria-selected={tab === 'tong-quan'} className={tab === 'tong-quan' ? 'is-on' : ''} onClick={() => setTab('tong-quan')}>
+                                <i className="fas fa-chart-line"></i> Tổng quan
+                            </button>
+                            <button type="button" role="tab" aria-selected={tab === 'so-tay'} className={tab === 'so-tay' ? 'is-on' : ''} onClick={() => setTab('so-tay')}>
+                                <i className="fas fa-book-bookmark"></i> Sổ tay lỗi
+                            </button>
+                        </div>
+                        {/* Tải khi MỞ tab (và mỗi lần mở lại màn): làm bài xong quay lại là thấy lỗi mới. */}
+                        {tab === 'so-tay' && <SoTayLoi active={active} />}
+                        {tab === 'tong-quan' && (<>
                         <p className="tb-gioi-thieu">
                             8 tuần gần nhất, tính từ <strong>chính bài bạn đã làm</strong> ở mọi chế độ.
                             Xu hướng so 4 tuần gần đây với 4 tuần trước, và chỉ hiện khi mỗi bên có ít nhất 2 lượt.
@@ -296,6 +310,7 @@ export default function TienBoScreen({ active }) {
                                 </div>
                             </>
                         )}
+                        </>)}
                     </>
                 )}
             </div>

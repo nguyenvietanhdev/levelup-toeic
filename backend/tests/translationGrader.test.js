@@ -196,8 +196,21 @@ describe('chấm bản dịch', () => {
         expect(r.notes).toEqual([
             // `loai: 'other'` vì AI không gán nhãn — nhãn lạ/thiếu không được
             // vứt đi, nếu không tổng trong thống kê nhỏ hơn số lỗi thật.
-            { quote: '', issue: 'lỗi thật', better: '', loai: 'other' },
+            // `muc: 'loi'`: AI không ghi mức thì coi là SAI — báo nhẹ hơn thực tế còn tệ hơn.
+            { quote: '', issue: 'lỗi thật', better: '', loai: 'other', muc: 'loi' },
         ]);
+    });
+
+    test('chữa bài: mức "style" → nên sửa; prompt bắt `better` là cụm thay thế, trích nguyên văn', async () => {
+        aiTraVe(JSON.stringify({
+            scores: { accuracy: 5, grammar: 5, naturalness: 5 },
+            notes: [{ quote: 'very big', issue: 'chưa tự nhiên', better: 'huge', level: 'style' }],
+        }));
+        const r = await gradeTranslation({ passage: 'x', translation: 'y' });
+        expect(r.notes[0].muc).toBe('nen');
+        const p = promptHeThong();
+        expect(p).toMatch(/"better" is ONLY the corrected wording that replaces "quote"/);
+        expect(p).toMatch(/copied EXACTLY from the learner's text/);
     });
 
     test('AI trả thiếu `scores` → báo lỗi, KHÔNG trả điểm 0 giả', async () => {

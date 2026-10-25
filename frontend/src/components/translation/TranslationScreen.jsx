@@ -10,6 +10,7 @@ import LichSuMode from '../history/LichSuMode.jsx';
 import KieuChamDoKho from '../ai/KieuChamDoKho.jsx';
 import ChonDangBai, { useGoiYDang, dangGui } from '../ai/ChonDangBai.jsx';
 import NutBatDau from '../ai/NutBatDau.jsx';
+import ChuaBai from '../chuaBai/ChuaBai.jsx';
 import { useNhamYeu, NutNhamYeu, NhanNham } from '../ai/NhamDiemYeu.jsx';
 import { useHoiKhiThoat } from '../ai/aiExitGuard.js';
 
@@ -390,18 +391,8 @@ export default function TranslationScreen({ active }) {
                                 <p className="tr-summary">{result.summary}</p>
                             )}
 
-                            {result.notes?.length > 0 && (
-                                <div className="essay-section">
-                                    <h4><i className="fas fa-triangle-exclamation"></i> Chỗ nên sửa</h4>
-                                    {result.notes.map((n, i) => (
-                                        <div key={i} className="essay-issue">
-                                            {n.quote && <code>{n.quote}</code>}
-                                            <div className="essay-issue-note">{n.issue}</div>
-                                            {n.better && <div className="essay-issue-fix">→ {n.better}</div>}
-                                        </div>
-                                    ))}
-                                </div>
-                            )}
+                            {/* Chữa NGAY TRÊN bản dịch (bút đỏ) thay cho danh sách rời. */}
+                            <ChuaBai text={banDich} loi={result.notes} tieuDe="Chữa bản dịch" />
 
                             {/* Bản dịch tham khảo đặt CUỐI, sau phần lỗi: đọc đáp án
                                 trước thì phần nhận xét về bài mình thành ra thừa. Với

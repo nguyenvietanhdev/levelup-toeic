@@ -9,6 +9,7 @@ import KieuChamDoKho from '../ai/KieuChamDoKho.jsx';
 import ChonDangBai, { useGoiYDang, dangGui } from '../ai/ChonDangBai.jsx';
 import { KIEU_CHAM, doKhoChoKieu } from '@lib/kieuCham.js';
 import NutBatDau from '../ai/NutBatDau.jsx';
+import ChuaBai from '../chuaBai/ChuaBai.jsx';
 import { useNhamYeu, NutNhamYeu, NhanNham } from '../ai/NhamDiemYeu.jsx';
 import { useHoiKhiThoat } from '../ai/aiExitGuard.js';
 
@@ -417,18 +418,8 @@ export default function EssayScreen({ active }) {
                                 </div>
                             )}
 
-                            {result.issues?.length > 0 && (
-                                <div className="essay-section">
-                                    <h4><i className="fas fa-triangle-exclamation"></i> Lỗi cần sửa</h4>
-                                    {result.issues.map((e, i) => (
-                                        <div key={i} className="essay-issue">
-                                            <code>{e.quote}</code>
-                                            <div className="essay-issue-note">{e.issue}</div>
-                                            {e.fix && <div className="essay-issue-fix">→ {e.fix}</div>}
-                                        </div>
-                                    ))}
-                                </div>
-                            )}
+                            {/* Chữa NGAY TRÊN bài (bút đỏ) thay cho danh sách lỗi rời. */}
+                            <ChuaBai text={essay} loi={result.issues} />
 
                             {result.improved && (
                                 <div className="essay-section">

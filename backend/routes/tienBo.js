@@ -7,6 +7,7 @@ const router = express.Router();
 const { protect } = require('../middleware/auth');
 const { layTienBo } = require('../services/tienBo');
 const { layTongKet, taoTongKet } = require('../services/tongKetTuan');
+const { laySoTay } = require('../services/soTayLoi');
 
 router.use(protect);
 
@@ -15,6 +16,13 @@ router.get('/', async (req, res, next) => {
     try {
         const data = await layTienBo(req.user.id);
         res.json({ success: true, data });
+    } catch (err) { next(err); }
+});
+
+/** Sổ tay lỗi: mọi lỗi đã chữa trong Viết và Dịch, kèm cách sửa (không gọi AI). */
+router.get('/so-tay-loi', async (req, res, next) => {
+    try {
+        res.json({ success: true, data: await laySoTay(req.user.id) });
     } catch (err) { next(err); }
 });
 

@@ -24,7 +24,7 @@ function chatCompletion(...args) {
 }
 
 const { parseJson, clampBand, countUnits } = require('./essayGrader');
-const { chiThiPhanLoai, chuanHoaLoai } = require('./errorTaxonomy');
+const { chiThiPhanLoai, chuanHoaLoai, chiThiChuaBai, chuanHoaMuc } = require('./errorTaxonomy');
 const { chonDang, CHI_THI_HOP_BOI_CANH } = require('./dangBai');
 const { chiThiNham } = require('./nhamDiemYeu');
 
@@ -245,6 +245,7 @@ async function gradeTranslation({ passage = '', translation = '', userId = null,
         `in ${dich}, quoting the learner's own words exactly.`,
         'Give at most 4 notes — the most useful ones, not every small slip.',
         chiThiPhanLoai(),
+        chiThiChuaBai('better'),
     ].join('\n');
 
     const messages = [
@@ -283,6 +284,7 @@ async function gradeTranslation({ passage = '', translation = '', userId = null,
             issue: String(n?.issue || ''),
             better: String(n?.better || ''),
             loai: chuanHoaLoai(n?.type),
+            muc: chuanHoaMuc(n?.level),
         }))
         .filter((n) => n.issue);
 

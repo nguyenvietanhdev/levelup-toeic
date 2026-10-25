@@ -102,4 +102,28 @@ function thongKe(items) {
             || LOAI_LOI.findIndex((l) => l.key === a.key) - LOAI_LOI.findIndex((l) => l.key === b.key));
 }
 
-module.exports = { LOAI_LOI, chuanHoaLoai, nhanLoi, goiYLoi, chiThiPhanLoai, thongKe };
+/**
+ * Chỉ thị cho phần CHỮA BÀI trên chính bài làm (giao diện "bút đỏ"):
+ *   · `quote` phải là đoạn NGUYÊN VĂN, ngắn — giao diện tìm nó trong bài để gạch
+ *     chân; trích sai một chữ là không định vị được.
+ *   · Cụm sửa (`fix` / `better`) là chữ THAY THẾ đúng đoạn đó, cùng ngôn ngữ với
+ *     bài — không phải lời giải thích. Nhờ vậy ghép lại được bản "Đã sửa" và người
+ *     học tự sửa rồi so được.
+ *   · `level`: "error" = sai (bắt buộc sửa), "style" = đúng nhưng chưa tự nhiên.
+ *
+ * @param {string} truongSua tên trường cụm sửa ('fix' với Viết, 'better' với Dịch)
+ */
+function chiThiChuaBai(truongSua) {
+    return [
+        `Each "quote" must be copied EXACTLY from the learner's text, as short as possible (a few words), so it can be found and underlined.`,
+        `"${truongSua}" is ONLY the corrected wording that replaces "quote" in the same place, in the same language as the learner's text — never an explanation.`,
+        'Add "level" to each item: "error" for a real mistake, "style" for correct but unnatural wording.',
+    ].join('\n');
+}
+
+/** Mức độ của một lỗi. Lạ / thiếu → 'loi' (coi là sai): báo nhẹ hơn thực tế còn tệ hơn. */
+function chuanHoaMuc(level) {
+    return level === 'style' ? 'nen' : 'loi';
+}
+
+module.exports = { LOAI_LOI, chuanHoaLoai, nhanLoi, goiYLoi, chiThiPhanLoai, thongKe, chiThiChuaBai, chuanHoaMuc };
