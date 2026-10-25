@@ -110,6 +110,16 @@ const NHOM_DANG = [
 const GOI_Y_SAU_GIAY = 30;
 
 /**
+ * Bật/tắt TỰ MỞ gợi ý sau GOI_Y_SAU_GIAY. Có người thấy hữu ích, có người thấy bị
+ * làm phiền khi đang nghĩ câu trả lời — để người học tự chọn. Nhớ theo trình duyệt
+ * (sở thích hiển thị, không phải dữ liệu học).
+ */
+const KHOA_TU_MO_GOI_Y = 'levelup.tuMoGoiY';
+function docTuMoGoiY() {
+    try { return localStorage.getItem(KHOA_TU_MO_GOI_Y) !== '0'; } catch { return true; }
+}
+
+/**
  * `voice` = Hội thoại GIỌNG NÓI: AI gửi tin nhắn thoại (chỉ nút phát, không chữ),
  * người học trả lời bằng ghi âm. Không có `voice` = Chat chữ như trước. Hai chế độ
  * dùng chung toàn bộ phần chọn vai/tình huống/kiểu chấm, chấm điểm và lịch sử.
@@ -405,14 +415,21 @@ export default function ConversationScreen({ active, voice = false }) {
     const moGoiYRef = useRef(null);
     moGoiYRef.current = moGoiY;
 
+    const [tuMoGoiY, setTuMoGoiY] = useState(docTuMoGoiY);
+    const doiTuMoGoiY = () => setTuMoGoiY((b) => {
+        try { localStorage.setItem(KHOA_TU_MO_GOI_Y, b ? '0' : '1'); } catch { /* chỉ nhớ trong phiên */ }
+        return !b;
+    });
+
     // Mỗi lần AI trả lời (hay người học gửi câu) thì ĐÓNG gợi ý — để không dựa
     // vào gợi ý cho mọi câu; muốn xem thì bấm lại.
     useEffect(() => { setShowHint(false); }, [convo?.turns?.length]);
 
     // Ngồi im (chưa gõ gì) quá GOI_Y_SAU_GIAY sau câu AI → tự mở gợi ý, MỘT lần
     // cho mỗi câu AI. Đóng đi rồi thì không tự mở lại câu đó nữa.
+    // Người học tắt "tự mở" thì chỉ mở khi bấm nút gợi ý.
     useEffect(() => {
-        if (!convo || busy || starting || result || showHint || draft.trim()) return undefined;
+        if (!tuMoGoiY || !convo || busy || starting || result || showHint || draft.trim()) return undefined;
         const n = convo.turns.length;
         if (convo.turns[n - 1]?.role !== 'npc' || tuMoChoLuotRef.current === n) return undefined;
         const t = setTimeout(() => {
@@ -420,7 +437,7 @@ export default function ConversationScreen({ active, voice = false }) {
             moGoiYRef.current?.();
         }, GOI_Y_SAU_GIAY * 1000);
         return () => clearTimeout(t);
-    }, [convo, busy, starting, result, showHint, draft]);
+    }, [tuMoGoiY, convo, busy, starting, result, showHint, draft]);
 
     // Phiên mới: bỏ trạng thái gợi ý của phiên cũ.
     useEffect(() => { setHetGoiY(''); setConLaiGoiY(null); tuMoChoLuotRef.current = -1; }, [convo?.id]);
@@ -925,10 +942,27 @@ export default function ConversationScreen({ active, voice = false }) {
                                 <div className="convo-hint">
                                     <div className="convo-hint-loai">
                                         {/* Hội thoại giọng nói: KHÔNG hiện lại câu hỏi bằng chữ. */}
-                                        {!voice && goiY.cauHoi && <>Trả lời câu: <strong>“{goiY.cauHoi}”</strong> · </>}
-                                        {goiY.tuAI
-                                            ? <><i className="fas fa-wand-magic-sparkles"></i> Khung theo đúng câu AI hỏi</>
-                                            : <>Dạng: <strong>{goiY.loai}</strong></>}
+                                        {/* Bọc chữ trong một span: dòng này là flex (để nút bật/tắt dồn
+                                            phải), chữ rời ra từng mảnh thì bị giãn cách lệch. */}
+                                        <span>
+                                            {!voice && goiY.cauHoi && <>Trả lời câu: <strong>“{goiY.cauHoi}”</strong> · </>}
+                                            {goiY.tuAI
+                                                ? <><i className="fas fa-wand-magic-sparkles"></i> Khung theo đúng câu AI hỏi</>
+                                                : <>Dạng: <strong>{goiY.loai}</strong></>}
+                                        </span>
+                                        {/* Bật/tắt tự mở — đặt ngay đây vì đây là lúc gợi ý vừa tự bật lên. */}
+                                        <button
+                                            type="button"
+                                            className={`convo-tu-mo${tuMoGoiY ? ' is-on' : ''}`}
+                                            onClick={doiTuMoGoiY}
+                                            aria-pressed={tuMoGoiY}
+                                            title={tuMoGoiY
+                                                ? `Đang tự mở gợi ý khi bạn chưa trả lời sau ${GOI_Y_SAU_GIAY} giây — bấm để tắt`
+                                                : 'Đã tắt tự mở — gợi ý chỉ hiện khi bạn bấm nút bóng đèn'}
+                                        >
+                                            <i className={`fas ${tuMoGoiY ? 'fa-toggle-on' : 'fa-toggle-off'}`}></i>
+                                            Tự mở sau {GOI_Y_SAU_GIAY}s
+                                        </button>
                                     </div>
                                     {/* Bấm một khung để đưa vào ô nhập rồi tự điền chỗ ___ — luyện phản xạ. */}
                                     <div className="convo-hint-khung-list">

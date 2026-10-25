@@ -404,11 +404,18 @@ describe('gõ nhanh: tự focus, dịch câu AI, khung gợi ý theo câu AI', (
     test('ngồi im quá GOI_Y_SAU_GIAY (chưa gõ gì) thì tự mở gợi ý, một lần mỗi câu AI', () => {
         expect(src).toMatch(/const GOI_Y_SAU_GIAY = 30;/);
         const i = src.indexOf('// Ngồi im (chưa gõ gì)');
-        const than = src.slice(i, src.indexOf('}, [convo, busy, starting, result, showHint, draft]);', i));
-        expect(than).toMatch(/if \(!convo \|\| busy \|\| starting \|\| result \|\| showHint \|\| draft\.trim\(\)\) return undefined;/);
+        const than = src.slice(i, src.indexOf('}, [tuMoGoiY, convo, busy, starting, result, showHint, draft]);', i));
+        // `!tuMoGoiY`: người học đã tắt tự mở thì gợi ý chỉ hiện khi bấm.
+        expect(than).toMatch(/if \(!tuMoGoiY \|\| !convo \|\| busy \|\| starting \|\| result \|\| showHint \|\| draft\.trim\(\)\) return undefined;/);
         expect(than).toMatch(/tuMoChoLuotRef\.current === n\) return undefined;/);
         expect(than).toMatch(/setTimeout\(/);
         expect(than).toMatch(/clearTimeout\(t\)/);
+    });
+
+    test('có nút bật/tắt tự mở ngay trong khung gợi ý; nhớ lựa chọn, localStorage hỏng không sập', () => {
+        expect(src).toMatch(/onClick=\{doiTuMoGoiY\}/);
+        expect(src).toMatch(/try \{ return localStorage\.getItem\(KHOA_TU_MO_GOI_Y\) !== '0'; \} catch \{ return true; \}/);
+        expect(src).toMatch(/try \{ localStorage\.setItem\(KHOA_TU_MO_GOI_Y, b \? '0' : '1'\); \} catch/);
     });
 });
 

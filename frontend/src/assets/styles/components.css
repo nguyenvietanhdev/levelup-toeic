@@ -12639,3 +12639,23 @@ body.dang-phat-am .js-nut-am {
 .ctc-giai-thich { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; font-size: 13px; }
 .ctc-giai-thich li { display: flex; flex-wrap: wrap; gap: 4px 8px; align-items: baseline; }
 .ctc-chan { margin: 0; font-size: 12px; color: var(--text-secondary); }
+
+/* Bật/tắt tự mở gợi ý — nhỏ, dồn về mép phải dòng tiêu đề khung gợi ý. */
+.convo-hint-loai { display: flex; align-items: center; flex-wrap: wrap; gap: 4px 6px; }
+.convo-tu-mo {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--border-color);
+  background: none;
+  color: var(--text-secondary);
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.convo-tu-mo i { font-size: 15px; }
+.convo-tu-mo.is-on { color: var(--accent-color); border-color: var(--accent-color); }
