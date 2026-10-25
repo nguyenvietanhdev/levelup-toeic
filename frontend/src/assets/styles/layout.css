@@ -516,17 +516,51 @@
    trên ngưỡng 44px cho vùng chạm, mà cả 8 mục vừa một màn. */
 /* Nhóm menu. Tiêu đề nhỏ, chữ hoa, mờ — đủ để mắt nhận ra ranh giới nhưng
    không tranh chấp với chính các mục bên dưới. */
-.menu-group + .menu-group { margin-top: 10px; }
+.menu-group + .menu-group { margin-top: 4px; }
 
+/* Tiêu đề nhóm là NÚT thu/mở: cả dòng bấm được, mũi tên quay khi mở. */
 .menu-group-title {
-    padding: 4px 14px;
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 14px;
+    border: none;
+    border-radius: var(--border-radius);
+    background: none;
+    font: inherit;
     font-size: 10px;
     font-weight: 700;
     letter-spacing: 0.08em;
     text-transform: uppercase;
     color: var(--text-secondary);
-    opacity: 0.65;
+    cursor: pointer;
+    text-align: left;
 }
+.menu-group-title > span:first-child { opacity: 0.75; }
+.menu-group-title:hover { background: rgba(255, 255, 255, 0.05); }
+.menu-group-title:hover > span:first-child { opacity: 1; }
+.menu-group-chevron {
+    margin-left: auto;
+    font-size: 10px;
+    opacity: 0.7;
+    transform: rotate(-90deg);
+    transition: transform var(--transition-fast);
+}
+.menu-group.is-open .menu-group-chevron { transform: rotate(0deg); }
+/* Tổng badge của nhóm đang thu — thứ cần làm không bị giấu theo. */
+.menu-group-badge {
+    padding: 0 6px;
+    min-width: 16px;
+    border-radius: 999px;
+    background: var(--danger-color, #ef4444);
+    color: #fff;
+    font-size: 10px;
+    line-height: 16px;
+    text-align: center;
+    letter-spacing: 0;
+}
+.menu-group-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--danger-color, #ef4444); }
 
 .menu-item {
     position: relative;

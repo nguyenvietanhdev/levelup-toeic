@@ -15,9 +15,11 @@ import { moSoTayPhimTat } from '@lib/phimTat.js';
 // người dùng phải đọc hết từ trên xuống mới thấy cái mình cần; tiêu đề nhóm cho
 // mắt nhảy thẳng tới đúng vùng.
 //
-// Nhóm bằng TIÊU ĐỀ chứ không bằng tab bung/thu: nhóm thu lại giấu mục đi, và
-// thứ bị giấu sau một cú bấm là thứ người ta quên mất là có. Tiêu đề chỉ tốn
-// ~22px mỗi nhóm mà mọi mục vẫn nhìn thấy và vẫn bấm một lần là tới.
+// Nhóm THU / MỞ được (bấm tiêu đề). Menu đã dài quá một màn — phải cuộn mới thấy
+// nửa dưới. Nỗi lo cũ "thu lại là giấu mất, người ta quên là có" được xử lý bằng:
+//   · mặc định chỉ mở "Luyện tập" và nhóm chứa màn ĐANG mở;
+//   · nhóm đang thu vẫn hiện TỔNG badge (nhiệm vụ, từ đến hạn…) trên tiêu đề;
+//   · trình duyệt nhớ nhóm nào người dùng để mở / đóng.
 const MENU_GROUPS = [
     {
         title: 'Luyện tập',
@@ -101,10 +103,47 @@ const MENU_GROUPS = [
     },
 ];
 
+/** Nhóm mở sẵn lần đầu (chưa có lựa chọn nào được lưu). */
+const NHOM_MO_SAN = { 'Luyện tập': true };
+const KHOA_NHOM = 'levelup.menuNhomMo';
+
+function docNhomMo() {
+    try {
+        const v = JSON.parse(localStorage.getItem(KHOA_NHOM));
+        return v && typeof v === 'object' ? v : NHOM_MO_SAN;
+    } catch { return NHOM_MO_SAN; }
+}
+
 export default function SideMenu() {
     const { menuOpen, setMenuOpen, showScreen, currentScreen } = useGame();
     const { isLoggedIn, setAuthModal, logout } = useAuth();
     const { badges, refresh } = useMenuBadges(isLoggedIn);
+    const [nhomMo, setNhomMo] = useState(docNhomMo);
+
+    /**
+     * Nhóm có đang mở không. Người dùng đã bấm đóng/mở thì theo đó; chưa bấm thì
+     * nhóm chứa màn đang mở tự mở — đang ở "Hội thoại" mà nhóm của nó thu lại thì
+     * không biết mình đang ở đâu.
+     */
+    const laMo = (group) => {
+        const chon = nhomMo[group.title];
+        if (chon === true || chon === false) return chon;
+        return group.items.some((it) => it.screen && it.screen === currentScreen);
+    };
+    const doiNhom = (group) => {
+        const mo = laMo(group);
+        setNhomMo((m) => {
+            const moi = { ...m, [group.title]: !mo };
+            try { localStorage.setItem(KHOA_NHOM, JSON.stringify(moi)); } catch { /* chỉ nhớ trong phiên */ }
+            return moi;
+        });
+    };
+    /** Tổng badge đáng chú ý của nhóm — hiện trên tiêu đề khi nhóm đang thu. */
+    const tongBadge = (group) => group.items.reduce((s, it) => {
+        if (!it.badgeKey || it.badgeStyle === 'info' || it.badgeStyle === 'dot') return s;
+        return s + (Number(badges[it.badgeKey]) || 0);
+    }, 0);
+    const coCham = (group) => group.items.some((it) => it.badgeStyle === 'dot' && badges[it.badgeKey] > 0);
 
     // Refresh badges each time the menu opens
     useEffect(() => { if (menuOpen) refresh(); }, [menuOpen, refresh]);
@@ -191,14 +230,25 @@ export default function SideMenu() {
 
                 {/* Nav — matches .menu-nav in CSS */}
                 <nav className="menu-nav">
-                    {MENU_GROUPS.map(group => (
-                        <div key={group.title} className="menu-group">
-                            {/* `aria-hidden`: tiêu đề là gợi ý THỊ GIÁC để mắt nhảy
-                                nhanh. Trình đọc màn hình đã đọc nhãn đầy đủ của
-                                từng nút rồi, chèn thêm tiêu đề vào luồng đọc chỉ
-                                làm dài thêm mà không thêm thông tin. */}
-                            <div className="menu-group-title" aria-hidden="true">{group.title}</div>
-                            {group.items.map(item => {
+                    {MENU_GROUPS.map(group => {
+                        const mo = laMo(group);
+                        const tong = mo ? 0 : tongBadge(group);
+                        return (
+                        <div key={group.title} className={`menu-group${mo ? ' is-open' : ''}`}>
+                            {/* Tiêu đề là NÚT thu/mở — `aria-expanded` cho trình đọc màn
+                                hình biết trạng thái (trước đây chỉ là nhãn, nên ẩn đi). */}
+                            <button
+                                type="button"
+                                className="menu-group-title"
+                                aria-expanded={mo}
+                                onClick={() => doiNhom(group)}
+                            >
+                                <span>{group.title}</span>
+                                {tong > 0 && <span className="menu-group-badge">{tong > 99 ? '99+' : tong}</span>}
+                                {!mo && !tong && coCham(group) && <span className="menu-group-dot" />}
+                                <i className="fas fa-chevron-down menu-group-chevron" aria-hidden="true"></i>
+                            </button>
+                            {mo && group.items.map(item => {
                                 const n = item.badgeKey ? badges[item.badgeKey] : 0;
                                 const guestLocked = !isLoggedIn && !item.guestOk;
                                 // Khoá theo Level (chỉ xét khi đã đăng nhập).
@@ -238,7 +288,8 @@ export default function SideMenu() {
                                 );
                             })}
                         </div>
-                    ))}
+                        );
+                    })}
                 </nav>
 
                 {/* Số câu / độ khó / ngôn ngữ — CHỈ hiện trên điện thoại

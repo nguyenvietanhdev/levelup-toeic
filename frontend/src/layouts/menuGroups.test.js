@@ -46,9 +46,24 @@ describe('menu chia nhóm', () => {
         expect(new Set(found).size).toBe(found.length);
     });
 
-    test('tiêu đề nhóm ẩn với trình đọc màn hình', () => {
-        // Nút đã có nhãn đầy đủ; đọc thêm tiêu đề chỉ làm dài mà không thêm gì.
-        expect(menu).toMatch(/menu-group-title" aria-hidden="true"/);
+    test('tiêu đề nhóm là NÚT thu/mở, báo trạng thái cho trình đọc màn hình', () => {
+        // Trước đây tiêu đề chỉ là nhãn nên ẩn (`aria-hidden`). Giờ bấm được để
+        // thu/mở nhóm, nên phải đọc được và nói rõ đang mở hay đóng.
+        expect(menu).toMatch(/className="menu-group-title"\s*aria-expanded=\{mo\}\s*onClick=\{\(\) => doiNhom\(group\)\}/);
+        expect(menu).not.toMatch(/menu-group-title" aria-hidden="true"/);
+    });
+
+    test('nhóm thu chỉ ẩn mục; vẫn hiện tổng badge; nhóm chứa màn đang mở tự mở', () => {
+        expect(menu).toMatch(/\{mo && group\.items\.map\(item =>/);
+        expect(menu).toMatch(/const tong = mo \? 0 : tongBadge\(group\);/);
+        expect(menu).toMatch(/return group\.items\.some\(\(it\) => it\.screen && it\.screen === currentScreen\);/);
+        // Đã bấm đóng/mở thì theo người dùng, không tự mở lại.
+        expect(menu).toMatch(/if \(chon === true \|\| chon === false\) return chon;/);
+    });
+
+    test('nhớ trạng thái nhóm; localStorage hỏng không làm sập menu', () => {
+        expect(menu).toMatch(/try \{ localStorage\.setItem\(KHOA_NHOM, JSON\.stringify\(moi\)\); \} catch/);
+        expect(menu).toMatch(/\} catch \{ return NHOM_MO_SAN; \}/);
     });
 });
 
