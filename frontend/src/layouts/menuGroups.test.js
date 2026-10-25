@@ -98,7 +98,8 @@ describe('mục CHẠY CHẾ ĐỘ ở sidebar', () => {
     test('key và data-screen chịu được mục không có `screen`', () => {
         // `key={item.screen}` với mục chỉ có `mode` cho `key=undefined` — React
         // cảnh báo và có thể dựng lại nhầm phần tử khi danh sách đổi.
-        expect(menu).toMatch(/key=\{item\.screen \|\| item\.mode\}/);
+        // Mục HÀNH ĐỘNG (Phím tắt) không có cả `screen` lẫn `mode` → thêm `action`.
+        expect(menu).toMatch(/key=\{item\.screen \|\| item\.mode \|\| item\.action\}/);
         expect(menu).toMatch(/data-screen=\{item\.screen \|\| undefined\}/);
     });
 });

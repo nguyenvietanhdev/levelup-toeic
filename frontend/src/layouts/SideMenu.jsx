@@ -7,6 +7,7 @@ import QuickSettings from './QuickSettings.jsx';
 import { loadUnlocks, lockInfo } from '@game/featureUnlocks.js';
 import { Notification } from '@ui/Toaster.jsx';
 import { EventBus, GameEvents } from '@game/eventBus.js';
+import { moSoTayPhimTat } from '@lib/phimTat.js';
 
 // `feature` = key trong FeatureUnlock → khoá theo Level (Hồ sơ/Cài đặt luôn mở).
 //
@@ -94,6 +95,8 @@ const MENU_GROUPS = [
         items: [
             { label: 'Hồ sơ', icon: 'fa-user', screen: 'profile-screen' },
             { label: 'Cài đặt', icon: 'fa-cog', screen: 'settings-screen' },
+            // Mục kiểu HÀNH ĐỘNG (`action`): mở lớp phủ, không đổi màn. Khách cũng xem được.
+            { label: 'Phím tắt', icon: 'fa-keyboard', action: 'phim-tat', guestOk: true },
         ],
     },
 ];
@@ -204,13 +207,14 @@ export default function SideMenu() {
                                 const locked = guestLocked || levelLocked;
                                 return (
                                     <button
-                                        key={item.screen || item.mode}
+                                        key={item.screen || item.mode || item.action}
                                         className={`menu-item${currentScreen === item.screen ? ' active' : ''}${locked ? ' is-locked' : ''}`}
                                         data-screen={item.screen || undefined}
                                         onClick={() => {
                                             if (guestLocked) return handleLockedClick();
                                             if (levelLocked) return handleLevelLockedClick(item, lv.requiredLevel);
                                             if (item.mode) return handleMode(item.mode);
+                                            if (item.action === 'phim-tat') { setMenuOpen(false); return moSoTayPhimTat(); }
                                             handleNav(item.screen);
                                         }}
                                         title={guestLocked ? 'Đăng nhập để mở khóa'

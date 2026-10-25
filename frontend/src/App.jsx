@@ -21,6 +21,7 @@ import Toaster, { Notification } from '@ui/Toaster.jsx';
 import SearchResults from '@components/search/SearchResults.jsx';
 import AuthModal from '@components/auth/AuthModal.jsx';
 import ExpiryNotice from '@components/vocab/upload/ExpiryNotice.jsx';
+import SoTayPhimTat from '@components/phimTat/SoTayPhimTat.jsx';
 import { playSfx, initUiClickSound } from '@game/uiSounds.js';
 
 // Eager: Home (mặc định) + Practice (engine vanilla inject vào #practice-content,
@@ -187,6 +188,8 @@ function AppInner() {
             <SearchResults />
             <AuthModal />
             <ExpiryNotice />
+            {/* Sổ tay phím tắt: phím `?` ở bất kỳ đâu, hoặc mục "Phím tắt" trong menu. */}
+            <SoTayPhimTat />
         </div>
     );
 }
