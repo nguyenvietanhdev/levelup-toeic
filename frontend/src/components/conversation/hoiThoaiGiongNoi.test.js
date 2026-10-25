@@ -108,14 +108,27 @@ describe('phím tắt của Hội thoại giọng nói', () => {
         expect(than).toMatch(/e\.isComposing/);
     });
 
-    test('phím Cách: đang ghi thì dừng; đang nghỉ thì dừng giọng AI rồi bắt đầu ghi', () => {
-        expect(than).toMatch(/e\.code === 'Space' \|\| e\.key === ' '/);
-        expect(than).toMatch(/if \(ghiAm\.trangThai === 'ghi'\) ghiAm\.dung\(\);/);
-        expect(than).toMatch(/else if \(ghiAm\.trangThai === 'nghi' && !busy\) \{[\s\S]*dungPhat\(\);\s*ghiAm\.batDau\(\);/);
+    test('GIỮ Cách: đang nghỉ thì dừng giọng AI rồi ghi; chặn cả lượt lặp khi giữ (không cuộn trang)', () => {
+        expect(than).toMatch(/if \(laCach\(e\)\) \{\s*\/\/[^\n]*\n\s*e\.preventDefault\(\);\s*if \(e\.repeat\) return;/);
+        expect(than).toMatch(/dungPhat\(\);\s*giuCachRef\.current = true;\s*ghiAm\.batDau\(\);/);
+    });
+
+    test('NHẢ Cách: dừng ghi và đánh dấu gửi khi xong; rời cửa sổ thì dừng mà KHÔNG gửi', () => {
+        expect(than).toMatch(/const onKeyUp = \(e\) => \{\s*if \(!laCach\(e\) \|\| !giuCachRef\.current\) return;/);
+        expect(than).toMatch(/guiKhiXongRef\.current = true;\s*ghiAm\.dung\(\);/);
+        expect(than).toMatch(/const onBlur = \(\) => \{[\s\S]*guiKhiXongRef\.current = false;\s*ghiAm\.dung\(\);/);
+        expect(than).toMatch(/window\.removeEventListener\('keyup', onKeyUp\);/);
+    });
+
+    test('gửi tự động khi bản ghi xong — chỉ khi máy nghe được chữ', () => {
+        const k = man.indexOf('// Nhả Cách → bản ghi xong thì GỬI LUÔN');
+        const tu = man.slice(k, man.indexOf('}, [ghiAm.trangThai, ghiAm.chu, guiThoai]);', k));
+        expect(tu).toMatch(/if \(ghiAm\.trangThai !== 'xong' \|\| !guiKhiXongRef\.current\) return;/);
+        expect(tu).toMatch(/if \(ghiAm\.chu\.trim\(\)\) guiThoai\(\);/);
     });
 
     test('Enter / Delete chỉ khi đang xem lại bản ghi; Enter dùng chung hàm với nút Gửi', () => {
-        expect(than).toMatch(/if \(ghiAm\.trangThai !== 'xong'\) return;/);
+        expect(than).toMatch(/if \(e\.repeat \|\| ghiAm\.trangThai !== 'xong'\) return;/);
         expect(than).toMatch(/if \(e\.key === 'Enter'\) \{\s*e\.preventDefault\(\);\s*guiThoai\(\);/);
         expect(than).toMatch(/e\.key === 'Delete' \|\| e\.key === 'Backspace'/);
         expect(than).toMatch(/ghiAm\.lamLai\(\)/);
@@ -123,6 +136,7 @@ describe('phím tắt của Hội thoại giọng nói', () => {
     });
 
     test('gỡ listener khi rời màn hoặc kết thúc phiên', () => {
-        expect(than).toMatch(/return \(\) => window\.removeEventListener\('keydown', onKey\);/);
+        expect(than).toMatch(/window\.removeEventListener\('keydown', onKey\);/);
+        expect(than).toMatch(/window\.removeEventListener\('blur', onBlur\);/);
     });
 });

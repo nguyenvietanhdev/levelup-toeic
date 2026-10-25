@@ -153,6 +153,9 @@ export default function ConversationScreen({ active, voice = false }) {
     const [dangPhat, setDangPhat] = useState(null);
     const ghiAm = useGhiAm(speechLangFor(lang));
     const coNhanGiong = isSpeechSupported();
+    // Giữ-để-nói bằng phím Cách: đang giữ (bắt đầu ghi bằng phím) và "nhả ra thì gửi".
+    const giuCachRef = useRef(false);
+    const guiKhiXongRef = useRef(false);
 
     // Cuộn xuống lượt mới nhất. Không cuộn thì câu vừa hiện nằm dưới màn và
     // người dùng tưởng máy chưa trả lời.
@@ -436,30 +439,37 @@ export default function ConversationScreen({ active, voice = false }) {
     }, [busy, ghiAm, handleSend]);
 
     // Phím tắt của Hội thoại giọng nói (suốt phiên, tới khi kết thúc):
-    //   · Cách  = bắt đầu ghi âm / bấm lần nữa để dừng.
+    //   · GIỮ Cách = ghi âm (dừng giọng AI trước); NHẢ ra = dừng và GỬI LUÔN — như bộ
+    //     đàm, phản xạ nhanh như nói chuyện thật. Máy không nghe được chữ nào thì không
+    //     gửi, để lại bước xem lại ("Không nghe rõ — hãy ghi lại").
     //   · Enter = Gửi, Delete (hoặc Backspace — phím "delete" trên Mac) = Ghi lại —
-    //     chỉ khi đang XEM LẠI bản ghi.
+    //     chỉ khi đang XEM LẠI bản ghi (ghi bằng chuột, hoặc giữ Cách mà không nghe rõ).
     // Bỏ qua khi con trỏ đang ở ô nhập (ô tìm kiếm, ô tự nhập tình huống…) hoặc có
     // popup đang mở: phím ở đó là việc của ô/popup đó.
     useEffect(() => {
         if (!voice || !active || !convo || result) return undefined;
+        const laCach = (e) => e.code === 'Space' || e.key === ' ';
         const onKey = (e) => {
-            if (e.repeat || e.isComposing || e.ctrlKey || e.metaKey || e.altKey) return;
+            if (e.isComposing || e.ctrlKey || e.metaKey || e.altKey) return;
             const el = e.target;
             if (el?.closest?.('input, textarea, select, [contenteditable="true"]')) return;
             if (document.querySelector('#modal-container.active')) return;
-            if (e.code === 'Space' || e.key === ' ') {
-                // Chặn mặc định: Cách cuộn trang hoặc "bấm" nút đang được focus.
+            if (laCach(e)) {
+                // Chặn mặc định CẢ lượt lặp khi giữ: Cách cuộn trang hoặc "bấm" nút đang focus.
                 e.preventDefault();
-                if (ghiAm.trangThai === 'ghi') ghiAm.dung();
-                else if (ghiAm.trangThai === 'nghi' && !busy) {
+                if (e.repeat) return;
+                if (ghiAm.trangThai === 'nghi' && !busy) {
                     // Dừng giọng AI trước khi ghi: micro không thu lại tiếng loa.
                     dungPhat();
+                    giuCachRef.current = true;
                     ghiAm.batDau();
+                } else if (ghiAm.trangThai === 'ghi' && !giuCachRef.current) {
+                    // Đang ghi bằng chuột: Cách dừng (không tự gửi — sang bước xem lại).
+                    ghiAm.dung();
                 }
                 return;
             }
-            if (ghiAm.trangThai !== 'xong') return;
+            if (e.repeat || ghiAm.trangThai !== 'xong') return;
             if (e.key === 'Enter') {
                 e.preventDefault();
                 guiThoai();
@@ -468,9 +478,39 @@ export default function ConversationScreen({ active, voice = false }) {
                 if (!busy) ghiAm.lamLai();
             }
         };
+        // NHẢ Cách: dừng ghi và đánh dấu "xong thì gửi" — chữ cuối còn về trễ sau khi
+        // dừng (xem `useGhiAm`), nên gửi ở effect bên dưới khi trạng thái thành 'xong'.
+        const onKeyUp = (e) => {
+            if (!laCach(e) || !giuCachRef.current) return;
+            e.preventDefault();
+            giuCachRef.current = false;
+            guiKhiXongRef.current = true;
+            ghiAm.dung();
+        };
+        // Đang giữ Cách mà rời cửa sổ thì không bao giờ nhận được keyup: dừng ghi và
+        // để lại bước xem lại thay vì tự gửi một câu có thể đang nói dở.
+        const onBlur = () => {
+            if (!giuCachRef.current) return;
+            giuCachRef.current = false;
+            guiKhiXongRef.current = false;
+            ghiAm.dung();
+        };
         window.addEventListener('keydown', onKey);
-        return () => window.removeEventListener('keydown', onKey);
+        window.addEventListener('keyup', onKeyUp);
+        window.addEventListener('blur', onBlur);
+        return () => {
+            window.removeEventListener('keydown', onKey);
+            window.removeEventListener('keyup', onKeyUp);
+            window.removeEventListener('blur', onBlur);
+        };
     }, [voice, active, convo, result, ghiAm, busy, guiThoai, dungPhat]);
+
+    // Nhả Cách → bản ghi xong thì GỬI LUÔN (nếu máy nghe được chữ nào).
+    useEffect(() => {
+        if (ghiAm.trangThai !== 'xong' || !guiKhiXongRef.current) return;
+        guiKhiXongRef.current = false;
+        if (ghiAm.chu.trim()) guiThoai();
+    }, [ghiAm.trangThai, ghiAm.chu, guiThoai]);
 
     const handleFinish = useCallback(async () => {
         if (!convo || busy) return;
@@ -923,7 +963,7 @@ export default function ConversationScreen({ active, voice = false }) {
                                         {ghiAm.trangThai === 'ghi'
                                             ? ` Dừng · ${Math.floor(ghiAm.giay / 60)}:${String(ghiAm.giay % 60).padStart(2, '0')}`
                                             : ' Bấm để trả lời'}
-                                        <kbd className="convo-thoai-kbd">Cách</kbd>
+                                        <kbd className="convo-thoai-kbd">Giữ Cách</kbd>
                                     </button>
                                     {ghiAm.trangThai === 'ghi' && ghiAm.chu && (
                                         <span className="convo-thoai-tam">{ghiAm.chu}</span>
