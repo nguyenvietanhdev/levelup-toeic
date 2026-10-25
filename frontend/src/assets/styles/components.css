@@ -10649,6 +10649,86 @@ button.ai-history-row {
   background: rgba(139, 92, 246, 0.12);
 }
 .rd-group { margin-top: 8px; }
+/* ── Lộ trình hôm nay ───────────────────────────────────────────────── */
+.lt-wrap {
+  width: 100%;
+  max-width: 820px;
+  margin: 0 auto;
+  padding: 0 16px 24px;
+  box-sizing: border-box;
+}
+.lt-gioi-thieu { color: var(--text-secondary); line-height: 1.6; }
+.lt-tien-do { margin: 14px 0 18px; }
+.lt-tien-do-chu { margin-bottom: 6px; }
+.lt-thanh {
+  height: 10px;
+  border-radius: 6px;
+  background: var(--bg-secondary);
+  overflow: hidden;
+}
+.lt-thanh span {
+  display: block;
+  height: 100%;
+  border-radius: 6px;
+  background: linear-gradient(90deg, var(--accent-color), #16a34a);
+  transition: width 0.4s ease;
+}
+.lt-ds {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.lt-buoc {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 14px;
+  border: 2px solid var(--border-color);
+  border-radius: 14px;
+  background: var(--bg-secondary);
+}
+/* Bước TIẾP THEO nổi bật: người học biết ngay phải làm gì. */
+.lt-buoc.is-tiep { border-color: var(--accent-color); background: rgba(139, 92, 246, 0.1); }
+.lt-buoc.is-xong { opacity: 0.75; }
+.lt-so {
+  flex: 0 0 34px;
+  height: 34px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  background: var(--bg-primary);
+  border: 2px solid var(--border-color);
+}
+.lt-buoc.is-xong .lt-so { background: #16a34a; border-color: #16a34a; color: #fff; }
+.lt-buoc.is-tiep .lt-so { border-color: var(--accent-color); color: var(--accent-color); }
+.lt-noi-dung { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.lt-ten { font-weight: 600; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.lt-nhan-tiep {
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: var(--accent-color);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 600;
+}
+.lt-mo-ta { color: var(--text-secondary); font-size: 13px; }
+.lt-trang-thai { font-size: 12px; color: var(--text-secondary); }
+.lt-trang-thai.is-xong { color: #16a34a; font-weight: 600; }
+.lt-hanh-dong {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 6px;
+}
+.lt-nut { white-space: nowrap; }
+.lt-khoa { font-size: 12px; color: var(--text-secondary); white-space: nowrap; }
+
 /* ── Nghe với AI ──────────────────────────────────────────────────────
    Trình phát + tốc độ ở trên, ô chép lại ở dưới. Một cột, rộng vừa đọc. */
 .listening-body {

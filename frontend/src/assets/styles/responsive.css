@@ -1050,6 +1050,19 @@
         order: -1;
     }
 
+    /* Lộ trình hôm nay: nút xuống dòng dưới nội dung, rộng trọn hàng. */
+    .lt-buoc {
+        flex-wrap: wrap;
+    }
+    .lt-hanh-dong {
+        flex: 1 0 100%;
+        flex-direction: row;
+        flex-wrap: wrap;
+    }
+    .lt-hanh-dong .lt-nut {
+        flex: 1 1 auto;
+    }
+
     /* Gợi ý trả lời: không cho chiếm hết màn, khung hội thoại phải còn thấy. */
     .convo-hint {
         max-height: 38dvh;
