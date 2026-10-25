@@ -67,6 +67,9 @@ const MENU_GROUPS = [
     {
         title: 'Tiến độ',
         items: [
+            // Tiến bộ của tôi: hồ sơ năng lực gom từ MỌI chế độ, xu hướng theo tuần.
+            // Không khoá Level — người mới cũng cần thấy mình đang đi lên.
+            { label: 'Tiến bộ của tôi', icon: 'fa-chart-line', screen: 'tien-bo-screen' },
             { label: 'Nhiệm vụ', icon: 'fa-tasks', screen: 'quest-screen', badgeKey: 'quest', feature: 'feature:quest' },
             { label: 'Bảng xếp hạng', icon: 'fa-trophy', screen: 'leaderboard-screen', badgeKey: 'online', badgeStyle: 'info', feature: 'feature:leaderboard' },
             { label: 'Thành tích', icon: 'fa-medal', screen: 'achievements-screen', badgeKey: 'achievement', feature: 'feature:achievements' },
