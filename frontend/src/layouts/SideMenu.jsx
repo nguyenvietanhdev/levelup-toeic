@@ -23,6 +23,7 @@ import { moSoTayPhimTat } from '@lib/phimTat.js';
 const MENU_GROUPS = [
     {
         title: 'Luyện tập',
+        icon: 'fa-dumbbell',
         items: [
             // Lộ trình hôm nay: dẫn qua các kỹ năng với cùng bộ từ, theo đúng thứ tự —
             // để người tự học không chỉ chọn chế độ mình thích. Đặt ĐẦU nhóm.
@@ -41,12 +42,14 @@ const MENU_GROUPS = [
     // Gom theo KỸ NĂNG (Nghe, Nói, Đọc, Viết) để người học thấy mình đang luyện kỹ năng nào.
     {
         title: 'Nghe với AI',
+        icon: 'fa-headphones-simple',
         items: [
             { label: 'Nghe và chép lại', icon: 'fa-headphones', screen: 'listening-screen' },
         ],
     },
     {
         title: 'Nói với AI',
+        icon: 'fa-comment-dots',
         items: [
             { label: 'Chat', icon: 'fa-comments', screen: 'conversation-screen', feature: 'feature:conversation' },
             // Hội thoại GIỌNG NÓI: AI gửi tin nhắn thoại, trả lời bằng ghi âm. Cùng khoá Level với Chat.
@@ -55,6 +58,7 @@ const MENU_GROUPS = [
     },
     {
         title: 'Đọc với AI',
+        icon: 'fa-book-open',
         items: [
             { label: 'Đọc hiểu', icon: 'fa-book-open-reader', screen: 'reading-screen', feature: 'feature:reading' },
         ],
@@ -62,6 +66,7 @@ const MENU_GROUPS = [
     {
         // Dịch và viết đều là sản xuất chữ: gom chung. Dịch vẫn có Nhật ký lỗi trong màn.
         title: 'Viết với AI',
+        icon: 'fa-feather-pointed',
         items: [
             { label: 'Luyện viết', icon: 'fa-pen-nib', screen: 'essay-screen', feature: 'feature:essay' },
             { label: 'Dịch đoạn văn', icon: 'fa-language', screen: 'translation-screen', feature: 'feature:translation' },
@@ -69,6 +74,7 @@ const MENU_GROUPS = [
     },
     {
         title: 'Tiến độ',
+        icon: 'fa-chart-simple',
         items: [
             // Tiến bộ của tôi: hồ sơ năng lực gom từ MỌI chế độ, xu hướng theo tuần.
             // Không khoá Level — người mới cũng cần thấy mình đang đi lên.
@@ -81,6 +87,7 @@ const MENU_GROUPS = [
     },
     {
         title: 'Kho đồ',
+        icon: 'fa-box-open',
         items: [
             { label: 'Cửa hàng', icon: 'fa-shopping-cart', screen: 'shop-screen', badgeKey: 'shopDiscount', badgeStyle: 'sale', feature: 'feature:shop' },
             // KHÔNG khoá theo level (không có `feature:`): nhiệm vụ và thành tích phát
@@ -94,6 +101,7 @@ const MENU_GROUPS = [
     },
     {
         title: 'Tài khoản',
+        icon: 'fa-user-gear',
         items: [
             { label: 'Hồ sơ', icon: 'fa-user', screen: 'profile-screen' },
             { label: 'Cài đặt', icon: 'fa-cog', screen: 'settings-screen' },
@@ -243,12 +251,15 @@ export default function SideMenu() {
                                 aria-expanded={mo}
                                 onClick={() => doiNhom(group)}
                             >
-                                <span>{group.title}</span>
+                                <i className={`fas ${group.icon} menu-group-icon`} aria-hidden="true"></i>
+                                <span className="menu-group-ten">{group.title}</span>
                                 {tong > 0 && <span className="menu-group-badge">{tong > 99 ? '99+' : tong}</span>}
                                 {!mo && !tong && coCham(group) && <span className="menu-group-dot" />}
                                 <i className="fas fa-chevron-down menu-group-chevron" aria-hidden="true"></i>
                             </button>
-                            {mo && group.items.map(item => {
+                            {mo && (
+                            <div className="menu-group-items">
+                            {group.items.map(item => {
                                 const n = item.badgeKey ? badges[item.badgeKey] : 0;
                                 const guestLocked = !isLoggedIn && !item.guestOk;
                                 // Khoá theo Level (chỉ xét khi đã đăng nhập).
@@ -287,6 +298,8 @@ export default function SideMenu() {
                                     </button>
                                 );
                             })}
+                            </div>
+                            )}
                         </div>
                         );
                     })}

@@ -516,51 +516,76 @@
    trên ngưỡng 44px cho vùng chạm, mà cả 8 mục vừa một màn. */
 /* Nhóm menu. Tiêu đề nhỏ, chữ hoa, mờ — đủ để mắt nhận ra ranh giới nhưng
    không tranh chấp với chính các mục bên dưới. */
-.menu-group + .menu-group { margin-top: 4px; }
+.menu-group + .menu-group { margin-top: 2px; }
 
-/* Tiêu đề nhóm là NÚT thu/mở: cả dòng bấm được, mũi tên quay khi mở. */
+/* Tiêu đề nhóm là NÚT thu/mở — trông như một HÀNG thật (icon + chữ đậm + mũi tên),
+   không phải chú thích chữ li ti: khi các nhóm thu lại, chính chúng là menu. */
 .menu-group-title {
     width: 100%;
     display: flex;
     align-items: center;
-    gap: 8px;
-    padding: 8px 14px;
+    gap: 12px;
+    padding: 9px 14px;
     border: none;
     border-radius: var(--border-radius);
     background: none;
     font: inherit;
-    font-size: 10px;
+    font-size: 13px;
     font-weight: 700;
-    letter-spacing: 0.08em;
+    letter-spacing: 0.04em;
     text-transform: uppercase;
     color: var(--text-secondary);
     cursor: pointer;
     text-align: left;
+    transition: background var(--transition-fast), color var(--transition-fast);
 }
-.menu-group-title > span:first-child { opacity: 0.75; }
-.menu-group-title:hover { background: rgba(255, 255, 255, 0.05); }
-.menu-group-title:hover > span:first-child { opacity: 1; }
+.menu-group-title:hover { background: color-mix(in srgb, var(--text-primary) 7%, transparent); color: var(--text-primary); }
+.menu-group.is-open > .menu-group-title { color: var(--text-primary); }
+/* Icon nhóm cùng cột, cùng bề rộng với icon các mục → mép trái thẳng hàng. */
+.menu-group-icon { width: 22px; text-align: center; flex-shrink: 0; font-size: 15px; opacity: 0.85; }
+.menu-group-ten { flex: 1 1 auto; min-width: 0; }
+/* Badge và mũi tên dồn về mép phải — cùng chỗ với badge của các mục. */
+.menu-group-badge {
+    padding: 0 7px;
+    min-width: 20px;
+    border-radius: 999px;
+    background: var(--danger-color, #ef4444);
+    color: #fff;
+    font-size: 11px;
+    font-weight: 700;
+    line-height: 20px;
+    text-align: center;
+    letter-spacing: 0;
+}
+.menu-group-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--danger-color, #ef4444); }
 .menu-group-chevron {
-    margin-left: auto;
-    font-size: 10px;
-    opacity: 0.7;
+    font-size: 11px;
+    opacity: 0.6;
     transform: rotate(-90deg);
     transition: transform var(--transition-fast);
 }
 .menu-group.is-open .menu-group-chevron { transform: rotate(0deg); }
-/* Tổng badge của nhóm đang thu — thứ cần làm không bị giấu theo. */
-.menu-group-badge {
-    padding: 0 6px;
-    min-width: 16px;
-    border-radius: 999px;
-    background: var(--danger-color, #ef4444);
-    color: #fff;
-    font-size: 10px;
-    line-height: 16px;
-    text-align: center;
-    letter-spacing: 0;
+/* Nhóm đang mở: nền nhẹ + vạch dẫn bên trái gom các mục con lại với tiêu đề. */
+.menu-group.is-open {
+    background: color-mix(in srgb, var(--text-primary) 4%, transparent);
+    border-radius: var(--border-radius);
+    padding-bottom: 4px;
 }
-.menu-group-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--danger-color, #ef4444); }
+/* Trong nhóm, hàng hẹp hơn (lùi vào theo vạch dẫn): nhãn HOT đặt TUYỆT ĐỐI ở góc
+   sẽ đè lên chữ dài ("Luyện đề test TOEIC"). Cho nó vào dòng, dồn về cuối hàng. */
+.menu-group-items .menu-item-hot {
+    position: static;
+    order: 10;
+    margin-left: auto;
+    flex-shrink: 0;
+}
+.menu-group-items .menu-item { gap: 10px; }
+.menu-group-items .menu-item > span:not([class]) { min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.menu-group-items {
+    margin-left: 10px;
+    padding-left: 2px;
+    border-left: 2px solid color-mix(in srgb, var(--text-primary) 12%, transparent);
+}
 
 .menu-item {
     position: relative;
