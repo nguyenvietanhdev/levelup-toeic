@@ -3,6 +3,8 @@ const { chuanHoaMuc } = require('../services/aiLevel');
 const UserStats = require('../models/UserStats');
 const UserProfile = require('../models/UserProfile');
 const { layNham } = require('../services/nhamDiemYeu');
+const { luuDe, xoaNhap } = require('../services/baiNhap');
+const { taoXemLai } = require('./xemLaiController');
 const { generatePrompt, gradeEssay, countUnits, limitsFor, chuanHoaRubric } =
     require('../services/essayGrader');
 const { awardXp } = require('../utils/userStateHelper');
@@ -89,15 +91,19 @@ exports.prompt = async (req, res, next) => {
             });
         }
 
+        const data = {
+            prompt: ai.prompt, type: ai.type, topicHint, lang, minWords: min, level, rubric,
+            dang: ai.dang || '', dangVi: ai.dangVi || '',
+            nhamLoi: nham,
+        };
+        // Lưu đề thành BÀI NHÁP: thoát giữa chừng rồi vào lại thì làm tiếp, không phải
+        // gọi AI lấy đề mới. Lỗi lưu không chặn việc trả đề.
+        await luuDe(req.user.id, 'viet', lang, data);
         res.json({
             success: true,
             // `minWords` giữ nguyên TÊN cho tương thích, nhưng với tiếng Trung
             // nó là số CHỮ HÁN — `lang` cho client biết đơn vị nào để hiển thị.
-            data: {
-                prompt: ai.prompt, type: ai.type, topicHint, lang, minWords: min, level, rubric,
-                dang: ai.dang || '', dangVi: ai.dangVi || '',
-                nhamLoi: nham,
-            },
+            data,
         });
     } catch (error) {
         next(error);
@@ -227,6 +233,8 @@ exports.grade = async (req, res, next) => {
         });
 
         await Promise.all([profile.save(), stats.save()]);
+        // Đã nộp chấm → bài nháp hết việc.
+        await xoaNhap(req.user.id, 'viet', lang);
 
         res.json({
             success: true,
@@ -300,3 +308,9 @@ exports.detail = async (req, res, next) => {
         next(error);
     }
 };
+
+/**
+ * @desc    Nộp lại bài đã sửa để AI xem lại (không điểm, không XP, tối đa 3 lần)
+ * @route   POST /api/essay/:id/xem-lai
+ */
+exports.xemLai = taoXemLai({ Model: Essay, kieu: 'viet', truongBai: 'essay', truongLoi: 'issues' });

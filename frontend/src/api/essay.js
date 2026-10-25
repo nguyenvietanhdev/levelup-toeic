@@ -55,6 +55,11 @@ export const EssayAPI = {
         return unwrap(await Http.get(`/essay/history?limit=${limit}`));
     },
 
+    /** Nộp lại bài đã sửa để AI xem lại (không điểm, không XP, tối đa 3 lần/bài). */
+    async xemLai(id, noiDung) {
+        return unwrap(await Http.post(`/essay/${encodeURIComponent(id)}/xem-lai`, { noiDung }));
+    },
+
     /** Xem lại đầy đủ một bài viết đã chấm (kèm nhãn tiêu chí). */
     async detail(id) {
         return unwrap(await Http.get(`/essay/${encodeURIComponent(id)}`));

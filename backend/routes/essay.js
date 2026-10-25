@@ -17,6 +17,8 @@ router.use(protect);
 // token của ta.
 router.post('/prompt', requireLevel('feature:essay'), ctrl.prompt);
 router.post('/grade', requireLevel('feature:essay'), ctrl.grade);
+// Nộp lại bài đã sửa để AI xem lại (không điểm, không XP, tối đa 3 lần/bài).
+router.post('/:id/xem-lai', requireLevel('feature:essay'), ctrl.xemLai);
 
 // `history` KHÔNG khoá: người vừa tụt Level (admin sửa, hoặc mốc bị nâng) vẫn
 // phải xem lại được bài mình đã viết — đó là dữ liệu của họ.

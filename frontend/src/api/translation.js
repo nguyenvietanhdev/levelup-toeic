@@ -59,6 +59,11 @@ export const TranslationAPI = {
         return unwrap(await Http.get(`/translation/history?limit=${limit}`));
     },
 
+    /** Nộp lại bản dịch đã sửa để AI xem lại (không điểm, không XP, tối đa 3 lần/bài). */
+    async xemLai(id, noiDung) {
+        return unwrap(await Http.post(`/translation/${encodeURIComponent(id)}/xem-lai`, { noiDung }));
+    },
+
     /** Xem lại đầy đủ một bài dịch đã chấm (kèm nhãn tiêu chí). */
     async detail(id) {
         return unwrap(await Http.get(`/translation/${encodeURIComponent(id)}`));

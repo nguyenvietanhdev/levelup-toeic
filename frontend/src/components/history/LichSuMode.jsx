@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import ChuaBai from '../chuaBai/ChuaBai.jsx';
+import XemLaiBai from '../chuaBai/XemLaiBai.jsx';
 import { ConversationAPI } from '@api/conversation.js';
 import { EssayAPI } from '@api/essay.js';
 import { TranslationAPI } from '@api/translation.js';
@@ -260,6 +261,8 @@ function ChiTietViet({ bai }) {
             )}
             {/* Bài cũ cũng chữa trên bài; `fix` tiếng Việt (chấm trước đây) chỉ hiện như ghi chú. */}
             <ChuaBai text={bai.essay} loi={bai.issues} />
+            {/* Bài cũ cũng sửa và nộp xem lại được — các lần trước hiện sẵn. */}
+            <XemLaiBai goc={bai.essay} loi={bai.issues} daXem={bai.xemLai} gui={(t) => EssayAPI.xemLai(bai._id, t)} />
             {bai.improved && (
                 <div className="essay-section">
                     <h4><i className="fas fa-wand-magic-sparkles"></i> Gợi ý viết lại</h4>
@@ -292,6 +295,7 @@ function ChiTietDich({ bai }) {
             <DiemTieuChi criteria={bai.criteria} scores={bai.scores} />
             {bai.summary && <p className="tr-summary">{bai.summary}</p>}
             <ChuaBai text={bai.translation} loi={bai.notes} tieuDe="Chữa bản dịch" />
+            <XemLaiBai goc={bai.translation} loi={bai.notes} daXem={bai.xemLai} gui={(t) => TranslationAPI.xemLai(bai._id, t)} />
             {bai.reference && (
                 <div className="essay-section">
                     <h4><i className="fas fa-book"></i> Bản dịch tham khảo</h4>

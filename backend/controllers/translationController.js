@@ -2,6 +2,8 @@ const Translation = require('../models/Translation');
 const UserStats = require('../models/UserStats');
 const UserProfile = require('../models/UserProfile');
 const { layNham } = require('../services/nhamDiemYeu');
+const { luuDe, xoaNhap } = require('../services/baiNhap');
+const { taoXemLai } = require('./xemLaiController');
 const { generatePassage, gradeTranslation, limitsFor, countUnits, mucKho } =
     require('../services/translationGrader');
 const { awardXp } = require('../utils/userStateHelper');
@@ -86,22 +88,22 @@ exports.passage = async (req, res, next) => {
         }
 
         const { min } = limitsFor(lang);
-        res.json({
-            success: true,
-            data: {
-                passage: ai.passage,
-                topic: ai.topic,
-                words: ai.words,
-                level: ai.level,
-                dang: ai.dang,
-                dangVi: ai.dangVi,
-                nhamLoi: nham,
-                lang,
-                // `min` là số TỪ với `en`, số CHỮ HÁN với `zh` — `lang` cho
-                // client biết dùng đơn vị nào để hiển thị.
-                minUnits: min,
-            },
-        });
+        const data = {
+            passage: ai.passage,
+            topic: ai.topic,
+            words: ai.words,
+            level: ai.level,
+            dang: ai.dang,
+            dangVi: ai.dangVi,
+            nhamLoi: nham,
+            lang,
+            // `min` là số TỪ với `en`, số CHỮ HÁN với `zh` — `lang` cho
+            // client biết dùng đơn vị nào để hiển thị.
+            minUnits: min,
+        };
+        // Lưu đoạn văn thành BÀI NHÁP: vào lại thì dịch tiếp, không gọi AI sinh đoạn mới.
+        await luuDe(req.user.id, 'dich', lang, data);
+        res.json({ success: true, data });
     } catch (error) {
         next(error);
     }
@@ -212,6 +214,8 @@ exports.grade = async (req, res, next) => {
         });
 
         await Promise.all([profile.save(), stats.save()]);
+        // Đã nộp chấm → bài nháp hết việc.
+        await xoaNhap(req.user.id, 'dich', lang);
 
         res.json({
             success: true,
@@ -339,3 +343,9 @@ exports.detail = async (req, res, next) => {
         next(error);
     }
 };
+
+/**
+ * @desc    Nộp lại bản dịch đã sửa để AI xem lại (không điểm, không XP, tối đa 3 lần)
+ * @route   POST /api/translation/:id/xem-lai
+ */
+exports.xemLai = taoXemLai({ Model: Translation, kieu: 'dich', truongBai: 'translation', truongLoi: 'notes' });

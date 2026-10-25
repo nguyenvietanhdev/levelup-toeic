@@ -17,6 +17,8 @@ router.use(protect);
 // Level vẫn tiêu token của ta.
 router.post('/passage', requireLevel('feature:translation'), ctrl.passage);
 router.post('/grade', requireLevel('feature:translation'), ctrl.grade);
+// Nộp lại bản dịch đã sửa để AI xem lại (không điểm, không XP, tối đa 3 lần/bài).
+router.post('/:id/xem-lai', requireLevel('feature:translation'), ctrl.xemLai);
 
 // `history` KHÔNG khoá: người vừa tụt Level (admin sửa, hoặc mốc bị nâng) vẫn
 // phải xem lại được bài mình đã làm — đó là dữ liệu của họ.

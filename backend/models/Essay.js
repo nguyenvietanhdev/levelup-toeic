@@ -70,6 +70,9 @@ const essaySchema = new mongoose.Schema(
             coins: { type: Number, default: 0 },
             claimed: { type: Boolean, default: false },
         },
+        // Các lần NỘP LẠI BÀI ĐÃ SỬA để AI xem lại (tối đa 3): bài sửa + lỗi nào đã hết.
+        // Không điểm, không XP — chỉ để người học biết mình sửa đúng chưa.
+        xemLai: { type: [mongoose.Schema.Types.Mixed], default: [] },
     },
     {
         timestamps: true,

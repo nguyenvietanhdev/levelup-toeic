@@ -10,6 +10,8 @@ import ChonDangBai, { useGoiYDang, dangGui } from '../ai/ChonDangBai.jsx';
 import { KIEU_CHAM, doKhoChoKieu } from '@lib/kieuCham.js';
 import NutBatDau from '../ai/NutBatDau.jsx';
 import ChuaBai from '../chuaBai/ChuaBai.jsx';
+import XemLaiBai from '../chuaBai/XemLaiBai.jsx';
+import { useBaiNhap, TheBaiDo } from '../ai/BaiNhap.jsx';
 import { useNhamYeu, NutNhamYeu, NhanNham } from '../ai/NhamDiemYeu.jsx';
 import { useHoiKhiThoat } from '../ai/aiExitGuard.js';
 
@@ -243,8 +245,21 @@ export default function EssayScreen({ active }) {
     // Đang làm dở mà rời màn (quay về, menu, Trang chủ…) → hỏi trước, như 16 chế độ luyện tập.
     useHoiKhiThoat('essay-screen', !!prompt && !result, {
         tieuDe: 'Thoát luyện viết?',
-        noiDung: 'Bài viết chưa nộp sẽ bị mất. Bạn có chắc chắn muốn thoát?',
+        noiDung: 'Bài đang viết được lưu nháp — lần sau vào lại có thể làm tiếp. Thoát bây giờ?',
     });
+
+    // Bài làm dở: đề đã lưu ở server lúc lấy, phần gõ tự lưu; vào lại thì làm tiếp
+    // thay vì gọi AI lấy đề mới.
+    // `active` tính cả TAB: quay từ Lịch sử về Luyện thì đọc lại bài nháp.
+    const baiNhap = useBaiNhap('viet', { active: active && tab !== 'lichsu', coDe: !!prompt, xong: !!result, noiDung: essay, deBai: prompt?.prompt });
+    const lamTiep = () => {
+        const n = baiNhap.nhap;
+        if (!n?.de?.prompt) return;
+        setPrompt(n.de);
+        setEssay(n.noiDung || '');
+        setResult(null);
+        baiNhap.daDung();
+    };
 
     return (
         <div id="essay-screen" className={`screen ${active ? 'active' : ''}`}>
@@ -266,6 +281,7 @@ export default function EssayScreen({ active }) {
 
             {tab === 'lichsu' ? <LichSuMode mode="viet" /> : !prompt ? (
                 <div className="essay-intro essay-intro--wide">
+                    <TheBaiDo nhap={baiNhap.nhap} deBai={baiNhap.nhap?.de?.prompt} onLamTiep={lamTiep} onBo={baiNhap.boQua} />
                     <p>
                         {lang === 'zh' ? (
                             <>
@@ -420,6 +436,9 @@ export default function EssayScreen({ active }) {
 
                             {/* Chữa NGAY TRÊN bài (bút đỏ) thay cho danh sách lỗi rời. */}
                             <ChuaBai text={essay} loi={result.issues} />
+                            {result.id && (
+                                <XemLaiBai goc={essay} loi={result.issues} gui={(t) => EssayAPI.xemLai(result.id, t)} />
+                            )}
 
                             {result.improved && (
                                 <div className="essay-section">

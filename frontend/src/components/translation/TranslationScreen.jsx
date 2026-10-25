@@ -11,6 +11,8 @@ import KieuChamDoKho from '../ai/KieuChamDoKho.jsx';
 import ChonDangBai, { useGoiYDang, dangGui } from '../ai/ChonDangBai.jsx';
 import NutBatDau from '../ai/NutBatDau.jsx';
 import ChuaBai from '../chuaBai/ChuaBai.jsx';
+import XemLaiBai from '../chuaBai/XemLaiBai.jsx';
+import { useBaiNhap, TheBaiDo } from '../ai/BaiNhap.jsx';
 import { useNhamYeu, NutNhamYeu, NhanNham } from '../ai/NhamDiemYeu.jsx';
 import { useHoiKhiThoat } from '../ai/aiExitGuard.js';
 
@@ -229,8 +231,21 @@ export default function TranslationScreen({ active }) {
     // Đang làm dở mà rời màn (quay về, menu, Trang chủ…) → hỏi trước, như 16 chế độ luyện tập.
     useHoiKhiThoat('translation-screen', !!de && !result, {
         tieuDe: 'Thoát dịch đoạn văn?',
-        noiDung: 'Bản dịch chưa nộp sẽ bị mất. Bạn có chắc chắn muốn thoát?',
+        noiDung: 'Bản dịch đang làm được lưu nháp — lần sau vào lại có thể dịch tiếp. Thoát bây giờ?',
     });
+
+    // Bài làm dở: đoạn văn đã lưu ở server lúc sinh, phần dịch tự lưu; vào lại thì
+    // dịch tiếp thay vì gọi AI sinh đoạn mới.
+    // `active` tính cả TAB: quay từ Lịch sử / Nhật ký lỗi về Luyện thì đọc lại bài nháp.
+    const baiNhap = useBaiNhap('dich', { active: active && tab !== 'lichsu' && tab !== 'loi', coDe: !!de, xong: !!result, noiDung: banDich, deBai: de?.passage });
+    const lamTiep = () => {
+        const n = baiNhap.nhap;
+        if (!n?.de?.passage) return;
+        setDe(n.de);
+        setBanDich(n.noiDung || '');
+        setResult(null);
+        baiNhap.daDung();
+    };
 
     return (
         <div id="translation-screen" className={`screen ${active ? 'active' : ''}`}>
@@ -266,6 +281,7 @@ export default function TranslationScreen({ active }) {
             <>
             {!de ? (
                 <div className="essay-intro essay-intro--wide">
+                    <TheBaiDo nhap={baiNhap.nhap} deBai={baiNhap.nhap?.de?.passage} onLamTiep={lamTiep} onBo={baiNhap.boQua} />
                     <p>
                         Đọc một đoạn <strong>tiếng Việt</strong> rồi viết lại bằng{' '}
                         <strong>{tenNgonNgu}</strong>. Bài được chấm theo{' '}
@@ -393,6 +409,9 @@ export default function TranslationScreen({ active }) {
 
                             {/* Chữa NGAY TRÊN bản dịch (bút đỏ) thay cho danh sách rời. */}
                             <ChuaBai text={banDich} loi={result.notes} tieuDe="Chữa bản dịch" />
+                            {result.id && (
+                                <XemLaiBai goc={banDich} loi={result.notes} gui={(t) => TranslationAPI.xemLai(result.id, t)} />
+                            )}
 
                             {/* Bản dịch tham khảo đặt CUỐI, sau phần lỗi: đọc đáp án
                                 trước thì phần nhận xét về bài mình thành ra thừa. Với
