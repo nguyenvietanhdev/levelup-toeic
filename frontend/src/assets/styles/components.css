@@ -12255,3 +12255,38 @@ body.dang-phat-am .js-nut-am {
   .tb-tu-vung { grid-template-columns: repeat(2, 1fr); }
   .tb-luoi { grid-template-columns: 1fr; }
 }
+
+/* ── Nhắm lỗi hay mắc (AI cài chỗ luyện từ hồ sơ Tiến bộ) ─────────────── */
+.nham-yeu-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin: 12px auto 0;
+  padding: 0 16px;
+}
+.nham-yeu {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px;
+  border-radius: 999px;
+  border: 2px solid var(--border-color);
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+.nham-yeu i { font-size: 18px; }
+.nham-yeu.is-on { border-color: var(--accent-color); color: var(--accent-color); background: rgba(139, 92, 246, 0.1); }
+.nham-yeu-note { font-size: 12px; color: var(--text-secondary); }
+.nham-yeu-nhan {
+  display: block;
+  margin-top: 4px;
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--accent-color);
+}
+.convo-targets .nham-yeu-nhan { margin-top: 6px; }

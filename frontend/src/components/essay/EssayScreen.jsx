@@ -9,6 +9,7 @@ import KieuChamDoKho from '../ai/KieuChamDoKho.jsx';
 import ChonDangBai, { useGoiYDang, dangGui } from '../ai/ChonDangBai.jsx';
 import { KIEU_CHAM, doKhoChoKieu } from '@lib/kieuCham.js';
 import NutBatDau from '../ai/NutBatDau.jsx';
+import { useNhamYeu, NutNhamYeu, NhanNham } from '../ai/NhamDiemYeu.jsx';
 import { useHoiKhiThoat } from '../ai/aiExitGuard.js';
 
 /**
@@ -157,6 +158,7 @@ export default function EssayScreen({ active }) {
     // mình và thoát ra luôn.
     const langLocal = GameState.state?.settings?.vocabLang === 'zh' ? 'zh' : 'en';
     const lang = prompt ? (prompt.lang === 'zh' ? 'zh' : 'en') : langLocal;
+    const [nhamYeu, doiNhamYeu] = useNhamYeu();
     const minUnits = Number(prompt?.minWords) || (lang === 'zh' ? MIN_ZH : MIN_EN);
     const unit = lang === 'zh' ? 'chữ' : 'từ';
 
@@ -176,7 +178,7 @@ export default function EssayScreen({ active }) {
         if (loadingPrompt) return;
         setLoadingPrompt(true);
         try {
-            const d = await EssayAPI.prompt({ level, rubric: kieuDangChon, ...dangGui({ dang, tuChon, goiY }) });
+            const d = await EssayAPI.prompt({ level, rubric: kieuDangChon, ...dangGui({ dang, tuChon, goiY }), nhamYeu });
             if (!d?.prompt) throw new Error('Server trả về đề không hợp lệ');
             setPrompt(d);
             // Đề mới thì bỏ bài cũ — giữ lại là người dùng nộp nhầm bài của đề
@@ -188,7 +190,7 @@ export default function EssayScreen({ active }) {
         } finally {
             setLoadingPrompt(false);
         }
-    }, [loadingPrompt, level, kieuDangChon, dang, tuChon, goiY]);
+    }, [loadingPrompt, level, kieuDangChon, dang, tuChon, goiY, nhamYeu]);
 
     const handleGrade = useCallback(async () => {
         if (grading || !prompt) return;
@@ -309,6 +311,9 @@ export default function EssayScreen({ active }) {
                         </div>
                     </div>
 
+                    {/* AI cài chỗ luyện đúng lỗi hay mắc (từ hồ sơ Tiến bộ) — chỉ tiếng Anh. */}
+                    {lang !== 'zh' && <NutNhamYeu bat={nhamYeu} onDoi={doiNhamYeu} />}
+
                     {/* Nút bắt đầu nổi cố định giữa đáy khung nhìn (portal vào body). */}
                     <NutBatDau active={active} onClick={handleNewPrompt} disabled={loadingPrompt}>
                         {loadingPrompt
@@ -320,7 +325,7 @@ export default function EssayScreen({ active }) {
                 <div className="essay-body">
                     <div className="essay-prompt">
                         <div className="essay-prompt-head">
-                            <span>Đề bài{prompt.dangVi || prompt.type ? ` · ${prompt.dangVi || prompt.type}` : ''}</span>
+                            <span>Đề bài{prompt.dangVi || prompt.type ? ` · ${prompt.dangVi || prompt.type}` : ''}<NhanNham ds={prompt.nhamLoi} /></span>
                             <button
                                 className="icon-btn"
                                 title="Đổi đề khác"

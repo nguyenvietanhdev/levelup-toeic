@@ -256,8 +256,8 @@ describe('Hội thoại giọng nói (voice): AI viết câu để đọc thành
     test('controller: nhận voice khi mở phiên, lưu vào phiên, đọc lại ở mỗi lượt và trong lịch sử', () => {
         const src = readFileSync(join(__dirname, '..', 'controllers', 'conversationController.js'), 'utf8');
         expect(src).toMatch(/const voice = req\.body\.voice === true;/);
-        expect(src).toMatch(/openConversation\(\{[^}]*voice \}\)/);
-        expect(src).toMatch(/voice: convo\.voice === true,\s*\}\);/);
+        expect(src).toMatch(/openConversation\(\{[^}]*\bvoice[,\s][^}]*\}\)/);
+        expect(src).toMatch(/replyTurn\(\{[\s\S]*?voice: convo\.voice === true,[\s\S]*?\}\);/);
         expect(src).toMatch(/voice: c\.voice === true,/);
     });
 });

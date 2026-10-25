@@ -21,6 +21,7 @@ import { isSpeechSupported, speechLangFor, createSpeechInput } from '@lib/speech
 import { useGhiAm } from './useGhiAm.js';
 import { BongThoaiAI, BongThoaiCuaToi } from './BongThoai.jsx';
 import NutBatDau from '../ai/NutBatDau.jsx';
+import { useNhamYeu, NutNhamYeu, NhanNham } from '../ai/NhamDiemYeu.jsx';
 import { useHoiKhiThoat } from '../ai/aiExitGuard.js';
 
 /**
@@ -149,6 +150,7 @@ export default function ConversationScreen({ active, voice = false }) {
     const handleStartRef = useRef(null);
     const scrollRef = useRef(null);
     const lang = getVocabLang();
+    const [nhamYeu, doiNhamYeu] = useNhamYeu();
     // Hội thoại giọng nói: tin nhắn thoại AI đang phát (chỉ số lượt) và bộ ghi âm.
     const [dangPhat, setDangPhat] = useState(null);
     const ghiAm = useGhiAm(speechLangFor(lang));
@@ -240,6 +242,7 @@ export default function ConversationScreen({ active, voice = false }) {
                 strictGrammar: rubricGui === 'giaotiep' && strictGrammar,
                 ...dangGui({ dang, tuChon, goiY }),
                 voice,
+                nhamYeu: lang !== 'zh' && nhamYeu,
             });
             // Chốt cuối: không có `id` thì KHÔNG phải phiên hợp lệ.
             //
@@ -256,6 +259,7 @@ export default function ConversationScreen({ active, voice = false }) {
                 turns: data.turns || [],
                 usedWords: data.usedWords || [],
                 aiUsedWords: data.aiUsedWords || [],
+                nhamLoi: data.nhamLoi || [],
             });
             // Năng lượng đã bị server trừ — đồng bộ lại ngay, không thì thanh
             // năng lượng vẫn hiện số cũ cho tới lần tải trang sau.
@@ -288,7 +292,7 @@ export default function ConversationScreen({ active, voice = false }) {
         } finally {
             setStarting(false);
         }
-    }, [starting, lang, speak, phatTin, voice, syncFromState, level, context, rubric, strictGrammar, dang, tuChon, goiY]);
+    }, [starting, lang, speak, phatTin, voice, syncFromState, level, context, rubric, strictGrammar, dang, tuChon, goiY, nhamYeu]);
 
     handleStartRef.current = handleStart;
 
@@ -680,6 +684,9 @@ export default function ConversationScreen({ active, voice = false }) {
                         </div>
                     </div>
 
+                    {/* AI cài chỗ luyện đúng lỗi hay mắc (từ hồ sơ Tiến bộ) — chỉ tiếng Anh. */}
+                    {lang !== 'zh' && <NutNhamYeu bat={nhamYeu} onDoi={doiNhamYeu} />}
+
                     {/* Nút bắt đầu nổi cố định giữa đáy khung nhìn (portal vào body). */}
                     <NutBatDau active={active} onClick={handleStart} disabled={starting || (voice && !coNhanGiong)}>
                         {starting
@@ -699,6 +706,7 @@ export default function ConversationScreen({ active, voice = false }) {
                                 <span className="convo-targets-note"> · {aiUsed.size} từ AI đã nói (dùng lại để nhận thưởng)</span>
                             )}
                         </div>
+                        <NhanNham ds={convo.nhamLoi} />
                         <div className="convo-target-list">
                             {convo.targetWords.map((w, i) => (
                                 // `key` kèm chỉ số: server đã khử trùng mặt chữ

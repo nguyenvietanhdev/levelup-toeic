@@ -10,6 +10,7 @@ import LichSuMode from '../history/LichSuMode.jsx';
 import KieuChamDoKho from '../ai/KieuChamDoKho.jsx';
 import ChonDangBai, { useGoiYDang, dangGui } from '../ai/ChonDangBai.jsx';
 import NutBatDau from '../ai/NutBatDau.jsx';
+import { useNhamYeu, NutNhamYeu, NhanNham } from '../ai/NhamDiemYeu.jsx';
 import { useHoiKhiThoat } from '../ai/aiExitGuard.js';
 
 /**
@@ -150,6 +151,7 @@ export default function TranslationScreen({ active }) {
     // tạm từ GameState để màn giới thiệu nói đúng ngôn ngữ ngay từ đầu.
     const langLocal = GameState.state?.settings?.vocabLang === 'zh' ? 'zh' : 'en';
     const lang = de ? (de.lang === 'zh' ? 'zh' : 'en') : langLocal;
+    const [nhamYeu, doiNhamYeu] = useNhamYeu();
     const minUnits = Number(de?.minUnits) || (lang === 'zh' ? MIN_ZH : MIN_EN);
     const unit = lang === 'zh' ? 'chữ' : 'từ';
     const tenNgonNgu = lang === 'zh' ? 'tiếng Trung' : 'tiếng Anh';
@@ -161,7 +163,7 @@ export default function TranslationScreen({ active }) {
         if (loadingDe) return;
         setLoadingDe(true);
         try {
-            const d = await TranslationAPI.passage({ words: layTuGoiY(), level, ...dangGui({ dang, tuChon, goiY }) });
+            const d = await TranslationAPI.passage({ words: layTuGoiY(), level, ...dangGui({ dang, tuChon, goiY }), nhamYeu });
             if (!d?.passage) throw new Error('Server trả về đoạn văn không hợp lệ');
             setDe(d);
             // Đề mới thì bỏ bài cũ — giữ lại là người dùng nộp nhầm bản dịch của
@@ -173,7 +175,7 @@ export default function TranslationScreen({ active }) {
         } finally {
             setLoadingDe(false);
         }
-    }, [loadingDe, level, dang, tuChon, goiY]);
+    }, [loadingDe, level, dang, tuChon, goiY, nhamYeu]);
 
     const handleGrade = useCallback(async () => {
         if (grading || !de) return;
@@ -304,6 +306,9 @@ export default function TranslationScreen({ active }) {
                         </div>
                     </div>
 
+                    {/* AI cài chỗ luyện đúng lỗi hay mắc (từ hồ sơ Tiến bộ) — chỉ tiếng Anh. */}
+                    {lang !== 'zh' && <NutNhamYeu bat={nhamYeu} onDoi={doiNhamYeu} />}
+
                     {/* Nút bắt đầu nổi cố định giữa đáy khung nhìn (portal vào body). */}
                     <NutBatDau active={active} onClick={handleDeMoi} disabled={loadingDe}>
                         {loadingDe
@@ -315,7 +320,7 @@ export default function TranslationScreen({ active }) {
                 <div className="essay-body">
                     <div className="essay-prompt">
                         <div className="essay-prompt-head">
-                            <span>Đoạn văn cần dịch{de.dangVi || de.topic ? ` · ${de.dangVi || de.topic}` : ''}</span>
+                            <span>Đoạn văn cần dịch{de.dangVi || de.topic ? ` · ${de.dangVi || de.topic}` : ''}<NhanNham ds={de.nhamLoi} /></span>
                             <button
                                 className="icon-btn"
                                 title="Đổi đoạn khác"

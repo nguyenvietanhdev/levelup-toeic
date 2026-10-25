@@ -26,6 +26,7 @@ function chatCompletion(...args) {
 const { parseJson, clampBand, countUnits } = require('./essayGrader');
 const { chiThiPhanLoai, chuanHoaLoai } = require('./errorTaxonomy');
 const { chonDang, CHI_THI_HOP_BOI_CANH } = require('./dangBai');
+const { chiThiNham } = require('./nhamDiemYeu');
 
 /**
  * Ba trục chấm.
@@ -128,7 +129,7 @@ const NHOM_DANG_DICH = [
  * ngẫu nhiên toàn từ chưa từng thấy. Đây là thứ ChatGPT không làm được: nó
  * không biết người học đang học bộ nào.
  */
-async function generatePassage({ tuVung = [], userId = null, lang = 'en', level = 'medium', dang = '', tuChon = '' } = {}) {
+async function generatePassage({ tuVung = [], userId = null, lang = 'en', level = 'medium', dang = '', tuChon = '', nham = [] } = {}) {
     const zh = lang === 'zh';
     // Dạng văn bản người học chọn (null = Ngẫu nhiên → một tình huống đời thường như trước).
     const chon = chonDang(NHOM_DANG_DICH, { dang, tuChon });
@@ -168,6 +169,12 @@ async function generatePassage({ tuVung = [], userId = null, lang = 'en', level 
             'Express their meaning in Vietnamese; never write them literally.',
         );
         if (chon) system.push(CHI_THI_HOP_BOI_CANH);
+    }
+    // Lỗi ngữ pháp lặp lại của người học (chỉ khi dịch sang tiếng Anh): cài một
+    // hai câu mà dịch đúng phải dùng đúng cấu trúc đó.
+    if (!zh) {
+        const nhamDong = chiThiNham(nham, 'dich');
+        if (nhamDong) system.push(nhamDong);
     }
 
     const messages = [

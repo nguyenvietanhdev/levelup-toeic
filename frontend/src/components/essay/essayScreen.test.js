@@ -124,7 +124,8 @@ describe('start KHÔNG gửi chủ đề — server tự đọc', () => {
         const [url, body] = post.mock.calls[0];
         expect(url).toBe('/essay/prompt');
         // `dang`/`tuChon` (dạng bài) cũng là lựa chọn bấm/gõ trên màn — vẫn KHÔNG có source/part/lang.
-        expect(Object.keys(body)).toEqual(['level', 'rubric', 'dang', 'tuChon']);
+        // `nhamYeu` = công tắc "Nhắm lỗi hay mắc" trên màn — lựa chọn, không phải hồ sơ.
+        expect(Object.keys(body)).toEqual(['level', 'rubric', 'dang', 'tuChon', 'nhamYeu']);
     });
 });
 

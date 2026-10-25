@@ -2,6 +2,7 @@ const Essay = require('../models/Essay');
 const { chuanHoaMuc } = require('../services/aiLevel');
 const UserStats = require('../models/UserStats');
 const UserProfile = require('../models/UserProfile');
+const { layNham } = require('../services/nhamDiemYeu');
 const { generatePrompt, gradeEssay, countUnits, limitsFor, chuanHoaRubric } =
     require('../services/essayGrader');
 const { awardXp } = require('../utils/userStateHelper');
@@ -73,9 +74,12 @@ exports.prompt = async (req, res, next) => {
         const level = chuanHoaMuc(req.body.level);
         // Kiểu chấm là lựa chọn của người học; server chỉ nhận mã hợp lệ cho ngôn ngữ đó.
         const rubric = chuanHoaRubric(req.body.rubric, lang);
+        // Lỗi ngữ pháp lặp lại trong hồ sơ: đề cần đúng cấu trúc đó (tắt bằng `nhamYeu: false`).
+        const nham = req.body.nhamYeu === false ? [] : await layNham(req.user.id, lang);
         const ai = await generatePrompt({
             topicHint, userId: req.user.id, lang, level, rubric,
             dang: req.body.dang, tuChon: req.body.tuChon,
+            nham: nham.map((n) => n.key),
         });
         if (!ai.success) {
             logger.error('Essay prompt: AI failed', ai.error);
@@ -92,6 +96,7 @@ exports.prompt = async (req, res, next) => {
             data: {
                 prompt: ai.prompt, type: ai.type, topicHint, lang, minWords: min, level, rubric,
                 dang: ai.dang || '', dangVi: ai.dangVi || '',
+                nhamLoi: nham,
             },
         });
     } catch (error) {

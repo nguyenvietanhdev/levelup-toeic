@@ -144,7 +144,8 @@ describe('start không gửi tham số đề/part/lang', () => {
         expect(url).toBe('/conversation/start');
         // `dang`/`tuChon` (tình huống) cũng là lựa chọn bấm/gõ trên màn — vẫn KHÔNG có source/part/lang.
         // `voice` = Chat chữ hay Hội thoại giọng nói — cũng là lựa chọn của màn, không phải dữ liệu hồ sơ.
-        expect(Object.keys(body).sort()).toEqual(['context', 'dang', 'level', 'rubric', 'strictGrammar', 'tuChon', 'voice']);
+        // `nhamYeu` = công tắc "Nhắm lỗi hay mắc" trên màn — lựa chọn, không phải hồ sơ.
+        expect(Object.keys(body).sort()).toEqual(['context', 'dang', 'level', 'nhamYeu', 'rubric', 'strictGrammar', 'tuChon', 'voice']);
     });
 
     test('hint gọi đúng endpoint, hết lượt thì lỗi mang cờ limit', async () => {

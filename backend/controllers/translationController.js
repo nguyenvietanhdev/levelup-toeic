@@ -1,6 +1,7 @@
 const Translation = require('../models/Translation');
 const UserStats = require('../models/UserStats');
 const UserProfile = require('../models/UserProfile');
+const { layNham } = require('../services/nhamDiemYeu');
 const { generatePassage, gradeTranslation, limitsFor, countUnits, mucKho } =
     require('../services/translationGrader');
 const { awardXp } = require('../utils/userStateHelper');
@@ -69,9 +70,12 @@ exports.passage = async (req, res, next) => {
         const words = Array.isArray(req.body.words) ? req.body.words : [];
         const level = mucKho(req.body.level);
 
+        // Lỗi ngữ pháp lặp lại trong hồ sơ: cài câu cần đúng cấu trúc đó (tắt bằng `nhamYeu: false`).
+        const nham = req.body.nhamYeu === false ? [] : await layNham(req.user.id, lang);
         const ai = await generatePassage({
             tuVung: words, userId: req.user.id, lang, level,
             dang: req.body.dang, tuChon: req.body.tuChon,
+            nham: nham.map((n) => n.key),
         });
         if (!ai.success) {
             logger.error('Translation passage: AI failed', ai.error);
@@ -91,6 +95,7 @@ exports.passage = async (req, res, next) => {
                 level: ai.level,
                 dang: ai.dang,
                 dangVi: ai.dangVi,
+                nhamLoi: nham,
                 lang,
                 // `min` là số TỪ với `en`, số CHỮ HÁN với `zh` — `lang` cho
                 // client biết dùng đơn vị nào để hiển thị.

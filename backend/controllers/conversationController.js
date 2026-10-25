@@ -7,6 +7,7 @@ const VocabularyZh = require('../models/VocabularyZh');
 const UserUpload = require('../models/UserUpload');
 const WrongWord = require('../models/WrongWord');
 const { openConversation, replyTurn, goiYKhung, moTaVai, NHOM_TINH_HUONG } = require('../services/conversationAi');
+const { layNham } = require('../services/nhamDiemYeu');
 const { chonDang } = require('../services/dangBai');
 const { chuanHoaBoTieuChi, gradeConversation } = require('../services/conversationGrader');
 const { matchWords, collectUsed, collectAiUsed } = require('../utils/wordMatch');
@@ -246,7 +247,11 @@ exports.start = async (req, res, next) => {
         // Hội thoại GIỌNG NÓI (AI gửi tin nhắn thoại, người học trả lời bằng ghi âm)
         // hay Chat chữ. Chỉ khác cách AI viết câu; chấm điểm giữ nguyên.
         const voice = req.body.voice === true;
-        const ai = await openConversation({ lang, topic, targetWords, userId: req.user.id, level, tinhHuong, voice });
+        // Lỗi ngữ pháp lặp lại trong hồ sơ: AI thỉnh thoảng hỏi câu cần đúng cấu
+        // trúc đó. Người học tắt được (`nhamYeu: false`); lỗi đọc hồ sơ → bỏ qua.
+        const nham = req.body.nhamYeu === false ? [] : await layNham(req.user.id, lang);
+        const nhamKeys = nham.map((n) => n.key);
+        const ai = await openConversation({ lang, topic, targetWords, userId: req.user.id, level, tinhHuong, voice, nham: nhamKeys });
         if (!ai.success) {
             // AI lỗi thì HOÀN năng lượng — người dùng không được gì mà vẫn mất
             // tiền là lỗi tệ nhất trong nhóm này.
@@ -266,6 +271,7 @@ exports.start = async (req, res, next) => {
             strictGrammar: req.body.strictGrammar === true,
             tinhHuong: tinhHuong ? tinhHuong.vi : '',
             voice,
+            nhamLoi: nhamKeys,
             targetWords,
             level,
             turns: [{ role: 'npc', content: ai.content }],
@@ -281,6 +287,7 @@ exports.start = async (req, res, next) => {
                 turns: convo.turns,
                 usedWords: [],
                 aiUsedWords: convo.aiUsedWords,
+                nhamLoi: nham,
                 energyRemaining: charge.energyRemaining,
                 vip: !!charge.vip,
             },
@@ -336,6 +343,8 @@ exports.reply = async (req, res, next) => {
             // giữa chừng là đổi độ khó sau khi đã bắt đầu.
             level: convo.level,
             voice: convo.voice === true,
+            // Chốt lúc mở phiên: hồ sơ đổi giữa chừng cũng không đổi hướng hội thoại.
+            nham: convo.nhamLoi || [],
         });
 
         if (ai.success) {

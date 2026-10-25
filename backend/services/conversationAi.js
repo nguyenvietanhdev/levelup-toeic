@@ -10,6 +10,7 @@ function chatCompletion(...args) {
 
 const { chiThiMuc } = require('./aiLevel');
 const { CHI_THI_HOP_BOI_CANH } = require('./dangBai');
+const { chiThiNham } = require('./nhamDiemYeu');
 
 /**
  * Sinh hội thoại luyện nói, ÉP dùng đúng bộ từ người học vừa luyện.
@@ -128,7 +129,7 @@ function pickWords(targetWords = [], usedWords = [], n = WORDS_IN_PROMPT) {
  * Viết bằng tiếng Anh vì mọi model đều bám prompt tiếng Anh tốt hơn; nội dung
  * SINH RA thì vẫn theo `lang`.
  */
-function systemPrompt({ lang, topic, scenario, words, level, voice = false }) {
+function systemPrompt({ lang, topic, scenario, words, level, voice = false, nham = [] }) {
     const L = langName(lang);
     return [
         `You are a friendly conversation partner helping a ${NATIVE} speaker practise ${L}.`,
@@ -155,6 +156,9 @@ function systemPrompt({ lang, topic, scenario, words, level, voice = false }) {
         `5. ${chiThiMuc(level)}`,
         '6. If the learner makes a mistake, just reply naturally. Do not correct',
         '   them mid-conversation; corrections come at the end.',
+        // Lỗi ngữ pháp lặp lại trong hồ sơ người học: thỉnh thoảng hỏi câu cần đúng
+        // cấu trúc đó (xem `nhamDiemYeu`). Rỗng thì không thêm gì.
+        chiThiNham(nham, 'hoi-thoai'),
     ].filter(Boolean).join('\n');
 }
 
@@ -218,12 +222,12 @@ const NHOM_TINH_HUONG = [
  *
  * @returns {{success:boolean, content?:string, scenario?:string, khung?:string[], error?:string}}
  */
-async function openConversation({ lang = 'en', topic = '', targetWords = [], userId = null, level = 'medium', tinhHuong = null, voice = false } = {}) {
+async function openConversation({ lang = 'en', topic = '', targetWords = [], userId = null, level = 'medium', tinhHuong = null, voice = false, nham = [] } = {}) {
     const words = pickWords(targetWords, [], WORDS_IN_PROMPT);
     // Tình huống do AI TỰ DỰNG từ bộ từ — không lấy từ Part. Yêu cầu hai dòng
     // SCENARIO và REPLY để server tách được tình huống ra khỏi lời nói.
     const messages = [
-        { role: 'system', content: systemPrompt({ lang, topic, words, level, voice }) },
+        { role: 'system', content: systemPrompt({ lang, topic, words, level, voice, nham }) },
         {
             role: 'user',
             content: [
@@ -262,7 +266,7 @@ async function openConversation({ lang = 'en', topic = '', targetWords = [], use
  * @param {Array}  o.turns  Toàn bộ lượt đã có (`{ role: 'npc'|'user', content }`).
  */
 async function replyTurn({
-    lang = 'en', topic = '', scenario = '', targetWords = [], usedWords = [], turns = [], userId = null, level = 'medium', voice = false,
+    lang = 'en', topic = '', scenario = '', targetWords = [], usedWords = [], turns = [], userId = null, level = 'medium', voice = false, nham = [],
 } = {}) {
     // Ưu tiên từ CHƯA dùng: hội thoại tự lái về phía những từ người học còn nợ,
     // thay vì lặp lại mấy từ đã ăn điểm rồi.
@@ -280,7 +284,7 @@ async function replyTurn({
     }));
 
     const messages = [
-        { role: 'system', content: systemPrompt({ lang, topic, scenario, words, level, voice }) },
+        { role: 'system', content: systemPrompt({ lang, topic, scenario, words, level, voice, nham }) },
         ...recent,
     ];
 

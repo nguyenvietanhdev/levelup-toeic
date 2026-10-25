@@ -23,6 +23,7 @@
 const { chiThiPhanLoai, chuanHoaLoai } = require('./errorTaxonomy');
 const { chiThiMuc } = require('./aiLevel');
 const { chonDang } = require('./dangBai');
+const { chiThiNham } = require('./nhamDiemYeu');
 
 function chatCompletion(...args) {
     return require('../config/openai').chatCompletion(...args);
@@ -290,14 +291,14 @@ const GIONG_DE_VIET = {
     hsk: 'Match the style of an HSK writing (书写) task.',
 };
 
-async function generatePrompt({ topicHint = '', userId = null, lang = 'en', level = 'medium', rubric, dang = '', tuChon = '' } = {}) {
+async function generatePrompt({ topicHint = '', userId = null, lang = 'en', level = 'medium', rubric, dang = '', tuChon = '', nham = [] } = {}) {
     const zh = lang === 'zh';
     const rb = chuanHoaRubric(rubric, lang);
     const thucTe = laBoChungKhung(rb);
     // Dạng người học chọn (null = Ngẫu nhiên → giữ đề như trước).
     const chon = chonDang(NHOM_DANG_VIET, { dang, tuChon });
     if (chon) {
-        return deTheoDang({ chon, zh, rb, level, topicHint, userId });
+        return deTheoDang({ chon, zh, rb, level, topicHint, userId, nham });
     }
 
     const system = zh
@@ -345,8 +346,10 @@ async function generatePrompt({ topicHint = '', userId = null, lang = 'en', leve
                 ? `Write one Task 2 question related to: ${topicHint}`
                 : 'Write one Task 2 question on a common IELTS topic.');
 
+    // Lỗi ngữ pháp lặp lại của người học (chỉ tiếng Anh): chọn đề cần đúng cấu trúc đó.
+    const nhamDong = zh ? '' : chiThiNham(nham, 'viet');
     const messages = [
-        { role: 'system', content: system },
+        { role: 'system', content: nhamDong ? `${system}\n${nhamDong}` : system },
         { role: 'user', content: user },
     ];
 
@@ -369,7 +372,7 @@ async function generatePrompt({ topicHint = '', userId = null, lang = 'en', leve
  * Đề theo DẠNG BÀI người học chọn (hoặc tự nhập). Kiểu chấm chỉ quyết định giọng
  * đề; dạng bài quyết định viết cái gì — nên IELTS + "Email cá nhân" vẫn hợp lệ.
  */
-async function deTheoDang({ chon, zh, rb, level, topicHint, userId }) {
+async function deTheoDang({ chon, zh, rb, level, topicHint, userId, nham = [] }) {
     const system = [
         zh
             ? 'You write Chinese writing prompts for learners. The prompt MUST be written in Simplified Chinese.'
@@ -383,6 +386,7 @@ async function deTheoDang({ chon, zh, rb, level, topicHint, userId }) {
         GIONG_DE_VIET[rb] || '',
         // Có chủ đề của bộ từ: đặt đề vào bối cảnh hợp cả dạng bài lẫn chủ đề, không ghép gượng.
         topicHint ? 'Set the task in a situation that fits both this kind of text and the topic naturally.' : '',
+        zh ? '' : chiThiNham(nham, 'viet'),
     ].filter(Boolean).join('\n');
 
     const user = topicHint

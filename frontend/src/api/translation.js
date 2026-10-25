@@ -43,8 +43,8 @@ export const TranslationAPI = {
      *
      * Ngôn ngữ đích thì VẪN không gửi — server đọc từ hồ sơ.
      */
-    async passage({ words = [], level = 'medium', dang = '', tuChon = '' } = {}) {
-        return unwrap(await Http.post('/translation/passage', { words, level, dang, tuChon }));
+    async passage({ words = [], level = 'medium', dang = '', tuChon = '', nhamYeu = true } = {}) {
+        return unwrap(await Http.post('/translation/passage', { words, level, dang, tuChon, nhamYeu: nhamYeu !== false }));
     },
 
     /** Nộp bản dịch và chấm. */
