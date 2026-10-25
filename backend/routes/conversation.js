@@ -28,11 +28,14 @@ router.use(protect);
 // Lịch sử: chỉ phiên ĐÃ KẾT THÚC của chính người dùng. `/history` khai TRƯỚC
 // `/:id` để chữ "history" không bị coi là một id.
 router.get('/history', ctrl.history);
+// Phiên đang dở gần nhất — trước `/:id` để không bị nuốt.
+router.get('/dang-do', ctrl.dangDo);
 router.get('/:id', ctrl.detail);
 
 router.post('/start', requireLevel('feature:conversation'), ctrl.start);
 router.post('/:id/reply', ctrl.reply);
 router.post('/:id/hint', ctrl.hint); // Khung câu trả lời (AI) cho câu NPC cuối — chỉ khi người học bấm
 router.post('/:id/finish', ctrl.finish);
+router.post('/:id/bo', ctrl.bo); // Bỏ phiên đang dở
 
 module.exports = router;

@@ -83,6 +83,21 @@ export const ConversationAPI = {
         return unwrap(res);
     },
 
+    /**
+     * Phiên đang dở gần nhất (để nói tiếp — không trừ năng lượng, không gọi AI mở phiên).
+     * `voice`: Hội thoại giọng nói hay Chat. Trả null nếu không có.
+     */
+    async dangDo(voice = false) {
+        const res = await Http.get(`/conversation/dang-do?voice=${voice ? 1 : 0}`);
+        return unwrap(res);
+    },
+
+    /** Bỏ phiên đang dở. */
+    async bo(id) {
+        const res = await Http.post(`/conversation/${id}/bo`, {});
+        return unwrap(res);
+    },
+
     /** Gửi câu người học, nhận câu đáp của NPC. */
     async reply(id, message) {
         const res = await Http.post(`/conversation/${id}/reply`, { message });

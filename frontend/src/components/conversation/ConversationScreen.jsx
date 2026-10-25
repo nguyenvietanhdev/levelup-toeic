@@ -8,6 +8,7 @@ import { Energy } from '@game/energy.js';
 import { Notification } from '@ui/Toaster.jsx';
 import { ConversationAPI } from '@api/conversation.js';
 import LichSuMode from '../history/LichSuMode.jsx';
+import ChuaTungCau from './ChuaTungCau.jsx';
 import VaiAITab from '../roles/VaiAITab.jsx';
 import DanhSachVai from '../roles/DanhSachVai.jsx';
 import KieuChamDoKho from '../ai/KieuChamDoKho.jsx';
@@ -131,6 +132,8 @@ export default function ConversationScreen({ active, voice = false }) {
     const [rubric, setRubric] = useState('giaotiep'); // bộ tiêu chí chấm cuối phiên
     const [strictGrammar, setStrictGrammar] = useState(false); // ngữ pháp văn nói hay chuẩn viết
     const [feedbackClosed, setFeedbackClosed] = useState(false); // người học đã đóng popup kết quả
+    // Phiên đang dở (thoát giữa chừng): mời nói tiếp thay vì mở phiên mới (tốn năng lượng + AI).
+    const [phienDo, setPhienDo] = useState(null);
     const [showHint, setShowHint] = useState(false);
     const [dangGoiY, setDangGoiY] = useState(false);     // đang chờ AI tạo khung
     const [conLaiGoiY, setConLaiGoiY] = useState(null);  // số lượt gợi ý AI còn lại (server báo)
@@ -442,6 +445,37 @@ export default function ConversationScreen({ active, voice = false }) {
         ghiAm.xongGui();
     }, [busy, ghiAm, handleSend]);
 
+    // Mở màn mà chưa có phiên → xem có phiên đang dở (cùng kiểu Chat / Giọng nói) không.
+    useEffect(() => {
+        if (!active || convo || result || tab !== 'luyen') return undefined;
+        let huy = false;
+        ConversationAPI.dangDo(voice)
+            .then((d) => { if (!huy) setPhienDo(d?.id ? d : null); })
+            .catch(() => { /* phần thêm: lỗi thì vẫn mở phiên mới được như cũ */ });
+        return () => { huy = true; };
+    }, [active, convo, result, tab, voice]);
+
+    /** Nói tiếp phiên dở: dựng lại đúng trạng thái từ server, không gọi AI. */
+    const noiTiep = () => {
+        const d = phienDo;
+        if (!d) return;
+        setConvo({
+            id: d.id,
+            targetWords: d.targetWords || [],
+            turns: d.turns || [],
+            usedWords: d.usedWords || [],
+            aiUsedWords: d.aiUsedWords || [],
+            nhamLoi: d.nhamLoi || [],
+        });
+        setResult(null);
+        setPhienDo(null);
+    };
+    const boPhienDo = () => {
+        const id = phienDo?.id;
+        setPhienDo(null);
+        if (id) ConversationAPI.bo(id).catch(() => { /* phiên tự hết hạn sau 7 ngày */ });
+    };
+
     // Phím tắt của Hội thoại giọng nói (suốt phiên, tới khi kết thúc):
     //   · GIỮ Cách = ghi âm (dừng giọng AI trước); NHẢ ra = dừng và GỬI LUÔN — như bộ
     //     đàm, phản xạ nhanh như nói chuyện thật. Máy không nghe được chữ nào thì không
@@ -607,6 +641,27 @@ export default function ConversationScreen({ active, voice = false }) {
                 )
                 : !convo ? (
                 <div className="convo-intro">
+                    {phienDo && (
+                        <div className="bai-do" role="status">
+                            <div className="bai-do-dau"><i className="fas fa-comments"></i> Bạn còn một cuộc hội thoại đang dở</div>
+                            <p className="bai-do-de">
+                                {phienDo.topic ? <>Vai: <strong>{phienDo.topic}</strong>. </> : null}
+                                {phienDo.scenario || phienDo.tinhHuong}
+                            </p>
+                            <div className="bai-do-chan">
+                                <span>
+                                    {phienDo.turns.filter((t) => t.role === 'user').length} lượt đã nói · dùng{' '}
+                                    {phienDo.usedWords.length}/{phienDo.targetWords.length} từ — nói tiếp không mất năng lượng
+                                </span>
+                                <div className="bai-do-nut">
+                                    <button type="button" className="btn btn-secondary" onClick={boPhienDo}>Bỏ, mở phiên mới</button>
+                                    <button type="button" className="btn btn-primary" onClick={noiTiep}>
+                                        <i className="fas fa-play"></i> Nói tiếp
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
                     {voice ? (
                         <p>
                             AI gửi <strong>tin nhắn thoại</strong> — chỉ có nút phát, không có chữ. Nghe
@@ -838,6 +893,7 @@ export default function ConversationScreen({ active, voice = false }) {
                                     {result.feedback.summary && (
                                         <p className="convo-feedback-summary">{result.feedback.summary}</p>
                                     )}
+                                    <ChuaTungCau turns={convo?.turns} corrections={result.feedback.corrections} />
                                     <p className="convo-feedback-foot">
                                         Chấm qua chữ: không đánh giá phát âm hay ngữ điệu.
                                     </p>

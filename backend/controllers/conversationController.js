@@ -1,4 +1,6 @@
+const mongoose = require('mongoose');
 const Conversation = require('../models/Conversation');
+const { nhanLoi } = require('../services/errorTaxonomy');
 const { chuanHoaMuc } = require('../services/aiLevel');
 const UserStats = require('../models/UserStats');
 const UserProfile = require('../models/UserProfile');
@@ -264,6 +266,13 @@ exports.start = async (req, res, next) => {
                 message: 'Không tạo được hội thoại, đã hoàn năng lượng. Thử lại sau.',
             });
         }
+
+        // Chỉ MỘT phiên dở được mời làm tiếp (cùng kiểu Chat / Giọng nói): mở phiên mới
+        // là bỏ các phiên dở cũ. Không xoá — vẫn tự hết hạn như trước.
+        await Conversation.updateMany(
+            { userId: req.user.id, status: 'active', voice: voice ? true : { $ne: true } },
+            { $set: { status: 'abandoned' } },
+        );
 
         const convo = await Conversation.create({
             userId: req.user.id,
@@ -610,3 +619,61 @@ exports.MAX_GOI_Y_AI = MAX_GOI_Y_AI;
 exports.MAX_TURNS = MAX_TURNS;
 exports.XP_PER_WORD = XP_PER_WORD;
 exports.COINS_PER_WORD = COINS_PER_WORD;
+
+/**
+ * @desc    Phiên hội thoại ĐANG DỞ gần nhất (để vào lại nói tiếp, không trừ năng
+ *          lượng và không gọi AI mở phiên lần nữa). `?voice=1` cho Hội thoại giọng nói.
+ * @route   GET /api/conversation/dang-do
+ */
+exports.dangDo = async (req, res, next) => {
+    try {
+        const voice = req.query.voice === '1' || req.query.voice === 'true';
+        const convo = await Conversation.findOne({
+            userId: req.user.id,
+            status: 'active',
+            voice: voice ? true : { $ne: true },
+            'turns.0': { $exists: true },
+        }).sort({ updatedAt: -1 }).lean();
+        if (!convo) return res.json({ success: true, data: null });
+
+        const nham = (convo.nhamLoi || []).map((key) => ({ key, vi: nhanLoi(key) }));
+        res.json({
+            success: true,
+            data: {
+                id: String(convo._id),
+                topic: convo.topic || '',
+                scenario: convo.scenario || '',
+                tinhHuong: convo.tinhHuong || '',
+                level: convo.level,
+                rubric: convo.rubric,
+                targetWords: convo.targetWords || [],
+                turns: (convo.turns || []).map((t) => ({ role: t.role, content: t.content, matched: t.matched || [] })),
+                usedWords: convo.usedWords || [],
+                aiUsedWords: convo.aiUsedWords || [],
+                nhamLoi: nham,
+                capNhat: convo.updatedAt,
+            },
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
+/**
+ * @desc    Bỏ phiên đang dở (người học chọn "Bỏ, bắt đầu phiên mới").
+ * @route   POST /api/conversation/:id/bo
+ */
+exports.bo = async (req, res, next) => {
+    try {
+        if (!mongoose.isValidObjectId(req.params.id)) {
+            return res.status(400).json({ success: false, message: 'Mã phiên không hợp lệ' });
+        }
+        await Conversation.updateOne(
+            { _id: req.params.id, userId: req.user.id, status: 'active' },
+            { $set: { status: 'abandoned' } },
+        );
+        res.json({ success: true, data: { daBo: true } });
+    } catch (error) {
+        next(error);
+    }
+};

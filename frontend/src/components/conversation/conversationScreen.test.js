@@ -71,11 +71,11 @@ describe('lớp API', () => {
         expect(api).toMatch(/throw new Error/);
     });
 
-    test('CẢ SÁU lượt gọi đều đi qua unwrap (start, reply, hint, finish, history, detail)', () => {
+    test('CẢ TÁM lượt gọi đều đi qua unwrap (start, reply, hint, finish, history, detail, dangDo, bo)', () => {
         // Sót một chỗ là chỗ đó vẫn để lỗi lọt qua im lặng.
         // Đếm `return unwrap(res)` chứ không đếm `unwrap(res)` trần — chuỗi sau
         // khớp cả bên trong định nghĩa hàm và cho ra 4.
-        expect((api.match(/return unwrap\(res\);/g) || []).length).toBe(6);
+        expect((api.match(/return unwrap\(res\);/g) || []).length).toBe(8);
         // Và trong ConversationAPI không còn chỗ nào trả THẲNG `res?.data ?? res`
         // — lối cũ để object lỗi lọt qua. (Bản thân `unwrap` vẫn dùng nó ở dòng
         // cuối, đó là chỗ hợp lệ duy nhất, nên chỉ dò phần sau `export const`.)

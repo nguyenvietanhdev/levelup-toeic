@@ -8,6 +8,8 @@
  * từng kỳ thi khác nhau — ghi rõ trong phần mô tả để người học hiểu.
  */
 const { textCompletion } = require('./aiClient');
+const { LOAI_LOI, chuanHoaLoai, chuanHoaMuc } = require('./errorTaxonomy');
+const LOAI_KEYS = LOAI_LOI.map((l) => l.key).join(', ');
 const logger = require('../utils/logger');
 
 const BO_TIEU_CHI = {
@@ -156,9 +158,19 @@ function buildGradingMessages({ rubric, lang, track, level, turns, nghiemNguPhap
                 'Criteria:',
                 danhSach,
                 '',
+                '',
+                // CHỮA TỪNG CÂU: chỉ ra chính chỗ người học nói sai và cách nói đúng/tự nhiên.
+                'Also list up to 6 corrections of the LEARNER lines, most useful first:',
+                '  "said": the exact words copied from ONE learner line (short, a few words),',
+                `  "better": the corrected or more natural wording that replaces them, in ${ngonNgu},`,
+                '  "issue": one short Vietnamese explanation,',
+                `  "type": one of ${LOAI_KEYS}, "level": "error" (a real mistake) or "style" (correct but unnatural).`,
+                luatNguPhap ? 'Follow the grammar rule above: do not correct accepted spoken forms.' : '',
+                'If there is nothing worth correcting, use an empty list.',
+                '',
                 'Reply with JSON only, no prose around it, in exactly this shape:',
-                '{"criteria":[{"key":"<key>","score":<0-9>,"comment":"<one short Vietnamese sentence>"}],"summary":"<two short Vietnamese sentences>"}',
-                'Include every criterion key once. Comments and summary are in Vietnamese.',
+                '{"criteria":[{"key":"<key>","score":<0-9>,"comment":"<one short Vietnamese sentence>"}],"summary":"<two short Vietnamese sentences>","corrections":[{"said":"...","better":"...","issue":"...","type":"...","level":"error"}]}',
+                'Include every criterion key once. Comments, summary and issues are in Vietnamese.',
             ].join('\n'),
         },
         { role: 'user', content: `Transcript:\n${transcript}` },
@@ -169,7 +181,38 @@ function buildGradingMessages({ rubric, lang, track, level, turns, nghiemNguPhap
  * Đọc JSON từ câu trả lời của model. Model hay bọc trong ```json ... ``` nên bóc
  * hàng rào trước khi parse, rồi kiểm từng trường — không tin hình dạng đầu ra.
  */
-function parseGrading(text, rubric, track = 'en', level = MUC_MAC_DINH) {
+/** Gom khoảng trắng + chữ thường để dò trích dẫn trong câu người học. */
+const gonChu = (s) => String(s || '').replace(/\s+/g, ' ').trim().toLowerCase();
+
+/**
+ * Chuẩn hoá danh sách chữa từng câu. Mỗi mục phải trỏ được vào MỘT lượt nói thật của
+ * người học (`luot` = thứ tự trong các lượt của người học, từ 0) — AI trích sai, bịa
+ * câu không có thì bỏ, không để giao diện gạch chân một chỗ không tồn tại.
+ *
+ * @param {Array}    raw    `corrections` AI trả về
+ * @param {string[]} cauHoc các lượt nói của người học, theo thứ tự
+ */
+function docChuaTungCau(raw, cauHoc) {
+    if (!Array.isArray(raw) || !Array.isArray(cauHoc) || !cauHoc.length) return [];
+    const daCo = new Set();
+    const out = [];
+    for (const c of raw) {
+        const said = String(c?.said || '').trim().slice(0, 200);
+        const better = String(c?.better || '').trim().slice(0, 200);
+        const issue = String(c?.issue || '').trim().slice(0, 300);
+        if (!said || !issue) continue;
+        const luot = cauHoc.findIndex((cau) => gonChu(cau).includes(gonChu(said)));
+        if (luot < 0) continue;
+        const khoa = `${luot}|${gonChu(said)}`;
+        if (daCo.has(khoa)) continue;
+        daCo.add(khoa);
+        out.push({ luot, said, better, issue, loai: chuanHoaLoai(c?.type), muc: chuanHoaMuc(c?.level) });
+        if (out.length >= 6) break;
+    }
+    return out;
+}
+
+function parseGrading(text, rubric, track = 'en', level = MUC_MAC_DINH, cauHoc = null) {
     const ma = chuanHoaBoTieuChi(rubric, track);
     const mucKey = chuanHoaMucCham(ma, level);
     const muc = mucCuaBo(ma)[mucKey];
@@ -214,6 +257,8 @@ function parseGrading(text, rubric, track = 'en', level = MUC_MAC_DINH) {
         criteria,
         overall,
         summary: typeof obj.summary === 'string' ? obj.summary.slice(0, 600) : '',
+        // Chữa từng câu — chỉ khi biết các lượt của người học để kiểm trích dẫn.
+        corrections: docChuaTungCau(obj.corrections, cauHoc),
     };
 }
 
@@ -228,7 +273,8 @@ async function gradeConversation({ rubric, lang, track, level, turns, nghiemNguP
     const out = await textCompletion({
         feature: 'conversation-grade',
         messages: buildGradingMessages({ rubric, lang, track, level, turns, nghiemNguPhap }),
-        maxTokens: 500,
+        // 500 → 900: thêm phần chữa từng câu (tối đa 6 mục). Vẫn một lượt gọi mỗi phiên.
+        maxTokens: 900,
         temperature: 0,
         userId,
     }).catch((err) => {
@@ -236,7 +282,8 @@ async function gradeConversation({ rubric, lang, track, level, turns, nghiemNguP
         return null;
     });
     if (!out) return null;
-    return parseGrading(out.text, rubric, track || lang, level);
+    const cauHoc = turns.filter((t) => t.role === 'user').map((t) => t.content);
+    return parseGrading(out.text, rubric, track || lang, level, cauHoc);
 }
 
 module.exports = {
@@ -248,5 +295,6 @@ module.exports = {
     chuanHoaMucCham,
     buildGradingMessages,
     parseGrading,
+    docChuaTungCau,
     gradeConversation,
 };

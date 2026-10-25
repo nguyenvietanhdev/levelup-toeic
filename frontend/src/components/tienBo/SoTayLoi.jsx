@@ -11,7 +11,7 @@ import { khopSua, coTiengViet } from '@lib/chuaBai.js';
  *
  * Dữ liệu do server gom (không gọi AI); tải khi mở tab.
  */
-const NGUON = { viet: 'Luyện viết', dich: 'Dịch đoạn văn' };
+const NGUON = { viet: 'Luyện viết', dich: 'Dịch đoạn văn', noi: 'Hội thoại' };
 
 const ngay = (d) => {
     const t = new Date(d);

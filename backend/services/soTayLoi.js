@@ -1,5 +1,5 @@
 /**
- * SỔ TAY LỖI — mọi lỗi đã được chữa trong bài Viết và Dịch, kèm cách sửa.
+ * SỔ TAY LỖI — mọi lỗi đã được chữa trong bài Viết, Dịch và Hội thoại, kèm cách sửa.
  *
  * Mỗi bài chấm xong là một danh sách lỗi đọc một lần rồi trôi vào lịch sử. Sổ tay
  * gom chúng lại theo LOẠI LỖI để người học thấy chính những câu mình từng sai,
@@ -9,6 +9,7 @@
  */
 const Essay = require('../models/Essay');
 const Translation = require('../models/Translation');
+const Conversation = require('../models/Conversation');
 const UserProfile = require('../models/UserProfile');
 const { thongKe, chuanHoaLoai, nhanLoi, chuanHoaMuc } = require('./errorTaxonomy');
 
@@ -25,9 +26,10 @@ function mucSoTay(raw, { nguon, baiId, at, i }) {
         nguon,
         baiId: String(baiId),
         at,
-        quote: String(raw?.quote || '').slice(0, 300),
+        // Hội thoại trích ở `said`.
+        quote: String(raw?.quote ?? raw?.said ?? '').slice(0, 300),
         issue: String(raw?.issue || '').slice(0, 500),
-        // Viết lưu cụm sửa ở `fix`, Dịch ở `better`.
+        // Viết lưu cụm sửa ở `fix`, Dịch và Hội thoại ở `better`.
         sua: String(raw?.fix ?? raw?.better ?? '').slice(0, 300),
         loai,
         vi: nhanLoi(loai),
@@ -40,13 +42,16 @@ function mucSoTay(raw, { nguon, baiId, at, i }) {
  * Dựng sổ tay từ bài đã chấm (thuần — test được không cần DB).
  * Mục nào không có cả trích dẫn lẫn cách sửa thì bỏ: không có gì để học lại.
  */
-function dungSoTay({ viet = [], dich = [] }) {
+function dungSoTay({ viet = [], dich = [], noi = [] }) {
     const ds = [];
     for (const b of viet) {
         (b.issues || []).forEach((raw, i) => ds.push(mucSoTay(raw, { nguon: 'viet', baiId: b._id, at: b.createdAt, i })));
     }
     for (const b of dich) {
         (b.notes || []).forEach((raw, i) => ds.push(mucSoTay(raw, { nguon: 'dich', baiId: b._id, at: b.createdAt, i })));
+    }
+    for (const b of noi) {
+        (b.feedback?.corrections || []).forEach((raw, i) => ds.push(mucSoTay(raw, { nguon: 'noi', baiId: b._id, at: b.updatedAt, i })));
     }
     const muc = ds
         .filter((m) => m.quote || m.sua)
@@ -64,11 +69,15 @@ async function laySoTay(userId, now = new Date()) {
     const theoLang = lang === 'zh' ? { lang: 'zh' } : { lang: { $ne: 'zh' } };
     const tu = new Date(now.getTime() - SO_NGAY * 86400000);
 
-    const [viet, dich] = await Promise.all([
+    const [viet, dich, noi] = await Promise.all([
         Essay.find({ userId, createdAt: { $gte: tu }, ...theoLang }).select('issues createdAt').lean(),
         Translation.find({ userId, createdAt: { $gte: tu }, ...theoLang }).select('notes createdAt').lean(),
+        // Chỉ phiên đã chấm có phần chữa từng câu.
+        Conversation.find({
+            userId, status: 'done', updatedAt: { $gte: tu }, ...theoLang, 'feedback.corrections.0': { $exists: true },
+        }).select('feedback.corrections updatedAt').lean(),
     ]);
-    return { ...dungSoTay({ viet, dich }), soNgay: SO_NGAY, lang };
+    return { ...dungSoTay({ viet, dich, noi }), soNgay: SO_NGAY, lang };
 }
 
 module.exports = { laySoTay, dungSoTay, mucSoTay, SO_NGAY, TOI_DA };

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import ChuaBai from '../chuaBai/ChuaBai.jsx';
+import ChuaTungCau from '../conversation/ChuaTungCau.jsx';
 import XemLaiBai from '../chuaBai/XemLaiBai.jsx';
 import { ConversationAPI } from '@api/conversation.js';
 import { EssayAPI } from '@api/essay.js';
@@ -209,6 +210,7 @@ function ChiTietHoiThoai({ phien }) {
                         </div>
                     ))}
                     {phien.feedback.summary && <p className="convo-feedback-summary">{phien.feedback.summary}</p>}
+                    <ChuaTungCau turns={phien.turns} corrections={phien.feedback.corrections} />
                 </div>
                     )}
                 </div>

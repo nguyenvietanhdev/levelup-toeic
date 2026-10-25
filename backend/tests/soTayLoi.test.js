@@ -13,6 +13,7 @@ const mo = (ten) => ({
 });
 jest.mock('../models/Essay', () => mo('Essay'));
 jest.mock('../models/Translation', () => mo('Translation'));
+jest.mock('../models/Conversation', () => mo('Conversation'));
 let mockLang = 'en';
 jest.mock('../models/UserProfile', () => ({
     findOne: () => ({ select: () => ({ lean: async () => ({ settings: { vocabLang: mockLang } }) }) }),
@@ -59,6 +60,16 @@ describe('dựng sổ tay', () => {
         const r = dungSoTay({ viet: VIET, dich: DICH });
         expect(r.nhom.map((n) => [n.key, n.count])).toEqual([['article', 1], ['agreement', 1], ['word-choice', 1]]);
     });
+});
+
+test('Hội thoại: lấy phần chữa từng câu (said → better) của phiên đã chấm', async () => {
+    const r = dungSoTay({ noi: [{ _id: 'c1', updatedAt: new Date('2026-10-24'), feedback: {
+        corrections: [{ luot: 0, said: 'I am agree', better: 'I agree', issue: 'Thừa am', loai: 'agreement', muc: 'loi' }],
+    } }] });
+    expect(r.muc[0]).toMatchObject({ nguon: 'noi', quote: 'I am agree', sua: 'I agree', loai: 'agreement', id: 'noi-c1-0' });
+    mockFind.Conversation = [];
+    await laySoTay('u1');
+    expect(goi.find(([t]) => t === 'Conversation')[1]).toMatchObject({ status: 'done', 'feedback.corrections.0': { $exists: true } });
 });
 
 test('nhóm "Khác" luôn ở cuối, kể cả khi nhiều nhất', () => {
