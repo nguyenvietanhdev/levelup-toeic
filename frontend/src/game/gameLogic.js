@@ -10,6 +10,7 @@ import { PartSelector } from '@components/vocab/part/partSelector.js';
 import { logger } from '@lib/logger.js';
 import { MA_GIONG } from '@lib/giongDaChon.js';
 import { giongVietTrinhDuyet } from '@lib/giongViet.js';
+import { giongTheoMa, giongCungNgonNgu } from '@lib/giongTrinhDuyet.js';
 import { batDauPhat, ketThucPhat } from '@lib/nutPhatAm.js';
 import { nhanKho, nhanKhoThuong } from '@lib/nhanKho.js';
 
@@ -624,16 +625,23 @@ export const GameLogic = {
             if (!('speechSynthesis' in window)) { if (onEnd) onEnd(); return; }
             const utterance = new SpeechSynthesisUtterance(text);
             const isZhVoice = lang.startsWith('zh');
-            // Trước đây chỉ phân Trung / còn lại → tiếng Việt rơi vào `en-US` và bị
-            // đọc bằng giọng Anh. Tiếng Việt: dùng giọng Việt của trình duyệt, không
-            // có thì KHÔNG đọc.
+            // ĐÚNG giọng người dùng chọn (Guy, Sonia, 云希…): trình duyệt Edge có sẵn chính
+            // các giọng Microsoft Natural mà máy chủ dùng. Trước đây chỉ đặt `lang` nên
+            // máy chủ lỗi là mọi giọng thành MỘT giọng mặc định của trình duyệt.
+            const giongDaChon = giongTheoMa(lang, text);
+            // Tiếng Việt: trước đây rơi vào `en-US` và bị đọc bằng giọng Anh. Dùng giọng
+            // Việt của trình duyệt, không có thì KHÔNG đọc.
             if (lang.startsWith('vi')) {
-                const giongViet = giongVietTrinhDuyet();
+                const giongViet = giongDaChon || giongVietTrinhDuyet();
                 if (!giongViet) { if (onEnd) onEnd(); return; }
                 utterance.lang = 'vi-VN';
                 utterance.voice = giongViet;
             } else {
                 utterance.lang = isZhVoice ? 'zh-CN' : 'en-US';
+                // Không có đúng giọng đã chọn → một giọng cùng ngôn ngữ (ưu tiên giọng
+                // tự nhiên), vẫn hơn để trình duyệt tự lấy giọng mặc định.
+                const giong = giongDaChon || giongCungNgonNgu(utterance.lang);
+                if (giong) { utterance.voice = giong; utterance.lang = giong.lang; }
             }
             utterance.rate = rate;
             if (onEnd) {
