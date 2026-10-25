@@ -10256,6 +10256,30 @@ button.ai-history-row {
 .convo-input-row--thoai {
     align-items: center;
 }
+/* Nhắc phím tắt khi xem lại bản ghi: Enter gửi, Delete ghi lại. */
+.convo-thoai-phim {
+    color: var(--text-secondary);
+    font-size: 11px;
+}
+/* Nhắc phím Cách ngay trên nút ghi âm. */
+.convo-thoai-kbd {
+    margin-left: 8px;
+    padding: 0 6px;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    font-family: inherit;
+    font-size: 11px;
+    font-weight: 400;
+    opacity: 0.8;
+}
+.convo-thoai-phim kbd {
+    padding: 0 5px;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    background: var(--bg-primary);
+    font-family: inherit;
+    font-size: 10px;
+}
 /* Nút ghi âm lớn — hành động chính của màn, chiếm phần còn lại của hàng. */
 .convo-ghi-am {
     flex: 1 1 auto;

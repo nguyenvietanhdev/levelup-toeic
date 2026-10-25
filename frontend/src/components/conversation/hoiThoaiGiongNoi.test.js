@@ -92,3 +92,37 @@ describe('ghi âm trả lời', () => {
         expect(man).toMatch(/disabled=\{starting \|\| \(voice && !coNhanGiong\)\}/);
     });
 });
+
+describe('phím tắt của Hội thoại giọng nói', () => {
+    const i = man.indexOf('// Phím tắt của Hội thoại giọng nói');
+    const than = man.slice(i, man.indexOf('}, [voice, active, convo, result, ghiAm, busy, guiThoai, dungPhat]);', i));
+
+    test('chỉ bật ở Hội thoại giọng nói, màn đang mở, trong phiên chưa kết thúc', () => {
+        expect(i).toBeGreaterThan(-1);
+        expect(than).toMatch(/if \(!voice \|\| !active \|\| !convo \|\| result\) return undefined;/);
+    });
+
+    test('KHÔNG cướp phím khi đang gõ ở ô nhập (ô tìm kiếm…) hoặc có popup', () => {
+        expect(than).toMatch(/closest\?\.\('input, textarea, select, \[contenteditable="true"\]'\)\) return;/);
+        expect(than).toMatch(/#modal-container\.active/);
+        expect(than).toMatch(/e\.isComposing/);
+    });
+
+    test('phím Cách: đang ghi thì dừng; đang nghỉ thì dừng giọng AI rồi bắt đầu ghi', () => {
+        expect(than).toMatch(/e\.code === 'Space' \|\| e\.key === ' '/);
+        expect(than).toMatch(/if \(ghiAm\.trangThai === 'ghi'\) ghiAm\.dung\(\);/);
+        expect(than).toMatch(/else if \(ghiAm\.trangThai === 'nghi' && !busy\) \{[\s\S]*dungPhat\(\);\s*ghiAm\.batDau\(\);/);
+    });
+
+    test('Enter / Delete chỉ khi đang xem lại bản ghi; Enter dùng chung hàm với nút Gửi', () => {
+        expect(than).toMatch(/if \(ghiAm\.trangThai !== 'xong'\) return;/);
+        expect(than).toMatch(/if \(e\.key === 'Enter'\) \{\s*e\.preventDefault\(\);\s*guiThoai\(\);/);
+        expect(than).toMatch(/e\.key === 'Delete' \|\| e\.key === 'Backspace'/);
+        expect(than).toMatch(/ghiAm\.lamLai\(\)/);
+        expect(man).toMatch(/onClick=\{guiThoai\}/);
+    });
+
+    test('gỡ listener khi rời màn hoặc kết thúc phiên', () => {
+        expect(than).toMatch(/return \(\) => window\.removeEventListener\('keydown', onKey\);/);
+    });
+});

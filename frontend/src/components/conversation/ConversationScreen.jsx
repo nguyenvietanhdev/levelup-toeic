@@ -428,6 +428,50 @@ export default function ConversationScreen({ active, voice = false }) {
         inputRef.current?.focus();
     }, [busy, starting, convo?.id, convo?.turns?.length, result]);
 
+    /** Gửi bản ghi âm đang xem lại (Hội thoại giọng nói) — nút Gửi và phím Enter dùng chung. */
+    const guiThoai = useCallback(() => {
+        if (busy || !ghiAm.chu.trim()) return;
+        handleSend(ghiAm.chu, ghiAm.url ? { audioUrl: ghiAm.url } : undefined);
+        ghiAm.xongGui();
+    }, [busy, ghiAm, handleSend]);
+
+    // Phím tắt của Hội thoại giọng nói (suốt phiên, tới khi kết thúc):
+    //   · Cách  = bắt đầu ghi âm / bấm lần nữa để dừng.
+    //   · Enter = Gửi, Delete (hoặc Backspace — phím "delete" trên Mac) = Ghi lại —
+    //     chỉ khi đang XEM LẠI bản ghi.
+    // Bỏ qua khi con trỏ đang ở ô nhập (ô tìm kiếm, ô tự nhập tình huống…) hoặc có
+    // popup đang mở: phím ở đó là việc của ô/popup đó.
+    useEffect(() => {
+        if (!voice || !active || !convo || result) return undefined;
+        const onKey = (e) => {
+            if (e.repeat || e.isComposing || e.ctrlKey || e.metaKey || e.altKey) return;
+            const el = e.target;
+            if (el?.closest?.('input, textarea, select, [contenteditable="true"]')) return;
+            if (document.querySelector('#modal-container.active')) return;
+            if (e.code === 'Space' || e.key === ' ') {
+                // Chặn mặc định: Cách cuộn trang hoặc "bấm" nút đang được focus.
+                e.preventDefault();
+                if (ghiAm.trangThai === 'ghi') ghiAm.dung();
+                else if (ghiAm.trangThai === 'nghi' && !busy) {
+                    // Dừng giọng AI trước khi ghi: micro không thu lại tiếng loa.
+                    dungPhat();
+                    ghiAm.batDau();
+                }
+                return;
+            }
+            if (ghiAm.trangThai !== 'xong') return;
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                guiThoai();
+            } else if (e.key === 'Delete' || e.key === 'Backspace') {
+                e.preventDefault();
+                if (!busy) ghiAm.lamLai();
+            }
+        };
+        window.addEventListener('keydown', onKey);
+        return () => window.removeEventListener('keydown', onKey);
+    }, [voice, active, convo, result, ghiAm, busy, guiThoai, dungPhat]);
+
     const handleFinish = useCallback(async () => {
         if (!convo || busy) return;
         setBusy(true);
@@ -845,18 +889,19 @@ export default function ConversationScreen({ active, voice = false }) {
                                         <span className="convo-thoai-nghe">
                                             {ghiAm.chu ? `Máy nghe được: “${ghiAm.chu}”` : 'Không nghe rõ — hãy ghi lại.'}
                                         </span>
+                                        <span className="convo-thoai-phim">
+                                            <kbd>Enter</kbd> gửi · <kbd>Delete</kbd> ghi lại
+                                        </span>
                                     </div>
-                                    <button type="button" className="btn btn-secondary" onClick={ghiAm.lamLai} disabled={busy}>
+                                    <button type="button" className="btn btn-secondary" onClick={ghiAm.lamLai} disabled={busy} title="Phím Delete">
                                         <i className="fas fa-rotate-left"></i> Ghi lại
                                     </button>
                                     <button
                                         type="button"
                                         className="btn btn-primary"
                                         disabled={busy || !ghiAm.chu.trim()}
-                                        onClick={() => {
-                                            handleSend(ghiAm.chu, ghiAm.url ? { audioUrl: ghiAm.url } : undefined);
-                                            ghiAm.xongGui();
-                                        }}
+                                        onClick={guiThoai}
+                                        title="Phím Enter"
                                     >
                                         <i className="fas fa-paper-plane"></i> Gửi
                                     </button>
@@ -878,6 +923,7 @@ export default function ConversationScreen({ active, voice = false }) {
                                         {ghiAm.trangThai === 'ghi'
                                             ? ` Dừng · ${Math.floor(ghiAm.giay / 60)}:${String(ghiAm.giay % 60).padStart(2, '0')}`
                                             : ' Bấm để trả lời'}
+                                        <kbd className="convo-thoai-kbd">Cách</kbd>
                                     </button>
                                     {ghiAm.trangThai === 'ghi' && ghiAm.chu && (
                                         <span className="convo-thoai-tam">{ghiAm.chu}</span>
