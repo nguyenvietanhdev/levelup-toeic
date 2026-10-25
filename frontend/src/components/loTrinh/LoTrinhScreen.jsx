@@ -181,6 +181,18 @@ export default function LoTrinhScreen({ active }) {
                                     </div>
                                     <div className="lt-thanh"><span style={{ width: `${(data.soXong / data.tong) * 100}%` }} /></div>
                                 </div>
+                                {/* Kế hoạch tuần do "Tổng kết tuần" (AI) đề ra — có thì nhắc ở đây. */}
+                                {data.keHoachTuan?.length > 0 && (
+                                    <div className="lt-ke-hoach">
+                                        <div className="lt-ke-hoach-dau">
+                                            <i className="fas fa-chalkboard-user"></i> Trọng tâm tuần này
+                                            <button type="button" className="lt-ke-hoach-link" onClick={() => showScreen('tien-bo-screen')}>
+                                                Xem tổng kết
+                                            </button>
+                                        </div>
+                                        <ul>{data.keHoachTuan.map((k) => <li key={k.viec}>{k.viec}</li>)}</ul>
+                                    </div>
+                                )}
                                 <ol className="lt-ds">
                                     {buoc.map((b, i) => {
                                         const cfg = BUOC[b.key] || { ten: b.key, icon: 'fa-circle', moTa: '' };

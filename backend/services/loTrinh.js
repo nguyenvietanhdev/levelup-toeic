@@ -16,6 +16,7 @@ const Essay = require('../models/Essay');
 const Translation = require('../models/Translation');
 const WrongWord = require('../models/WrongWord');
 const UserProfile = require('../models/UserProfile');
+const TongKetTuan = require('../models/TongKetTuan');
 
 /** Giờ Việt Nam = UTC+7, không đổi theo mùa. */
 const LECH_GIO_VN = 7 * 60 * 60 * 1000;
@@ -28,6 +29,14 @@ function homNayVN(now = new Date()) {
     const dau = new Date(soNgay * MOT_NGAY - LECH_GIO_VN);
     const ngay = new Date(soNgay * MOT_NGAY).toISOString().slice(0, 10);
     return { dau, ngay, soNgay };
+}
+
+/** Ngày thứ Hai đầu tuần (giờ VN) dạng 'YYYY-MM-DD' — khoá tuần của Tổng kết tuần. */
+function dauTuanVN(now = new Date()) {
+    const { soNgay } = homNayVN(now);
+    // Ngày 0 (01/01/1970) là thứ Năm → (soNgay + 3) % 7 = 0 vào thứ Hai.
+    const thuHai = soNgay - ((soNgay + 3) % 7);
+    return new Date(thuHai * MOT_NGAY).toISOString().slice(0, 10);
 }
 
 /**
@@ -75,7 +84,7 @@ async function layLoTrinh(userId, now = new Date()) {
     const lang = profile?.settings?.vocabLang === 'zh' ? 'zh' : 'en';
     const tuNay = { $gte: dau };
 
-    const [onSai, hocTu, nghe, doc, noi, viet, dich, tuDenHan] = await Promise.all([
+    const [onSai, hocTu, nghe, doc, noi, viet, dich, tuDenHan, tongKet] = await Promise.all([
         PracticeSession.countDocuments({ user: userId, mode: 'review-mistakes', completedAt: tuNay }),
         PracticeSession.countDocuments({ user: userId, mode: { $ne: 'review-mistakes' }, completedAt: tuNay }),
         ListeningSession.countDocuments({ userId, status: 'done', updatedAt: tuNay }),
@@ -86,9 +95,14 @@ async function layLoTrinh(userId, now = new Date()) {
         WrongWord.countDocuments({
             userId, status: 'active', nextReviewDate: { $lte: now }, ...WrongWord.langFilter(lang),
         }),
+        // Kế hoạch tuần do "Tổng kết tuần" (AI) đề ra — chỉ đọc, chưa tổng kết thì rỗng.
+        TongKetTuan.findOne({ userId, tuan: dauTuanVN(now), lang }).select('keHoach').lean(),
     ]);
 
-    return dungLoTrinh({ onSai, hocTu, nghe, doc, noi, viet, dich, tuDenHan }, { ngay, soNgay });
+    return {
+        ...dungLoTrinh({ onSai, hocTu, nghe, doc, noi, viet, dich, tuDenHan }, { ngay, soNgay }),
+        keHoachTuan: tongKet?.keHoach || [],
+    };
 }
 
-module.exports = { layLoTrinh, dungLoTrinh, homNayVN, vietHayDich };
+module.exports = { layLoTrinh, dungLoTrinh, homNayVN, vietHayDich, dauTuanVN };

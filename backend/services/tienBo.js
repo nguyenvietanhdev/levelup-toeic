@@ -301,7 +301,7 @@ async function layTienBo(userId, now = new Date()) {
         }),
     ]);
 
-    return dungTienBo({
+    return { ...dungTienBo({
         luyenTu: luyen.map((p) => ({ at: p.completedAt, tu: p.correctAnswers || 0, mau: p.questionsCount || 0 })),
         nghe: nghe.map((p) => ({ at: p.updatedAt, tu: p.score || 0, mau: 100 })),
         doc: doc.map((p) => ({ at: p.createdAt, tu: p.correct || 0, mau: p.total || 0 })),
@@ -311,7 +311,7 @@ async function layTienBo(userId, now = new Date()) {
         viet: viet.map((b) => ({ at: b.createdAt, overall: b.overall, loi: b.issues || [] })),
         dich: dich.map((b) => ({ at: b.createdAt, overall: b.overall, loi: b.notes || [] })),
         tuDangOn, tuDenHan, tuDaThuoc, tuMoiThuoc,
-    }, { soNgay });
+    }, { soNgay }), lang };
 }
 
 module.exports = { layTienBo, dungTienBo, tuanCua, xuHuong, SO_TUAN, KY_NANG };

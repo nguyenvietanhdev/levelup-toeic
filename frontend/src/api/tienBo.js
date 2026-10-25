@@ -18,4 +18,14 @@ export const TienBoAPI = {
     async get() {
         return unwrap(await Http.get('/tien-bo'));
     },
+
+    /** Tổng kết tuần này đã có chưa — chỉ đọc, không gọi AI. */
+    async tongKet() {
+        return unwrap(await Http.get('/tien-bo/tong-ket'));
+    },
+
+    /** Nhờ AI tổng kết tuần này (mỗi tuần một lần; đã có thì server trả bản cũ). */
+    async taoTongKet() {
+        return unwrap(await Http.post('/tien-bo/tong-ket', {}));
+    },
 };

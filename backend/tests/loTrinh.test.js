@@ -23,11 +23,15 @@ jest.mock('../models/ReadingAttempt', () => mo('ReadingAttempt'));
 jest.mock('../models/Essay', () => mo('Essay'));
 jest.mock('../models/Translation', () => mo('Translation'));
 jest.mock('../models/WrongWord', () => ({ ...mo('WrongWord'), langFilter: () => ({}) }));
+let mockKeHoach = null;
+jest.mock('../models/TongKetTuan', () => ({
+    findOne: (q) => { goi.push(['TongKetTuan', q]); return { select: () => ({ lean: async () => mockKeHoach }) }; },
+}));
 jest.mock('../models/UserProfile', () => ({
     findOne: () => ({ select: () => ({ lean: async () => ({ settings: { vocabLang: 'en' } }) }) }),
 }));
 
-const { layLoTrinh, dungLoTrinh, homNayVN, vietHayDich } = require('../services/loTrinh');
+const { layLoTrinh, dungLoTrinh, homNayVN, vietHayDich, dauTuanVN } = require('../services/loTrinh');
 
 beforeEach(() => {
     goi.length = 0;
@@ -95,5 +99,21 @@ describe('đếm từ dữ liệu đã có', () => {
         expect(readFileSync(join(__dirname, '..', 'server.js'), 'utf8'))
             .toMatch(/app\.use\('\/api\/lo-trinh', require\('\.\/routes\/loTrinh'\)\)/);
         expect(readFileSync(join(__dirname, '..', 'routes', 'loTrinh.js'), 'utf8')).toMatch(/router\.use\(protect\)/);
+    });
+});
+
+describe('kế hoạch tuần từ Tổng kết tuần', () => {
+    test('tuần bắt đầu thứ Hai giờ VN', () => {
+        expect(dauTuanVN(new Date('2026-10-25T05:00:00Z'))).toBe('2026-10-19'); // CN 25/10 → T2 19/10
+        expect(dauTuanVN(new Date('2026-10-25T17:30:00Z'))).toBe('2026-10-26'); // 00:30 T2 26/10 VN
+    });
+
+    test('có tổng kết tuần này → trả keHoachTuan; chưa có → []', async () => {
+        mockKeHoach = { keHoach: [{ viec: 'Nghe 3 bài', buoc: 'nghe' }] };
+        const r = await layLoTrinh('u1', new Date('2026-10-25T05:00:00Z'));
+        expect(r.keHoachTuan).toEqual([{ viec: 'Nghe 3 bài', buoc: 'nghe' }]);
+        expect(goi.find(([t]) => t === 'TongKetTuan')[1]).toMatchObject({ tuan: '2026-10-19', lang: 'en' });
+        mockKeHoach = null;
+        expect((await layLoTrinh('u1')).keHoachTuan).toEqual([]);
     });
 });

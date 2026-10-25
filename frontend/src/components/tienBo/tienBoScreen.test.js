@@ -61,3 +61,26 @@ describe('màn tiến bộ', () => {
         expect(man).toMatch(/data && data\.coDuLieu && \(/);
     });
 });
+
+describe('tổng kết tuần (AI)', () => {
+    test('mở màn chỉ ĐỌC bản đã lưu; AI chỉ chạy khi bấm nút', () => {
+        expect(doc('api', 'tienBo.js')).toMatch(/Http\.get\('\/tien-bo\/tong-ket'\)/);
+        expect(doc('api', 'tienBo.js')).toMatch(/Http\.post\('\/tien-bo\/tong-ket', \{\}\)/);
+        const effect = man.slice(man.indexOf('useEffect(() => {'), man.indexOf('}, [active, isLoggedIn]);'));
+        expect(effect).toMatch(/TienBoAPI\.tongKet\(\)/);
+        expect(effect).not.toMatch(/taoTongKet/);
+        expect(man).toMatch(/onClick=\{nhoTongKet\} disabled=\{dangTongKet\}/);
+    });
+
+    test('kế hoạch: nút "Làm" chỉ khi bước hợp lệ và chế độ không khoá; Ôn sai đi qua sự kiện', () => {
+        expect(man).toMatch(/\{dich && !khoa\.locked && \(/);
+        expect(man).toMatch(/'on-sai': \{ mode: 'review-mistakes' \}/);
+        expect(man).toMatch(/EventBus\.emit\(GameEvents\.PRACTICE_REQUESTED, \{ mode: dich\.mode \}\)/);
+    });
+
+    test('Lộ trình hôm nay nhắc kế hoạch tuần khi đã có tổng kết', () => {
+        const lt = doc('components', 'loTrinh', 'LoTrinhScreen.jsx');
+        expect(lt).toMatch(/\{data\.keHoachTuan\?\.length > 0 && \(/);
+        expect(lt).toMatch(/showScreen\('tien-bo-screen'\)/);
+    });
+});

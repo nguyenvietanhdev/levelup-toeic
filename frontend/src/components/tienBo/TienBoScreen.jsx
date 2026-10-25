@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react';
 import { useGame } from '@game/GameContext.jsx';
 import { useAuth } from '@components/auth/AuthContext.jsx';
 import { loadUnlocks, lockInfo } from '@game/featureUnlocks.js';
+import { EventBus, GameEvents } from '@game/eventBus.js';
+import { Notification } from '@ui/Toaster.jsx';
 import { TienBoAPI } from '@api/tienBo.js';
 
 /**
@@ -20,6 +22,19 @@ const MAN_CUA = {
     noi: { screen: 'voice-conversation-screen', feature: 'feature:conversation' },
     viet: { screen: 'essay-screen', feature: 'feature:essay' },
     dich: { screen: 'translation-screen', feature: 'feature:translation' },
+};
+
+/**
+ * Bước của Lộ trình mà kế hoạch tuần (AI) trỏ tới → màn tương ứng. Server đã lọc
+ * `buoc` về đúng các khoá này; khoá rỗng thì việc đó không có nút.
+ */
+const MAN_BUOC = {
+    'on-sai': { mode: 'review-mistakes' },
+    'hoc-tu': { screen: 'home-screen' },
+    nghe: { screen: 'listening-screen' },
+    doc: { screen: 'reading-screen', feature: 'feature:reading' },
+    noi: { screen: 'voice-conversation-screen', feature: 'feature:conversation' },
+    'viet-dich': { screen: 'essay-screen', feature: 'feature:essay' },
 };
 
 const XU_HUONG = {
@@ -66,6 +81,8 @@ export default function TienBoScreen({ active }) {
     const [data, setData] = useState(null);
     const [loi, setLoi] = useState('');
     const [, setMoKhoa] = useState(0); // vẽ lại khi đã nạp xong bảng khoá Level
+    const [tongKet, setTongKet] = useState(null);
+    const [dangTongKet, setDangTongKet] = useState(false);
 
     // Tải lại mỗi lần mở màn: vừa làm bài xong quay lại là thấy số mới.
     useEffect(() => {
@@ -75,6 +92,10 @@ export default function TienBoScreen({ active }) {
         TienBoAPI.get()
             .then((d) => { if (!huy) setData(d); })
             .catch((e) => { if (!huy) setLoi(e?.message || 'Không tải được tiến bộ'); });
+        // Tổng kết tuần đã lưu (nếu có) — chỉ đọc, không gọi AI.
+        TienBoAPI.tongKet()
+            .then((d) => { if (!huy) setTongKet(d?.tongKet || null); })
+            .catch(() => { /* phần thêm: lỗi thì vẫn xem được số liệu */ });
         loadUnlocks(true).then(() => { if (!huy) setMoKhoa((t) => t + 1); });
         return () => { huy = true; };
     }, [active, isLoggedIn]);
@@ -83,6 +104,27 @@ export default function TienBoScreen({ active }) {
         const dich = MAN_CUA[key];
         if (!dich || (dich.feature && lockInfo(dich.feature).locked)) return;
         showScreen(dich.screen);
+    };
+
+    // AI tổng kết CHỈ khi bấm — mỗi tuần một lần, server lưu lại.
+    const nhoTongKet = async () => {
+        if (dangTongKet) return;
+        setDangTongKet(true);
+        try {
+            const d = await TienBoAPI.taoTongKet();
+            setTongKet(d?.tongKet || null);
+        } catch (e) {
+            Notification.error(String(e?.message || 'AI chưa tổng kết được, thử lại sau.'));
+        } finally {
+            setDangTongKet(false);
+        }
+    };
+
+    const moBuoc = (buoc) => {
+        const dich = MAN_BUOC[buoc];
+        if (!dich || (dich.feature && lockInfo(dich.feature).locked)) return;
+        if (dich.mode) EventBus.emit(GameEvents.PRACTICE_REQUESTED, { mode: dich.mode });
+        else showScreen(dich.screen);
     };
 
     const tv = data?.tuVung;
@@ -114,6 +156,48 @@ export default function TienBoScreen({ active }) {
                         )}
                         {data && data.coDuLieu && (
                             <>
+                                <div className="tb-tong-ket">
+                                    <div className="tb-tong-ket-dau">
+                                        <span><i className="fas fa-chalkboard-user"></i> Tổng kết tuần này</span>
+                                        {tongKet && <small>AI viết từ số liệu bên dưới</small>}
+                                    </div>
+                                    {tongKet ? (
+                                        <>
+                                            {tongKet.tomTat && <p className="tb-tong-ket-tom-tat">{tongKet.tomTat}</p>}
+                                            {tongKet.keHoach?.length > 0 && (
+                                                <>
+                                                    <div className="tb-tong-ket-muc">Kế hoạch tuần này</div>
+                                                    <ol className="tb-ke-hoach">
+                                                        {tongKet.keHoach.map((k) => {
+                                                            const dich = MAN_BUOC[k.buoc];
+                                                            const khoa = dich?.feature ? lockInfo(dich.feature) : { locked: false };
+                                                            return (
+                                                                <li key={k.viec}>
+                                                                    <span>{k.viec}</span>
+                                                                    {dich && !khoa.locked && (
+                                                                        <button type="button" className="btn btn-secondary tb-ke-hoach-nut" onClick={() => moBuoc(k.buoc)}>
+                                                                            Làm
+                                                                        </button>
+                                                                    )}
+                                                                </li>
+                                                            );
+                                                        })}
+                                                    </ol>
+                                                </>
+                                            )}
+                                        </>
+                                    ) : (
+                                        <div className="tb-tong-ket-moi">
+                                            <span>AI đọc số liệu 8 tuần của bạn, nhận xét và đề ra 2–3 việc cho tuần này. Mỗi tuần một lần.</span>
+                                            <button type="button" className="btn btn-primary" onClick={nhoTongKet} disabled={dangTongKet}>
+                                                {dangTongKet
+                                                    ? <><i className="fas fa-spinner fa-spin"></i> Đang tổng kết…</>
+                                                    : <><i className="fas fa-wand-magic-sparkles"></i> Nhờ AI tổng kết</>}
+                                            </button>
+                                        </div>
+                                    )}
+                                </div>
+
                                 {(data.nhanXet.tot.length > 0 || data.nhanXet.canLuyen.length > 0) && (
                                     <div className="tb-nhan-xet">
                                         {data.nhanXet.tot.length > 0 && (
