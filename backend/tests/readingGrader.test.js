@@ -279,10 +279,10 @@ describe('controller — đáp án phải ở lại server', () => {
      * `answer`/`explain`, mà chữ trong comment không gửi đi đâu cả.
      */
     function traVePassage() {
-        const i = ctrl.indexOf('exports.passage');
-        const j = ctrl.indexOf('exports.grade');
-        const than = ctrl.slice(i, j).replace(/\/\/.*/g, '').replace(/\/\*[\s\S]*?\*\//g, '');
-        return than.slice(than.indexOf('res.json('));
+        // Phản hồi dựng ở `deCongKhai` (dùng chung cho trả về và bài nháp).
+        const i = ctrl.indexOf('function deCongKhai');
+        const j = ctrl.indexOf('exports.passage');
+        return ctrl.slice(i, j).replace(/\/\/.*/g, '').replace(/\/\*[\s\S]*?\*\//g, '');
     }
 
     test('phản hồi CHỈ có đề và lựa chọn — không `answer`, không `explain`', () => {
@@ -293,6 +293,23 @@ describe('controller — đáp án phải ở lại server', () => {
         expect(tra).toMatch(/options: q\.options/);
         expect(tra).not.toMatch(/answer/);
         expect(tra).not.toMatch(/explain/);
+        // `passage` trả ĐÚNG phần công khai đó.
+        expect(ctrl).toMatch(/const data = deCongKhai\(readingId, ai\);[\s\S]*?res\.json\(\{ success: true, data \}\);/);
+    });
+
+    test('bài nháp: đáp án chỉ nằm ở trường ẩn `an` (select: false), client chỉ thấy phần công khai', () => {
+        expect(ctrl).toMatch(/await luuDe\(req\.user\.id, 'doc', lang, data, ai\);/);
+        const model = readFileSync(join(__dirname, '..', 'models', 'BaiNhap.js'), 'utf8');
+        expect(model).toMatch(/an: \{ type: mongoose\.Schema\.Types\.Mixed, select: false \}/);
+        const sv = readFileSync(join(__dirname, '..', 'services', 'baiNhap.js'), 'utf8');
+        expect(sv).toMatch(/\.select\('de noiDung updatedAt'\)/);
+    });
+
+    test('mất đề trong bộ nhớ → lấy lại từ bài nháp và XOÁ nó (chỉ chấm một lần)', () => {
+        const than = ctrl.slice(ctrl.indexOf('exports.grade'));
+        expect(than).toMatch(/const an = await chiemDeDoc\(req\.user\.id, readingId\);/);
+        const sv = readFileSync(join(__dirname, '..', 'services', 'baiNhap.js'), 'utf8');
+        expect(sv).toMatch(/BaiNhap\.findOneAndDelete\(\{ userId, mode: 'doc', 'de\.readingId': readingId \}\)\.select\('\+an'\)/);
     });
 
     test('đề giữ ở SERVER, khoá theo id ngẫu nhiên', () => {

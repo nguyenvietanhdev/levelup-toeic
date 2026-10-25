@@ -2,13 +2,14 @@ import { useEffect, useRef, useState } from 'react';
 import { BaiNhapAPI } from '@api/baiNhap.js';
 
 /**
- * BÀI LÀM DỞ (Viết / Dịch): đề đã lấy được server lưu ngay lúc sinh; phần gõ tự lưu.
+ * BÀI LÀM DỞ (Viết / Dịch / Đọc / Nghe): đề đã lấy được server lưu ngay lúc sinh;
+ * phần đã làm tự lưu.
  * Vào lại màn mà chưa có đề → hỏi "Làm tiếp?" thay vì gọi AI lấy đề mới.
  */
 const CHO_LUU_MS = 1500;
 
 /**
- * @param {'viet'|'dich'} mode
+ * @param {'viet'|'dich'|'doc'|'nghe'} mode
  * @param {object} o
  * @param {boolean} o.active   màn đang mở
  * @param {boolean} o.coDe     đang có đề trên màn (đang làm bài)
@@ -61,8 +62,11 @@ const luc = (d) => {
     return `${String(t.getHours()).padStart(2, '0')}:${String(t.getMinutes()).padStart(2, '0')} ${String(t.getDate()).padStart(2, '0')}/${String(t.getMonth() + 1).padStart(2, '0')}`;
 };
 
-/** Thẻ "Bạn còn một bài làm dở" ở màn chọn đề. */
-export function TheBaiDo({ nhap, deBai, onLamTiep, onBo }) {
+/**
+ * Thẻ "Bạn còn một bài làm dở" ở màn chọn đề.
+ * `moTa` thay dòng "Đã viết N từ" (vd Đọc: "Đã chọn 2/4 câu").
+ */
+export function TheBaiDo({ nhap, deBai, moTa, onLamTiep, onBo }) {
     if (!nhap) return null;
     const lang = nhap.de?.lang === 'zh' ? 'zh' : 'en';
     const n = soChu(nhap.noiDung, lang);
@@ -72,7 +76,7 @@ export function TheBaiDo({ nhap, deBai, onLamTiep, onBo }) {
             <p className="bai-do-de">{String(deBai || '').slice(0, 220)}{String(deBai || '').length > 220 ? '…' : ''}</p>
             <div className="bai-do-chan">
                 <span>
-                    {n > 0 ? `Đã viết ${n} ${lang === 'zh' ? 'chữ' : 'từ'}` : 'Chưa viết gì'}
+                    {moTa ?? (n > 0 ? `Đã viết ${n} ${lang === 'zh' ? 'chữ' : 'từ'}` : 'Chưa viết gì')}
                     {nhap.capNhat ? ` · lưu lúc ${luc(nhap.capNhat)}` : ''}
                 </span>
                 <div className="bai-do-nut">

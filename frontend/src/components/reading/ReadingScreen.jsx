@@ -12,6 +12,7 @@ import { getVocabLang } from '@api/vocabulary.js';
 import { KIEU_CHAM, kieuChoNgonNgu, doKhoChoKieu } from '@lib/kieuCham.js';
 import NutBatDau from '../ai/NutBatDau.jsx';
 import { useHoiKhiThoat } from '../ai/aiExitGuard.js';
+import { useBaiNhap, TheBaiDo } from '../ai/BaiNhap.jsx';
 
 /**
  * Luyện ĐỌC HIỂU nhiều dạng bài: đời thường, công việc, báo chí, học thuật —
@@ -195,8 +196,33 @@ export default function ReadingScreen({ active }) {
     // Đang làm dở mà rời màn (quay về, menu, Trang chủ…) → hỏi trước, như 16 chế độ luyện tập.
     useHoiKhiThoat('reading-screen', !!de && !result, {
         tieuDe: 'Thoát đọc hiểu?',
-        noiDung: 'Bài đọc đang làm sẽ bị bỏ và các câu đã chọn không được lưu. Bạn có chắc chắn muốn thoát?',
+        noiDung: 'Bài đọc và các câu đã chọn được lưu nháp — lần sau vào lại có thể làm tiếp. Thoát bây giờ?',
     });
+
+    // Bài làm dở: đề (đáp án giữ ở server) và các câu đã chọn được lưu; vào lại thì
+    // làm tiếp thay vì gọi AI lấy bài mới. Câu đã chọn lưu dạng JSON.
+    const baiNhap = useBaiNhap('doc', {
+        active: active && tab !== 'lichsu', coDe: !!de, xong: !!result,
+        noiDung: JSON.stringify(chon), deBai: de?.readingId,
+    });
+    const lamTiep = () => {
+        const n = baiNhap.nhap;
+        if (!n?.de?.questions?.length) return;
+        let daChon = [];
+        try { daChon = JSON.parse(n.noiDung || '[]'); } catch { daChon = []; }
+        setDe(n.de);
+        // Số câu theo ĐỀ, không theo dữ liệu đã lưu: lệch thì phần thừa/thiếu về trống.
+        setChon(n.de.questions.map((_, i) => (typeof daChon[i] === 'string' ? daChon[i] : '')));
+        setResult(null);
+        baiNhap.daDung();
+    };
+    const moTaNhap = (() => {
+        const n = baiNhap.nhap;
+        if (!n?.de?.questions) return undefined;
+        let daChon = [];
+        try { daChon = JSON.parse(n.noiDung || '[]'); } catch { /* chưa chọn câu nào */ }
+        return `Đã chọn ${daChon.filter(Boolean).length}/${n.de.questions.length} câu`;
+    })();
 
     return (
         <div id="reading-screen" className={`screen ${active ? 'active' : ''}`}>
@@ -218,6 +244,13 @@ export default function ReadingScreen({ active }) {
 
             {tab === 'lichsu' ? <LichSuMode mode="doc" /> : !de ? (
                 <div className="essay-intro essay-intro--wide">
+                    <TheBaiDo
+                        nhap={baiNhap.nhap}
+                        deBai={baiNhap.nhap?.de?.title || baiNhap.nhap?.de?.passage}
+                        moTa={moTaNhap}
+                        onLamTiep={lamTiep}
+                        onBo={baiNhap.boQua}
+                    />
                     <p>
                         Đọc một văn bản {ngonNgu === 'zh' ? 'tiếng Trung' : 'tiếng Anh'} theo
                         văn phong <strong>{kieuMoTa.label}</strong>, rồi trả lời câu hỏi.

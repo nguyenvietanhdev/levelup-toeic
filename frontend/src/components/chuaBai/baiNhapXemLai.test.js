@@ -87,3 +87,26 @@ describe('nộp lại bài đã sửa', () => {
         expect(doc('api', 'baiNhap.js')).toMatch(/Http\.put\(`\/bai-nhap\/\$\{mode\}`, \{ noiDung, deBai \}\)/);
     });
 });
+
+describe('bài làm dở — Đọc và Nghe', () => {
+    const doc2 = doc('components', 'reading', 'ReadingScreen.jsx');
+    const nghe = doc('components', 'listening', 'ListeningScreen.jsx');
+
+    test('Đọc: lưu các câu đã chọn (JSON), nhận bài theo mã bài; làm tiếp không gọi API', () => {
+        expect(doc2).toMatch(/useBaiNhap\('doc', \{\s*active: active && tab !== 'lichsu', coDe: !!de, xong: !!result,\s*noiDung: JSON\.stringify\(chon\), deBai: de\?\.readingId,\s*\}\)/);
+        const lt = doc2.slice(doc2.indexOf('const lamTiep'), doc2.indexOf('const moTaNhap'));
+        expect(lt).not.toMatch(/API\./);
+        // JSON hỏng / lệch số câu → không làm sập màn; số câu theo ĐỀ.
+        expect(lt).toMatch(/try \{ daChon = JSON\.parse\(n\.noiDung \|\| '\[\]'\); \} catch/);
+        expect(lt).toMatch(/setChon\(n\.de\.questions\.map\(/);
+        expect(doc2).toMatch(/moTa=\{moTaNhap\}/);
+    });
+
+    test('Nghe: làm tiếp đúng phiên đã trả năng lượng — không gọi API bắt đầu lại', () => {
+        expect(nghe).toMatch(/useBaiNhap\('nghe', \{\s*active: active && tab !== 'lichsu', coDe: !!phien, xong: !!ketQua,\s*noiDung: typed, deBai: phien\?\.id,\s*\}\)/);
+        const lt = nghe.slice(nghe.indexOf('const lamTiep'), nghe.indexOf('};', nghe.indexOf('const lamTiep')));
+        expect(lt).toMatch(/setPhien\(n\.de\)/);
+        expect(lt).not.toMatch(/API\./);
+        expect(nghe).toMatch(/không trừ năng lượng lần nữa/);
+    });
+});

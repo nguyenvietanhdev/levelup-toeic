@@ -6,6 +6,7 @@ const { generateReading, gradeReading, mucKho } = require('../services/readingGr
 const { awardXp } = require('../utils/userStateHelper');
 const { isVipActive } = require('../utils/energyCosts');
 const logger = require('../utils/logger');
+const { luuDe, xoaNhap, chiemDeDoc } = require('../services/baiNhap');
 
 /**
  * Luyện ĐỌC HIỂU nhiều dạng bài (không chỉ TOEIC Part 7).
@@ -75,6 +76,26 @@ async function chargeEnergy(userId) {
  * KHÔNG trừ năng lượng ở đây — trừ khi NỘP. Người dùng có thể xin bài rồi thấy
  * quá dài mà bỏ; tính tiền cho việc đó là phạt một quyết định hợp lý.
  */
+/** Phần CÔNG KHAI của một bài đọc — không có `answer`, không có `explain`. */
+function deCongKhai(readingId, ai) {
+    return {
+        readingId,
+        title: ai.title,
+        passage: ai.passage,
+        dang: ai.dang,
+        dangVi: ai.dangVi,
+        rubric: ai.rubric,
+        level: ai.level,
+        lang: ai.lang,
+        words: ai.words,
+        // CHỈ đề và lựa chọn — gửi kèm đáp án là người dùng mở DevTools thấy ngay.
+        questions: ai.questions.map((q) => ({
+            question: q.question,
+            options: q.options,
+        })),
+    };
+}
+
 exports.passage = async (req, res, next) => {
     try {
         const words = Array.isArray(req.body.words) ? req.body.words : [];
@@ -108,26 +129,11 @@ exports.passage = async (req, res, next) => {
             data: ai,
         });
 
-        res.json({
-            success: true,
-            data: {
-                readingId,
-                title: ai.title,
-                passage: ai.passage,
-                dang: ai.dang,
-                dangVi: ai.dangVi,
-                rubric: ai.rubric,
-                level: ai.level,
-                lang: ai.lang,
-                words: ai.words,
-                // CHỈ đề và lựa chọn — không có `answer`, không có `explain`.
-                // Gửi kèm là người dùng mở DevTools thấy đáp án ngay.
-                questions: ai.questions.map((q) => ({
-                    question: q.question,
-                    options: q.options,
-                })),
-            },
-        });
+        const data = deCongKhai(readingId, ai);
+        // Lưu thành BÀI NHÁP (đáp án ở trường ẩn `an`): thoát giữa chừng rồi vào lại thì
+        // làm tiếp, và nộp được cả khi bộ nhớ server đã mất đề (quá 1 giờ, khởi động lại).
+        await luuDe(req.user.id, 'doc', lang, data, ai);
+        res.json({ success: true, data });
     } catch (error) {
         next(error);
     }
@@ -140,7 +146,13 @@ exports.passage = async (req, res, next) => {
 exports.grade = async (req, res, next) => {
     try {
         const readingId = String(req.body.readingId || '');
-        const luu = DE_MO.get(readingId);
+        let luu = DE_MO.get(readingId);
+        if (!luu) {
+            // Bộ nhớ mất đề (quá 1 giờ / khởi động lại) → lấy lại từ bài nháp. `chiemDeDoc`
+            // xoá luôn bài nháp nên một bài chỉ được chấm một lần.
+            const an = await chiemDeDoc(req.user.id, readingId);
+            if (an) luu = { userId: String(req.user.id), at: Date.now(), data: an };
+        }
 
         if (!luu) {
             // Hết hạn hoặc server vừa khởi động lại. Chưa trừ năng lượng nên
@@ -175,8 +187,9 @@ exports.grade = async (req, res, next) => {
         const r = gradeReading(luu.data.questions, traLoi);
 
         // Xoá đề NGAY sau khi chấm: để lại thì nộp lần hai ăn thưởng lần nữa
-        // trên cùng một bài.
+        // trên cùng một bài. Bài nháp cũng hết việc.
         DE_MO.delete(readingId);
+        await xoaNhap(req.user.id, 'doc', luu.data.lang === 'zh' ? 'zh' : 'en');
 
         const xp = Math.round(XP_BASE + r.ratio * XP_PER_RATIO);
         const coins = Math.round(r.ratio * COINS_PER_RATIO);

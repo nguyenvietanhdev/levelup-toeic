@@ -17,6 +17,7 @@ const { awardXp } = require('../utils/userStateHelper');
 const { isVipActive } = require('../utils/energyCosts');
 const { chuanHoaMuc } = require('../services/aiLevel');
 const logger = require('../utils/logger');
+const { luuDe, xoaNhap } = require('../services/baiNhap');
 
 /** Năng lượng mỗi lượt nghe (thấp hơn hội thoại vì không có lượt đáp qua lại). */
 const ENERGY_COST_NGHE = 10;
@@ -152,18 +153,19 @@ exports.start = async (req, res, next) => {
             userId, source, part, level, lang, targetWords, passage,
             dang: chon ? chon.key : '', dangVi: chon ? chon.vi : '',
         });
-        res.json({
-            success: true,
-            data: {
-                id: String(doc._id),
-                level,
-                lang,
-                dang: chon ? chon.key : '',
-                dangVi: chon ? chon.vi : '',
-                totalTargets: targetWords.length,
-                energyRemaining: charge.energyRemaining,
-            },
-        });
+        const de = {
+            id: String(doc._id),
+            level,
+            lang,
+            dang: chon ? chon.key : '',
+            dangVi: chon ? chon.vi : '',
+            totalTargets: targetWords.length,
+        };
+        // Lưu thành BÀI NHÁP: năng lượng đã trừ lúc bắt đầu, thoát giữa chừng mà vào lại
+        // phải lấy bài mới là mất cả năng lượng lẫn một lượt AI. Không có lời thoại —
+        // chỉ mã phiên; âm thanh vẫn phát từ `/:id/audio`.
+        await luuDe(userId, 'nghe', lang, de);
+        res.json({ success: true, data: { ...de, energyRemaining: charge.energyRemaining } });
     } catch (error) {
         next(error);
     }
@@ -224,6 +226,8 @@ exports.grade = async (req, res, next) => {
 
         const xp = Math.round((ketQua.score / 100) * 30);
         const coins = Math.round((ketQua.score / 100) * 10);
+        // Đã nộp → bài nháp hết việc (kể cả khi lần nộp song song kia mới là lần được thưởng).
+        await xoaNhap(userId, 'nghe', phien.lang === 'zh' ? 'zh' : 'en');
         // Chiếm phiên bằng điều kiện `status: 'open'` — hai request song song chỉ một cái được thưởng.
         const dat = await ListeningSession.findOneAndUpdate(
             { _id: phien._id, userId, status: 'open' },

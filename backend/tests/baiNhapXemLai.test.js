@@ -28,7 +28,7 @@ describe('bài nháp', () => {
         await luuDe('u1', 'viet', 'en', { prompt: 'p' });
         expect(mockNhap.findOneAndUpdate).toHaveBeenCalledWith(
             { userId: 'u1', mode: 'viet', lang: 'en' },
-            { $set: { de: { prompt: 'p' }, noiDung: '' } },
+            { $set: { de: { prompt: 'p' }, noiDung: '', an: null } },
             expect.objectContaining({ upsert: true }),
         );
     });
@@ -151,5 +151,29 @@ describe('controller xem lại', () => {
         const { h } = tao({ _id: 'b', essay: 'v0', issues: [], xemLai: [] }, { modifiedCount: 0 });
         const res = await goi(h, { noiDung: 'v1' });
         expect(res.status).toHaveBeenCalledWith(429);
+    });
+});
+
+describe('bài nháp Đọc / Nghe', () => {
+    const { chiemDeDoc, KHOA_DE } = require('../services/baiNhap');
+
+    test('mỗi chế độ nhận ra bài bằng khoá riêng (Đọc, Nghe dùng mã bài duy nhất)', () => {
+        expect(KHOA_DE).toEqual({ viet: 'de.prompt', dich: 'de.passage', doc: 'de.readingId', nghe: 'de.id' });
+    });
+
+    test('lấy lại đề Đọc: chiếm (xoá) bài nháp, chỉ trả đáp án ẩn; mã rỗng/không phải chuỗi → null', async () => {
+        mockNhap.findOneAndDelete = jest.fn(() => ({ select: () => ({ lean: async () => ({ an: { questions: [1] } }) }) }));
+        expect(await chiemDeDoc('u1', 'r-1')).toEqual({ questions: [1] });
+        expect(mockNhap.findOneAndDelete).toHaveBeenCalledWith({ userId: 'u1', mode: 'doc', 'de.readingId': 'r-1' });
+        expect(await chiemDeDoc('u1', { $ne: '' })).toBeNull();
+        expect(await chiemDeDoc('u1', '')).toBeNull();
+    });
+
+    test('Nghe: bắt đầu thì lưu nháp KHÔNG kèm lời thoại; nộp thì xoá nháp', () => {
+        const src = readFileSync(join(__dirname, '..', 'controllers', 'listeningController.js'), 'utf8');
+        const de = src.slice(src.indexOf('const de = {'), src.indexOf('};', src.indexOf('const de = {')));
+        expect(de).not.toMatch(/passage/);
+        expect(src).toMatch(/await luuDe\(userId, 'nghe', lang, de\);/);
+        expect(src).toMatch(/await xoaNhap\(userId, 'nghe', phien\.lang === 'zh' \? 'zh' : 'en'\);/);
     });
 });

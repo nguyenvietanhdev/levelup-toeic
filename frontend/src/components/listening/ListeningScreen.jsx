@@ -9,6 +9,7 @@ import ChonDangBai, { useGoiYDang, dangGui } from '../ai/ChonDangBai.jsx';
 import LichSuMode from '../history/LichSuMode.jsx';
 import NutBatDau from '../ai/NutBatDau.jsx';
 import { useHoiKhiThoat } from '../ai/aiExitGuard.js';
+import { useBaiNhap, TheBaiDo } from '../ai/BaiNhap.jsx';
 
 /** Mức khó của đoạn nghe (khoá gửi server; server chọn dải CEFR tương ứng). */
 const MUC = [
@@ -137,8 +138,24 @@ export default function ListeningScreen({ active }) {
     // Đang làm dở mà rời màn (quay về, menu, Trang chủ…) → hỏi trước, như 16 chế độ luyện tập.
     useHoiKhiThoat('listening-screen', !!phien && !ketQua, {
         tieuDe: 'Thoát bài nghe?',
-        noiDung: 'Bài nghe chưa nộp sẽ bị bỏ. Năng lượng đã trừ khi bắt đầu sẽ không được hoàn lại. Bạn có chắc chắn muốn thoát?',
+        noiDung: 'Bài nghe và phần đã gõ được lưu nháp — lần sau vào lại nghe tiếp, không trừ năng lượng lần nữa. Thoát bây giờ?',
     });
+
+    // Bài làm dở: năng lượng đã trừ lúc bắt đầu, nên vào lại phải nghe TIẾP được — không
+    // gọi AI, không trừ năng lượng lần nữa. Âm thanh phát lại từ mã phiên.
+    const baiNhap = useBaiNhap('nghe', {
+        active: active && tab !== 'lichsu', coDe: !!phien, xong: !!ketQua,
+        noiDung: typed, deBai: phien?.id,
+    });
+    const lamTiep = () => {
+        const n = baiNhap.nhap;
+        if (!n?.de?.id) return;
+        setPhien(n.de);
+        setTyped(n.noiDung || '');
+        setKetQua(null);
+        setTocDo(0.9);
+        baiNhap.daDung();
+    };
 
     return (
         <div id="listening-screen" className={`screen ${active ? 'active' : ''}`}>
@@ -160,6 +177,12 @@ export default function ListeningScreen({ active }) {
 
             {tab === 'lichsu' ? <LichSuMode mode="nghe" /> : !phien ? (
                 <div className="essay-intro essay-intro--wide">
+                    <TheBaiDo
+                        nhap={baiNhap.nhap}
+                        deBai={`Bài nghe${baiNhap.nhap?.de?.dangVi ? ` · ${baiNhap.nhap.de.dangVi}` : ''} · ${baiNhap.nhap?.de?.totalTargets || 0} từ cần nghe — đã trả năng lượng, nghe tiếp không mất thêm.`}
+                        onLamTiep={lamTiep}
+                        onBo={baiNhap.boQua}
+                    />
                     <p>
                         Nghe một đoạn ngắn do AI viết từ <strong>bộ từ bạn đang học</strong>, rồi
                         gõ lại những gì bạn nghe được. Bạn có thể nghe lại và đổi tốc độ.
