@@ -6,8 +6,11 @@
  *   1 sua-loi  : chỗ sai đã tô — gõ lại cho đúng                   (không AI)
  *   2 ly-do    : "vì sao sửa X → Y?" — chọn loại lỗi / quy tắc      (không AI)
  *   3 cau-moi  : CÂU MỚI, từ khác, cùng loại lỗi — tìm và sửa       (kho chung, AI sinh một lần)
- * Thêm vài câu "dung-sai" (câu đã đúng hay còn lỗi?) để bắt thói quen sửa bừa — câu
- * thêm, không đổi nấc.
+ * Thêm vài câu "dung-sai" (câu đã đúng hay còn lỗi?) để bắt thói quen sửa bừa, và
+ * "chon-sua" (chọn cách sửa đúng — một phương án sai CHÍNH LÀ lỗi gốc) — câu thêm,
+ * không đổi nấc.
+ * Lỗi đã nắm thì có câu "tu-dat-cau": tự đặt câu mới đúng cấu trúc (AI chấm) — đạt là
+ * "Thành thạo". Bậc thưởng, không bắt buộc để "đã nắm".
  *
  * Luật:
  *   · Đúng → lên nấc; lịch ôn giãn ra 1 → 3 → 7 → 14 ngày.
@@ -346,19 +349,128 @@ function cauDungSai(loi) {
     };
 }
 
+/**
+ * Câu thêm "Chọn cách sửa": cách sửa đúng + tối đa 3 phương án sai, trong đó có chính
+ * lỗi gốc của người học (chọn lại nó là chưa nhớ) và phương án AI sinh sẵn.
+ */
+function cauChonSua(loi) {
+    const span = viTriTrong(loi.cau, loi.quote);
+    const daCo = new Set([chuanHoaSo(loi.sua)]);
+    const sai = [];
+    for (const x of [loi.quote, ...(loi.luaSai || [])]) {
+        const k = chuanHoaSo(x);
+        if (!k || daCo.has(k)) continue;
+        daCo.add(k);
+        sai.push(gon(x));
+        if (sai.length >= 3) break;
+    }
+    return {
+        de: { cau: loi.cau, lang: loi.lang, ...span, lua: tron([gon(loi.sua), ...sai]) },
+        dapAn: { ...span, sua: loi.sua, issue: loi.issue },
+    };
+}
+
+/** Câu "Tự đặt câu" cho lỗi đã nắm: dùng đúng cấu trúc trong một câu CỦA MÌNH. */
+function cauTuDat(loi) {
+    const span = viTriTrong(loi.cau, loi.quote);
+    const cauDung = gon(loi.cau.slice(0, span.start) + loi.sua + loi.cau.slice(span.end));
+    return {
+        de: { loai: nhanLoi(loi.loai), hint: goiYLoi(loi.loai), mau: gon(loi.sua), lang: loi.lang },
+        dapAn: { cauDung, cauGoc: loi.cau, quote: loi.quote, sua: loi.sua, loai: loi.loai, issue: loi.issue },
+    };
+}
+
+/** Lọc phương án sai AI sinh: chuỗi ngắn, khác cách sửa đúng, khác lỗi gốc, không trùng. */
+function kiemLuaSai(ds, sua, quote) {
+    const bo = new Set([chuanHoaSo(sua), chuanHoaSo(quote)]);
+    const out = [];
+    for (const x of Array.isArray(ds) ? ds : []) {
+        const g = gon(x);
+        const k = chuanHoaSo(g);
+        if (!g || g.length > 80 || bo.has(k)) continue;
+        bo.add(k);
+        out.push(g);
+        if (out.length >= 2) break;
+    }
+    return out;
+}
+
+/** Sinh (một lượt AI cho cả nhóm) và lưu phương án sai cho các lỗi chưa có. */
+async function sinhLuaSai(ds, userId) {
+    const res = await chatCompletion([
+        {
+            role: 'system',
+            content: [
+                'For each item, a learner wrote "wrong" inside "sentence"; the correct words are "correct".',
+                'Give 2 plausible but INCORRECT alternatives to "correct" — typical learner mistakes of a similar',
+                'length. Never give the correct form or the learner\'s own "wrong" words.',
+                'Return ONLY JSON: {"items":[{"id":"...","options":["...","..."]}]}',
+            ].join('\n'),
+        },
+        { role: 'user', content: JSON.stringify(ds.map((l) => ({ id: String(l._id), sentence: l.cau, wrong: l.quote, correct: l.sua }))) },
+    ], { maxTokens: 400, temperature: 0.7, feature: 'on-loi-lua-sai', userId }).catch(() => null);
+    if (!res?.success) return;
+    const theoId = new Map((parseJson(res.content)?.items || []).map((it) => [String(it?.id), it?.options]));
+    await Promise.all(ds.map(async (l) => {
+        const luaSai = kiemLuaSai(theoId.get(String(l._id)), l.sua, l.quote);
+        if (!luaSai.length) return;
+        l.luaSai = luaSai;
+        await LoiOn.updateOne({ _id: l._id, userId }, { $set: { luaSai } });
+    }));
+}
+
+/** Câu tự đặt: chặn trước (miễn phí) câu quá ngắn hoặc chép lại câu cũ. */
+function kiemTuDat(cau, dapAn, lang) {
+    const c = gon(cau);
+    const du = lang === 'zh' ? c.replace(/\s/g, '').length >= 5 : c.split(' ').length >= 4;
+    if (!du) return 'Câu hơi ngắn — hãy viết một câu đầy đủ.';
+    if ([dapAn.cauDung, dapAn.cauGoc].some((x) => chuanHoaSo(x) === chuanHoaSo(c))) {
+        return 'Đây là câu cũ — hãy tự đặt một câu MỚI của bạn.';
+    }
+    return null;
+}
+
+/** AI chấm câu tự đặt: có dùng đúng cấu trúc và đúng ngữ pháp không. */
+async function chamTuDat({ cau, dapAn, lang, userId }) {
+    const L = lang === 'zh' ? 'Chinese' : 'English';
+    const res = await chatCompletion([
+        {
+            role: 'system',
+            content: [
+                `A Vietnamese learner of ${L} once wrote "${dapAn.quote}" and it was corrected to "${dapAn.sua}" (mistake type: ${dapAn.loai}).`,
+                'Now they wrote a NEW sentence of their own that should use the same structure correctly.',
+                'Judge only: does it use that structure correctly, and is the sentence grammatical?',
+                'Return ONLY JSON: {"ok":true|false,"note":"<one short Vietnamese sentence>","better":"<corrected sentence if not ok, else empty>"}',
+            ].join('\n'),
+        },
+        { role: 'user', content: String(cau).slice(0, 300) },
+    ], { maxTokens: 160, temperature: 0, feature: 'on-loi-tu-dat', userId }).catch(() => null);
+    if (!res?.success) return null;
+    const o = parseJson(res.content);
+    if (!o || typeof o.ok !== 'boolean') return null;
+    return { dung: o.ok, ghiChu: gon(o.note).slice(0, 300), cauTot: gon(o.better).slice(0, 300) };
+}
+
 // ───────────────────────── API ─────────────────────────
 
 async function tongQuan(userId, now = new Date()) {
     const lang = await langCua(userId);
     await dongBo(userId, lang, now);
-    const [tong, denHan, daNam, nghiHocVet, ke] = await Promise.all([
+    const [tong, denHan, daNam, nghiHocVet, thanhThao, ke, ds] = await Promise.all([
         LoiOn.countDocuments({ userId, lang }),
         LoiOn.countDocuments({ userId, lang, denHan: { $lte: now } }),
         LoiOn.countDocuments({ userId, lang, daNam: true }),
         LoiOn.countDocuments({ userId, lang, nghiHocVet: true }),
+        LoiOn.countDocuments({ userId, lang, thanhThao: true }),
         LoiOn.findOne({ userId, lang, denHan: { $gt: now } }).sort({ denHan: 1 }).select('denHan').lean(),
+        LoiOn.find({ userId, lang }).select('khoa nac daNam nghiHocVet thanhThao').lean(),
     ]);
-    return { tong, denHan, daNam, nghiHocVet, lanToi: ke?.denHan || null };
+    // Trạng thái từng lỗi theo `khoa` (= id mục Sổ tay) — để Sổ tay vẽ thanh nấc.
+    const trangThai = {};
+    for (const l of ds || []) {
+        trangThai[l.khoa] = { nac: l.nac, daNam: !!l.daNam, nghiHocVet: !!l.nghiHocVet, thanhThao: !!l.thanhThao };
+    }
+    return { tong, denHan, daNam, nghiHocVet, thanhThao, lanToi: ke?.denHan || null, trangThai };
 }
 
 /**
@@ -384,11 +496,22 @@ async function taoBuoi(userId, { som = false } = {}, now = new Date()) {
         const q = dungCau(loi, dang, cauMoi);
         cau.push({ loiId: loi._id, dang, ...q, tinhNac: true });
     }
-    // Câu thêm "Đúng hay sai" — chèn vào vị trí ngẫu nhiên.
-    for (const loi of tron(ds).slice(0, SO_CAU_THEM)) {
-        const q = cauDungSai(loi);
-        cau.splice(Math.floor(Math.random() * (cau.length + 1)), 0, { loiId: loi._id, dang: 'dung-sai', ...q, tinhNac: false });
+    // Câu thêm: "Đúng hay sai" hoặc "Chọn cách sửa" (lỗi đã qua nấc Nhận ra) — chèn
+    // vào vị trí ngẫu nhiên. Phương án sai thiếu thì nhờ AI sinh một lượt cho cả nhóm.
+    const them = tron(ds).slice(0, SO_CAU_THEM).map((loi) => ({
+        loi, dang: loi.nac >= 1 && Math.random() < 0.5 ? 'chon-sua' : 'dung-sai',
+    }));
+    const thieuLua = them.filter((t) => t.dang === 'chon-sua' && !(t.loi.luaSai?.length >= 2)).map((t) => t.loi);
+    if (thieuLua.length) await sinhLuaSai(thieuLua, userId);
+    for (const t of them) {
+        const q = t.dang === 'chon-sua' ? cauChonSua(t.loi) : cauDungSai(t.loi);
+        cau.splice(Math.floor(Math.random() * (cau.length + 1)), 0, { loiId: t.loi._id, dang: t.dang, ...q, tinhNac: false });
     }
+    // Bậc thưởng: một lỗi đã nắm (chưa thành thạo) → tự đặt câu, ở cuối buổi.
+    const daNamDs = await LoiOn.find({ userId, lang, daNam: true, thanhThao: { $ne: true } })
+        .sort({ updatedAt: 1 }).limit(1).lean();
+    const loiTuDat = (daNamDs || []).find((l) => l.daNam && !l.thanhThao);
+    if (loiTuDat) cau.push({ loiId: loiTuDat._id, dang: 'tu-dat-cau', ...cauTuDat(loiTuDat), tinhNac: false });
 
     const buoi = await BuoiOnLoi.create({ userId, cau });
     return {
@@ -414,6 +537,16 @@ async function traLoi(userId, buoiId, i, body = {}, now = new Date()) {
     else if (c.dang === 'ly-do') dung = body.loai === da.loai;
     else if (c.dang === 'cau-moi') dung = chamTimLoi(body.chon, da, c.de.cau, c.de.lang) && khopSua(body.sua, da.sua);
     else if (c.dang === 'dung-sai') dung = typeof body.coLoi === 'boolean' && body.coLoi === da.coLoi;
+    else if (c.dang === 'chon-sua') dung = typeof body.sua === 'string' && khopSua(body.sua, da.sua);
+    else if (c.dang === 'tu-dat-cau') {
+        // Chặn trước (miễn phí): câu ngắn / chép câu cũ → báo để viết lại, CHƯA tính lượt.
+        const loiKiem = kiemTuDat(body.cau, da, c.de.lang);
+        if (loiKiem) return { loi: loiKiem, ma: 400 };
+        const r = await chamTuDat({ cau: body.cau, dapAn: da, lang: c.de.lang, userId });
+        if (!r) return { loi: 'AI chưa chấm được, thử lại sau.', ma: 503 };
+        dung = r.dung;
+        Object.assign(da, { ghiChu: r.ghiChu, cauTot: r.cauTot, cauCuaBan: gon(body.cau) });
+    }
 
     // Chiếm câu có điều kiện "chưa trả lời" — bấm hai lần không tính hai lần.
     const chiem = await BuoiOnLoi.updateOne(
@@ -435,6 +568,10 @@ async function traLoi(userId, buoiId, i, body = {}, now = new Date()) {
         }
         const update = { $set: set };
         if (c.dang === 'cau-moi' && da.cauId) update.$addToSet = { daGap: da.cauId };
+        if (c.dang === 'tu-dat-cau' && dung && !loi.thanhThao) {
+            set.thanhThao = true;
+            trangThai = { moiThanhThao: true };
+        }
         await LoiOn.updateOne({ _id: loi._id, userId }, update);
     }
     return { dung, dapAn: da, trangThai };
@@ -444,5 +581,6 @@ module.exports = {
     tongQuan, taoBuoi, traLoi, dongBo,
     // thuần — cho test
     viTriTrong, cauChua, chamTimLoi, chonDang, capNhatSauTraLoi, kiemCauMoi, khopSua, chuanHoaSo, dungCau, cauDungSai,
+    cauChonSua, cauTuDat, kiemLuaSai, kiemTuDat,
     KHOANG, KHOANG_DA_NAM, SO_CAU_BUOI, MO_TA_LOI,
 };

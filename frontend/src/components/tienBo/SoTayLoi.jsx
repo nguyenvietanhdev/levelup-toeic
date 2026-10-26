@@ -19,7 +19,28 @@ const ngay = (d) => {
     return Number.isNaN(t.getTime()) ? '' : `${String(t.getDate()).padStart(2, '0')}/${String(t.getMonth() + 1).padStart(2, '0')}`;
 };
 
-function MucLoi({ m, tuKiemTra }) {
+const TEN_NAC = ['Nhận ra', 'Sửa được', 'Hiểu vì sao', 'Áp dụng'];
+
+/**
+ * Thanh nấc của một lỗi (từ Kiểm tra lại): 4 chấm = 4 nấc đã qua; đã nắm thì đủ 4,
+ * thành thạo thêm vương miện. Lỗi không kiểm tra được (cách sửa là lời giải thích)
+ * thì không có thanh.
+ */
+function ThanhNac({ t }) {
+    if (!t) return null;
+    const qua = t.daNam ? 4 : t.nac;
+    const nhan = t.thanhThao ? 'Thành thạo' : t.daNam ? 'Đã nắm'
+        : t.nghiHocVet ? 'Nghi học vẹt' : `Đang ở nấc: ${TEN_NAC[t.nac] || TEN_NAC[0]}`;
+    return (
+        <span className={`stl-nac${t.daNam ? ' is-nam' : ''}${t.nghiHocVet ? ' is-vet' : ''}`} title={TEN_NAC.join(' → ')}>
+            {TEN_NAC.map((n, i) => <span key={n} className={`stl-nac-cham${i < qua ? ' is-qua' : ''}`} />)}
+            {t.thanhThao && <i className="fas fa-crown"></i>}
+            <span className="stl-nac-chu">{nhan}</span>
+        </span>
+    );
+}
+
+function MucLoi({ m, tuKiemTra, trangThai }) {
     const [nhap, setNhap] = useState('');
     const [kq, setKq] = useState(null); // 'dung' | 'sai' | 'xem'
     // Cụm sửa tiếng Việt (bài chấm cũ) là lời giải thích, không so được.
@@ -57,6 +78,7 @@ function MucLoi({ m, tuKiemTra }) {
             {tuKiemTra && kq === 'dung' && <div className="cb-ket-qua is-dung"><i className="fas fa-circle-check"></i> Chính xác!</div>}
             <div className="stl-chan">
                 <span className={`cb-nhan is-${m.muc}`}>{m.muc === 'loi' ? 'Lỗi' : 'Nên sửa'}</span>
+                <ThanhNac t={trangThai} />
                 <span>{NGUON[m.nguon] || m.nguon} · {ngay(m.at)}</span>
             </div>
         </li>
@@ -70,15 +92,16 @@ function MucLoi({ m, tuKiemTra }) {
  */
 export default function SoTayLoi({ active }) {
     const [dangOn, setDangOn] = useState(false);
+    const [tq, setTq] = useState(null);
     return (
         <div className="stl-ngoai">
-            <OnLoi active={active} onDangLam={setDangOn} />
-            {!dangOn && <DanhSachLoi active={active} />}
+            <OnLoi active={active} onDangLam={setDangOn} onTongQuan={setTq} />
+            {!dangOn && <DanhSachLoi active={active} trangThai={tq?.trangThai} />}
         </div>
     );
 }
 
-function DanhSachLoi({ active }) {
+function DanhSachLoi({ active, trangThai }) {
     const [data, setData] = useState(null);
     const [loi, setLoi] = useState('');
     const [loai, setLoai] = useState('');      // '' = mọi loại
@@ -157,7 +180,7 @@ function DanhSachLoi({ active }) {
                     {nhan(k)?.hint && <p className="tb-loi-goi-y"><i className="fas fa-lightbulb"></i> {nhan(k).hint}</p>}
                     {/* `key` gồm cả chế độ: đổi Tự kiểm tra là làm mới ô nhập của mọi mục. */}
                     <ul className="stl-ds">
-                        {ds.map((m) => <MucLoi key={`${m.id}-${tuKiemTra}`} m={m} tuKiemTra={tuKiemTra} />)}
+                        {ds.map((m) => <MucLoi key={`${m.id}-${tuKiemTra}`} m={m} tuKiemTra={tuKiemTra} trangThai={trangThai?.[m.id]} />)}
                     </ul>
                 </section>
             ))}

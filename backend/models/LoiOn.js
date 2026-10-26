@@ -34,6 +34,10 @@ const loiOnSchema = new mongoose.Schema(
         ngayApDung: { type: [String], default: [] },
         daNam: { type: Boolean, default: false },
         nghiHocVet: { type: Boolean, default: false },
+        // "Thành thạo": đã nắm VÀ tự đặt được câu đúng cấu trúc (dạng tự đặt câu, AI chấm).
+        thanhThao: { type: Boolean, default: false },
+        // Phương án SAI cho dạng "chọn cách sửa" (sinh một lần, lưu lại).
+        luaSai: { type: [String], default: [] },
         // Câu mới đã gặp (id trong kho chung) — không lặp lại câu cũ.
         daGap: { type: [String], default: [] },
         lichSu: {

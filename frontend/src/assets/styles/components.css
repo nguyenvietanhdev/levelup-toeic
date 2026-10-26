@@ -12742,3 +12742,14 @@ body.dang-phat-am .js-nut-am {
   .ol-so { grid-template-columns: repeat(2, 1fr); }
   .ol-cau { font-size: 16px; }
 }
+
+/* Thanh nấc từng lỗi trong Sổ tay (Kiểm tra lại). */
+.stl-nac { display: inline-flex; align-items: center; gap: 3px; margin-left: auto; }
+.stl-nac-cham { width: 8px; height: 8px; border-radius: 50%; background: var(--border-color); }
+.stl-nac-cham.is-qua { background: var(--accent-color); }
+.stl-nac.is-nam .stl-nac-cham.is-qua { background: #16a34a; }
+.stl-nac i { color: #eab308; font-size: 12px; margin-left: 2px; }
+.stl-nac-chu { margin-left: 6px; font-size: 12px; }
+.stl-nac.is-nam .stl-nac-chu { color: #16a34a; font-weight: 600; }
+.stl-nac.is-vet .stl-nac-chu { color: #ea580c; font-weight: 600; }
+.ol-loai { font-size: 13px; color: var(--text-secondary); font-weight: 400; }

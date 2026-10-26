@@ -11,7 +11,7 @@ const buoiOnLoiSchema = new mongoose.Schema(
         cau: {
             type: [{
                 loiId: { type: mongoose.Schema.Types.ObjectId, ref: 'LoiOn' },
-                dang: String,                       // tim-loi | sua-loi | ly-do | cau-moi | dung-sai
+                dang: String,                       // tim-loi | sua-loi | ly-do | cau-moi | dung-sai | chon-sua | tu-dat-cau
                 de: mongoose.Schema.Types.Mixed,    // phần gửi client
                 dapAn: mongoose.Schema.Types.Mixed, // chỉ server
                 tinhNac: { type: Boolean, default: true }, // false: câu thêm (Đúng hay sai), không đổi nấc

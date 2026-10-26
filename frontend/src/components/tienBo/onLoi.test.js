@@ -20,8 +20,8 @@ const stl = doc('components', 'tienBo', 'SoTayLoi.jsx');
 
 describe('gắn vào Sổ tay lỗi', () => {
     test('đang làm buổi ôn thì ẩn danh sách lỗi', () => {
-        expect(stl).toMatch(/<OnLoi active=\{active\} onDangLam=\{setDangOn\} \/>/);
-        expect(stl).toMatch(/\{!dangOn && <DanhSachLoi active=\{active\} \/>\}/);
+        expect(stl).toMatch(/<OnLoi active=\{active\} onDangLam=\{setDangOn\} onTongQuan=\{setTq\} \/>/);
+        expect(stl).toMatch(/\{!dangOn && <DanhSachLoi active=\{active\} trangThai=\{tq\?\.trangThai\} \/>\}/);
         expect(ol).toMatch(/useEffect\(\(\) => \{ onDangLam\?\.\(!!buoi\); \}, \[buoi, onDangLam\]\);/);
     });
 });
@@ -46,6 +46,25 @@ describe('trả lời', () => {
     test('hiện nhãn "Đã nắm" / "Nghi học vẹt" theo trạng thái server trả', () => {
         expect(ol).toMatch(/\{t\?\.moiDaNam && /);
         expect(ol).toMatch(/\{t\?\.moiNghiHocVet && \(/);
+    });
+});
+
+describe('giai đoạn 2', () => {
+    test('chọn cách sửa và tự đặt câu: nộp lên server để chấm', () => {
+        expect(ol).toMatch(/onClick=\{\(\) => nop\(\{ sua: x \}\)\}/);
+        expect(ol).toMatch(/else if \(cau\.dang === 'tu-dat-cau'\) nop\(\{ cau: sua \}\);/);
+        expect(ol).toMatch(/\{t\?\.moiThanhThao && /);
+    });
+
+    test('Sổ tay vẽ thanh nấc theo trạng thái server, theo đúng id mục', () => {
+        expect(stl).toMatch(/trangThai=\{trangThai\?\.\[m\.id\]\}/);
+        expect(stl).toMatch(/const qua = t\.daNam \? 4 : t\.nac;/);
+    });
+
+    test('Lộ trình: bước Ôn sai mở thẳng tab Sổ tay lỗi của màn Tiến bộ', () => {
+        const lt = doc('components', 'loTrinh', 'LoTrinhScreen.jsx');
+        expect(lt).toMatch(/sessionStorage\.setItem\('levelup\.tienBo\.tab', 'so-tay'\)/);
+        expect(doc('components', 'tienBo', 'TienBoScreen.jsx')).toMatch(/sessionStorage\.removeItem\('levelup\.tienBo\.tab'\)/);
     });
 });
 

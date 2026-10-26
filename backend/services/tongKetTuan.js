@@ -12,6 +12,7 @@
  *   · Chưa đủ dữ liệu thì không gọi AI: tổng kết trên khoảng trống chỉ là văn mẫu.
  */
 const TongKetTuan = require('../models/TongKetTuan');
+const LoiOn = require('../models/LoiOn');
 // Nạp trễ như các bộ chấm khác: nạp module không được khởi tạo client AI (thiếu key là sập).
 function chatCompletion(...args) {
     return require('../config/openai').chatCompletion(...args);
@@ -30,8 +31,11 @@ const TOI_THIEU_LUOT = 3;
  * Bản tóm tắt gửi AI: chỉ số liệu, gọn. Không gửi tên, email hay nội dung bài —
  * AI không cần biết người học là ai để nhận xét xu hướng.
  */
-function tomTatChoAI(hs) {
+function tomTatChoAI(hs, onLoi = null) {
     return {
+        // Kiểm tra lại lỗi đã chữa: theo dõi / đã nắm (đúng câu mới ở 2 ngày) / nghi học
+        // vẹt (đúng câu cũ, sai câu mới) / thành thạo (tự đặt câu đúng).
+        ...(onLoi && onLoi.tracked > 0 ? { errorReview: onLoi } : {}),
         skills: hs.kyNang
             .filter((k) => k.soLuot > 0)
             .map((k) => ({
@@ -77,6 +81,8 @@ function promptTongKet(duLieu) {
                 '1. Write in Vietnamese, warm but honest, addressing the learner as "bạn".',
                 '2. Use ONLY facts in the data. Never invent numbers, skills or errors. If a trend is "not enough data", do not call it progress or decline.',
                 '3. Be specific: name the skill or error type and quote the numbers from the data.',
+                '   If "errorReview" is present: "mastered" = fixed correctly in NEW sentences on 2 different days;',
+                '   "suspectedRote" = fixes their old sentence but fails new ones (memorized the answer). Mention them.',
                 '   Always write a score with its own scale: "4.3/9" for band 0-9, "80%" for percent. Never use another scale.',
                 '4. The plan has 2-3 concrete tasks for next week. Each task gets "step", one of:',
                 `   ${BUOC_HOP_LE.join(', ')} (on-sai = review wrong words, hoc-tu = vocabulary practice, nghe = listening, doc = reading, noi = speaking, viet-dich = writing or translation).`,
@@ -116,7 +122,14 @@ async function taoTongKet(userId, now = new Date()) {
         return { loi: `Cần ít nhất ${TOI_THIEU_LUOT} lượt học trong 8 tuần để có gì tổng kết.`, ma: 'it-du-lieu' };
     }
 
-    const res = await chatCompletion(promptTongKet(tomTatChoAI(hs)), {
+    const [tracked, mastered, suspectedRote, fluent] = await Promise.all([
+        LoiOn.countDocuments({ userId, lang }),
+        LoiOn.countDocuments({ userId, lang, daNam: true }),
+        LoiOn.countDocuments({ userId, lang, nghiHocVet: true }),
+        LoiOn.countDocuments({ userId, lang, thanhThao: true }),
+    ]);
+    const onLoi = { tracked, mastered, suspectedRote, fluent };
+    const res = await chatCompletion(promptTongKet(tomTatChoAI(hs, onLoi)), {
         maxTokens: 500,
         temperature: 0.4,   // thấp: đây là nhận xét theo số liệu, không phải sáng tác
         feature: 'weekly-review',

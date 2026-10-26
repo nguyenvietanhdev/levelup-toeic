@@ -23,6 +23,8 @@ jest.mock('../models/ReadingAttempt', () => mo('ReadingAttempt'));
 jest.mock('../models/Essay', () => mo('Essay'));
 jest.mock('../models/Translation', () => mo('Translation'));
 jest.mock('../models/WrongWord', () => ({ ...mo('WrongWord'), langFilter: () => ({}) }));
+jest.mock('../models/LoiOn', () => mo('LoiOn'));
+jest.mock('../models/BuoiOnLoi', () => mo('BuoiOnLoi'));
 let mockKeHoach = null;
 jest.mock('../models/TongKetTuan', () => ({
     findOne: (q) => { goi.push(['TongKetTuan', q]); return { select: () => ({ lean: async () => mockKeHoach }) }; },
@@ -115,5 +117,23 @@ describe('kế hoạch tuần từ Tổng kết tuần', () => {
         expect(goi.find(([t]) => t === 'TongKetTuan')[1]).toMatchObject({ tuan: '2026-10-19', lang: 'en' });
         mockKeHoach = null;
         expect((await layLoTrinh('u1')).keHoachTuan).toEqual([]);
+    });
+});
+
+describe('bước Ôn sai gộp ôn từ và ôn lỗi', () => {
+    const D = { onSai: 0, hocTu: 0, nghe: 0, doc: 0, noi: 0, viet: 0, dich: 0, tuDenHan: 0 };
+    test('chỉ có LỖI đến hạn → chưa xong, không bỏ qua; ôn lỗi một buổi → xong', () => {
+        const a = dungLoTrinh({ ...D, loiDenHan: 3 }, { ngay: 'x', soNgay: 1 }).buoc[0];
+        expect(a).toMatchObject({ xong: false, boQua: false, loiDenHan: 3 });
+        const b = dungLoTrinh({ ...D, loiDenHan: 3, onLoi: 1 }, { ngay: 'x', soNgay: 1 }).buoc[0];
+        expect(b).toMatchObject({ xong: true, soLan: 1 });
+    });
+
+    test('đọc từ DB: đếm lỗi đến hạn và buổi ôn lỗi đã trả lời hôm nay', async () => {
+        mockCount.LoiOn = 2;
+        mockCount.BuoiOnLoi = 1;
+        const r = await layLoTrinh('u1', new Date('2026-10-25T05:00:00Z'));
+        expect(r.buoc[0]).toMatchObject({ loiDenHan: 2, soLan: 1, xong: true });
+        expect(goi.find(([t]) => t === 'BuoiOnLoi')[1]).toMatchObject({ 'cau.daTra': true });
     });
 });

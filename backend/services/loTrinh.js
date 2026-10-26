@@ -17,6 +17,8 @@ const Translation = require('../models/Translation');
 const WrongWord = require('../models/WrongWord');
 const UserProfile = require('../models/UserProfile');
 const TongKetTuan = require('../models/TongKetTuan');
+const LoiOn = require('../models/LoiOn');
+const BuoiOnLoi = require('../models/BuoiOnLoi');
 
 /** Giờ Việt Nam = UTC+7, không đổi theo mùa. */
 const LECH_GIO_VN = 7 * 60 * 60 * 1000;
@@ -55,14 +57,21 @@ function vietHayDich(soNgay) {
 function dungLoTrinh(dem, { ngay, soNgay }) {
     const goiY = vietHayDich(soNgay);
     const buoc = [
-        {
-            key: 'on-sai',
-            soLan: dem.onSai,
-            // Không có từ nào đến hạn thì không có gì để ôn — tính là xong.
-            xong: dem.onSai > 0 || dem.tuDenHan === 0,
-            boQua: dem.onSai === 0 && dem.tuDenHan === 0,
-            tuDenHan: dem.tuDenHan,
-        },
+        (() => {
+            // Ôn TỪ sai (chế độ Ôn lại từ sai) và ôn LỖI sai (Kiểm tra lại lỗi đã chữa)
+            // gộp một bước: cùng là quay lại chỗ mình từng sai trước khi học cái mới.
+            const lan = dem.onSai + (dem.onLoi || 0);
+            const denHan = dem.tuDenHan + (dem.loiDenHan || 0);
+            return {
+                key: 'on-sai',
+                soLan: lan,
+                // Không có gì đến hạn thì không có gì để ôn — tính là xong.
+                xong: lan > 0 || denHan === 0,
+                boQua: lan === 0 && denHan === 0,
+                tuDenHan: dem.tuDenHan,
+                loiDenHan: dem.loiDenHan || 0,
+            };
+        })(),
         { key: 'hoc-tu', soLan: dem.hocTu, xong: dem.hocTu > 0 },
         { key: 'nghe', soLan: dem.nghe, xong: dem.nghe > 0 },
         { key: 'doc', soLan: dem.doc, xong: dem.doc > 0 },
@@ -84,7 +93,7 @@ async function layLoTrinh(userId, now = new Date()) {
     const lang = profile?.settings?.vocabLang === 'zh' ? 'zh' : 'en';
     const tuNay = { $gte: dau };
 
-    const [onSai, hocTu, nghe, doc, noi, viet, dich, tuDenHan, tongKet] = await Promise.all([
+    const [onSai, hocTu, nghe, doc, noi, viet, dich, tuDenHan, tongKet, loiDenHan, onLoi] = await Promise.all([
         PracticeSession.countDocuments({ user: userId, mode: 'review-mistakes', completedAt: tuNay }),
         PracticeSession.countDocuments({ user: userId, mode: { $ne: 'review-mistakes' }, completedAt: tuNay }),
         ListeningSession.countDocuments({ userId, status: 'done', updatedAt: tuNay }),
@@ -97,10 +106,13 @@ async function layLoTrinh(userId, now = new Date()) {
         }),
         // Kế hoạch tuần do "Tổng kết tuần" (AI) đề ra — chỉ đọc, chưa tổng kết thì rỗng.
         TongKetTuan.findOne({ userId, tuan: dauTuanVN(now), lang }).select('keHoach').lean(),
+        // Lỗi đã chữa đến hạn kiểm tra lại, và số buổi kiểm tra lại hôm nay đã trả lời.
+        LoiOn.countDocuments({ userId, lang, denHan: { $lte: now } }),
+        BuoiOnLoi.countDocuments({ userId, createdAt: tuNay, 'cau.daTra': true }),
     ]);
 
     return {
-        ...dungLoTrinh({ onSai, hocTu, nghe, doc, noi, viet, dich, tuDenHan }, { ngay, soNgay }),
+        ...dungLoTrinh({ onSai, hocTu, nghe, doc, noi, viet, dich, tuDenHan, loiDenHan, onLoi }, { ngay, soNgay }),
         keHoachTuan: tongKet?.keHoach || [],
     };
 }

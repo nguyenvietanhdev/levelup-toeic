@@ -18,7 +18,7 @@ import { danhDauDaXem } from '@lib/chamDo.js';
  */
 const BUOC = {
     'on-sai': {
-        ten: 'Ôn từ sai',
+        ten: 'Ôn từ & lỗi sai',
         icon: 'fa-repeat',
         moTa: 'Dọn từ đến hạn ôn trước khi học từ mới.',
     },
@@ -86,6 +86,12 @@ export default function LoTrinhScreen({ active }) {
         EventBus.emit(GameEvents.PRACTICE_REQUESTED, { mode });
     };
 
+    /** Mở thẳng tab Sổ tay lỗi (Kiểm tra lại) của màn Tiến bộ. */
+    const moOnLoi = () => {
+        try { sessionStorage.setItem('levelup.tienBo.tab', 'so-tay'); } catch { /* mở tab mặc định */ }
+        showScreen('tien-bo-screen');
+    };
+
     const deTen = TopicSelector.currentTopic?.name || TopicSelector.currentTopic?.source || '';
     const part = PartSelector.selectedPart || '';
     const buoc = data?.buoc || [];
@@ -114,9 +120,18 @@ export default function LoTrinhScreen({ active }) {
         if (b.key === 'on-sai') {
             if (b.boQua) return null;
             return (
-                <button type="button" className="btn btn-primary lt-nut" onClick={() => chayCheDo('review-mistakes')}>
-                    {lam}
-                </button>
+                <>
+                    {(b.tuDenHan > 0 || !b.loiDenHan) && (
+                        <button type="button" className="btn btn-primary lt-nut" onClick={() => chayCheDo('review-mistakes')}>
+                            {b.loiDenHan ? 'Ôn từ sai' : lam}
+                        </button>
+                    )}
+                    {b.loiDenHan > 0 && (
+                        <button type="button" className={`btn ${b.tuDenHan > 0 ? 'btn-secondary' : 'btn-primary'} lt-nut`} onClick={moOnLoi}>
+                            Kiểm tra lại lỗi
+                        </button>
+                    )}
+                </>
             );
         }
         if (b.key === 'hoc-tu') {
@@ -148,7 +163,10 @@ export default function LoTrinhScreen({ active }) {
     const trangThai = (b) => {
         if (b.boQua) return <span className="lt-trang-thai is-bo-qua">Không có từ đến hạn</span>;
         if (b.xong) return <span className="lt-trang-thai is-xong"><i className="fas fa-check"></i> Xong · {b.soLan} lượt</span>;
-        if (b.key === 'on-sai' && b.tuDenHan) return <span className="lt-trang-thai">{b.tuDenHan} từ đến hạn</span>;
+        if (b.key === 'on-sai' && (b.tuDenHan || b.loiDenHan)) {
+            const phan = [b.tuDenHan ? `${b.tuDenHan} từ` : '', b.loiDenHan ? `${b.loiDenHan} lỗi` : ''].filter(Boolean);
+            return <span className="lt-trang-thai">{phan.join(' · ')} đến hạn</span>;
+        }
         return <span className="lt-trang-thai">Chưa làm</span>;
     };
 

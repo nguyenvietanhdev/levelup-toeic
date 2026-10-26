@@ -83,7 +83,14 @@ export default function TienBoScreen({ active }) {
     const [data, setData] = useState(null);
     const [loi, setLoi] = useState('');
     // Hai tab: số liệu tiến bộ, và sổ tay lỗi (mọi chỗ đã chữa, kèm cách sửa).
-    const [tab, setTab] = useState('tong-quan');
+    // Lộ trình hôm nay có thể dẫn thẳng tới tab Sổ tay lỗi (Kiểm tra lại) — đọc một lần rồi xoá.
+    const [tab, setTab] = useState(() => {
+        try {
+            const t = sessionStorage.getItem('levelup.tienBo.tab');
+            sessionStorage.removeItem('levelup.tienBo.tab');
+            return t === 'so-tay' ? 'so-tay' : 'tong-quan';
+        } catch { return 'tong-quan'; }
+    });
     const [, setMoKhoa] = useState(0); // vẽ lại khi đã nạp xong bảng khoá Level
     const [tongKet, setTongKet] = useState(null);
     const [dangTongKet, setDangTongKet] = useState(false);

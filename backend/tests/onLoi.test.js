@@ -58,6 +58,11 @@ const S = require('../services/onLoi');
 const NGAY1 = new Date('2026-10-26T05:00:00Z');
 const NGAY3 = new Date('2026-10-28T05:00:00Z');
 
+// Cố định ngẫu nhiên: câu thêm luôn là "Đúng hay sai", thứ tự trộn ổn định — test
+// không chập chờn theo lần chạy. Test nào cần dạng khác thì gọi hàm dựng trực tiếp.
+beforeEach(() => { jest.spyOn(Math, 'random').mockReturnValue(0.9); });
+afterEach(() => { Math.random.mockRestore(); });
+
 beforeEach(() => {
     mockLoi.length = 0;
     mockKho.length = 0;
@@ -186,7 +191,9 @@ describe('buổi ôn', () => {
             ] }),
         });
         const { buoi } = await S.taoBuoi('u1', {}, NGAY1);
-        expect(chatCompletion).toHaveBeenCalledTimes(1);
+        // Đếm riêng lượt sinh CÂU MỚI (câu thêm "chọn cách sửa" có thể gọi AI sinh phương án sai).
+        const sinhCauMoi = chatCompletion.mock.calls.filter(([, o]) => o.feature === 'on-loi-cau-moi');
+        expect(sinhCauMoi).toHaveLength(1);
         expect(mockKho).toHaveLength(1);
         const c = buoi.cau.find((x) => x.dang === 'cau-moi');
         expect(c.de.cau).toBe('She go to work.');
@@ -197,7 +204,7 @@ describe('buổi ôn', () => {
         mockLoi.push(LOI({ nac: 3 }));
         chatCompletion.mockResolvedValue({ success: false });
         const { buoi } = await S.taoBuoi('u1', {}, NGAY1);
-        expect(buoi.cau.filter((c) => c.dang !== 'dung-sai').map((c) => c.dang)).toEqual(['sua-loi']);
+        expect(buoi.cau.filter((c) => c.dang !== 'dung-sai' && c.dang !== 'chon-sua').map((c) => c.dang)).toEqual(['sua-loi']);
     });
 
     test('trả lời: chấm ở server, cập nhật nấc; trả lời lại cùng câu → 409', async () => {
@@ -223,5 +230,54 @@ describe('buổi ôn', () => {
 
     test('chưa có lỗi nào → không mở buổi', async () => {
         expect(await S.taoBuoi('u1', {}, NGAY1)).toEqual({ buoi: null });
+    });
+});
+
+describe('dạng mới: chọn cách sửa, tự đặt câu', () => {
+    const L0 = { _id: 'x1', lang: 'en', cau: 'Yesterday I go to school.', quote: 'I go', sua: 'I went', issue: 'Quá khứ', loai: 'tense' };
+
+    test('chọn cách sửa: có cách đúng + lỗi gốc + phương án sai, không trùng', () => {
+        const q = S.cauChonSua({ ...L0, luaSai: ['I goes', 'i went', 'I gone'] });
+        expect(q.de.lua).toEqual(expect.arrayContaining(['I went', 'I go', 'I goes', 'I gone']));
+        expect(q.de.lua).toHaveLength(4);
+        expect(q.de).not.toHaveProperty('sua');
+    });
+
+    test('lọc phương án sai AI: bỏ cách đúng, bỏ lỗi gốc, bỏ trùng, tối đa 2', () => {
+        expect(S.kiemLuaSai(['I went', 'I go', 'I goes', 'I goes', 'I gone', 'x'], 'I went', 'I go')).toEqual(['I goes', 'I gone']);
+    });
+
+    test('tự đặt câu: chặn câu ngắn / chép lại câu cũ trước khi gọi AI', () => {
+        const q = S.cauTuDat(L0);
+        expect(q.de).toMatchObject({ mau: 'I went', loai: 'Thì của động từ' });
+        expect(S.kiemTuDat('I went', q.dapAn, 'en')).toMatch(/ngắn/);
+        expect(S.kiemTuDat('Yesterday I went to school.', q.dapAn, 'en')).toMatch(/câu cũ/);
+        expect(S.kiemTuDat('Last week I went to the cinema with friends.', q.dapAn, 'en')).toBeNull();
+    });
+
+    test('tự đặt câu đạt → Thành thạo; không đổi nấc', async () => {
+        mockLoi.push({ ...L0, _id: 'l0', nac: 3, daNam: true, thanhThao: false, buoc: 3, ngayApDung: ['a', 'b'], daGap: [], lichSu: [] });
+        chatCompletion.mockResolvedValue({ success: false }); // không sinh câu mới / phương án sai
+        await S.taoBuoi('u1', {}, NGAY1);
+        const i = mockBuoi.doc.cau.findIndex((c) => c.dang === 'tu-dat-cau');
+        expect(i).toBeGreaterThan(-1);
+        // Chép câu cũ → báo viết lại, KHÔNG tính lượt, không gọi AI.
+        chatCompletion.mockClear();
+        expect((await S.traLoi('u1', 'b1', i, { cau: 'Yesterday I went to school.' }, NGAY1)).ma).toBe(400);
+        expect(chatCompletion).not.toHaveBeenCalled();
+        chatCompletion.mockResolvedValue({ success: true, content: '{"ok":true,"note":"Tốt","better":""}' });
+        const r = await S.traLoi('u1', 'b1', i, { cau: 'Last week I went to the cinema.' }, NGAY1);
+        expect(r.dung).toBe(true);
+        expect(r.trangThai).toEqual({ moiThanhThao: true });
+        expect(mockLoi[0]).toMatchObject({ thanhThao: true, nac: 3 });
+    });
+
+    test('AI không chấm được câu tự đặt → 503, câu chưa bị tính (thử lại được)', async () => {
+        mockLoi.push({ ...L0, _id: 'l0', nac: 3, daNam: true, thanhThao: false, buoc: 3, ngayApDung: ['a', 'b'], daGap: [], lichSu: [] });
+        chatCompletion.mockResolvedValue({ success: false });
+        await S.taoBuoi('u1', {}, NGAY1);
+        const i = mockBuoi.doc.cau.findIndex((c) => c.dang === 'tu-dat-cau');
+        expect((await S.traLoi('u1', 'b1', i, { cau: 'Last week I went to the cinema.' }, NGAY1)).ma).toBe(503);
+        expect(mockBuoi.doc.cau[i].daTra).toBeFalsy();
     });
 });

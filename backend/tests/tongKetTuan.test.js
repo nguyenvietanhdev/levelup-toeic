@@ -18,6 +18,9 @@ jest.mock('../models/TongKetTuan', () => ({
         return { ...d, createdAt: new Date() };
     },
 }));
+jest.mock('../models/LoiOn', () => ({
+    countDocuments: async (q) => (q.daNam ? 2 : q.nghiHocVet ? 1 : q.thanhThao ? 0 : 7),
+}));
 let mockHoSo;
 jest.mock('../services/tienBo', () => ({ layTienBo: async () => mockHoSo }));
 const mockAi = { calls: [], content: '' };
@@ -67,6 +70,13 @@ describe('kiểm lại đầu ra AI', () => {
 });
 
 describe('dữ liệu gửi AI', () => {
+    test('kèm số liệu ôn lỗi khi có (đã nắm / nghi học vẹt)', async () => {
+        await taoTongKet('u1', new Date('2026-10-25T05:00:00Z'));
+        const user = mockAi.calls[0].messages[1].content;
+        expect(JSON.parse(user).errorReview).toEqual({ tracked: 7, mastered: 2, suspectedRote: 1, fluent: 0 });
+        expect(tomTatChoAI(HO_SO, { tracked: 0 })).not.toHaveProperty('errorReview');
+    });
+
     test('chỉ số liệu: bỏ kỹ năng chưa làm, không có id/email/nội dung bài', () => {
         const d = tomTatChoAI(HO_SO);
         expect(d.skills.map((s) => s.name)).toEqual(['Đọc hiểu']);

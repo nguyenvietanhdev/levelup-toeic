@@ -16,6 +16,8 @@ const TEN_DANG = {
     'ly-do': 'Hiểu vì sao',
     'cau-moi': 'Câu mới — áp dụng',
     'dung-sai': 'Đúng hay sai?',
+    'chon-sua': 'Chọn cách sửa',
+    'tu-dat-cau': 'Tự đặt câu — bậc Thành thạo',
 };
 const HUONG_DAN = {
     'tim-loi': 'Câu này của bạn có một chỗ sai. Bấm vào (các) từ sai.',
@@ -23,6 +25,8 @@ const HUONG_DAN = {
     'ly-do': 'Vì sao phải sửa như vậy? Chọn loại lỗi.',
     'cau-moi': 'Một câu MỚI cùng loại lỗi. Bấm vào chỗ sai rồi gõ cách sửa.',
     'dung-sai': 'Câu này đã đúng chưa?',
+    'chon-sua': 'Chỗ tô vàng là chỗ sai. Chọn cách sửa đúng.',
+    'tu-dat-cau': 'Bạn đã nắm lỗi này. Tự đặt một câu MỚI của bạn, dùng đúng cấu trúc dưới đây.',
 };
 const NAC = ['Nhận ra', 'Sửa được', 'Hiểu vì sao', 'Áp dụng'];
 
@@ -87,7 +91,7 @@ function DapAn({ cau, kq }) {
             <div className="ol-ket-qua-dau">
                 {kq.dung ? <><i className="fas fa-circle-check"></i> Chính xác!</> : <><i className="fas fa-circle-xmark"></i> Chưa đúng</>}
             </div>
-            {(cau.dang === 'tim-loi' || cau.dang === 'sua-loi') && (
+            {(cau.dang === 'tim-loi' || cau.dang === 'sua-loi' || cau.dang === 'chon-sua') && (
                 <>
                     <CauTo cau={cau.de.cau} start={da.start} end={da.end} sua={da.sua} />
                     {da.issue && <p className="ol-giai-thich">{da.issue}</p>}
@@ -105,6 +109,13 @@ function DapAn({ cau, kq }) {
                     {da.giaiThich && <p className="ol-giai-thich">{da.giaiThich}</p>}
                 </>
             )}
+            {cau.dang === 'tu-dat-cau' && (
+                <>
+                    <p className="ol-cau">{da.cauCuaBan}</p>
+                    {da.ghiChu && <p className="ol-giai-thich">{da.ghiChu}</p>}
+                    {!kq.dung && da.cauTot && <p className="ol-giai-thich">Có thể viết: <em>{da.cauTot}</em></p>}
+                </>
+            )}
             {cau.dang === 'dung-sai' && (
                 <p className="ol-giai-thich">
                     {da.coLoi
@@ -112,6 +123,7 @@ function DapAn({ cau, kq }) {
                         : <>Câu này <strong>đã đúng</strong> — không cần sửa gì.</>}
                 </p>
             )}
+            {t?.moiThanhThao && <p className="ol-nhan is-tot"><i className="fas fa-crown"></i> Thành thạo — bạn tự dùng đúng cấu trúc này rồi!</p>}
             {t?.moiDaNam && <p className="ol-nhan is-tot"><i className="fas fa-trophy"></i> Đã nắm lỗi này — đúng câu mới ở 2 ngày khác nhau.</p>}
             {t?.moiNghiHocVet && (
                 <p className="ol-nhan is-xau">
@@ -122,7 +134,7 @@ function DapAn({ cau, kq }) {
     );
 }
 
-export default function OnLoi({ active, onDangLam }) {
+export default function OnLoi({ active, onDangLam, onTongQuan }) {
     const [tq, setTq] = useState(null);
     const [buoi, setBuoi] = useState(null);
     const [i, setI] = useState(0);
@@ -132,7 +144,10 @@ export default function OnLoi({ active, onDangLam }) {
     const [chon, setChon] = useState(new Set());
     const [sua, setSua] = useState('');
 
-    const taiTongQuan = () => OnLoiAPI.tongQuan().then(setTq).catch(() => { /* phần thêm */ });
+    // Báo tổng quan ra ngoài: Sổ tay dùng `trangThai` để vẽ thanh nấc của từng lỗi.
+    const taiTongQuan = () => OnLoiAPI.tongQuan()
+        .then((d) => { setTq(d); onTongQuan?.(d); })
+        .catch(() => { /* phần thêm */ });
     useEffect(() => { if (active) taiTongQuan(); }, [active]);
     useEffect(() => { onDangLam?.(!!buoi); }, [buoi, onDangLam]);
 
@@ -161,7 +176,8 @@ export default function OnLoi({ active, onDangLam }) {
         if (cau.dang === 'tim-loi') return chon.size > 0;
         if (cau.dang === 'sua-loi') return !!sua.trim();
         if (cau.dang === 'cau-moi') return chon.size > 0 && !!sua.trim();
-        return false; // ly-do, dung-sai: nộp bằng nút lựa chọn
+        if (cau.dang === 'tu-dat-cau') return !!sua.trim();
+        return false; // ly-do, dung-sai, chon-sua: nộp bằng nút lựa chọn
     };
 
     const nop = async (body) => {
@@ -182,6 +198,7 @@ export default function OnLoi({ active, onDangLam }) {
         if (cau.dang === 'tim-loi') nop({ chon: khoang });
         else if (cau.dang === 'sua-loi') nop({ sua });
         else if (cau.dang === 'cau-moi') nop({ chon: khoang, sua });
+        else if (cau.dang === 'tu-dat-cau') nop({ cau: sua });
     };
     const tiep = () => { setI((x) => x + 1); setChon(new Set()); setSua(''); };
     const ketThuc = () => { setBuoi(null); taiTongQuan(); };
@@ -215,7 +232,10 @@ export default function OnLoi({ active, onDangLam }) {
                     <div className="ol-so">
                         <div><strong>{tq.tong}</strong><span>lỗi đang theo dõi</span></div>
                         <div className={tq.denHan ? 'is-can' : ''}><strong>{tq.denHan}</strong><span>đến hạn ôn</span></div>
-                        <div className="is-tot"><strong>{tq.daNam}</strong><span>đã nắm</span></div>
+                        <div className="is-tot">
+                            <strong>{tq.daNam}</strong>
+                            <span>đã nắm{tq.thanhThao ? ` · ${tq.thanhThao} thành thạo` : ''}</span>
+                        </div>
                         <div className={tq.nghiHocVet ? 'is-xau' : ''}><strong>{tq.nghiHocVet}</strong><span>nghi học vẹt</span></div>
                     </div>
                 )}
@@ -244,11 +264,13 @@ export default function OnLoi({ active, onDangLam }) {
         const soDung = ketQua.filter((k) => k?.dung).length;
         const daNam = ketQua.filter((k) => k?.trangThai?.moiDaNam).length;
         const hocVet = ketQua.filter((k) => k?.trangThai?.moiNghiHocVet).length;
+        const thanhThao = ketQua.filter((k) => k?.trangThai?.moiThanhThao).length;
         return (
             <div className="ol-the ol-tong-ket">
                 <div className="ol-the-dau"><i className="fas fa-flag-checkered"></i> Xong buổi kiểm tra</div>
                 <p className="ol-diem">Đúng <strong>{soDung}/{buoi.cau.length}</strong> câu</p>
                 {daNam > 0 && <p className="ol-nhan is-tot"><i className="fas fa-trophy"></i> Nắm thêm {daNam} lỗi.</p>}
+                {thanhThao > 0 && <p className="ol-nhan is-tot"><i className="fas fa-crown"></i> Thành thạo thêm {thanhThao} lỗi.</p>}
                 {hocVet > 0 && <p className="ol-nhan is-xau"><i className="fas fa-triangle-exclamation"></i> {hocVet} lỗi nghi học vẹt — sẽ ôn lại sớm.</p>}
                 <p className="ol-the-mo-ta">Lỗi làm đúng sẽ hẹn ôn lại thưa dần (1 → 3 → 7 → 14 ngày); lỗi làm sai hẹn ngày mai.</p>
                 <div className="ol-nut"><button type="button" className="btn btn-primary" onClick={ketThuc}>Xong</button></div>
@@ -270,14 +292,29 @@ export default function OnLoi({ active, onDangLam }) {
             {(cau.dang === 'tim-loi' || cau.dang === 'cau-moi') && (
                 <CauBam cau={cau.de.cau} lang={cau.de.lang} chon={chon} onChon={setChon} khoa={!!kq} />
             )}
-            {cau.dang === 'sua-loi' && <CauTo cau={cau.de.cau} start={cau.de.start} end={cau.de.end} />}
-            {(cau.dang === 'sua-loi' || cau.dang === 'cau-moi') && !kq && (
+            {(cau.dang === 'sua-loi' || cau.dang === 'chon-sua') && <CauTo cau={cau.de.cau} start={cau.de.start} end={cau.de.end} />}
+            {cau.dang === 'chon-sua' && (
+                <div className="ol-lua">
+                    {cau.de.lua.map((x) => (
+                        <button key={x} type="button" className="btn btn-secondary" disabled={!!kq || dang} onClick={() => nop({ sua: x })}>
+                            {x}
+                        </button>
+                    ))}
+                </div>
+            )}
+            {cau.dang === 'tu-dat-cau' && (
+                <p className="ol-cau">
+                    Cấu trúc: <strong>{cau.de.mau}</strong> <span className="ol-loai">({cau.de.loai})</span>
+                    {cau.de.hint && <><br /><small>{cau.de.hint}</small></>}
+                </p>
+            )}
+            {(cau.dang === 'sua-loi' || cau.dang === 'cau-moi' || cau.dang === 'tu-dat-cau') && !kq && (
                 <input
                     className="ol-nhap"
                     type="text"
                     value={sua}
                     onChange={(e) => setSua(e.target.value)}
-                    placeholder={cau.dang === 'sua-loi' ? 'Gõ phần đã sửa…' : 'Sửa chỗ đã chọn thành…'}
+                    placeholder={cau.dang === 'sua-loi' ? 'Gõ phần đã sửa…' : cau.dang === 'tu-dat-cau' ? 'Câu của bạn…' : 'Sửa chỗ đã chọn thành…'}
                     autoComplete="off"
                     spellCheck={false}
                     aria-label="Cách sửa"
@@ -310,7 +347,7 @@ export default function OnLoi({ active, onDangLam }) {
                     <DapAn cau={cau} kq={kq} />
                     <div className="ol-nut"><button type="button" className="btn btn-primary" onClick={tiep}>Câu tiếp <i className="fas fa-arrow-right"></i></button></div>
                 </>
-            ) : (cau.dang === 'tim-loi' || cau.dang === 'sua-loi' || cau.dang === 'cau-moi') && (
+            ) : (cau.dang === 'tim-loi' || cau.dang === 'sua-loi' || cau.dang === 'cau-moi' || cau.dang === 'tu-dat-cau') && (
                 <div className="ol-nut">
                     <button type="button" className="btn btn-primary" onClick={nopThuong} disabled={!coTheNop() || dang}>Kiểm tra</button>
                 </div>
