@@ -148,6 +148,15 @@ const SELECT_LANGS = [
 
 // Khoá localStorage cho ô Part — nhớ giá trị lần trước để không phải gõ lại.
 const PART_KEY = 'translate:lastPart';
+
+/**
+ * Part mặc định khi để trống: NGÀY LƯU (giờ máy) + đuôi ngôn ngữ, vd `26-10-2026-EN`.
+ * Đuôi EN / ZH để từ tiếng Anh và tiếng Trung lưu cùng ngày không lẫn vào nhau.
+ */
+export function partTheoNgay(lang = 'en', d = new Date()) {
+    const p = (n) => String(n).padStart(2, '0');
+    return `${p(d.getDate())}-${p(d.getMonth() + 1)}-${d.getFullYear()}-${lang === 'zh' ? 'ZH' : 'EN'}`;
+}
 const SOURCE_KEY = 'translate:lastSource';
 
 /**
@@ -466,8 +475,12 @@ export default function TranslateModal({ text, onClose, editWord = null, onSaved
             // càng lớn càng vô dụng: luyện tập lọc theo part, mà tất cả chung một
             // rổ thì không tách được chủ đề nào. Để trống thì vẫn dùng tên cũ,
             // không bắt ai phải nghĩ ra tên trước khi lưu được từ đầu tiên.
+            //
+            // Để trống → part là NGÀY LƯU (vd 26-10-2026) thay vì tên kho cố định
+            // (DICH-NHANH-*): từ lưu cùng ngày gom một part, nhìn danh sách Part là
+            // biết từ nào lưu hôm nào, và luyện được "từ mới hôm nay".
             const typed = partDraft.trim().toUpperCase();
-            const part = typed || source.toUpperCase();
+            const part = typed || partTheoNgay(isZhWord ? 'zh' : 'en');
 
             const res = await UploadVocabAPI.create({
                 en, vn, lang: savedLang,
@@ -698,7 +711,7 @@ export default function TranslateModal({ text, onClose, editWord = null, onSaved
                                 if (loading || error || savedVocab) return;
                                 handleSaveVocab();
                             }}
-                            placeholder="Part (vd: HSK1-BAI2) — Enter để lưu"
+                            placeholder={`Part (trống = ${partTheoNgay()}) — Enter để lưu`}
                             title="Nhóm từ này vào part nào — luyện tập lọc theo part. Để trống sẽ dùng part mặc định."
                             style={{ textTransform: 'uppercase' }}
                         />

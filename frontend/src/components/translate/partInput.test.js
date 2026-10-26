@@ -39,11 +39,18 @@ describe('ô Part', () => {
         expect(j).toBeGreaterThan(i);
     });
 
-    test('để trống thì part BÁM theo source, không chặn người dùng', () => {
-        // Không bắt ai nghĩ ra tên trước khi lưu được từ đầu tiên. Và part mặc
-        // định phải bám source: gõ source riêng mà part vẫn là DICH-NHANH-* thì
-        // hai trường nói hai chuyện khác nhau về cùng một từ.
-        expect(src).toMatch(/part = typed \|\| source\.toUpperCase\(\)/);
+    test('để trống thì part là NGÀY LƯU + đuôi ngôn ngữ, không chặn người dùng', () => {
+        // Không bắt ai nghĩ ra tên trước khi lưu được từ đầu tiên. Trước đây mặc
+        // định là tên kho (DICH-NHANH-*) — mọi từ chung một part, không biết từ
+        // nào lưu hôm nào. Giờ mỗi ngày một part, tách EN / ZH.
+        expect(src).toMatch(/part = typed \|\| partTheoNgay\(isZhWord \? 'zh' : 'en'\)/);
+        expect(src).not.toMatch(/part = typed \|\| source\.toUpperCase\(\)/);
+    });
+
+    test('part theo ngày dạng DD-MM-YYYY-EN / -ZH, đủ hai chữ số', async () => {
+        const { partTheoNgay } = await import('./TranslateModal.jsx');
+        expect(partTheoNgay('en', new Date(2026, 9, 26))).toBe('26-10-2026-EN');
+        expect(partTheoNgay('zh', new Date(2026, 0, 5))).toBe('05-01-2026-ZH');
     });
 
     test('để trống SOURCE thì vẫn tách theo ngôn ngữ như cũ', () => {

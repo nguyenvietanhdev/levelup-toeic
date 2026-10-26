@@ -60,11 +60,11 @@ describe('TranslateModal thực sự tách kho', () => {
         .split('\n').filter(l => !/^\s*\/\//.test(l) && !/^\s*\*/.test(l)).join('\n');
 
     test('có nhánh chọn kho theo ngôn ngữ', () => {
-        // Chỉ còn cặp `source`; `part` giờ SUY TỪ source (source.toUpperCase())
-        // thay vì có bảng hằng riêng — hai trường nói cùng một chuyện về một từ.
+        // Kho (`source`) tách theo ngôn ngữ; `part` mặc định là NGÀY LƯU kèm đuôi
+        // ngôn ngữ (vd 26-10-2026-EN) — vừa biết từ lưu hôm nào, vừa không lẫn EN/ZH.
         expect(src).toMatch(/dich-nhanh-zh/);
         expect(src).toMatch(/dich-nhanh-en/);
-        expect(src).toMatch(/part = typed \|\| source\.toUpperCase\(\)/);
+        expect(src).toMatch(/part = typed \|\| partTheoNgay\(isZhWord \? 'zh' : 'en'\)/);
     });
 
     test('KHÔNG còn gán cứng source/part cho mọi từ', () => {
