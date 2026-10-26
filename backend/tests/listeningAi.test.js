@@ -151,8 +151,11 @@ describe('nghe tiếng Trung: chấm theo từng chữ Hán', () => {
         const src = readFileSync(join(__dirname, '..', 'controllers', 'listeningController.js'), 'utf8');
         expect(src).not.toMatch(/chỉ có tiếng Anh/);
         expect(src).toMatch(/const lang = st\.vocabLang === 'zh' \? 'zh' : 'en';/);
-        expect(src).toMatch(/const Shared = zh \? VocabularyZh : Vocabulary;/);
-        expect(src).toMatch(/zh \? \(w\.zh \|\| w\.en\) : w\.en/);
+        // Lấy từ ở service chung `chonTu`: đúng kho theo ngôn ngữ, mặt từ qua faceOf (`zh` trước).
+        expect(src).toMatch(/chonTu\(\{\s*userId, email: req\.user\.email, settings: st, lang, soLuong: TU_MUC_TIEU, tiLeYeu: 0\.5,\s*\}\)/);
+        const svc = readFileSync(join(__dirname, '..', 'services', 'chonTu.js'), 'utf8');
+        expect(svc).toMatch(/lang === 'zh' \? VocabularyZh : Vocabulary/);
+        expect(svc).toMatch(/return zh \|\| en;/);
         expect(src).toMatch(/sinhDoanNghe\(\{ targetWords, level, userId, chon, lang \}\)/);
         expect(src).toMatch(/GIONG_THEO_NGON_NGU\[phien\.lang\] \|\| GIONG_NGHE/);
     });

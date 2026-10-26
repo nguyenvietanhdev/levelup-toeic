@@ -174,33 +174,39 @@ describe('chặn lạm dụng', () => {
 });
 
 describe('lấy từ vựng', () => {
+    // Lấy bộ từ / mặt từ / ưu tiên từ sai nằm ở service chung `chonTu` (dùng chung
+    // với Nghe, Đọc, Dịch) — soi mã ở đó.
+    const svc = fs.readFileSync(path.join(__dirname, '..', 'services', 'chonTu.js'), 'utf8');
+
     test('dò CẢ kho chung LẪN kho riêng của người dùng', () => {
         // Cùng một `source` có thể nằm ở một trong hai. Dò một chỗ là mất hẳn
         // nửa dữ liệu, mà danh sách rỗng trông y như "part này chưa có từ".
-        const i = src.indexOf('async function fetchWords');
-        const b = src.slice(i, src.indexOf('\n}', i));
+        const i = svc.indexOf('async function fetchWords');
+        const b = svc.slice(i, svc.indexOf('\n}', i));
         expect(b).toMatch(/SharedModel\.find/);
         expect(b).toMatch(/UserUpload\.find/);
     });
 
     test('kho riêng lọc theo ownerEmail, KHÔNG theo userId (UserUpload không có trường đó)', () => {
-        const i = src.indexOf('async function fetchWords');
-        const b = src.slice(i, src.indexOf('\n}', i));
+        const i = svc.indexOf('async function fetchWords');
+        const b = svc.slice(i, svc.indexOf('\n}', i));
         expect(b).toMatch(/UserUpload\.find\(\{[^}]*ownerEmail: email/);
         expect(b).not.toMatch(/UserUpload\.find\(\{[^}]*userId/);
     });
 
     test('chọn đúng model theo ngôn ngữ', () => {
-        expect(src).toMatch(/lang === 'zh' \? VocabularyZh : Vocabulary/);
+        expect(svc).toMatch(/lang === 'zh' \? VocabularyZh : Vocabulary/);
     });
 
     test('ưu tiên từ ĐÃ SAI', () => {
         // Đây là chỗ tính năng hơn một chatbot thường: app biết người học yếu từ
         // nào nên nhắm đúng chỗ đó.
-        const i = src.indexOf('async function pickTargets');
-        const b = src.slice(i, src.indexOf('\n}', i));
+        // Hội thoại: tỉ lệ 1 = MỌI từ sai đứng trước (các chế độ khác: tối đa một nửa).
+        expect(src).toMatch(/chonTrongDanhSach\(\{ userId, mat: words\.map\(faceOf\), soLuong: TARGET_SIZE, tiLeYeu: 1 \}\)/);
+        const i = svc.indexOf('async function chonTrongDanhSach');
+        const b = svc.slice(i, svc.indexOf('\n}', i));
         expect(b).toMatch(/WrongWord\.find/);
-        expect(b).toMatch(/\[\.\.\.weak, \.\.\.rest\]/);
+        expect(b).toMatch(/\[\.\.\.yeu\.slice\(0, soYeu\), \.\.\.con\.slice/);
     });
 
     test('lấy mặt từ qua faceOf — kho tiếng Trung dùng `zh`, KHÔNG phải `en`', () => {
@@ -208,17 +214,17 @@ describe('lấy từ vựng', () => {
         // `targetWords` rỗng trơn — mà hội thoại VẪN mở bình thường, nên trông
         // như AI hoạt động đúng trong khi người học không thể ăn điểm nào.
         // Đúng lỗi đã gặp: dùng bộ zh_word_topic / FOOD ra targetWords: [].
-        expect(src).toMatch(/function faceOf/);
+        expect(svc).toMatch(/function faceOf/);
         expect(src).toMatch(/words\.map\(faceOf\)/);
         // Phải nằm trong `select`, không thì Mongoose không trả trường đó về.
         // `level` được lấy thêm để lọc theo bộ lọc độ khó (xem conversationContext.test).
-        expect(src).toMatch(/select\('en zh vn level'\)/);
+        expect(svc).toMatch(/select\('en zh vn level'\)/);
         expect(src).not.toMatch(/words\.map\(\(w\) => w\.en\)/);
     });
 
     test('WrongWord cũng qua faceOf để hai bên so khớp được', () => {
-        expect(src).toMatch(/select\('en zh'\)/);
-        expect(src).toMatch(/wrong\.map\(faceOf\)/);
+        expect(svc).toMatch(/select\('en zh'\)/);
+        expect(svc).toMatch(/sai\.map\(faceOf\)/);
     });
 
     test('WrongWord KHÔNG có trường `word` — phải dùng `en`/`zh`', () => {

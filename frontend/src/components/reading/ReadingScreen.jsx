@@ -1,6 +1,5 @@
 import { useState, useRef, useCallback } from 'react';
 import { useGame } from '@game/GameContext.jsx';
-import { GameLogic } from '@game/gameLogic.js';
 import { GameState } from '@game/state.js';
 import { Energy } from '@game/energy.js';
 import { Notification } from '@ui/Toaster.jsx';
@@ -90,19 +89,6 @@ const NHOM_DANG = [
     },
 ];
 
-/**
- * Vài từ trong bộ đang học, để bài đọc bám vào vốn từ vừa luyện.
- *
- * Lấy NGẪU NHIÊN chứ không lấy 8 từ đầu: bộ từ xếp cố định, nên lấy đầu danh
- * sách thì mọi bài đọc đều xoay quanh đúng ngần ấy từ.
- */
-function layTuGoiY(soLuong = 6) {
-    const pool = Array.isArray(GameLogic.vocabularyData) ? GameLogic.vocabularyData : [];
-    if (!pool.length) return [];
-    return [...pool].sort(() => Math.random() - 0.5).slice(0, soLuong)
-        .map((w) => String(w?.en || '')).filter(Boolean);
-}
-
 export default function ReadingScreen({ active }) {
     const { showScreen, syncFromState } = useGame();
 
@@ -135,7 +121,8 @@ export default function ReadingScreen({ active }) {
         setLoadingDe(true);
         try {
             const d = await ReadingAPI.passage({
-                words: layTuGoiY(), level, ...dangGui({ dang, tuChon: tuChonGui, goiY }), rubric: kieuDangChon,
+                // Không gửi từ: server tự chọn từ bộ đang học (đúng mặt chữ, lọc mức, ưu tiên từ sai).
+                level, ...dangGui({ dang, tuChon: tuChonGui, goiY }), rubric: kieuDangChon,
             });
             if (!d?.questions?.length) throw new Error('Server trả về bài đọc không hợp lệ');
             setDe(d);

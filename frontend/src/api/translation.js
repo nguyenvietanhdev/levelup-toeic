@@ -36,15 +36,13 @@ export const TranslationAPI = {
     /**
      * Xin một đoạn văn tiếng Việt để dịch.
      *
-     * `words` là những từ vừa luyện ở đề đang chọn — server KHÔNG biết được, vì
-     * bộ từ nằm ở client sau khi đã lọc theo Part và cấp độ. Đây là ngoại lệ có
-     * chủ ý so với `EssayAPI.prompt()` (không gửi gì): đề bài bám vào đúng vốn
-     * từ vừa học thì dịch xong là ôn luôn, thay vì gặp một đoạn toàn từ lạ.
-     *
-     * Ngôn ngữ đích thì VẪN không gửi — server đọc từ hồ sơ.
+     * KHÔNG gửi từ vựng: server tự chọn từ bộ đang học trong hồ sơ (đề, Part, bộ
+     * lọc mức độ), đọc đúng mặt chữ và ưu tiên từ đang sai. Client từng tự chọn và
+     * gửi `w.en` — kho tiếng Trung để trống trường đó nên đoạn dịch tiếng Trung
+     * không bám bộ từ nào. Ngôn ngữ đích cũng không gửi — server đọc từ hồ sơ.
      */
-    async passage({ words = [], level = 'medium', dang = '', tuChon = '', nhamYeu = true } = {}) {
-        return unwrap(await Http.post('/translation/passage', { words, level, dang, tuChon, nhamYeu: nhamYeu !== false }));
+    async passage({ level = 'medium', dang = '', tuChon = '', nhamYeu = true } = {}) {
+        return unwrap(await Http.post('/translation/passage', { level, dang, tuChon, nhamYeu: nhamYeu !== false }));
     },
 
     /** Nộp bản dịch và chấm. */

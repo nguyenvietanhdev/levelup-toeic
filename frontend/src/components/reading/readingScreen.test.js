@@ -124,9 +124,11 @@ describe('lối vào', () => {
 });
 
 describe('gửi lên server', () => {
-    test('từ gợi ý lấy NGẪU NHIÊN, không phải 8 từ đầu', () => {
-        const i = src.indexOf('function layTuGoiY');
-        expect(src.slice(i, src.indexOf('\n}', i))).toMatch(/sort\(\(\) => Math\.random/);
+    test('KHÔNG tự chọn / gửi từ vựng — server chọn (đúng mặt chữ tiếng Trung, ưu tiên từ sai)', () => {
+        // Client từng gửi `w.en`: kho tiếng Trung để trống trường đó → bài đọc
+        // tiếng Trung không bám bộ từ nào. Việc chọn từ giờ nằm ở services/chonTu.js.
+        expect(src).not.toMatch(/layTuGoiY/);
+        expect(api).not.toMatch(/passage\(\{ words/);
     });
 
     test('hai lớp `.data` được gỡ đúng', () => {

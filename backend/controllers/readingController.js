@@ -7,6 +7,7 @@ const { awardXp } = require('../utils/userStateHelper');
 const { isVipActive } = require('../utils/energyCosts');
 const logger = require('../utils/logger');
 const { luuDe, xoaNhap, chiemDeDoc } = require('../services/baiNhap');
+const { chonTu } = require('../services/chonTu');
 
 /**
  * Luyện ĐỌC HIỂU nhiều dạng bài (không chỉ TOEIC Part 7).
@@ -98,7 +99,6 @@ function deCongKhai(readingId, ai) {
 
 exports.passage = async (req, res, next) => {
     try {
-        const words = Array.isArray(req.body.words) ? req.body.words : [];
         const level = mucKho(req.body.level);
 
         // Ngôn ngữ lấy từ HỒ SƠ, không nhận từ client — cùng nguyên tắc với
@@ -107,6 +107,13 @@ exports.passage = async (req, res, next) => {
         const profile = await UserProfile.findOne({ userId: req.user.id })
             .select('settings').lean();
         const lang = profile?.settings?.vocabLang === 'zh' ? 'zh' : 'en';
+        // Từ cho bài đọc chọn ở SERVER (service chung), không nhận từ client: client
+        // từng gửi `w.en` — kho tiếng Trung để trống trường đó, nên bài đọc tiếng Trung
+        // không bám bộ từ nào. Chưa chọn đề thì AI viết theo chủ đề chung như cũ.
+        const { tu: words } = await chonTu({
+            userId: req.user.id, email: req.user.email, settings: profile?.settings || {},
+            lang, soLuong: 6, tiLeYeu: 0.5,
+        });
 
         const ai = await generateReading({
             tuVung: words, userId: req.user.id, level, dang: req.body.dang,

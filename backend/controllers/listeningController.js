@@ -4,15 +4,13 @@
  *   · audio  — phát âm thanh đoạn nghe (không trả chữ).
  *   · grade  — chấm bài người học gõ lại, cộng thưởng một lần.
  */
-const Vocabulary = require('../models/Vocabulary');
-const VocabularyZh = require('../models/VocabularyZh');
-const UserUpload = require('../models/UserUpload');
 const UserProfile = require('../models/UserProfile');
 const UserStats = require('../models/UserStats');
 const ListeningSession = require('../models/ListeningSession');
 const { sinhDoanNghe, chamNghe, NHOM_DANG_NGHE, GIONG_THEO_NGON_NGU } = require('../services/listeningAi');
 const { chonDang } = require('../services/dangBai');
 const { tongHop } = require('../services/ttsEngine');
+const { chonTu } = require('../services/chonTu');
 const { awardXp } = require('../utils/userStateHelper');
 const { isVipActive } = require('../utils/energyCosts');
 const { chuanHoaMuc } = require('../services/aiLevel');
@@ -46,45 +44,6 @@ async function truNangLuong(userId) {
     return { vip: false, energyRemaining: updated.energy };
 }
 
-/**
- * Từ của Part (kho chung + kho riêng) theo ngôn ngữ, lọc theo bộ lọc độ khó nếu có.
- * Kho tiếng Trung lưu chữ Hán ở trường `zh` (`en` để rỗng) — chỉ đọc `en` là ra rỗng.
- */
-async function layTuMucTieu({ email, source, part, levelFilter, lang = 'en' }) {
-    const filter = { source, part };
-    const zh = lang === 'zh';
-    const Shared = zh ? VocabularyZh : Vocabulary;
-    const [shared, mine] = await Promise.all([
-        Shared.find(filter).select('en zh level').lean(),
-        email ? UserUpload.find({ ...filter, ownerEmail: email, lang }).select('en zh level').lean() : [],
-    ]);
-    const mat = (w) => {
-        const t = zh ? (w.zh || w.en) : w.en;
-        return typeof t === 'string' ? t.trim() : '';
-    };
-    const ds = [...shared, ...mine]
-        .filter((w) => mat(w))
-        .filter((w) => !levelFilter || levelFilter.has(w.level));
-    const seen = new Set();
-    const tu = [];
-    for (const w of ds) {
-        const key = mat(w).toLowerCase();
-        if (seen.has(key)) continue;
-        seen.add(key);
-        tu.push(mat(w));
-    }
-    return tu;
-}
-
-/** Chọn ngẫu nhiên tối đa n từ (mỗi lượt một bộ khác nhau). */
-function chonNgauNhien(list, n) {
-    const a = [...list];
-    for (let i = a.length - 1; i > 0; i -= 1) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [a[i], a[j]] = [a[j], a[i]];
-    }
-    return a.slice(0, n);
-}
 
 /**
  * @desc    Mở một lượt nghe: AI viết đoạn nghe từ bộ từ đang học.
@@ -110,7 +69,12 @@ exports.start = async (req, res, next) => {
         const level = chuanHoaMuc(req.body.level);
         const levelFilter = Array.isArray(st.levelFilter) && st.levelFilter.length
             ? new Set(st.levelFilter) : null;
-        const tuKho = await layTuMucTieu({ email: req.user.email, source, part, levelFilter, lang });
+        // Chọn từ ở service chung: đúng mặt từ, gồm từ vựng riêng, lọc mức độ, và
+        // tối đa NỬA số từ là từ đang sai — nghe lại đúng chỗ còn yếu.
+        const { tu: targetWords, tongTrongBo } = await chonTu({
+            userId, email: req.user.email, settings: st, lang, soLuong: TU_MUC_TIEU, tiLeYeu: 0.5,
+        });
+        const tuKho = { length: tongTrongBo };
         if (tuKho.length < 4) {
             return res.status(400).json({
                 success: false,
@@ -119,7 +83,6 @@ exports.start = async (req, res, next) => {
                     : `Bộ từ này quá ít từ để nghe (cần ít nhất 4 từ).`,
             });
         }
-        const targetWords = chonNgauNhien(tuKho, TU_MUC_TIEU);
         // Dạng nghe người học chọn hoặc tự nhập; null = Ngẫu nhiên.
         const chon = chonDang(NHOM_DANG_NGHE, { dang: req.body.dang, tuChon: req.body.tuChon });
 

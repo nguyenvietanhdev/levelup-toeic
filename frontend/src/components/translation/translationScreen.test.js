@@ -129,18 +129,12 @@ describe('gửi lên server', () => {
         expect(api).not.toMatch(/lang[,:]/);
     });
 
-    test('CÓ gửi từ vựng — server không biết bộ từ đã lọc', () => {
-        // Ngoại lệ có chủ ý so với `EssayAPI.prompt()`: bộ từ nằm ở client sau
-        // khi đã lọc theo Part và cấp độ.
-        expect(api).toMatch(/passage\(\{ words/);
-        expect(src).toMatch(/words: layTuGoiY\(\)/);
-    });
-
-    test('từ gợi ý lấy NGẪU NHIÊN, không phải 8 từ đầu', () => {
-        // Bộ từ xếp cố định — lấy đầu danh sách thì mọi lượt dịch đều xoay
-        // quanh đúng ngần ấy từ.
-        const i = src.indexOf('function layTuGoiY');
-        expect(src.slice(i, src.indexOf('\n}', i))).toMatch(/sort\(\(\) => Math\.random/);
+    test('KHÔNG gửi từ vựng — server tự chọn từ bộ đang học trong hồ sơ', () => {
+        // Trước đây client tự chọn và gửi `w.en`; kho tiếng Trung để trống trường
+        // đó nên đoạn dịch tiếng Trung không bám bộ từ nào. Server đọc được đề,
+        // Part và bộ lọc mức độ từ hồ sơ — chọn ở services/chonTu.js.
+        expect(api).not.toMatch(/passage\(\{ words/);
+        expect(src).not.toMatch(/layTuGoiY/);
     });
 
     test('hai lớp `.data` được gỡ đúng', () => {

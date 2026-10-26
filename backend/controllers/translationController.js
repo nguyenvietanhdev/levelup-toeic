@@ -3,6 +3,7 @@ const UserStats = require('../models/UserStats');
 const UserProfile = require('../models/UserProfile');
 const { layNham } = require('../services/nhamDiemYeu');
 const { luuDe, xoaNhap } = require('../services/baiNhap');
+const { chonTu } = require('../services/chonTu');
 const { taoXemLai } = require('./xemLaiController');
 const { generatePassage, gradeTranslation, limitsFor, countUnits, mucKho } =
     require('../services/translationGrader');
@@ -63,13 +64,13 @@ exports.passage = async (req, res, next) => {
             .select('settings').lean();
         const lang = profile?.settings?.vocabLang === 'zh' ? 'zh' : 'en';
 
-        // Từ vựng do client gửi lên — đây là những từ người học vừa luyện ở đề
-        // đang chọn, mà server không biết được (bộ từ nằm ở phía client sau khi
-        // đã lọc theo Part và cấp độ).
-        //
-        // An toàn vì `generatePassage` tự lọc và cắt còn 8 từ trước khi ghép vào
-        // prompt: không tin dữ liệu này, chỉ dùng nó làm gợi ý.
-        const words = Array.isArray(req.body.words) ? req.body.words : [];
+        // Từ cho đoạn dịch chọn ở SERVER (service chung), không nhận từ client: client
+        // từng gửi `w.en` — kho tiếng Trung để trống trường đó, nên đoạn dịch sang
+        // tiếng Trung không bám bộ từ nào. Đọc đúng mặt từ, lọc mức độ, ưu tiên từ sai.
+        const { tu: words } = await chonTu({
+            userId: req.user.id, email: req.user.email, settings: profile?.settings || {},
+            lang, soLuong: 6, tiLeYeu: 0.5,
+        });
         const level = mucKho(req.body.level);
 
         // Lỗi ngữ pháp lặp lại trong hồ sơ: cài câu cần đúng cấu trúc đó (tắt bằng `nhamYeu: false`).

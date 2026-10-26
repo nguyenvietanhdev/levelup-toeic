@@ -112,8 +112,10 @@ describe('chọn từ mục tiêu tôn trọng bộ lọc độ khó', () => {
     });
 
     test('kho chung và kho riêng đều lấy trường level để lọc được', () => {
-        expect(src).toMatch(/SharedModel\.find\(filter\)\.select\('en zh vn level'\)/);
-        expect(src).toMatch(/UserUpload\.find\(\{ \.\.\.filter, ownerEmail: email, lang \}\)\.select\('en zh vn level'\)/);
+        // Lấy bộ từ ở service chung `chonTu`.
+        const svc = fs.readFileSync(path.join(__dirname, '..', 'services', 'chonTu.js'), 'utf8');
+        expect(svc).toMatch(/SharedModel\.find\(filter\)\.select\('en zh vn level'\)/);
+        expect(svc).toMatch(/UserUpload\.find\(\{ \.\.\.filter, ownerEmail: email, lang \}\)\.select\('en zh vn level'\)/);
     });
 });
 

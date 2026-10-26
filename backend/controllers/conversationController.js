@@ -4,10 +4,7 @@ const { nhanLoi } = require('../services/errorTaxonomy');
 const { chuanHoaMuc } = require('../services/aiLevel');
 const UserStats = require('../models/UserStats');
 const UserProfile = require('../models/UserProfile');
-const Vocabulary = require('../models/Vocabulary');
-const VocabularyZh = require('../models/VocabularyZh');
-const UserUpload = require('../models/UserUpload');
-const WrongWord = require('../models/WrongWord');
+const { fetchWords, faceOf, chonTrongDanhSach } = require('../services/chonTu');
 const { openConversation, replyTurn, goiYKhung, moTaVai, NHOM_TINH_HUONG } = require('../services/conversationAi');
 const { layNham } = require('../services/nhamDiemYeu');
 const { chonDang } = require('../services/dangBai');
@@ -45,82 +42,12 @@ const COINS_PER_WORD = 3;
 const MAX_REPLY_LEN = 500;
 
 /**
- * Lấy từ vựng của (source, part).
- *
- * Phải dò CẢ HAI nơi: kho chung (`vocabularies` / `vocabularies_zh`, do admin
- * quản) và kho riêng của người dùng (`user_upload`). Cùng một `source` có thể
- * nằm ở một trong hai — chỉ dò một chỗ là mất hẳn nửa dữ liệu, mà không lỗi nào
- * báo: danh sách rỗng trông y như "part này chưa có từ".
- *
- * Kho riêng (`UserUpload`) khoá theo `ownerEmail`, KHÔNG có trường `userId`.
- * Lọc theo `userId` thì Mongo không khớp bản ghi nào — bộ từ riêng của người
- * dùng luôn ra 0 từ, dù danh sách Part vẫn đếm đủ (đúng lỗi "10 từ mà báo ít
- * hơn 4" đã gặp).
- */
-async function fetchWords({ email, source, part, lang }) {
-    const filter = { source };
-    if (part) filter.part = part;
-
-    const SharedModel = lang === 'zh' ? VocabularyZh : Vocabulary;
-    const [shared, mine] = await Promise.all([
-        // `zh` phải nằm trong `select`: kho tiếng Trung lưu chữ Hán ở trường
-        // `zh`, còn `en` để RỖNG. Chỉ lấy `en` thì danh sách từ mục tiêu rỗng
-        // trơn — mà hội thoại vẫn mở bình thường, nên trông như AI hoạt động
-        // đúng trong khi người học không thể ăn điểm nào.
-        SharedModel.find(filter).select('en zh vn level').lean(),
-        UserUpload.find({ ...filter, ownerEmail: email, lang }).select('en zh vn level').lean(),
-    ]);
-
-    return [...shared, ...mine];
-}
-
-/**
- * Mặt từ dùng để so khớp.
- *
- * Hai kho đặt tên khác nhau: kho tiếng Anh dùng `en`, kho tiếng Trung dùng `zh`
- * (và bỏ trống `en`). Lấy sai trường thì không lỗi nào báo, chỉ là danh sách
- * mục tiêu rỗng.
- */
-function faceOf(w) {
-    if (!w) return '';
-    const zh = typeof w.zh === 'string' ? w.zh.trim() : '';
-    const en = typeof w.en === 'string' ? w.en.trim() : '';
-    // Ưu tiên `zh` khi có: bản ghi tiếng Trung nào cũng có `zh`, còn `en` có thể
-    // là chuỗi rỗng hoặc phiên âm.
-    return zh || en;
-}
-
-/**
- * Chọn từ mục tiêu, ƯU TIÊN từ người học đã từng sai.
- *
- * Đây là chỗ tính năng có giá trị hơn một chatbot thường: app biết người học
- * yếu từ nào (`WrongWord`), nên hội thoại nhắm đúng chỗ đó thay vì ôn tràn lan.
+ * Chọn 12 từ mục tiêu, ƯU TIÊN từ người học đang sai (tỉ lệ 1 = mọi từ sai đứng
+ * trước). Lấy bộ từ, đọc mặt từ (`zh`/`en`) và so với WrongWord đều ở service chung
+ * `chonTu` — dùng chung với Nghe, Đọc, Dịch.
  */
 async function pickTargets({ userId, words }) {
-    // KHỬ TRÙNG theo mặt chữ. Kho tiếng Trung có những chữ đa âm được lưu thành
-    // NHIỀU bản ghi khác nhau — `地`, `还`, `干` trong hsk1 mỗi chữ hai bản ghi
-    // (khác pinyin, khác nghĩa). Không khử thì cùng một chữ hiện hai lần trong
-    // bảng "Từ cần dùng", React cảnh báo trùng `key`, và tệ hơn: người học dùng
-    // chữ đó một lần nhưng chỉ một ô sáng lên, tưởng mình chưa dùng.
-    const all = [...new Set(words.map(faceOf).filter(Boolean))];
-    if (all.length <= TARGET_SIZE) return all;
-
-    // WrongWord cũng có thể lưu mặt từ ở `en` HOẶC `zh` tuỳ kho gốc — dùng
-    // chung `faceOf` để hai bên so khớp được với nhau.
-    const wrong = await WrongWord.find({ userId }).select('en zh').lean();
-    const wrongSet = new Set(wrong.map(faceOf).filter(Boolean));
-
-    const weak = all.filter((w) => wrongSet.has(w));
-    const rest = all.filter((w) => !wrongSet.has(w));
-
-    // Trộn phần còn lại để mỗi phiên một khác — cùng một Part mà lần nào cũng
-    // đúng 12 từ đầu thì luyện vài lần là nhàm.
-    for (let i = rest.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [rest[i], rest[j]] = [rest[j], rest[i]];
-    }
-
-    return [...weak, ...rest].slice(0, TARGET_SIZE);
+    return chonTrongDanhSach({ userId, mat: words.map(faceOf), soLuong: TARGET_SIZE, tiLeYeu: 1 });
 }
 
 /** Trừ năng lượng nguyên tử, VIP miễn trừ. Trả `null` nếu không đủ. */

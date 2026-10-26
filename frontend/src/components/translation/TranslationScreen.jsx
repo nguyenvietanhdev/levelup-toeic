@@ -1,7 +1,6 @@
 import { useState, useRef, useCallback } from 'react';
 import { useGame } from '@game/GameContext.jsx';
 import { GameState } from '@game/state.js';
-import { GameLogic } from '@game/gameLogic.js';
 import { Energy } from '@game/energy.js';
 import { Notification } from '@ui/Toaster.jsx';
 import { TranslationAPI } from '@api/translation.js';
@@ -64,19 +63,6 @@ function countUnits(text, lang) {
         return m ? m.length : 0;
     }
     return String(text || '').trim().split(/\s+/).filter(Boolean).length;
-}
-
-/**
- * Vài từ trong bộ đang học, để server ra đề bám vào đúng vốn từ vừa luyện.
- *
- * Lấy NGẪU NHIÊN chứ không lấy 8 từ đầu: bộ từ xếp cố định, nên lấy đầu danh
- * sách thì mọi lượt dịch đều xoay quanh đúng ngần ấy từ.
- */
-function layTuGoiY(soLuong = 6) {
-    const pool = Array.isArray(GameLogic.vocabularyData) ? GameLogic.vocabularyData : [];
-    if (!pool.length) return [];
-    const chon = [...pool].sort(() => Math.random() - 0.5).slice(0, soLuong);
-    return chon.map((w) => String(w?.en || '')).filter(Boolean);
 }
 
 /**
@@ -166,7 +152,8 @@ export default function TranslationScreen({ active }) {
         if (loadingDe) return;
         setLoadingDe(true);
         try {
-            const d = await TranslationAPI.passage({ words: layTuGoiY(), level, ...dangGui({ dang, tuChon, goiY }), nhamYeu });
+            // Không gửi từ: server tự chọn từ bộ đang học (đúng mặt chữ, lọc mức, ưu tiên từ sai).
+            const d = await TranslationAPI.passage({ level, ...dangGui({ dang, tuChon, goiY }), nhamYeu });
             if (!d?.passage) throw new Error('Server trả về đoạn văn không hợp lệ');
             setDe(d);
             // Đề mới thì bỏ bài cũ — giữ lại là người dùng nộp nhầm bản dịch của
