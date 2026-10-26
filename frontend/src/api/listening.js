@@ -8,7 +8,11 @@ function unwrap(res) {
     if (res && res.success === false) {
         // `Http` đặt câu lỗi ở `error` (không phải `message`) khi server trả mã lỗi —
         // chỉ đọc `message` là mọi lỗi thành câu chung chung, mất lý do thật.
-        throw new Error(res.error || res.message || 'Có lỗi khi xử lý bài nghe');
+        // Mang theo DỮ LIỆU lỗi (`energyNeeded`, `needTopic`…) — màn hình cần nó để mở
+        // đúng popup (nạp năng lượng / chọn đề) thay vì một dòng đỏ chung chung.
+        const err = new Error(res.error || res.message || 'Có lỗi khi xử lý bài nghe');
+        Object.assign(err, res);
+        throw err;
     }
     // Hai lớp `.data` (Http bọc phản hồi server): gỡ đúng hai lớp như các API khác.
     const inner = res?.data;

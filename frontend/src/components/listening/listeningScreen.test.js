@@ -75,6 +75,7 @@ describe('nghe tiếng Trung', () => {
 
 describe('lỗi server hiện đúng lý do', () => {
     test('API Nghe đọc câu lỗi ở `error` (Http đặt ở đó), không chỉ `message`', () => {
-        expect(api).toMatch(/throw new Error\(res\.error \|\| res\.message \|\| /);
+        // Lỗi dựng trước rồi gắn dữ liệu (`energyNeeded`…) — vẫn đọc `error` trước `message`.
+        expect(api).toMatch(/new Error\(res\.error \|\| res\.message \|\| /);
     });
 });

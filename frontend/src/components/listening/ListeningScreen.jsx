@@ -1,6 +1,8 @@
 import { useState, useRef, useEffect } from 'react';
 import { useGame } from '@game/GameContext.jsx';
 import { Notification } from '@ui/Toaster.jsx';
+import { Energy } from '@game/energy.js';
+import { EventBus, GameEvents } from '@game/eventBus.js';
 import { ListeningAPI } from '@api/listening.js';
 import { TopicSelector } from '@components/vocab/topic/topicSelector.js';
 import { PartSelector } from '@components/vocab/part/partSelector.js';
@@ -115,11 +117,25 @@ export default function ListeningScreen({ active }) {
             setTocDo(0.9);
             syncFromState?.();
         } catch (err) {
+            // THIẾU NĂNG LƯỢNG → popup nạp như các chế độ luyện tập; nạp xong thì
+            // bắt đầu lại luôn.
+            if (err?.energyNeeded) {
+                Energy.showRefillModal({ needed: err.energyNeeded, onBought: () => { batDauRef.current?.(); } });
+                return;
+            }
+            // CHƯA CHỌN ĐỀ → mở popup chọn đề.
+            if (err?.needTopic) {
+                EventBus.emit(GameEvents.TOPIC_MODAL_REQUESTED, {});
+                return;
+            }
             Notification.error(String(err?.message || 'Không mở được bài nghe'));
         } finally {
             setBusy(false);
         }
     };
+    // `onBought` của popup nạp gọi lại đúng hàm bắt đầu mới nhất.
+    const batDauRef = useRef(null);
+    batDauRef.current = batDau;
 
     const nop = async () => {
         if (!phien || !typed.trim()) return;

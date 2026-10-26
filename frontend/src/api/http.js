@@ -98,7 +98,19 @@ export const Http = {
             }
 
             if (!response.ok) {
-                throw new Error(data.message || `HTTP Error: ${response.status}`);
+                // GIỮ các trường server gửi kèm lỗi (`energyNeeded`, `needTopic`,
+                // `tooShort`, `expired`, `conLai`…). Trước đây chỉ giữ câu chữ: màn
+                // AI nào cũng có nhánh "thiếu năng lượng → mở popup nạp", nhưng
+                // `energyNeeded` bị rơi ở đây nên nhánh đó không bao giờ chạy — người
+                // dùng chỉ thấy một thông báo đỏ "Không đủ năng lượng".
+                const them = data && typeof data === 'object' ? data : {};
+                return {
+                    ...them,
+                    success: false,
+                    error: them.message || `HTTP Error: ${response.status}`,
+                    code: 'ERROR',
+                    status: response.status,
+                };
             }
 
             logger.log('✅ HTTP Response:', response.status);

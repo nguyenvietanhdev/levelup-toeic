@@ -140,6 +140,10 @@ export default function InventoryWardrobe() {
                     id: i.itemId, kind: 'consumable', name: i.definition.name,
                     icon: i.definition.icon || 'fa-cube', image: i.definition.image || '', color: '#8b5cf6',
                     desc: i.definition.description, count: i.quantity,
+                    // Dùng NGAY qua server (vd Thẻ hồi đầy ⚡): on_use và có hiệu ứng.
+                    // Không đánh dấu thì nút "Sử dụng" đi nhánh vé quay / về trang chủ
+                    // — đóng túi đồ mà không gọi server, thẻ không tác dụng.
+                    dungNgay: i.definition.durationType === 'on_use' && !!i.definition.effect?.type,
                 }));
             return [...fromStats, ...fromInv];
         }
@@ -240,6 +244,8 @@ export default function InventoryWardrobe() {
 
     // Dùng vật phẩm tiêu hao: vé quay → mở Vòng quay; hint/dừng giờ → về trang chủ (dùng khi luyện tập).
     const useConsumable = (item) => {
+        // Vật phẩm dùng ngay (hồi ⚡…): gọi server như thẻ boost, ở lại túi đồ.
+        if (item.dungNgay) return activate(item);
         Modal.close(); // đóng túi đồ
         if (item.id === 'spin-ticket') {
             window._openSpinWheel?.();
