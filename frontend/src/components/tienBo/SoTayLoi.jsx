@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { TienBoAPI } from '@api/tienBo.js';
 import { khopSua, coTiengViet } from '@lib/chuaBai.js';
+import OnLoi from './OnLoi.jsx';
 
 /**
  * SỔ TAY LỖI — mọi lỗi đã được chữa trong bài Viết và Dịch, kèm cách sửa.
@@ -62,7 +63,22 @@ function MucLoi({ m, tuKiemTra }) {
     );
 }
 
+/**
+ * Tab Sổ tay lỗi: trên cùng là KIỂM TRA LẠI (buổi ôn theo nấc), dưới là danh sách lỗi.
+ * Đang làm buổi ôn thì ẩn danh sách — nó lộ sẵn cách sửa của chính các câu đang hỏi.
+ * Ôn xong danh sách mount lại, tải dữ liệu mới.
+ */
 export default function SoTayLoi({ active }) {
+    const [dangOn, setDangOn] = useState(false);
+    return (
+        <div className="stl-ngoai">
+            <OnLoi active={active} onDangLam={setDangOn} />
+            {!dangOn && <DanhSachLoi active={active} />}
+        </div>
+    );
+}
+
+function DanhSachLoi({ active }) {
     const [data, setData] = useState(null);
     const [loi, setLoi] = useState('');
     const [loai, setLoai] = useState('');      // '' = mọi loại

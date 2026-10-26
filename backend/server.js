@@ -274,6 +274,7 @@ app.use('/api/listening', require('./routes/listening')); // Nghe với AI (TTS)
 app.use('/api/dang-goi-y', require('./routes/dangGoiY')); // Dạng bài AI gợi ý hợp bộ từ của Part
 app.use('/api/lo-trinh', require('./routes/loTrinh')); // Lộ trình hôm nay: các bước học trong ngày, tính từ dữ liệu đã có
 app.use('/api/bai-nhap', require('./routes/baiNhap')); // Bài làm dở Viết/Dịch: vào lại làm tiếp, không gọi AI lấy đề mới
+app.use('/api/on-loi', require('./routes/onLoi')); // Kiểm tra lại lỗi đã chữa: nhận ra, sửa, hiểu vì sao, áp dụng câu mới
 app.use('/api/tien-bo', require('./routes/tienBo')); // Tiến bộ của tôi: hồ sơ năng lực theo tuần, tính từ dữ liệu đã có
 app.use('/api/essay', require('./routes/essay')); // Luyện viết luận (chấm IELTS Task 2)
 app.use('/api/translation', require('./routes/translation')); // Luyện dịch Việt → Anh/Trung

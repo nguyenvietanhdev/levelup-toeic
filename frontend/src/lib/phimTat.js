@@ -99,6 +99,15 @@ export const NHOM_PHIM_TAT = [
         ],
     },
     {
+        key: 'on-loi',
+        ten: 'Kiểm tra lại lỗi (Sổ tay lỗi)',
+        icon: 'fa-clipboard-check',
+        screens: ['tien-bo-screen'],
+        phim: [
+            { phim: ['Enter'], viec: 'Kiểm tra câu trả lời, bấm lần nữa để sang câu tiếp' },
+        ],
+    },
+    {
         key: 'hoi-thoai',
         ten: 'Hội thoại giọng nói',
         icon: 'fa-microphone-lines',
