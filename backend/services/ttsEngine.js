@@ -148,18 +148,78 @@ function motLuot(tts, text, rate) {
     });
 }
 
+// ── DỰ PHÒNG KHI EDGE TTS HỎNG ─────────────────────────────────────────────
+//
+// Edge TTS là dịch vụ không chính thức và đã có lúc hỏng hẳn phía Microsoft
+// ("Unexpected server response: 200"). Khi đó bài Nghe — năng lượng đã trừ —
+// không phát được gì. Dự phòng: Google Translate TTS (cũng không chính thức, không
+// cần khoá, giọng kém tự nhiên hơn nhưng NGHE ĐƯỢC). Chỉ bật khi nơi gọi xin
+// (`duPhong`), xem `tongHop`.
+
+/** Edge hỏng thì bỏ qua nó chừng này ms — khỏi chờ nó hỏng lại ở mỗi lượt. */
+const NGHI_EDGE_KHI_HONG = 5 * 60 * 1000;
+let _edgeHongDen = 0;
+
+/** Google giới hạn ~200 ký tự mỗi lượt. */
+const MAX_KY_TU_GOOGLE = 180;
+
+const RE_VIET = /[àáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđ]/i;
+
+/** Mã ngôn ngữ Google từ tên giọng Edge ('en-US-AriaNeural' → 'en'). */
+function ngonNguGoogle(giong, text) {
+    // Giọng đa ngôn ngữ đọc tiếng Việt mang tên en-US/de-DE — nhìn CHỮ mới biết.
+    if (RE_VIET.test(String(text || ''))) return 'vi';
+    const g = String(giong || '').toLowerCase();
+    if (g.startsWith('zh-tw')) return 'zh-TW';
+    if (g.startsWith('zh')) return 'zh-CN';
+    if (g.startsWith('vi')) return 'vi';
+    return 'en';
+}
+
 /**
- * Audio cho một đoạn chữ. Trả về `{ buffer, tuKho }`.
- *
- * `tuKho` để nơi gọi biết lượt này có tốn công tổng hợp hay không — dùng cho
- * header `X-TTS-Cache`, thứ duy nhất nhìn được từ ngoài để biết kho có chạy.
+ * Cắt đoạn thành các mảnh ≤ `toiDa` ký tự, ưu tiên cắt ở dấu câu rồi tới khoảng
+ * trắng — cắt giữa từ thì Google đọc vỡ chữ.
  */
-async function tongHop(giong, text, rate) {
-    const khoa = khoaKho(giong, text, rate);
+function catManh(text, toiDa = MAX_KY_TU_GOOGLE) {
+    const cau = String(text || '').replace(/\s+/g, ' ').trim()
+        .split(/(?<=[.!?;:,。！？；：，])\s*/u).filter(Boolean);
+    const out = [];
+    let dang = '';
+    const day = (s) => { if (s.trim()) out.push(s.trim()); };
+    for (const c of cau) {
+        if ((dang + ' ' + c).trim().length <= toiDa) { dang = (dang + ' ' + c).trim(); continue; }
+        day(dang);
+        dang = '';
+        if (c.length <= toiDa) { dang = c; continue; }
+        // Câu dài hơn trần: cắt theo khoảng trắng (tiếng Trung không có → cắt cứng).
+        let con = c;
+        while (con.length > toiDa) {
+            let i = con.lastIndexOf(' ', toiDa);
+            if (i <= 0) i = toiDa;
+            day(con.slice(0, i));
+            con = con.slice(i).trim();
+        }
+        dang = con;
+    }
+    day(dang);
+    return out;
+}
 
-    const san = layKho(khoa);
-    if (san) return { buffer: san, tuKho: true };
+/** Tổng hợp bằng Google Translate TTS: từng mảnh rồi nối MP3 (khung MP3 nối thẳng được). */
+async function tongHopGoogle(giong, text) {
+    const tl = ngonNguGoogle(giong, text);
+    const buf = [];
+    for (const m of catManh(text)) {
+        const url = `https://translate.google.com/translate_tts?ie=UTF-8&client=tw-ob&tl=${encodeURIComponent(tl)}&q=${encodeURIComponent(m)}`;
+        const r = await fetch(url, { headers: { 'User-Agent': 'Mozilla/5.0' }, signal: AbortSignal.timeout(10000) });
+        if (!r.ok) throw new Error(`Google TTS ${r.status}`);
+        buf.push(Buffer.from(await r.arrayBuffer()));
+    }
+    return Buffer.concat(buf);
+}
 
+/** Tổng hợp bằng Edge (giữ ấm kết nối, thử lại một lần như cũ). */
+async function tongHopEdge(giong, text, rate) {
     let buffer = null;
     try {
         const tts = await layKetNoi(giong);
@@ -178,9 +238,55 @@ async function tongHop(giong, text, rate) {
         buffer = await motLuot(tts, text, rate);
         henNghi(giong);
     }
+    return buffer;
+}
+
+/**
+ * Audio cho một đoạn chữ. Trả về `{ buffer, tuKho, nguon }`.
+ *
+ * `tuKho` để nơi gọi biết lượt này có tốn công tổng hợp hay không — dùng cho
+ * header `X-TTS-Cache`, thứ duy nhất nhìn được từ ngoài để biết kho có chạy.
+ *
+ * `duPhong: true` → Edge hỏng thì dùng Google (bài Nghe: năng lượng đã trừ, phải
+ * phát được). Mặc định KHÔNG: phát âm từ vựng có dự phòng riêng ở trình duyệt dùng
+ * đúng giọng người học chọn — âm thầm đổi sang giọng Google là đổi lựa chọn của họ.
+ * Edge vừa hỏng thì bỏ qua nó một lúc (`NGHI_EDGE_KHI_HONG`) — báo lỗi / chuyển dự
+ * phòng NGAY thay vì chờ nó hỏng lại ở mỗi lượt.
+ */
+async function tongHop(giong, text, rate, { duPhong = false } = {}) {
+    const khoa = khoaKho(giong, text, rate);
+
+    const san = layKho(khoa);
+    if (san) return { buffer: san, tuKho: true, nguon: 'kho' };
+
+    let buffer = null;
+    let loiEdge = null;
+    if (Date.now() >= _edgeHongDen) {
+        try {
+            buffer = await tongHopEdge(giong, text, rate);
+        } catch (err) {
+            loiEdge = err;
+            _edgeHongDen = Date.now() + NGHI_EDGE_KHI_HONG;
+            logger.warn('TTS: Edge hỏng, tạm bỏ qua 5 phút:', err?.message || err);
+        }
+    } else {
+        loiEdge = new Error('Edge TTS đang tạm bỏ qua (vừa hỏng)');
+    }
+
+    let nguon = 'edge';
+    if (!buffer || buffer.length === 0) {
+        if (!duPhong) {
+            // Edge NÉM lỗi → báo lên. Edge trả RỖNG (không ném) → trả rỗng như trước,
+            // nơi gọi tự báo "không tạo được âm thanh" — và không cất vào kho.
+            if (loiEdge) throw loiEdge;
+            return { buffer: buffer || Buffer.alloc(0), tuKho: false, nguon };
+        }
+        buffer = await tongHopGoogle(giong, text);
+        nguon = 'google';
+    }
 
     if (buffer && buffer.length > 0) catKho(khoa, buffer);
-    return { buffer, tuKho: false };
+    return { buffer, tuKho: false, nguon };
 }
 
 /** Đóng mọi kết nối — cho lúc tắt server và cho test. */
@@ -188,10 +294,11 @@ function dongHet() {
     for (const giong of [..._lo.keys()]) boKetNoi(giong);
 }
 
-/** Xoá kho — cho test. */
+/** Xoá kho — cho test. Cũng quên trạng thái "Edge vừa hỏng". */
 function xoaKho() {
     _kho.clear();
     _coKho = 0;
+    _edgeHongDen = 0;
 }
 
 /** Số liệu kho, cho trang admin và cho test. */
@@ -199,4 +306,7 @@ function soLieuKho() {
     return { soBanGhi: _kho.size, soByte: _coKho, tran: TRAN_KHO };
 }
 
-module.exports = { tongHop, dongHet, xoaKho, soLieuKho, TRAN_KHO, NGHI_SAU, DINH_DANG };
+module.exports = {
+    tongHop, dongHet, xoaKho, soLieuKho, catManh, ngonNguGoogle,
+    TRAN_KHO, NGHI_SAU, DINH_DANG, NGHI_EDGE_KHI_HONG,
+};

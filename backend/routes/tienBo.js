@@ -8,6 +8,7 @@ const { protect } = require('../middleware/auth');
 const { layTienBo } = require('../services/tienBo');
 const { layTongKet, taoTongKet } = require('../services/tongKetTuan');
 const { laySoTay } = require('../services/soTayLoi');
+const { layChamDo } = require('../services/chamDo');
 
 router.use(protect);
 
@@ -16,6 +17,13 @@ router.get('/', async (req, res, next) => {
     try {
         const data = await layTienBo(req.user.id);
         res.json({ success: true, data });
+    } catch (err) { next(err); }
+});
+
+/** Chấm đỏ trên menu: chế độ đang dở, lộ trình hôm nay, tổng kết tuần (chỉ đếm). */
+router.get('/cham-do', async (req, res, next) => {
+    try {
+        res.json({ success: true, data: await layChamDo(req.user.id) });
     } catch (err) { next(err); }
 });
 

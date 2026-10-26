@@ -184,7 +184,9 @@ exports.audio = async (req, res, next) => {
         }
         // Giọng theo ngôn ngữ của PHIÊN (phiên cũ không có `lang` → tiếng Anh).
         const giong = GIONG_THEO_NGON_NGU[phien.lang] || GIONG_NGHE;
-        const { buffer } = await tongHop(giong, phien.passage, kepTocDo(req.query.rate));
+        // `duPhong`: Edge hỏng thì dùng Google — năng lượng đã trừ, bài nghe phải phát được.
+        const { buffer, nguon } = await tongHop(giong, phien.passage, kepTocDo(req.query.rate), { duPhong: true });
+        res.setHeader('X-TTS-Nguon', nguon || '');
         if (!buffer || !buffer.length) {
             return res.status(500).json({ success: false, message: 'Không tạo được âm thanh' });
         }

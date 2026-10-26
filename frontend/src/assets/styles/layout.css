@@ -2053,3 +2053,16 @@
     }
 }
 
+
+/* Chấm đỏ góc phải trên của mục menu: còn bài làm dở / việc hôm nay. */
+.menu-item-cham {
+  position: absolute;
+  top: 7px;
+  right: 8px;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--danger-color, #ef4444);
+  box-shadow: 0 0 0 2px var(--bg-secondary);
+  pointer-events: none;
+}

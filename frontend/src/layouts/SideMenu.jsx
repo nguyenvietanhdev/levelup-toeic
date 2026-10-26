@@ -151,7 +151,10 @@ export default function SideMenu() {
         if (!it.badgeKey || it.badgeStyle === 'info' || it.badgeStyle === 'dot') return s;
         return s + (Number(badges[it.badgeKey]) || 0);
     }, 0);
-    const coCham = (group) => group.items.some((it) => it.badgeStyle === 'dot' && badges[it.badgeKey] > 0);
+    /** Chấm đỏ của MỘT mục: chế độ đang làm dở / lộ trình / tổng kết (theo màn). */
+    const chamCua = (it) => !!(it.screen && badges.cham?.[it.screen]);
+    const coCham = (group) => group.items.some((it) =>
+        (it.badgeStyle === 'dot' && badges[it.badgeKey] > 0) || chamCua(it));
 
     // Refresh badges each time the menu opens
     useEffect(() => { if (menuOpen) refresh(); }, [menuOpen, refresh]);
@@ -282,6 +285,15 @@ export default function SideMenu() {
                                             : levelLocked ? `Mở ở Level ${lv.requiredLevel}` : undefined}
                                     >
                                         {item.hot && !locked && <span className="menu-item-hot">hot</span>}
+                                        {/* Chấm đỏ góc phải trên: còn bài làm dở / việc hôm nay ở đây. */}
+                                        {!locked && chamCua(item) && (
+                                            <span
+                                                className="menu-item-cham"
+                                                title={item.screen === 'lo-trinh-screen' ? 'Lộ trình hôm nay chưa xong'
+                                                    : item.screen === 'tien-bo-screen' ? 'Tuần này chưa có tổng kết'
+                                                        : 'Còn bài đang làm dở'}
+                                            />
+                                        )}
                                         <i className={`fas ${levelLocked ? 'fa-lock' : item.icon}`}></i>
                                         <span>{item.label}</span>
                                         {levelLocked ? (

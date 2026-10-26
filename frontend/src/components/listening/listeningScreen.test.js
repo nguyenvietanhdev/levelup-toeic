@@ -30,12 +30,22 @@ describe('màn Nghe với AI', () => {
     });
 
     test('âm thanh lấy qua audioUrl, không đưa chữ vào giao diện trước khi chấm', () => {
-        expect(screen).toMatch(/ListeningAPI\.audioUrl\(phien\.id, tocDo\)/);
+        // Xin audio tốc độ gốc; tốc độ do trình phát lo (xem test dưới).
+        expect(screen).toMatch(/ListeningAPI\.audioUrl\(phien\.id, 1\)/);
         expect(screen).not.toMatch(/phien\.passage/);
     });
 
-    test('đổi tốc độ đọc làm đổi src nên đoạn được đọc lại từ đầu', () => {
-        expect(screen).toMatch(/key=\{`\$\{phien\.id\}-\$\{tocDo\}`\}/);
+    test('đổi tốc độ bằng playbackRate — không tải lại audio, vẫn đúng khi server dùng giọng dự phòng', () => {
+        // Trước đây đổi tốc độ là đổi `src`: tải lại từ đầu, và giọng dự phòng (Google)
+        // không chỉnh tốc độ được nên ba nút thành vô tác dụng.
+        expect(screen).toMatch(/key=\{`\$\{phien\.id\}-\$\{lanTai\}`\}/);
+        expect(screen).toMatch(/if \(audioRef\.current\) audioRef\.current\.playbackRate = tocDo;/);
+        expect(screen).toMatch(/onLoadedMetadata=\{\(e\) => \{ e\.currentTarget\.playbackRate = tocDo;/);
+    });
+
+    test('audio lỗi → báo rõ và cho tải lại (không im lặng hiện 0:00)', () => {
+        expect(screen).toMatch(/onError=\{\(\) => setLoiAudio\(/);
+        expect(screen).toMatch(/setLanTai\(\(n\) => n \+ 1\)/);
     });
 });
 

@@ -5,6 +5,7 @@ import { authHeaders } from '@/auth/token.js';
 import { CheckinAPI } from '@api/checkin.js';
 import { EventBus, GameEvents } from '@game/eventBus.js';
 import { shouldExportStats } from '@components/statistics/statsExportSignal.js';
+import { chamTheoMan } from '@lib/chamDo.js';
 
 export function countUnclaimedQuests() {
     let n = 0;
@@ -33,7 +34,8 @@ export function countClaimableAchievements() {
  *   Used by TopNav so the hamburger badge stays current without opening the menu.
  */
 export function useMenuBadges(isLoggedIn, { listenEvents = false } = {}) {
-    const [badges, setBadges] = useState({ quest: 0, achievement: 0, online: 0, shopDiscount: 0, statsExport: 0, reviewDue: 0 });
+    // `cham`: chấm đỏ theo MÀN (bài làm dở, lộ trình hôm nay, tổng kết tuần) — xem lib/chamDo.js.
+    const [badges, setBadges] = useState({ quest: 0, achievement: 0, online: 0, shopDiscount: 0, statsExport: 0, reviewDue: 0, cham: {} });
 
     const refresh = useCallback(async (signal) => {
         const unclaimedQuests = countUnclaimedQuests();
@@ -64,6 +66,12 @@ export function useMenuBadges(isLoggedIn, { listenEvents = false } = {}) {
         fetch('/api/wrong-words/review?limit=1', { headers: authHeaders(), signal })
             .then(r => r.json())
             .then(res => { if (res?.success) setBadges(b => ({ ...b, reviewDue: res.dueTotal || 0 })); })
+            .catch(() => {});
+
+        // Chấm đỏ: chế độ đang làm dở, lộ trình hôm nay, tổng kết tuần (server chỉ đếm).
+        fetch('/api/tien-bo/cham-do', { headers: authHeaders(), signal })
+            .then(r => r.json())
+            .then(res => { if (res?.success) setBadges(b => ({ ...b, cham: chamTheoMan(res.data) })); })
             .catch(() => {});
 
         fetch('/api/shop/items', { headers: authHeaders(), signal })

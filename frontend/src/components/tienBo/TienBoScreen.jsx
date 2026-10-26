@@ -6,6 +6,7 @@ import { EventBus, GameEvents } from '@game/eventBus.js';
 import { Notification } from '@ui/Toaster.jsx';
 import { TienBoAPI } from '@api/tienBo.js';
 import SoTayLoi from './SoTayLoi.jsx';
+import { danhDauDaXem } from '@lib/chamDo.js';
 
 /**
  * Tiến bộ của tôi — hồ sơ năng lực gom từ MỌI chế độ, 8 tuần gần nhất.
@@ -97,7 +98,8 @@ export default function TienBoScreen({ active }) {
             .catch((e) => { if (!huy) setLoi(e?.message || 'Không tải được tiến bộ'); });
         // Tổng kết tuần đã lưu (nếu có) — chỉ đọc, không gọi AI.
         TienBoAPI.tongKet()
-            .then((d) => { if (!huy) setTongKet(d?.tongKet || null); })
+            // Đã mở Tiến bộ tuần này → tắt chấm đỏ "chưa tổng kết" tới hết tuần.
+            .then((d) => { if (!huy) { setTongKet(d?.tongKet || null); danhDauDaXem('tien-bo', d?.tuan); } })
             .catch(() => { /* phần thêm: lỗi thì vẫn xem được số liệu */ });
         loadUnlocks(true).then(() => { if (!huy) setMoKhoa((t) => t + 1); });
         return () => { huy = true; };

@@ -6,6 +6,7 @@ import { loadUnlocks, lockInfo } from '@game/featureUnlocks.js';
 import { TopicSelector } from '@components/vocab/topic/topicSelector.js';
 import { PartSelector } from '@components/vocab/part/partSelector.js';
 import { LoTrinhAPI } from '@api/loTrinh.js';
+import { danhDauDaXem } from '@lib/chamDo.js';
 
 /**
  * Lộ trình hôm nay — dẫn người học qua các kỹ năng với CÙNG bộ từ của Part đang học.
@@ -72,7 +73,8 @@ export default function LoTrinhScreen({ active }) {
         let huy = false;
         setLoi('');
         LoTrinhAPI.get()
-            .then((d) => { if (!huy) setData(d); })
+            // Đã mở lộ trình hôm nay → tắt chấm đỏ của nó tới hết ngày (giờ VN).
+            .then((d) => { if (!huy) { setData(d); danhDauDaXem('lo-trinh', d?.ngay); } })
             .catch((e) => { if (!huy) setLoi(e?.message || 'Không tải được lộ trình hôm nay'); });
         loadUnlocks(true).then(() => { if (!huy) setMoKhoa((t) => t + 1); });
         return () => { huy = true; };

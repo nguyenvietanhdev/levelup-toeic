@@ -44,7 +44,9 @@ export default function TopNav() {
     const { badges: menuBadges } = useMenuBadges(isLoggedIn, { listenEvents: true });
     // Number = unclaimed quest + achievement rewards; dot = other menu items have badges
     const menuRewardCount = menuBadges.quest + menuBadges.achievement;
-    const menuHasDot = menuRewardCount === 0 && (menuBadges.online > 0 || menuBadges.shopDiscount > 0);
+    const menuHasDot = menuRewardCount === 0 && (menuBadges.online > 0 || menuBadges.shopDiscount > 0
+        // Còn bài làm dở / lộ trình hôm nay / tổng kết tuần → chấm trên nút menu.
+        || Object.values(menuBadges.cham || {}).some(Boolean));
     const [searchQuery, setSearchQuery] = useState('');
     const [searchFocused, setSearchFocused] = useState(false);
     const navHidden = useHideOnScrollDown();

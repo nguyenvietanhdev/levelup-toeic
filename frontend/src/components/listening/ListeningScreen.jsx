@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useGame } from '@game/GameContext.jsx';
 import { Notification } from '@ui/Toaster.jsx';
 import { ListeningAPI } from '@api/listening.js';
@@ -88,6 +88,12 @@ export default function ListeningScreen({ active }) {
     const goiY = useGoiYDang('listening', active);
     const [phien, setPhien] = useState(null);     // { id, totalTargets }
     const [tocDo, setTocDo] = useState(0.9);
+    // Trình phát: tốc độ đặt bằng `playbackRate` (giữ cao độ giọng) thay vì xin audio
+    // mới — đổi tốc độ không tải lại, không mất chỗ đang nghe, và vẫn đúng tốc độ khi
+    // server phải dùng giọng dự phòng (giọng đó không chỉnh tốc độ được).
+    const audioRef = useRef(null);
+    const [loiAudio, setLoiAudio] = useState('');
+    const [lanTai, setLanTai] = useState(0);
     const [typed, setTyped] = useState('');
     const [ketQua, setKetQua] = useState(null);   // kết quả chấm sau khi nộp
     const [busy, setBusy] = useState(false);
@@ -134,6 +140,11 @@ export default function ListeningScreen({ active }) {
         setKetQua(null);
         setTyped('');
     };
+
+    // Đổi tốc độ → áp ngay vào trình phát đang chạy (không đổi `src`).
+    useEffect(() => {
+        if (audioRef.current) audioRef.current.playbackRate = tocDo;
+    }, [tocDo]);
 
     // Đang làm dở mà rời màn (quay về, menu, Trang chủ…) → hỏi trước, như 16 chế độ luyện tập.
     useHoiKhiThoat('listening-screen', !!phien && !ketQua, {
@@ -232,14 +243,25 @@ export default function ListeningScreen({ active }) {
                         {phien.dangVi ? `${phien.dangVi} · ` : ''}{phien.totalTargets} từ mục tiêu trong đoạn này.
                     </p>
 
-                    {/* Âm thanh: đổi tốc độ là đổi `src`, nên đoạn được đọc lại từ đầu. */}
+                    {/* Âm thanh tốc độ gốc; nút tốc độ chỉ đổi `playbackRate`. */}
                     <div className="listening-player">
                         <audio
-                            key={`${phien.id}-${tocDo}`}
+                            key={`${phien.id}-${lanTai}`}
+                            ref={audioRef}
                             controls
                             autoPlay
-                            src={ListeningAPI.audioUrl(phien.id, tocDo)}
+                            src={ListeningAPI.audioUrl(phien.id, 1)}
+                            onLoadedMetadata={(e) => { e.currentTarget.playbackRate = tocDo; setLoiAudio(''); }}
+                            onError={() => setLoiAudio('Không tải được âm thanh của đoạn này.')}
                         />
+                        {loiAudio && (
+                            <p className="tr-intro-note listening-loi">
+                                <i className="fas fa-triangle-exclamation"></i> {loiAudio}{' '}
+                                <button type="button" className="cb-xem" onClick={() => { setLoiAudio(''); setLanTai((n) => n + 1); }}>
+                                    Tải lại
+                                </button>
+                            </p>
+                        )}
                         <div className="listening-speed">
                             {TOC_DO.map((t) => (
                                 <button
