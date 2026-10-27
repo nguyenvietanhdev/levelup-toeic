@@ -241,27 +241,27 @@ export default function TranslationScreen({ active }) {
                     <i className="fas fa-arrow-left"></i>
                 </button>
                 <h2><i className="fas fa-language"></i> Dịch đoạn văn</h2>
-            </div>
-
-            <div className="tr-tabs">
-                <button
-                    className={`tr-tab${tab === 'lam' ? ' is-on' : ''}`}
-                    onClick={() => setTab('lam')}
-                >
-                    <i className="fas fa-pen"></i> Làm bài
-                </button>
-                <button
-                    className={`tr-tab${tab === 'loi' ? ' is-on' : ''}`}
-                    onClick={() => setTab('loi')}
-                >
-                    <i className="fas fa-clipboard-list"></i> Nhật ký lỗi
-                </button>
-                <button
-                    className={`tr-tab${tab === 'lichsu' ? ' is-on' : ''}`}
-                    onClick={() => setTab('lichsu')}
-                >
-                    <i className="fas fa-clock-rotate-left"></i> Lịch sử
-                </button>
+                {/* Tab cùng hàng với tên chế độ (máy tính); điện thoại tự xuống dòng riêng — xem `.screen-header .tr-tabs`. */}
+                <div className="tr-tabs">
+                    <button
+                        className={`tr-tab${tab === 'lam' ? ' is-on' : ''}`}
+                        onClick={() => setTab('lam')}
+                    >
+                        <i className="fas fa-pen"></i> Làm bài
+                    </button>
+                    <button
+                        className={`tr-tab${tab === 'loi' ? ' is-on' : ''}`}
+                        onClick={() => setTab('loi')}
+                    >
+                        <i className="fas fa-clipboard-list"></i> Nhật ký lỗi
+                    </button>
+                    <button
+                        className={`tr-tab${tab === 'lichsu' ? ' is-on' : ''}`}
+                        onClick={() => setTab('lichsu')}
+                    >
+                        <i className="fas fa-clock-rotate-left"></i> Lịch sử
+                    </button>
+                </div>
             </div>
 
             {tab === 'loi' ? <MistakeLog /> : tab === 'lichsu' ? <LichSuMode mode="dich" /> : (

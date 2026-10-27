@@ -258,8 +258,11 @@ describe('nhật ký lỗi ngữ pháp', () => {
     });
 
     test('CSS mỗi selector khai đúng một lần', () => {
+        // Đếm khai báo GỐC (đầu dòng) — selector lồng như `.screen-header .tr-tabs {`
+        // là quy tắc khác, không phải khai trùng.
         for (const sel of ['.ml-bar {', '.ml-row {', '.tr-tabs {', '.ml-empty {']) {
-            expect(css.split(sel).length - 1).toBe(1);
+            const goc = css.split(/\r?\n/).filter((dong) => dong.startsWith(sel));
+            expect(goc).toHaveLength(1);
         }
     });
 

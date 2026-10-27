@@ -12762,3 +12762,24 @@ body.dang-phat-am .js-nut-am {
 .stl-nac.is-nam .stl-nac-chu { color: #16a34a; font-weight: 600; }
 .stl-nac.is-vet .stl-nac-chu { color: #ea580c; font-weight: 600; }
 .ol-loai { font-size: 13px; color: var(--text-secondary); font-weight: 400; }
+
+/* ── Tab cùng hàng với tên chế độ (các màn AI) ───────────────────────────
+   Máy tính: tab dồn mép phải hàng tiêu đề — bớt một hàng (~45px), quý nhất ở Hội
+   thoại vốn cao đúng màn hình. Gạch chân tab đang chọn nằm ĐÚNG trên đường viền
+   của hàng tiêu đề (kéo xuống bằng phần đệm dưới + 1px viền).
+   Điện thoại: không đủ chỗ cho nút quay lại + tên + 3 tab → tab xuống dòng riêng. */
+.screen-header .tr-tabs {
+  margin: 0 0 calc(-1 * var(--spacing-sm) - 1px) auto;
+  align-self: flex-end;
+  border-bottom: none;
+}
+@media (max-width: 767px) {
+  .screen-header { flex-wrap: wrap; }
+  .screen-header .tr-tabs {
+    flex-basis: 100%;
+    margin-left: 0;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .screen-header .tr-tabs::-webkit-scrollbar { display: none; }
+}

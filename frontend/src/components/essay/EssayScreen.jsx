@@ -268,15 +268,15 @@ export default function EssayScreen({ active }) {
                     <i className="fas fa-arrow-left"></i>
                 </button>
                 <h2><i className="fas fa-pen-nib"></i> Luyện viết</h2>
-            </div>
-
-            <div className="tr-tabs">
-                <button className={`tr-tab${tab === 'luyen' ? ' is-on' : ''}`} onClick={() => setTab('luyen')}>
-                    <i className="fas fa-pen"></i> Luyện
-                </button>
-                <button className={`tr-tab${tab === 'lichsu' ? ' is-on' : ''}`} onClick={() => setTab('lichsu')}>
-                    <i className="fas fa-clock-rotate-left"></i> Lịch sử
-                </button>
+                {/* Tab cùng hàng với tên chế độ (máy tính); điện thoại tự xuống dòng riêng — xem `.screen-header .tr-tabs`. */}
+                <div className="tr-tabs">
+                    <button className={`tr-tab${tab === 'luyen' ? ' is-on' : ''}`} onClick={() => setTab('luyen')}>
+                        <i className="fas fa-pen"></i> Luyện
+                    </button>
+                    <button className={`tr-tab${tab === 'lichsu' ? ' is-on' : ''}`} onClick={() => setTab('lichsu')}>
+                        <i className="fas fa-clock-rotate-left"></i> Lịch sử
+                    </button>
+                </div>
             </div>
 
             {tab === 'lichsu' ? <LichSuMode mode="viet" /> : !prompt ? (

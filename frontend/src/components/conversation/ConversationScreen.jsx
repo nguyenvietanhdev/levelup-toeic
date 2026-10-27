@@ -634,18 +634,18 @@ export default function ConversationScreen({ active, voice = false }) {
                         ? <><i className="fas fa-microphone-lines"></i> Hội thoại</>
                         : <><i className="fas fa-comments"></i> Chat</>}
                 </h2>
-            </div>
-
-            <div className="tr-tabs">
-                <button className={`tr-tab${tab === 'luyen' ? ' is-on' : ''}`} onClick={() => setTab('luyen')}>
-                    <i className="fas fa-comments"></i> Luyện
-                </button>
-                <button className={`tr-tab${tab === 'lichsu' ? ' is-on' : ''}`} onClick={() => setTab('lichsu')}>
-                    <i className="fas fa-clock-rotate-left"></i> Lịch sử
-                </button>
-                <button className={`tr-tab${tab === 'vai' ? ' is-on' : ''}`} onClick={() => setTab('vai')}>
-                    <i className="fas fa-user-tie"></i> Vai AI
-                </button>
+                {/* Tab cùng hàng với tên chế độ (máy tính); điện thoại tự xuống dòng riêng — xem `.screen-header .tr-tabs`. */}
+                <div className="tr-tabs">
+                    <button className={`tr-tab${tab === 'luyen' ? ' is-on' : ''}`} onClick={() => setTab('luyen')}>
+                        <i className="fas fa-comments"></i> Luyện
+                    </button>
+                    <button className={`tr-tab${tab === 'lichsu' ? ' is-on' : ''}`} onClick={() => setTab('lichsu')}>
+                        <i className="fas fa-clock-rotate-left"></i> Lịch sử
+                    </button>
+                    <button className={`tr-tab${tab === 'vai' ? ' is-on' : ''}`} onClick={() => setTab('vai')}>
+                        <i className="fas fa-user-tie"></i> Vai AI
+                    </button>
+                </div>
             </div>
 
             {tab === 'lichsu' ? <LichSuMode mode="hoithoai" />
