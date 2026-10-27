@@ -11,5 +11,7 @@ import { fileURLToPath } from 'node:url';
 const css = readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'components.css'), 'utf8');
 
 test('thanh tab và đầu màn Hội thoại không bị cột flex bóp', () => {
-    expect(css).toMatch(/#conversation-screen\.active > \.screen-header,\s*#conversation-screen\.active > \.tr-tabs \{\s*flex-shrink: 0;\s*\}/);
+    expect(css).toMatch(/#conversation-screen\.active > \.screen-header \{\s*flex-shrink: 0;\s*\}/);
+    const i = css.indexOf('.tr-tabs {');
+    expect(css.slice(i, css.indexOf('}', i))).toMatch(/flex-shrink: 0;/);
 });

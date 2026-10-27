@@ -10143,8 +10143,7 @@ button.ai-history-row {
 /* Đầu màn và thanh tab KHÔNG được co. Trên điện thoại thanh tab có `overflow-x:
    auto` (cuộn ngang) — mà flex item có overflow thì chiều cao tối thiểu về 0, nên
    cột cao đúng 100dvh bóp nó còn ~8px: tab Luyện / Lịch sử / Vai AI biến mất. */
-#conversation-screen.active > .screen-header,
-#conversation-screen.active > .tr-tabs {
+#conversation-screen.active > .screen-header {
     flex-shrink: 0;
 }
 
@@ -10945,6 +10944,9 @@ button.ai-history-row {
 /* Hai tab: làm bài · nhật ký lỗi. */
 .tr-tabs {
   display: flex;
+  /* Không co: trong cột flex cao 100dvh (Hội thoại) thanh tab cuộn ngang trên điện
+     thoại bị bóp về ~8px và biến mất. Ở màn dạng block thì dòng này vô hại. */
+  flex-shrink: 0;
   gap: 8px;
   margin: 0 0 14px;
   border-bottom: 1px solid var(--border-color);
