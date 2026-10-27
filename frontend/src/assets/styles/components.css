@@ -10140,6 +10140,13 @@ button.ai-history-row {
     height: 100dvh;
     max-height: 100dvh;
 }
+/* Đầu màn và thanh tab KHÔNG được co. Trên điện thoại thanh tab có `overflow-x:
+   auto` (cuộn ngang) — mà flex item có overflow thì chiều cao tối thiểu về 0, nên
+   cột cao đúng 100dvh bóp nó còn ~8px: tab Luyện / Lịch sử / Vai AI biến mất. */
+#conversation-screen.active > .screen-header,
+#conversation-screen.active > .tr-tabs {
+    flex-shrink: 0;
+}
 
 /* Khung hội thoại. `min-height: 0` là BẮT BUỘC với flex item có overflow —
    thiếu nó thì khung giãn theo nội dung và cả trang cuộn thay vì chỉ khung. */
