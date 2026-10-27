@@ -15,3 +15,16 @@ test('thanh tab và đầu màn Hội thoại không bị cột flex bóp', () =
     const i = css.indexOf('.tr-tabs {');
     expect(css.slice(i, css.indexOf('}', i))).toMatch(/flex-shrink: 0;/);
 });
+
+test('điện thoại: tab chỉ icon, cùng hàng tên chế độ; nhãn còn ở title/aria-label', () => {
+    expect(css).toMatch(/\.screen-header:has\(> \.tr-tabs\) \{ flex-wrap: nowrap; \}/);
+    expect(css).toMatch(/\.screen-header \.tr-tab \{ font-size: 0;/);
+    expect(css).toMatch(/\.screen-header \.tr-tab i \{ font-size: 17px; \}/);
+    const { readFileSync: r } = require('node:fs');
+    const man = r(join(dirname(fileURLToPath(import.meta.url)), '..', '..', 'components', 'conversation', 'ConversationScreen.jsx'), 'utf8');
+    expect(man).toMatch(/<button title="Lịch sử" aria-label="Lịch sử"/);
+});
+
+test('điện thoại: icon tab căn giữa theo chiều dọc với tên chế độ', () => {
+    expect(css).toMatch(/\.screen-header \.tr-tabs \{ flex: 0 0 auto; gap: 2px; align-self: center; margin-bottom: 0; \}/);
+});

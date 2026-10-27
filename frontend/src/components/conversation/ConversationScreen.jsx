@@ -636,13 +636,13 @@ export default function ConversationScreen({ active, voice = false }) {
                 </h2>
                 {/* Tab cùng hàng với tên chế độ (máy tính); điện thoại tự xuống dòng riêng — xem `.screen-header .tr-tabs`. */}
                 <div className="tr-tabs">
-                    <button className={`tr-tab${tab === 'luyen' ? ' is-on' : ''}`} onClick={() => setTab('luyen')}>
+                    <button title="Luyện" aria-label="Luyện" className={`tr-tab${tab === 'luyen' ? ' is-on' : ''}`} onClick={() => setTab('luyen')}>
                         <i className="fas fa-comments"></i> Luyện
                     </button>
-                    <button className={`tr-tab${tab === 'lichsu' ? ' is-on' : ''}`} onClick={() => setTab('lichsu')}>
+                    <button title="Lịch sử" aria-label="Lịch sử" className={`tr-tab${tab === 'lichsu' ? ' is-on' : ''}`} onClick={() => setTab('lichsu')}>
                         <i className="fas fa-clock-rotate-left"></i> Lịch sử
                     </button>
-                    <button className={`tr-tab${tab === 'vai' ? ' is-on' : ''}`} onClick={() => setTab('vai')}>
+                    <button title="Vai AI" aria-label="Vai AI" className={`tr-tab${tab === 'vai' ? ' is-on' : ''}`} onClick={() => setTab('vai')}>
                         <i className="fas fa-user-tie"></i> Vai AI
                     </button>
                 </div>

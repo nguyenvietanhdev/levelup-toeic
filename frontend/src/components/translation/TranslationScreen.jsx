@@ -243,19 +243,19 @@ export default function TranslationScreen({ active }) {
                 <h2><i className="fas fa-language"></i> Dịch đoạn văn</h2>
                 {/* Tab cùng hàng với tên chế độ (máy tính); điện thoại tự xuống dòng riêng — xem `.screen-header .tr-tabs`. */}
                 <div className="tr-tabs">
-                    <button
+                    <button title="Làm bài" aria-label="Làm bài"
                         className={`tr-tab${tab === 'lam' ? ' is-on' : ''}`}
                         onClick={() => setTab('lam')}
                     >
                         <i className="fas fa-pen"></i> Làm bài
                     </button>
-                    <button
+                    <button title="Nhật ký lỗi" aria-label="Nhật ký lỗi"
                         className={`tr-tab${tab === 'loi' ? ' is-on' : ''}`}
                         onClick={() => setTab('loi')}
                     >
                         <i className="fas fa-clipboard-list"></i> Nhật ký lỗi
                     </button>
-                    <button
+                    <button title="Lịch sử" aria-label="Lịch sử"
                         className={`tr-tab${tab === 'lichsu' ? ' is-on' : ''}`}
                         onClick={() => setTab('lichsu')}
                     >

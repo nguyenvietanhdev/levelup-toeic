@@ -12774,12 +12774,22 @@ body.dang-phat-am .js-nut-am {
   border-bottom: none;
 }
 @media (max-width: 767px) {
-  .screen-header { flex-wrap: wrap; }
-  .screen-header .tr-tabs {
-    flex-basis: 100%;
-    margin-left: 0;
-    overflow-x: auto;
-    scrollbar-width: none;
+  /* Điện thoại: tab CHỈ ICON, cùng hàng với tên chế độ (tên dài thì cắt "…").
+     Chữ của tab là text node — ẩn bằng font-size 0 rồi trả cỡ cho icon; nhãn vẫn
+     còn ở `title` / `aria-label` của từng nút. */
+  /* `:has` — chỉ hàng tiêu đề CÓ tab (các màn AI); ưu tiên cao hơn luật
+     `.screen-header { flex-wrap: wrap }` của responsive.css cho màn Cửa hàng… */
+  .screen-header:has(> .tr-tabs) { flex-wrap: nowrap; }
+  .screen-header:has(> .tr-tabs) h2 {
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
-  .screen-header .tr-tabs::-webkit-scrollbar { display: none; }
+  /* Căn GIỮA theo chiều dọc cho thẳng hàng với tên chế độ (máy tính thì tab bám
+     đáy để gạch chân nằm trên đường viền; icon nhỏ mà bám đáy trông bị tụt xuống). */
+  .screen-header .tr-tabs { flex: 0 0 auto; gap: 2px; align-self: center; margin-bottom: 0; }
+  .screen-header .tr-tab { font-size: 0; padding: 8px 11px; }
+  .screen-header .tr-tab i { font-size: 17px; }
 }
