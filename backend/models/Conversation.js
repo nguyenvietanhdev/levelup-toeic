@@ -52,6 +52,8 @@ const conversationSchema = new mongoose.Schema(
         voice: { type: Boolean, default: false },
         // Nhóm lỗi ngữ pháp AI cố tạo cơ hội luyện (từ hồ sơ, chốt lúc mở phiên).
         nhamLoi: { type: [String], default: [] },
+        // Chỉ thị từ hồ sơ người học, chốt lúc mở phiên như `nhamLoi`.
+        chiThiHoSo: { type: String, default: '', maxlength: 600 },
         // Bộ tiêu chí chấm cuối phiên (giaotiep / toeic / ielts / hsk).
         rubric: { type: String, default: 'giaotiep' },
         // Chấm ngữ pháp nghiêm (chuẩn viết) thay vì nới lỏng văn nói. Chỉ có tác dụng

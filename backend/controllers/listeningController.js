@@ -7,6 +7,7 @@
 const UserProfile = require('../models/UserProfile');
 const UserStats = require('../models/UserStats');
 const ListeningSession = require('../models/ListeningSession');
+const { bangChungNghe, ghiBangChung } = require('../services/phanHoiTheoHoSo');
 const { sinhDoanNghe, chamNghe, NHOM_DANG_NGHE, GIONG_THEO_NGON_NGU } = require('../services/listeningAi');
 const { chonDang } = require('../services/dangBai');
 const { tongHop } = require('../services/ttsEngine');
@@ -213,6 +214,8 @@ exports.grade = async (req, res, next) => {
             stats.coins += coins;
             await Promise.all([profile.save(), stats.save()]);
         }
+        // Chỉ lần chiếm được phiên mới tới đây nên mỗi bài chỉ tính một lần.
+        await ghiBangChung(userId, phien.lang === 'zh' ? 'zh' : 'en', bangChungNghe(ketQua.score));
 
         res.json({
             success: true,

@@ -176,6 +176,19 @@ Reading real results exposed two of my own bugs, neither of which any test had c
   low speaking score joined the average for the first time. Retests now compare only the skills
   present in both tests.
 
+The model also connects to the AI modes in both directions. Prompts receive a short profile note, so
+the AI picks situations for the learner's goal, without overriding the difficulty they chose.
+
+Grading is deliberately blind to the profile. I first told the grader "this learner is a beginner, do
+not let this change the score", then tried it against the real model: the same translation dropped from
+5.5 to 4.0. An instruction cannot guarantee that, and a low profile that lowers scores would make
+progress unmeasurable. So scoring never sees the profile, and a separate small call afterwards rewrites
+only the explanations to suit the learner. If that call fails, the original explanations stay.
+
+Each graded piece of work then adds one piece of evidence per skill. A mistake counts against a skill, but a clean
+essay only counts for it when the grammar score is also high: an essay with no past tense has no
+past-tense errors, which proves nothing.
+
 The TOEIC goal picks the part that **loses the most questions**, not the lowest percentage. Half of
 Part 1 is 3 questions; 30% of Part 7 is 16. It also reads the same attempts through the same function
 as the score predictor, so the two cannot disagree.

@@ -7,6 +7,7 @@ const UserProfile = require('../models/UserProfile');
 const { fetchWords, faceOf, chonTrongDanhSach } = require('../services/chonTu');
 const { openConversation, replyTurn, goiYKhung, moTaVai, NHOM_TINH_HUONG } = require('../services/conversationAi');
 const { layNham } = require('../services/nhamDiemYeu');
+const { layChiThiRaBai, layChiThiCham, vietLaiGiaiThich, bangChungTuBai, bangChungNoi, ghiBangChung } = require('../services/phanHoiTheoHoSo');
 const { chonDang } = require('../services/dangBai');
 const { chuanHoaBoTieuChi, gradeConversation } = require('../services/conversationGrader');
 const { matchWords, collectUsed, collectAiUsed } = require('../utils/wordMatch');
@@ -180,7 +181,8 @@ exports.start = async (req, res, next) => {
         // trúc đó. Người học tắt được (`nhamYeu: false`); lỗi đọc hồ sơ → bỏ qua.
         const nham = req.body.nhamYeu === false ? [] : await layNham(req.user.id, lang);
         const nhamKeys = nham.map((n) => n.key);
-        const ai = await openConversation({ lang, topic, targetWords, userId: req.user.id, level, tinhHuong, voice, nham: nhamKeys });
+        const chiThi = req.body.nhamYeu === false ? '' : await layChiThiRaBai(req.user.id, lang);
+        const ai = await openConversation({ lang, topic, targetWords, userId: req.user.id, level, tinhHuong, voice, nham: nhamKeys, chiThi });
         if (!ai.success) {
             // AI lỗi thì HOÀN năng lượng — người dùng không được gì mà vẫn mất
             // tiền là lỗi tệ nhất trong nhóm này.
@@ -208,6 +210,7 @@ exports.start = async (req, res, next) => {
             tinhHuong: tinhHuong ? tinhHuong.vi : '',
             voice,
             nhamLoi: nhamKeys,
+            chiThiHoSo: chiThi,
             targetWords,
             level,
             turns: [{ role: 'npc', content: ai.content }],
@@ -281,6 +284,7 @@ exports.reply = async (req, res, next) => {
             voice: convo.voice === true,
             // Chốt lúc mở phiên: hồ sơ đổi giữa chừng cũng không đổi hướng hội thoại.
             nham: convo.nhamLoi || [],
+            chiThi: convo.chiThiHoSo || '',
         });
 
         if (ai.success) {
@@ -366,6 +370,10 @@ exports.finish = async (req, res, next) => {
             turns: convo.turns.map((t) => ({ role: t.role, content: t.content })),
             userId: req.user.id,
         });
+        // Điểm đã chốt ở trên. Hồ sơ chỉ đổi cách giải thích, sau khi chấm.
+        if (feedback?.corrections?.length) {
+            feedback.corrections = await vietLaiGiaiThich(feedback.corrections, await layChiThiCham(req.user.id, convo.lang), req.user.id);
+        }
 
         convo.usedWords = used;
         convo.aiUsedWords = collectAiUsed(convo.turns, convo.targetWords, convo.lang);
@@ -376,6 +384,15 @@ exports.finish = async (req, res, next) => {
         convo.expiresAt = null;
 
         await Promise.all([profile.save(), stats.save(), convo.save()]);
+
+        // Bài đã chấm góp một bằng chứng vào hồ sơ. Chỉ phiên giọng nói mới đo được kỹ năng Nói.
+        if (feedback) {
+            const diemNguPhap = (feedback.criteria || []).find((c) => c.key === 'ngu_phap')?.score;
+            await ghiBangChung(req.user.id, convo.lang, [
+                ...bangChungTuBai({ loi: feedback.corrections, diemNguPhap }),
+                ...(convo.voice === true ? bangChungNoi(feedback) : []),
+            ]);
+        }
 
         res.json({
             success: true,

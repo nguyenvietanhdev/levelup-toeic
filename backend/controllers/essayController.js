@@ -3,6 +3,7 @@ const { chuanHoaMuc } = require('../services/aiLevel');
 const UserStats = require('../models/UserStats');
 const UserProfile = require('../models/UserProfile');
 const { layNham } = require('../services/nhamDiemYeu');
+const { layChiThiRaBai, layChiThiCham, vietLaiGiaiThich, bangChungTuBai, ghiBangChung } = require('../services/phanHoiTheoHoSo');
 const { luuDe, xoaNhap } = require('../services/baiNhap');
 const { taoXemLai } = require('./xemLaiController');
 const { generatePrompt, gradeEssay, countUnits, limitsFor, chuanHoaRubric } =
@@ -82,6 +83,7 @@ exports.prompt = async (req, res, next) => {
             topicHint, userId: req.user.id, lang, level, rubric,
             dang: req.body.dang, tuChon: req.body.tuChon,
             nham: nham.map((n) => n.key),
+            chiThi: req.body.nhamYeu === false ? '' : await layChiThiRaBai(req.user.id, lang),
         });
         if (!ai.success) {
             logger.error('Essay prompt: AI failed', ai.error);
@@ -212,6 +214,9 @@ exports.grade = async (req, res, next) => {
         const lvl = awardXp(profile, stats, xp);
         stats.coins += coins;
 
+        // Điểm đã chốt. Hồ sơ chỉ đổi cách giải thích, sau khi chấm.
+        r.errors = await vietLaiGiaiThich(r.errors, await layChiThiCham(req.user.id, lang), req.user.id);
+
         const doc = await Essay.create({
             userId: req.user.id,
             prompt,
@@ -235,6 +240,8 @@ exports.grade = async (req, res, next) => {
         await Promise.all([profile.save(), stats.save()]);
         // Đã nộp chấm → bài nháp hết việc.
         await xoaNhap(req.user.id, 'viet', lang);
+        // Bài đã chấm góp một bằng chứng vào hồ sơ.
+        await ghiBangChung(req.user.id, lang, bangChungTuBai({ loi: r.errors, diemNguPhap: r.scores?.grammar }));
 
         res.json({
             success: true,

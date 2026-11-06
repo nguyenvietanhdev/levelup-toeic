@@ -129,7 +129,7 @@ function pickWords(targetWords = [], usedWords = [], n = WORDS_IN_PROMPT) {
  * Viết bằng tiếng Anh vì mọi model đều bám prompt tiếng Anh tốt hơn; nội dung
  * SINH RA thì vẫn theo `lang`.
  */
-function systemPrompt({ lang, topic, scenario, words, level, voice = false, nham = [] }) {
+function systemPrompt({ lang, topic, scenario, words, level, voice = false, nham = [], chiThi = '' }) {
     const L = langName(lang);
     return [
         `You are a friendly conversation partner helping a ${NATIVE} speaker practise ${L}.`,
@@ -159,6 +159,7 @@ function systemPrompt({ lang, topic, scenario, words, level, voice = false, nham
         // Lỗi ngữ pháp lặp lại trong hồ sơ người học: thỉnh thoảng hỏi câu cần đúng
         // cấu trúc đó (xem `nhamDiemYeu`). Rỗng thì không thêm gì.
         chiThiNham(nham, 'hoi-thoai'),
+        chiThi,
     ].filter(Boolean).join('\n');
 }
 
@@ -222,12 +223,12 @@ const NHOM_TINH_HUONG = [
  *
  * @returns {{success:boolean, content?:string, scenario?:string, khung?:string[], error?:string}}
  */
-async function openConversation({ lang = 'en', topic = '', targetWords = [], userId = null, level = 'medium', tinhHuong = null, voice = false, nham = [] } = {}) {
+async function openConversation({ lang = 'en', topic = '', targetWords = [], userId = null, level = 'medium', tinhHuong = null, voice = false, nham = [], chiThi = '' } = {}) {
     const words = pickWords(targetWords, [], WORDS_IN_PROMPT);
     // Tình huống do AI TỰ DỰNG từ bộ từ — không lấy từ Part. Yêu cầu hai dòng
     // SCENARIO và REPLY để server tách được tình huống ra khỏi lời nói.
     const messages = [
-        { role: 'system', content: systemPrompt({ lang, topic, words, level, voice, nham }) },
+        { role: 'system', content: systemPrompt({ lang, topic, words, level, voice, nham, chiThi }) },
         {
             role: 'user',
             content: [
@@ -266,7 +267,7 @@ async function openConversation({ lang = 'en', topic = '', targetWords = [], use
  * @param {Array}  o.turns  Toàn bộ lượt đã có (`{ role: 'npc'|'user', content }`).
  */
 async function replyTurn({
-    lang = 'en', topic = '', scenario = '', targetWords = [], usedWords = [], turns = [], userId = null, level = 'medium', voice = false, nham = [],
+    lang = 'en', topic = '', scenario = '', targetWords = [], usedWords = [], turns = [], userId = null, level = 'medium', voice = false, nham = [], chiThi = '',
 } = {}) {
     // Ưu tiên từ CHƯA dùng: hội thoại tự lái về phía những từ người học còn nợ,
     // thay vì lặp lại mấy từ đã ăn điểm rồi.
@@ -284,7 +285,7 @@ async function replyTurn({
     }));
 
     const messages = [
-        { role: 'system', content: systemPrompt({ lang, topic, scenario, words, level, voice, nham }) },
+        { role: 'system', content: systemPrompt({ lang, topic, scenario, words, level, voice, nham, chiThi }) },
         ...recent,
     ];
 

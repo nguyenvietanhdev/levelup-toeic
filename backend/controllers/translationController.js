@@ -2,6 +2,7 @@ const Translation = require('../models/Translation');
 const UserStats = require('../models/UserStats');
 const UserProfile = require('../models/UserProfile');
 const { layNham } = require('../services/nhamDiemYeu');
+const { layChiThiRaBai, layChiThiCham, vietLaiGiaiThich, bangChungTuBai, ghiBangChung } = require('../services/phanHoiTheoHoSo');
 const { luuDe, xoaNhap } = require('../services/baiNhap');
 const { chonTu } = require('../services/chonTu');
 const { taoXemLai } = require('./xemLaiController');
@@ -79,6 +80,7 @@ exports.passage = async (req, res, next) => {
             tuVung: words, userId: req.user.id, lang, level,
             dang: req.body.dang, tuChon: req.body.tuChon,
             nham: nham.map((n) => n.key),
+            chiThi: req.body.nhamYeu === false ? '' : await layChiThiRaBai(req.user.id, lang),
         });
         if (!ai.success) {
             logger.error('Translation passage: AI failed', ai.error);
@@ -195,6 +197,9 @@ exports.grade = async (req, res, next) => {
         const lvl = awardXp(profile, stats, xp);
         stats.coins += coins;
 
+        // Điểm đã chốt. Hồ sơ chỉ đổi cách giải thích, sau khi chấm.
+        ai.notes = await vietLaiGiaiThich(ai.notes, await layChiThiCham(req.user.id, lang), req.user.id);
+
         const doc = await Translation.create({
             userId: req.user.id,
             passage,
@@ -217,6 +222,8 @@ exports.grade = async (req, res, next) => {
         await Promise.all([profile.save(), stats.save()]);
         // Đã nộp chấm → bài nháp hết việc.
         await xoaNhap(req.user.id, 'dich', lang);
+        // Bài đã chấm góp một bằng chứng vào hồ sơ.
+        await ghiBangChung(req.user.id, lang, bangChungTuBai({ loi: ai.notes, diemNguPhap: ai.scores?.grammar }));
 
         res.json({
             success: true,

@@ -129,7 +129,7 @@ const NHOM_DANG_DICH = [
  * ngẫu nhiên toàn từ chưa từng thấy. Đây là thứ ChatGPT không làm được: nó
  * không biết người học đang học bộ nào.
  */
-async function generatePassage({ tuVung = [], userId = null, lang = 'en', level = 'medium', dang = '', tuChon = '', nham = [] } = {}) {
+async function generatePassage({ tuVung = [], userId = null, lang = 'en', level = 'medium', dang = '', tuChon = '', nham = [], chiThi = '' } = {}) {
     const zh = lang === 'zh';
     // Dạng văn bản người học chọn (null = Ngẫu nhiên → một tình huống đời thường như trước).
     const chon = chonDang(NHOM_DANG_DICH, { dang, tuChon });
@@ -176,6 +176,7 @@ async function generatePassage({ tuVung = [], userId = null, lang = 'en', level 
         const nhamDong = chiThiNham(nham, 'dich');
         if (nhamDong) system.push(nhamDong);
     }
+    if (chiThi) system.push(chiThi);
 
     const messages = [
         { role: 'system', content: system.join('\n') },
