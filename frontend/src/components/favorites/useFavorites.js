@@ -2,8 +2,13 @@ import { useState, useEffect, useCallback } from 'react';
 import { GameState } from '@game/state.js';
 import { FavoritesAPI } from '@api/favorites.js';
 
+/**
+ * Bản sao trong localStorage có thể bị hỏng (không phải mảng). Danh sách này được đọc ngay
+ * khi vẽ thanh trên cùng, nên không chặn ở đây thì mỗi lần mở app đều sập trắng màn hình.
+ */
 function readLocalFavorites() {
-    return GameState.state?.progress?.favoriteWords || [];
+    const ds = GameState.state?.progress?.favoriteWords;
+    return Array.isArray(ds) ? ds : [];
 }
 
 function writeLocalFavorites(words) {
@@ -24,9 +29,12 @@ export function useFavorites(isLoggedIn) {
         setLoading(true);
         const res = await FavoritesAPI.list();
         if (res.success) {
-            const list = res.data || [];
-            setWords(list);
-            writeLocalFavorites(list);
+            // Phản hồi sai dạng thì giữ danh sách đang có, không ghi đè bản sao bằng dữ liệu hỏng.
+            if (Array.isArray(res.data) || res.data == null) {
+                const list = res.data || [];
+                setWords(list);
+                writeLocalFavorites(list);
+            }
         }
         setLoading(false);
     }, [isLoggedIn]);

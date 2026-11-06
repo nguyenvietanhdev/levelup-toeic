@@ -719,12 +719,12 @@ export const Flashcard = {
     },
 
     _isFavorite(en) {
-        const favs = GameState.state?.progress?.favoriteWords || [];
+        const favs = Array.isArray(GameState.state?.progress?.favoriteWords) ? GameState.state.progress.favoriteWords : [];
         return favs.some(w => (w.en || w.word) === en);
     },
 
     _toggleFavorite(word) {
-        const favs = GameState.state?.progress?.favoriteWords || [];
+        const favs = Array.isArray(GameState.state?.progress?.favoriteWords) ? GameState.state.progress.favoriteWords : [];
         const isFav = this._isFavorite(word.en);
         if (!GameState.state.progress) GameState.state.progress = {};
         if (isFav) {
