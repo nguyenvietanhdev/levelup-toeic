@@ -12,7 +12,10 @@ import { fileURLToPath } from 'node:url';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const doc = (...p) => readFileSync(join(__dirname, '..', '..', ...p), 'utf8');
-const src = doc('components', 'nguPhap', 'NguPhapScreen.jsx');
+const src = doc('components', 'nguPhap', 'NguPhapTra.jsx');
+const ngan = doc('components', 'nguPhap', 'NganNguPhap.jsx');
+const lienKet = doc('lib', 'nguPhapLienKet.js');
+const khoLoi = readFileSync(join(__dirname, '..', '..', '..', '..', 'backend', 'services', 'nguPhapKho.js'), 'utf8');
 
 describe('nối dây', () => {
     test('lazy route và menu', () => {
@@ -57,6 +60,39 @@ describe('luồng tìm không thấy', () => {
     });
     test('đổi câu tra thì bỏ nháp cũ', () => {
         expect(src).toMatch(/setBao\(''\); setNhap\(null\); \}, \[q\]\)/);
+    });
+});
+
+describe('tra trong lúc luyện tập', () => {
+    test('ngăn luôn sẵn sàng ở mọi màn, có nút mở trên thanh trên cùng', () => {
+        expect(doc('App.jsx')).toMatch(/<NganNguPhap \/>/);
+        expect(doc('layouts', 'TopNav.jsx')).toMatch(/id="nav-ngu-phap-btn"[\s\S]{0,300}onClick=\{\(\) => moNguPhap\(\)\}/);
+    });
+    test('mở bằng sự kiện, không đổi màn: bài đang làm không bị mất', () => {
+        expect(ngan).toMatch(/addEventListener\(SU_KIEN_NGU_PHAP/);
+        expect(ngan).not.toMatch(/showScreen/);
+    });
+    test('phím gõ trong ngăn không lọt ra bài đang làm; Esc vẫn đóng được', () => {
+        expect(ngan).toMatch(/e\.stopPropagation\(\)/);
+        expect(ngan).toMatch(/onKeyDown=\{chanPhim\}/);
+        expect(ngan).toMatch(/onKeyUp=\{chanPhim\}/);
+        expect(ngan).toMatch(/e\.key === 'Escape'\) dong\(\)/);
+    });
+    test('chỉ tải phần tra cứu sau lần mở đầu tiên', () => {
+        expect(ngan).toMatch(/lazy\(\(\) => import\('\.\/NguPhapTra\.jsx'\)\)/);
+        expect(ngan).toMatch(/if \(!daMo\) return null;/);
+    });
+    test('mọi id trong bảng nối đều có thật trong kho lõi', () => {
+        const ids = [...lienKet.matchAll(/\{ id: '([a-z-]+)' \}/g)].map((m) => m[1]);
+        expect(ids.length).toBeGreaterThan(5);
+        for (const id of ids) expect(khoLoi).toContain(`id: '${id}'`);
+        for (const [, n] of lienKet.matchAll(/\{ nhom: '([a-z-]+)' \}/g)) expect(khoLoi).toContain(`key: '${n}'`);
+    });
+    test('có lối mở từ lỗi đã chữa, Sổ tay lỗi, câu sai và chẩn đoán', () => {
+        expect(doc('components', 'chuaBai', 'ChuaBai.jsx')).toMatch(/moNguPhap\(NGU_PHAP_THEO_LOI\[dangChon\.loai\]\)/);
+        expect(doc('components', 'tienBo', 'SoTayLoi.jsx')).toMatch(/moNguPhap\(NGU_PHAP_THEO_LOI\[m\.loai\]\)/);
+        expect(doc('components', 'phanXa', 'PhanXaScreen.jsx')).toMatch(/moNguPhap\(NGU_PHAP_THEO_KHUNG\[cau\.khung\]\)/);
+        expect(doc('components', 'hoSoHoc', 'HoSoHocScreen.jsx')).toMatch(/moNguPhap\(NGU_PHAP_THEO_KHUNG\[c\.kyNang\]\)/);
     });
 });
 

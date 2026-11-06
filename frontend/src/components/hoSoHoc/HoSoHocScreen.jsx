@@ -5,6 +5,7 @@ import { useAuth } from '@components/auth/AuthContext.jsx';
 import { Notification } from '@ui/Toaster.jsx';
 import { HoSoHocAPI } from '@api/hoSoHoc.js';
 import { isSpeechSupported, speechLangFor } from '@lib/speechInput.js';
+import { moNguPhap, NGU_PHAP_THEO_KHUNG } from '@lib/nguPhapLienKet.js';
 import { useGhiAm } from '../conversation/useGhiAm.js';
 import { useHoiKhiThoat } from '../ai/aiExitGuard.js';
 
@@ -244,6 +245,11 @@ export default function HoSoHocScreen({ active }) {
                                             {c.kyNang !== 'nghe' && (
                                                 <button type="button" className="lt-ke-hoach-link" onClick={() => luyenKhung(c.kyNang)}>
                                                     Luyện khung này
+                                                </button>
+                                            )}
+                                            {NGU_PHAP_THEO_KHUNG[c.kyNang] && (
+                                                <button type="button" className="lt-ke-hoach-link" onClick={() => moNguPhap(NGU_PHAP_THEO_KHUNG[c.kyNang])}>
+                                                    Xem công thức
                                                 </button>
                                             )}
                                         </li>

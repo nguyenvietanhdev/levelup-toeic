@@ -11,6 +11,7 @@ import { useMenuBadges } from './useMenuBadges.js';
 import { PartSelector } from '@components/vocab/part/partSelector.js';
 import NotificationPanel from '@components/notifications/NotificationPanel.jsx';
 import FavoritesModal from '@components/favorites/FavoritesModal.jsx';
+import { moNguPhap } from '@lib/nguPhapLienKet.js';
 import TopicModal from '@components/vocab/topic/TopicModal.jsx';
 import SpinWheelModal from '@components/spin/SpinWheelModal.jsx';
 import TranslateModal from '@components/translate/TranslateModal.jsx';
@@ -856,6 +857,16 @@ export default function TopNav() {
                     Nav bớt một nút thì icon tìm kiếm về được giữa hàng, và nút
                     này không mang huy hiệu nào nên nằm trong menu không giấu mất
                     thông tin gì — khác nút chuông, cái đó có số quà chưa nhận. */}
+                {/* Mở đè lên màn đang làm: tra được giữa bài mà không mất bài. */}
+                <button
+                    id="nav-ngu-phap-btn"
+                    className="icon-btn"
+                    title="Tra công thức ngữ pháp"
+                    aria-label="Tra công thức ngữ pháp"
+                    onClick={() => moNguPhap()}
+                >
+                    <i className="fas fa-spell-check"></i>
+                </button>
                 <button
                     id="nav-favorite-btn"
                     className={`icon-btn${favLock.locked ? ' icon-btn--locked' : ''}`}

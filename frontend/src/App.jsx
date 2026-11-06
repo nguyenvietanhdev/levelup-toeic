@@ -14,6 +14,7 @@ import './assets/styles/index.css';
 import LoadingScreen from '@ui/LoadingScreen.jsx';
 import ErrorBoundary from '@ui/ErrorBoundary.jsx';
 import TopNav from '@layouts/TopNav.jsx';
+import NganNguPhap from '@components/nguPhap/NganNguPhap.jsx';
 import StatusBar from '@layouts/StatusBar.jsx';
 import SideMenu from '@layouts/SideMenu.jsx';
 import Modal, { Modal as UIModal } from '@ui/Modal.jsx';
@@ -171,6 +172,7 @@ function AppInner() {
     return (
         <div id="game-container" className="game-container">
             <TopNav />
+            <NganNguPhap />
             <StatusBar />
 
             <main id="main-content" className="main-content">

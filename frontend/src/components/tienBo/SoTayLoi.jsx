@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { moNguPhap, NGU_PHAP_THEO_LOI } from '@lib/nguPhapLienKet.js';
 import { TienBoAPI } from '@api/tienBo.js';
 import { khopSua, coTiengViet } from '@lib/chuaBai.js';
 import OnLoi from './OnLoi.jsx';
@@ -58,6 +59,11 @@ function MucLoi({ m, tuKiemTra, trangThai }) {
                 )}
             </div>
             {m.issue && <p className="stl-giai-thich">{m.issue}</p>}
+            {NGU_PHAP_THEO_LOI[m.loai] && (
+                <button type="button" className="lt-ke-hoach-link" onClick={() => moNguPhap(NGU_PHAP_THEO_LOI[m.loai])}>
+                    <i className="fas fa-spell-check"></i> Xem công thức liên quan
+                </button>
+            )}
             {che && (
                 <div className="stl-tu-kiem-tra">
                     <input

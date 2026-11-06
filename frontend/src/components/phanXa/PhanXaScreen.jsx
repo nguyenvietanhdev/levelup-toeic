@@ -5,6 +5,7 @@ import { useAuth } from '@components/auth/AuthContext.jsx';
 import { Notification } from '@ui/Toaster.jsx';
 import { PhanXaAPI } from '@api/phanXa.js';
 import { isSpeechSupported, speechLangFor } from '@lib/speechInput.js';
+import { moNguPhap, NGU_PHAP_THEO_KHUNG } from '@lib/nguPhapLienKet.js';
 import { useGhiAm } from '../conversation/useGhiAm.js';
 import { useHoiKhiThoat } from '../ai/aiExitGuard.js';
 
@@ -434,6 +435,11 @@ export default function PhanXaScreen({ active }) {
                                     {!ketQua.dung && buoi.quyTac?.[cau.khung] && (
                                         <button type="button" className="btn btn-secondary" onClick={() => setXemQuyTac((x) => !x)}>
                                             <i className="fas fa-book-open"></i> {xemQuyTac ? 'Ẩn quy tắc' : 'Xem quy tắc'}
+                                        </button>
+                                    )}
+                                    {!ketQua.dung && NGU_PHAP_THEO_KHUNG[cau.khung] && (
+                                        <button type="button" className="btn btn-secondary" onClick={() => moNguPhap(NGU_PHAP_THEO_KHUNG[cau.khung])}>
+                                            <i className="fas fa-spell-check"></i> Xem công thức
                                         </button>
                                     )}
                                     <button type="button" className="btn btn-primary" onClick={sangCau}>
