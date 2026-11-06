@@ -12913,3 +12913,10 @@ body.dang-phat-am .js-nut-am {
 @media (max-width: 480px) {
   .np-cong-thuc > div { grid-template-columns: minmax(0, 1fr); gap: 2px; }
 }
+
+/* Công thức ngữ pháp: thông báo và bản nháp chờ thêm vào thư viện */
+.np-bao { margin: 8px 0 12px; padding: 8px 12px; border-radius: 8px; background: var(--bg-secondary); font-size: 14px; line-height: 1.5; }
+.np-nhap { margin: 8px 0 12px; padding: 12px 14px; border-radius: 12px; border: 2px dashed var(--accent-color); }
+.np-nhap-hoi { margin: 0; line-height: 1.5; }
+.np-nhap-than { padding: 0; margin-top: 12px; }
+.np-nhap-than h3 { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 0 0 10px; font-size: 16px; }

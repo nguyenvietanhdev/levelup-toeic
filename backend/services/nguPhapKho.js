@@ -178,7 +178,7 @@ const MUC = [
         luuY: 'Không dùng "have" để nói một nơi có gì: không nói "Here have a park".',
     },
     {
-        id: 'cau-hoi-wh', nhom: 'cau-truc', ten: 'Câu hỏi với từ để hỏi', tuKhoa: 'wh question what where when why how who dao ngu',
+        id: 'cau-hoi-wh', nhom: 'cau-truc', ten: 'Câu hỏi với từ để hỏi', tuKhoa: 'wh question what where when why how who',
         congThuc: [
             { nhan: 'Có trợ động từ', ct: 'Wh- + trợ động từ + S + V?' },
             { nhan: 'Hỏi chủ ngữ', ct: 'Who/What + V?' },

@@ -1,11 +1,11 @@
 // ===================================
-// CÔNG THỨC NGỮ PHÁP — tra cứu kho lõi, AI mở rộng khi cần
+// CÔNG THỨC NGỮ PHÁP — tra cứu, AI nhận diện chủ điểm đã có và soạn nháp mục mới
 // ===================================
 
 const express = require('express');
 const router = express.Router();
 const { protect } = require('../middleware/auth');
-const { tim, hoi, themViDu } = require('../services/nguPhap');
+const { tim, hoi, themVaoThuVien, themViDu } = require('../services/nguPhap');
 
 router.use(protect);
 
@@ -17,10 +17,19 @@ router.get('/', async (req, res, next) => {
     } catch (err) { next(err); }
 });
 
-/** Hỏi AI về chủ điểm chưa có; đã có người hỏi thì trả bản đã lưu. */
+/** Tra chủ điểm chưa thấy: mở mục đã có, hoặc trả nháp chờ người học quyết định. */
 router.post('/hoi', async (req, res, next) => {
     try {
         const r = await hoi(req.user.id, req.body?.q);
+        if (r.loi) return res.status(r.ma || 400).json({ success: false, message: r.loi });
+        res.json({ success: true, data: r });
+    } catch (err) { next(err); }
+});
+
+/** Người học đồng ý đưa nháp vào thư viện chung. */
+router.post('/nhap/:id/them', async (req, res, next) => {
+    try {
+        const r = await themVaoThuVien(req.user.id, req.params.id);
         if (r.loi) return res.status(r.ma || 400).json({ success: false, message: r.loi });
         res.json({ success: true, data: r });
     } catch (err) { next(err); }

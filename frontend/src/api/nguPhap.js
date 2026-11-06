@@ -1,6 +1,6 @@
 import { Http } from './http.js';
 
-/** Công thức ngữ pháp: kho lõi, AI mở rộng khi cần. */
+/** Công thức ngữ pháp: kho lõi, AI nhận diện chủ điểm đã có và soạn nháp mục mới. */
 function unwrap(res) {
     if (res && res.success === false) {
         throw new Error(res.error || res.message || 'Không thực hiện được');
@@ -20,9 +20,14 @@ export const NguPhapAPI = {
         return unwrap(await Http.get(`/ngu-phap?q=${encodeURIComponent(q)}`));
     },
 
-    /** `{ muc, tuCache, conLuot }` hoặc `{ khongPhaiNguPhap: true, conLuot }`. */
+    /** `{ ketQua: 'da-co' | 'ban-nhap' | 'khong-phai', muc?, nhap?, tuCache?, conLuot }`. */
     async hoi(q) {
         return unwrap(await Http.post('/ngu-phap/hoi', { q }));
+    },
+
+    /** Đưa nháp vào thư viện chung: `{ muc, daCo, conLuot }`. */
+    async themVaoThuVien(nhapId) {
+        return unwrap(await Http.post(`/ngu-phap/nhap/${encodeURIComponent(nhapId)}/them`, {}));
     },
 
     /** `{ viDuThem, daDu?, conLuot }`. */
