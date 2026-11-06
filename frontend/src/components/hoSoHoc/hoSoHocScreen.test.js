@@ -37,6 +37,10 @@ describe('mục tiêu và test', () => {
         expect(src.match(/khoa: true/g)).toHaveLength(3);
         expect(src).toMatch(/key: 'giao-tiep', ten: 'Giao tiếp', icon: 'fa-comments', moTa: '[^']+' \}/);
     });
+    test('mục tiêu hiện cả trước và sau khi làm test', () => {
+        expect(src.match(/<LuoiMucTieu \/>/g)).toHaveLength(2);
+        expect(src).toMatch(/Mục tiêu đang theo/);
+    });
     test('hỏi khi thoát lúc đang test; rời màn thì dừng tiếng và micro', () => {
         expect(src).toMatch(/useHoiKhiThoat\('ho-so-hoc-screen', pha === 'test', \{/);
         const than = src.slice(src.indexOf('if (active) return undefined;'));

@@ -16,6 +16,21 @@ const MUC_TIEU = [
     { key: 'hsk', ten: 'HSK', icon: 'fa-language', moTa: 'Sắp có', khoa: true },
 ];
 
+/** Các mục tiêu: mục đang mở được đánh dấu chọn, mục chưa có nội dung ghi "Sắp có". */
+function LuoiMucTieu() {
+    return (
+        <div className="hs-muc-tieu">
+            {MUC_TIEU.map((m) => (
+                <div key={m.key} className={`hs-muc ${m.khoa ? 'is-khoa' : 'is-chon'}`}>
+                    <i className={`fas ${m.icon}`}></i>
+                    <strong>{m.ten}</strong>
+                    <small>{m.moTa}</small>
+                </div>
+            ))}
+        </div>
+    );
+}
+
 const NHAN_MUC = { yeu: 'Cần luyện', 'dang-len': 'Đang lên', vung: 'Vững', 'chua-du': 'Chưa đủ dữ liệu' };
 
 const dungPhat = () => {
@@ -177,15 +192,7 @@ export default function HoSoHocScreen({ active }) {
                 {isLoggedIn && pha === 'hoSo' && hoSo && !hoSo.testNgay && (
                     <>
                         <p className="px-mo-ta">Chọn mục tiêu rồi làm bài test khoảng 8 phút. Hệ thống sẽ tìm ra chỗ bạn đang vướng và sắp lộ trình theo đó.</p>
-                        <div className="hs-muc-tieu">
-                            {MUC_TIEU.map((m) => (
-                                <div key={m.key} className={`hs-muc ${m.khoa ? 'is-khoa' : 'is-chon'}`}>
-                                    <i className={`fas ${m.icon}`}></i>
-                                    <strong>{m.ten}</strong>
-                                    <small>{m.moTa}</small>
-                                </div>
-                            ))}
-                        </div>
+                        <LuoiMucTieu />
                         <p className="px-goi-y">
                             {coMic
                                 ? 'Bài test có phần nói, hãy chuẩn bị micro. Không tiện nói thì chuyển sang gõ ở từng câu.'
@@ -201,6 +208,9 @@ export default function HoSoHocScreen({ active }) {
 
                 {isLoggedIn && pha === 'hoSo' && hoSo?.testNgay && (
                     <>
+                        {/* Làm test xong vẫn phải thấy mình đang theo mục tiêu nào và còn những mục tiêu gì. */}
+                        <h3 className="hs-tieu-de hs-tieu-de-dau">Mục tiêu đang theo</h3>
+                        <LuoiMucTieu />
                         <div className="px-so">
                             <div><strong>{hoSo.trinhDo.nhan}</strong><span>Trình độ ước lượng</span></div>
                             <div><strong>{hoSo.trinhDo.diem}/100</strong><span>Điểm chung</span></div>
