@@ -108,6 +108,16 @@ export const NHOM_PHIM_TAT = [
         ],
     },
     {
+        key: 'phan-xa',
+        ten: 'Phản xạ câu',
+        icon: 'fa-bolt',
+        screens: ['phan-xa-screen'],
+        phim: [
+            { phim: ['Giữ Cách'], viec: 'Nói câu trả lời — nhả ra là chấm luôn' },
+            { phim: ['Enter'], viec: 'Kiểm tra câu đã gõ, bấm lần nữa để sang câu tiếp' },
+        ],
+    },
+    {
         key: 'hoi-thoai',
         ten: 'Hội thoại giọng nói',
         icon: 'fa-microphone-lines',

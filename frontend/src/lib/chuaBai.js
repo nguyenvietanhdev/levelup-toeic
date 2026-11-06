@@ -14,6 +14,8 @@ export const LOAI_LOI = {
     preposition: 'Giới từ',
     'word-order': 'Trật tự từ',
     'word-choice': 'Chọn từ chưa đúng',
+    'literal-translation': 'Dịch từng chữ',
+    pronoun: 'Đại từ',
     plural: 'Số ít / số nhiều',
     spelling: 'Chính tả',
     punctuation: 'Dấu câu',

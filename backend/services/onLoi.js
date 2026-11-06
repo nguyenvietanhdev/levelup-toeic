@@ -200,6 +200,8 @@ const MO_TA_LOI = {
     preposition: 'a wrong preposition',
     'word-order': 'a word order mistake',
     'word-choice': 'a wrong word choice (a similar but incorrect word)',
+    'literal-translation': 'a word-for-word translation from Vietnamese (a missing verb or an unnatural structure)',
+    pronoun: 'a wrong pronoun form (for example "they" instead of "them")',
     plural: 'a singular/plural or countable/uncountable noun mistake',
     spelling: 'one misspelled word',
     punctuation: 'a punctuation mistake',

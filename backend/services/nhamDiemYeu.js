@@ -27,6 +27,8 @@ const CO_HOI = {
     preposition: 'times, places and movement (in/on/at, to/from, during/for)',
     'word-order': 'questions and sentences with adverbs of frequency or several adjectives',
     'word-choice': 'precise descriptions where similar words (make/do, say/tell) must be chosen carefully',
+    'literal-translation': 'complete sentences with a clear subject and verb, where a word-for-word translation from Vietnamese would fail',
+    pronoun: 'object pronouns after verbs and prepositions (me, him, her, them)',
     plural: 'quantities with countable and uncountable nouns (many/much, a few/a little)',
 };
 

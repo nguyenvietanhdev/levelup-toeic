@@ -54,6 +54,8 @@ const MENU_GROUPS = [
             { label: 'Chat', icon: 'fa-comments', screen: 'conversation-screen', feature: 'feature:conversation' },
             // Hội thoại GIỌNG NÓI: AI gửi tin nhắn thoại, trả lời bằng ghi âm. Cùng khoá Level với Chat.
             { label: 'Hội thoại', icon: 'fa-microphone-lines', screen: 'voice-conversation-screen', feature: 'feature:conversation' },
+            // Phản xạ câu: lượt ngắn luyện khung câu. Không khoá Level, không tốn năng lượng.
+            { label: 'Phản xạ câu', icon: 'fa-bolt', screen: 'phan-xa-screen' },
         ],
     },
     {

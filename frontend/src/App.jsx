@@ -46,6 +46,7 @@ const ConversationScreen = lazy(() => import('@components/conversation/Conversat
 const VoiceConversationScreen = lazy(() => import('@components/conversation/VoiceConversationScreen.jsx'));
 const LoTrinhScreen      = lazy(() => import('@components/loTrinh/LoTrinhScreen.jsx'));
 const TienBoScreen       = lazy(() => import('@components/tienBo/TienBoScreen.jsx'));
+const PhanXaScreen       = lazy(() => import('@components/phanXa/PhanXaScreen.jsx'));
 const EssayScreen        = lazy(() => import('@components/essay/EssayScreen.jsx'));
 const ListeningScreen    = lazy(() => import('@components/listening/ListeningScreen.jsx'));
 const TranslationScreen  = lazy(() => import('@components/translation/TranslationScreen.jsx'));
@@ -68,6 +69,7 @@ const LAZY_SCREENS = {
     'voice-conversation-screen': VoiceConversationScreen,
     'lo-trinh-screen': LoTrinhScreen,
     'tien-bo-screen': TienBoScreen,
+    'phan-xa-screen': PhanXaScreen,
     'essay-screen': EssayScreen,
     'listening-screen': ListeningScreen,
     'translation-screen': TranslationScreen,

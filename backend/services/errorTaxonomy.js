@@ -27,6 +27,9 @@ const LOAI_LOI = [
     { key: 'preposition', vi: 'Giới từ', hint: 'Giới từ đi liền với từ đứng trước — học theo cụm, không học rời.' },
     { key: 'word-order', vi: 'Trật tự từ', hint: 'Tiếng Anh: chủ ngữ – động từ – tân ngữ; trạng ngữ hiếm khi chen giữa.' },
     { key: 'word-choice', vi: 'Chọn từ chưa đúng', hint: 'Từ đúng nghĩa chưa chắc đúng ngữ cảnh — tra cụm đi kèm.' },
+    // Tách khỏi "chọn từ": lỗi ở KHUNG CÂU (thiếu động từ, ghép theo tiếng Việt), đổi từ không sửa được.
+    { key: 'literal-translation', vi: 'Dịch từng chữ', hint: 'Dựng khung trước: chủ ngữ + động từ, rồi mới thêm phần còn lại.' },
+    { key: 'pronoun', vi: 'Đại từ', hint: 'Sau động từ dùng me, him, her, them — không dùng I, he, she, they.' },
     { key: 'plural', vi: 'Số ít / số nhiều', hint: 'Danh từ không đếm được không thêm -s.' },
     { key: 'spelling', vi: 'Chính tả', hint: 'Đọc lại một lượt trước khi nộp.' },
     { key: 'punctuation', vi: 'Dấu câu', hint: 'Hai mệnh đề độc lập không nối bằng dấu phẩy.' },
