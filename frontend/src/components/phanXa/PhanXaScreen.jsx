@@ -402,7 +402,7 @@ export default function PhanXaScreen({ active }) {
                                 <p className="px-goi-y">
                                     {coMic
                                         ? 'Giữ phím Cách hoặc nhấn giữ micro để nói, nhả ra là chấm.'
-                                        : 'Trình duyệt này không nhận được giọng nói — hãy gõ câu trả lời.'}
+                                        : 'Trình duyệt này chưa nhận được giọng nói nên bạn gõ câu trả lời. Muốn luyện nói, hãy mở bằng Chrome hoặc Edge.'}
                                 </p>
                                 <div className="px-nut">
                                     <button type="button" className="btn btn-secondary" disabled={dangCham || dangGhi} onClick={() => gui('')}>

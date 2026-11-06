@@ -189,7 +189,7 @@ export default function HoSoHocScreen({ active }) {
                         <p className="px-goi-y">
                             {coMic
                                 ? 'Bài test có phần nói, hãy chuẩn bị micro. Không tiện nói thì chuyển sang gõ ở từng câu.'
-                                : 'Trình duyệt này không nhận được giọng nói nên phần nói sẽ đổi thành gõ, và kỹ năng Nói chưa được đánh giá.'}
+                                : 'Trình duyệt này chưa nhận được giọng nói nên phần nói sẽ đổi thành gõ, và kỹ năng Nói chưa được đánh giá. Muốn đánh giá cả phần nói, hãy mở bằng Chrome hoặc Edge.'}
                         </p>
                         <div className="px-nut">
                             <button type="button" className="btn btn-primary" disabled={dang} onClick={moTest}>
