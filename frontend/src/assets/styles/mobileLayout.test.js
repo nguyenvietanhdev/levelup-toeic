@@ -465,6 +465,13 @@ describe('nút mic ở lại nav; sáng/tối cũng vậy', () => {
         expect(mobileBlock()).not.toMatch(/#theme-toggle-btn[^{]*\{[^}]*display:\s*none/);
     });
 
+    test('nút tra ngữ pháp ẩn trên điện thoại, nhưng menu vẫn mở được ngăn mà không rời bài', () => {
+        // Thêm nút vào hàng này từng đẩy nút sáng/tối ra khỏi màn hình.
+        expect(ruleFor('#nav-ngu-phap-btn')).toMatch(/display:\s*none/);
+        const menu = readFileSync(join(__dirname, '..', '..', 'layouts', 'SideMenu.jsx'), 'utf8');
+        expect(menu).toMatch(/item\.screen === 'ngu-phap-screen' && currentScreen !== 'home-screen'[\s\S]{0,160}return moNguPhap\(\);/);
+    });
+
     test('nút từ vựng yêu thích ẩn — nhường chỗ cho sáng/tối', () => {
         // Ẩn phần tử thứ 4 thì thứ 5 (sáng/tối) tự lùi lên chỗ đó, tránh mép
         // phải nơi Android vuốt Back.

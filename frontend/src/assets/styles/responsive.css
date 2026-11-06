@@ -1268,6 +1268,12 @@
        (`.mic-btn.is-listening` trong layout.css). Ô tìm không còn liên quan gì
        tới việc ghi âm. */
 
+    /* Thanh nav điện thoại chỉ đủ chỗ cho sách, Part, sáng/tối. Thêm nút nữa là nút sáng/tối
+       bị đẩy khỏi màn hình. Tra ngữ pháp vào từ menu và các lối mở từ lỗi hoặc câu sai. */
+    #nav-ngu-phap-btn {
+        display: none;
+    }
+
     #nav-favorite-btn {
         display: none;
     }

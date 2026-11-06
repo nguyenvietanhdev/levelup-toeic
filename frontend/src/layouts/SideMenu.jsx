@@ -8,6 +8,7 @@ import { loadUnlocks, lockInfo } from '@game/featureUnlocks.js';
 import { Notification } from '@ui/Toaster.jsx';
 import { EventBus, GameEvents } from '@game/eventBus.js';
 import { moSoTayPhimTat } from '@lib/phimTat.js';
+import { moNguPhap } from '@lib/nguPhapLienKet.js';
 
 // `feature` = key trong FeatureUnlock → khoá theo Level (Hồ sơ/Cài đặt luôn mở).
 //
@@ -283,6 +284,12 @@ export default function SideMenu() {
                                             if (guestLocked) return handleLockedClick();
                                             if (levelLocked) return handleLevelLockedClick(item, lv.requiredLevel);
                                             if (item.mode) return handleMode(item.mode);
+                                            // Đang ở màn khác (có thể đang làm bài): mở ngăn tra cứu, không rời màn. Trên
+                                            // điện thoại không có nút trên thanh nav nên đây là lối vào chính.
+                                            if (item.screen === 'ngu-phap-screen' && currentScreen !== 'home-screen' && currentScreen !== item.screen) {
+                                                setMenuOpen(false);
+                                                return moNguPhap();
+                                            }
                                             if (item.action === 'phim-tat') { setMenuOpen(false); return moSoTayPhimTat(); }
                                             handleNav(item.screen);
                                         }}
