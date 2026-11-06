@@ -2,8 +2,8 @@
  * Nối hồ sơ người học với các chế độ AI.
  *
  * Chỗ dễ hỏng, đều im lặng:
- *   1. Hồ sơ lọt vào prompt CHẤM → thử với AI thật, chữ "beginner" làm cùng bài tụt từ 5.5
- *      xuống 4.0 dù đã dặn không đổi điểm. Bộ chấm tuyệt đối không được thấy hồ sơ.
+ *   1. Hồ sơ lọt vào prompt CHẤM → hồ sơ thấp có thể kéo điểm thấp, không còn đo được tiến bộ.
+ *      Lời dặn không đảm bảo được, nên bộ chấm tuyệt đối không được thấy hồ sơ.
  *   2. Hồ sơ âm thầm đổi độ khó người học đã chọn.
  *   3. Bài không có câu quá khứ lại được tính là giỏi quá khứ.
  *   4. Lỗi đọc/ghi hồ sơ làm hỏng việc chấm bài đã tốn năng lượng.
@@ -149,6 +149,12 @@ describe('viết lại giải thích', () => {
         const r = await S.vietLaiGiaiThich(LOI, 'chỉ thị', 'u1');
         expect(r).toEqual([{ ...LOI[0], issue: 'mới 1' }, { ...LOI[1], issue: 'mới 2' }]);
     });
+    test('AI viết bằng tiếng Anh: giữ bản gốc tiếng Việt của mục đó', async () => {
+        aiTra({ issue: ['Wrong tense: use past simple.', 'mới 2'] });
+        const r = await S.vietLaiGiaiThich(LOI, 'chỉ thị', 'u1');
+        expect(r[0].issue).toBe('gốc 1');
+        expect(r[1].issue).toBe('mới 2');
+    });
     test('không có chỉ thị hoặc không có lỗi: không gọi AI', async () => {
         expect(await S.vietLaiGiaiThich(LOI, '', 'u1')).toBe(LOI);
         expect(await S.vietLaiGiaiThich([], 'chỉ thị', 'u1')).toEqual([]);
@@ -170,10 +176,10 @@ describe('viết lại giải thích', () => {
     });
     test('lỗi vượt trần vẫn còn đủ, chỉ phần đầu được viết lại', async () => {
         const nhieu = Array.from({ length: 10 }, (_, i) => ({ quote: `q${i}`, issue: `g${i}` }));
-        aiTra({ issue: Array.from({ length: 8 }, (_, i) => `m${i}`) });
+        aiTra({ issue: Array.from({ length: 8 }, (_, i) => `mới ${i}`) });
         const r = await S.vietLaiGiaiThich(nhieu, 'chỉ thị', 'u1');
         expect(r).toHaveLength(10);
-        expect(r[7].issue).toBe('m7');
+        expect(r[7].issue).toBe('mới 7');
         expect(r[8].issue).toBe('g8');
     });
     test('nội dung người học là dữ liệu, không nằm trong phần chỉ dẫn', async () => {

@@ -179,11 +179,14 @@ Reading real results exposed two of my own bugs, neither of which any test had c
 The model also connects to the AI modes in both directions. Prompts receive a short profile note, so
 the AI picks situations for the learner's goal, without overriding the difficulty they chose.
 
-Grading is deliberately blind to the profile. I first told the grader "this learner is a beginner, do
-not let this change the score", then tried it against the real model: the same translation dropped from
-5.5 to 4.0. An instruction cannot guarantee that, and a low profile that lowers scores would make
-progress unmeasurable. So scoring never sees the profile, and a separate small call afterwards rewrites
-only the explanations to suit the learner. If that call fails, the original explanations stay.
+Grading is deliberately blind to the profile. An instruction like "do not let this change the score"
+cannot guarantee anything, and a low profile that lowers scores would make progress unmeasurable. So
+scoring never sees the profile, and a separate small call afterwards rewrites only the explanations to
+suit the learner. If that call fails, the original explanations stay.
+
+Trying this against the real model also showed a limit I had not measured: the same translation scored
+5.5 on one run and 4.5 on another with an identical prompt. A single AI score is therefore noisy, which
+is why the profile records one piece of evidence per piece of work and acts only on repeated results.
 
 Each graded piece of work then adds one piece of evidence per skill. A mistake counts against a skill, but a clean
 essay only counts for it when the grammar score is also high: an essay with no past tense has no
@@ -283,6 +286,7 @@ interaction and deployment configuration are checked by hand against the deploye
 - **No integration or end-to-end tests.** Guards are unit-tested; the composed HTTP path is not.
 - **Speech recognition needs Chrome or Edge.** It uses the browser's Web Speech API, so Firefox users
   type instead and their speaking skill stays unscored.
+- **AI grading is noisy.** The same work can differ by about a point between runs.
 - **AI-written grammar entries are not reviewed.** They are labelled in the UI, but there is no way to
   report or moderate one yet, and they are shared between users.
 - **Only the Communication and TOEIC goals exist so far.** IELTS and HSK are shown as coming soon.
