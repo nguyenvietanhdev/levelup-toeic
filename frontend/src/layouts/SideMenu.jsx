@@ -29,6 +29,8 @@ const MENU_GROUPS = [
             // để người tự học không chỉ chọn chế độ mình thích. Đặt ĐẦU nhóm.
             { label: 'Lộ trình hôm nay', icon: 'fa-route', screen: 'lo-trinh-screen' },
             { label: 'Mục tiêu & trình độ', icon: 'fa-bullseye', screen: 'ho-so-hoc-screen' },
+            // Tra cứu nhanh: kho lõi viết tay, AI chỉ chạy khi người học bấm. Không khoá Level.
+            { label: 'Công thức ngữ pháp', icon: 'fa-spell-check', screen: 'ngu-phap-screen' },
             { label: 'Luyện đề test TOEIC', icon: 'fa-graduation-cap', screen: 'toeic-screen', hot: true, feature: 'feature:toeic' },
             // Mục kiểu CHẠY CHẾ ĐỘ (`mode`) chứ không đổi màn (`screen`): ôn từ
             // sai là một chế độ luyện tập, không phải một trang riêng.
