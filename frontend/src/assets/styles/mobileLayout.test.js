@@ -850,3 +850,17 @@ describe('tự kiểm', () => {
         expect(b).not.toMatch(/min-width:\s*481px/);
     });
 });
+
+
+describe('máy bảng dọc, điện thoại ngang (481-768px)', () => {
+    const khoi = () => {
+        const i = css.indexOf('@media screen and (min-width: 481px) and (max-width: 768px)');
+        return css.slice(i, css.indexOf('@media', i + 10));
+    };
+    test('thẻ streak xuống dòng: lịch không co được, một hàng là cả trang cuộn ngang', () => {
+        expect(khoi()).toMatch(/\.streak-card\s*\{[^}]*flex-wrap:\s*wrap/);
+    });
+    test('thanh trạng thái xuống dòng: các ô chọn không nằm ngoài màn hình', () => {
+        expect(khoi()).toMatch(/\.status-bar\s*\{[^}]*flex-wrap:\s*wrap/);
+    });
+});
