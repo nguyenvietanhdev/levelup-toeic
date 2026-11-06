@@ -17,6 +17,7 @@ const BuoiPhanXa = require('../models/BuoiPhanXa');
 const UserProfile = require('../models/UserProfile');
 const { KHUNG, TAT_CA, THEO_ID } = require('./phanXaKho');
 const { parseJson } = require('./essayGrader');
+const { ghiKetQua } = require('./hoSoHoc');
 const logger = require('../utils/logger');
 
 // Nạp trễ như các bộ chấm khác: nạp module không được khởi tạo client AI.
@@ -199,8 +200,13 @@ async function traLoi(userId, buoiId, i, body = {}, now = new Date()) {
             { $set: { ...lich, khung: cau.khung }, $inc: dung ? { dung: 1 } : { sai: 1 } },
             { upsert: true },
         );
+        // Hồ sơ lỗi không được làm hỏng lượt luyện. Chỉ câu thật sự NÓI mới tính kỹ năng Nói.
+        await ghiKetQua(userId, [
+            { kyNang: cau.khung, dung },
+            ...(body.cach === 'noi' && chu ? [{ kyNang: 'noi', dung }] : []),
+        ], now).catch((e) => logger.warn('Phản xạ câu: không ghi được hồ sơ', { message: e?.message }));
     }
     return { dung, khongChac, boQua: !chu, cauDung: cau.en, ghiChu, daThuoc };
 }
 
-module.exports = { tongQuan, taoBuoi, traLoi, chuanHoa, khopKho, capNhatLich, chonCau, SO_CAU, KHOANG };
+module.exports = { tongQuan, taoBuoi, traLoi, chuanHoa, khopKho, aiCham, capNhatLich, chonCau, SO_CAU, KHOANG };

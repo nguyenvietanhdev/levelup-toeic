@@ -19,6 +19,9 @@ const UserProfile = require('../models/UserProfile');
 const TongKetTuan = require('../models/TongKetTuan');
 const LoiOn = require('../models/LoiOn');
 const BuoiOnLoi = require('../models/BuoiOnLoi');
+const BuoiPhanXa = require('../models/BuoiPhanXa');
+const HoSoHocVien = require('../models/HoSoHocVien');
+const { tomTatKyNang, chonTrongTam, NGUONG_YEU, NGUONG_VUNG } = require('./hoSoHoc');
 
 /** Giờ Việt Nam = UTC+7, không đổi theo mùa. */
 const LECH_GIO_VN = 7 * 60 * 60 * 1000;
@@ -87,13 +90,51 @@ function dungLoTrinh(dem, { ngay, soNgay }) {
     return { ngay, buoc, soXong: buoc.filter((b) => b.xong).length, tong: buoc.length };
 }
 
+/**
+ * Thứ tự bài của mục tiêu Giao tiếp, theo trình độ (thuần). Nói và phản xạ là chính; mỗi
+ * bước có `lyDo` để người học biết vì sao được giao bài này. Đọc, Viết vẫn mở ở menu.
+ */
+function thuTuGiaoTiep(tomTat) {
+    const lay = (key) => tomTat.find((k) => k.key === key);
+    const nghe = lay('nghe');
+    const noi = lay('noi');
+    const khung = tomTat.filter((k) => !['nghe', 'noi'].includes(k.key));
+    const khungVung = khung.every((k) => k.duDuLieu && k.diem >= NGUONG_VUNG);
+    const noiVung = !!noi?.duDuLieu && noi.diem >= NGUONG_VUNG;
+    const ngheYeu = !!nghe?.duDuLieu && nghe.diem < NGUONG_YEU;
+
+    // Khung câu và nói đều vững thì hội thoại thật lên trước; chưa thì dựng phản xạ trước.
+    const chinh = khungVung && noiVung ? ['noi', 'phan-xa'] : ['phan-xa', 'noi'];
+    // Nghe yếu thì nghe trước khi hội thoại: không nghe được thì không đối đáp được.
+    const giua = ngheYeu ? ['nghe', ...chinh] : [...chinh, 'nghe'];
+    return ['on-sai', ...giua, 'hoc-tu'];
+}
+
+/** Lộ trình theo hồ sơ (thuần). Chỉ đổi thứ tự và lý do; "xong" vẫn đếm từ việc đã làm. */
+function dungLoTrinhHoSo(dem, tomTat, trongTam, { ngay, soNgay }) {
+    const goc = dungLoTrinh(dem, { ngay, soNgay }).buoc;
+    const theoKey = new Map(goc.map((b) => [b.key, b]));
+    const noi = tomTat.find((k) => k.key === 'noi');
+    const nghe = tomTat.find((k) => k.key === 'nghe');
+    const lyDoPhanXa = trongTam
+        ? `Trọng tâm: ${trongTam.ten} (${trongTam.diem}/100)${trongTam.cungLapLai ? ' — bài làm gần đây cũng hay sai chỗ này' : ''}.`
+        : '';
+    const them = {
+        'phan-xa': { key: 'phan-xa', soLan: dem.phanXa || 0, xong: (dem.phanXa || 0) > 0, khung: trongTam?.khung || '', lyDo: lyDoPhanXa },
+        noi: { ...theoKey.get('noi'), lyDo: noi?.duDuLieu ? `Kỹ năng nói: ${noi.diem}/100.` : 'Dùng câu vừa luyện trong hội thoại thật.' },
+        nghe: { ...theoKey.get('nghe'), lyDo: nghe?.duDuLieu ? `Nghe hiểu câu: ${nghe.diem}/100.` : '' },
+    };
+    const buoc = thuTuGiaoTiep(tomTat).map((k) => them[k] || theoKey.get(k));
+    return { ngay, buoc, soXong: buoc.filter((b) => b.xong).length, tong: buoc.length };
+}
+
 async function layLoTrinh(userId, now = new Date()) {
     const { dau, ngay, soNgay } = homNayVN(now);
     const profile = await UserProfile.findOne({ userId }).select('settings').lean();
     const lang = profile?.settings?.vocabLang === 'zh' ? 'zh' : 'en';
     const tuNay = { $gte: dau };
 
-    const [onSai, hocTu, nghe, doc, noi, viet, dich, tuDenHan, tongKet, loiDenHan, onLoi] = await Promise.all([
+    const [onSai, hocTu, nghe, doc, noi, viet, dich, tuDenHan, tongKet, loiDenHan, onLoi, phanXa, hoSo] = await Promise.all([
         PracticeSession.countDocuments({ user: userId, mode: 'review-mistakes', completedAt: tuNay }),
         PracticeSession.countDocuments({ user: userId, mode: { $ne: 'review-mistakes' }, completedAt: tuNay }),
         ListeningSession.countDocuments({ userId, status: 'done', updatedAt: tuNay }),
@@ -109,12 +150,26 @@ async function layLoTrinh(userId, now = new Date()) {
         // Lỗi đã chữa đến hạn kiểm tra lại, và số buổi kiểm tra lại hôm nay đã trả lời.
         LoiOn.countDocuments({ userId, lang, denHan: { $lte: now } }),
         BuoiOnLoi.countDocuments({ userId, createdAt: tuNay, 'cau.daTra': true }),
+        BuoiPhanXa.countDocuments({ userId, createdAt: tuNay, 'cau.daTra': true }),
+        HoSoHocVien.findOne({ userId }).select('mucTieu testNgay kyNang').lean(),
     ]);
+    const dem = { onSai, hocTu, nghe, doc, noi, viet, dich, tuDenHan, loiDenHan, onLoi, phanXa };
+    const keHoachTuan = tongKet?.keHoach || [];
 
+    // Chưa có mục tiêu + test (hoặc học tiếng Trung, chưa có kho): giữ lộ trình chung.
+    if (lang === 'zh' || hoSo?.mucTieu !== 'giao-tiep' || !hoSo?.testNgay) {
+        return { ...dungLoTrinh(dem, { ngay, soNgay }), keHoachTuan, moiLapHoSo: lang !== 'zh' };
+    }
+    const tomTat = tomTatKyNang(hoSo.kyNang);
+    // Nạp trễ vì nhamDiemYeu → tienBo → loTrinh. Lỗi đọc đã được nó tự xử lý (trả rỗng).
+    const nham = await require('./nhamDiemYeu').layNham(userId, lang);
+    const trongTam = chonTrongTam(tomTat, nham.map((n) => n.key));
     return {
-        ...dungLoTrinh({ onSai, hocTu, nghe, doc, noi, viet, dich, tuDenHan, loiDenHan, onLoi }, { ngay, soNgay }),
-        keHoachTuan: tongKet?.keHoach || [],
+        ...dungLoTrinhHoSo(dem, tomTat, trongTam, { ngay, soNgay }),
+        keHoachTuan,
+        mucTieu: hoSo.mucTieu,
+        trongTam,
     };
 }
 
-module.exports = { layLoTrinh, dungLoTrinh, homNayVN, vietHayDich, dauTuanVN };
+module.exports = { layLoTrinh, dungLoTrinh, dungLoTrinhHoSo, thuTuGiaoTiep, homNayVN, vietHayDich, dauTuanVN };

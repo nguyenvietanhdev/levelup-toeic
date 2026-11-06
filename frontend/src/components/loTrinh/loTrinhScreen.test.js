@@ -21,10 +21,10 @@ describe('lối vào', () => {
 });
 
 describe('màn lộ trình', () => {
-    test('đủ 6 bước theo thứ tự tiếp nhận → tạo ra', () => {
+    test('đủ 6 bước chung theo thứ tự tiếp nhận → tạo ra, và bước Phản xạ của lộ trình theo hồ sơ', () => {
         const keys = [...man.slice(man.indexOf('const BUOC = {'), man.indexOf('\n};', man.indexOf('const BUOC = {')))
             .matchAll(/^ {4}'?([a-z-]+)'?: \{/gm)].map((m) => m[1]);
-        expect(keys).toEqual(['on-sai', 'hoc-tu', 'nghe', 'doc', 'noi', 'viet-dich']);
+        expect(keys).toEqual(['on-sai', 'hoc-tu', 'nghe', 'doc', 'noi', 'viet-dich', 'phan-xa']);
     });
 
     test('không có nút "đánh dấu xong" — tiến độ lấy từ server, tải lại mỗi lần mở màn', () => {

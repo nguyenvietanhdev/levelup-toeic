@@ -54,6 +54,12 @@ const BUOC = {
         icon: 'fa-pen-nib',
         moTa: 'Dùng từ chính xác trong câu; đọc kỹ lỗi được chỉ ra.',
     },
+    // Chỉ có trong lộ trình theo hồ sơ (mục tiêu Giao tiếp); thứ tự bước do server quyết.
+    'phan-xa': {
+        ten: 'Phản xạ câu',
+        icon: 'fa-bolt',
+        moTa: 'Nhìn câu tiếng Việt và nói ngay câu tiếng Anh, tập trung vào chỗ đang yếu.',
+    },
 };
 
 /** Viết và Dịch đổi xen kẽ theo ngày (server gợi ý), cái còn lại là lựa chọn phụ. */
@@ -134,6 +140,20 @@ export default function LoTrinhScreen({ active }) {
                 </>
             );
         }
+        if (b.key === 'phan-xa') {
+            return (
+                <button
+                    type="button"
+                    className="btn btn-primary lt-nut"
+                    onClick={() => {
+                        try { sessionStorage.setItem('levelup.phanXa.khung', b.khung || ''); } catch { /* mở tổng quan */ }
+                        showScreen('phan-xa-screen');
+                    }}
+                >
+                    {lam}
+                </button>
+            );
+        }
         if (b.key === 'hoc-tu') {
             return (
                 <button type="button" className="btn btn-primary lt-nut" onClick={() => showScreen('home-screen')}>
@@ -184,11 +204,28 @@ export default function LoTrinhScreen({ active }) {
                     <p className="tr-intro-note">Đăng nhập để theo dõi lộ trình học mỗi ngày.</p>
                 ) : (
                     <>
-                        <p className="lt-gioi-thieu">
-                            Đi lần lượt các bước với <strong>cùng bộ từ</strong>
-                            {deTen || part ? <> — đang học <strong>{[deTen, part].filter(Boolean).join(' · ')}</strong></> : null}.
-                            Gặp từ vài lần (ôn, học, nghe, đọc) rồi mới tự dùng nó (nói, viết).
-                        </p>
+                        {data?.mucTieu ? (
+                            <p className="lt-gioi-thieu">
+                                Lộ trình theo mục tiêu <strong>Giao tiếp</strong>, sắp theo trình độ của bạn.
+                                {' '}<button type="button" className="lt-ke-hoach-link" onClick={() => showScreen('ho-so-hoc-screen')}>Xem hồ sơ</button>
+                            </p>
+                        ) : (
+                            <p className="lt-gioi-thieu">
+                                Đi lần lượt các bước với <strong>cùng bộ từ</strong>
+                                {deTen || part ? <> — đang học <strong>{[deTen, part].filter(Boolean).join(' · ')}</strong></> : null}.
+                                Gặp từ vài lần (ôn, học, nghe, đọc) rồi mới tự dùng nó (nói, viết).
+                            </p>
+                        )}
+                        {data?.moiLapHoSo && (
+                            <div className="lt-ke-hoach">
+                                <div className="lt-ke-hoach-dau">
+                                    <i className="fas fa-bullseye"></i> Muốn lộ trình riêng theo trình độ?
+                                    <button type="button" className="lt-ke-hoach-link" onClick={() => showScreen('ho-so-hoc-screen')}>
+                                        Làm test 8 phút
+                                    </button>
+                                </div>
+                            </div>
+                        )}
                         {loi && <p className="tr-intro-note">{loi}</p>}
                         {!data && !loi && <p className="tr-intro-note"><i className="fas fa-spinner fa-spin"></i> Đang tải…</p>}
                         {data && (
@@ -228,6 +265,7 @@ export default function LoTrinhScreen({ active }) {
                                                         {b.key === tiepTheo && <span className="lt-nhan-tiep">Tiếp theo</span>}
                                                     </div>
                                                     <div className="lt-mo-ta">{cfg.moTa}</div>
+                                                    {b.lyDo && <div className="lt-ly-do"><i className="fas fa-bullseye"></i> {b.lyDo}</div>}
                                                     {trangThai(b)}
                                                 </div>
                                                 <div className="lt-hanh-dong">{hanhDong(b)}</div>

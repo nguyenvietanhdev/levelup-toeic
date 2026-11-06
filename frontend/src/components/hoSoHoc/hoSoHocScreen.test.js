@@ -1,0 +1,75 @@
+/**
+ * Mục tiêu & trình độ: nối dây và các hành vi dễ hỏng mà không báo gì.
+ *   · Chọn được mục tiêu chưa có lộ trình → hứa điều hệ thống chưa làm.
+ *   · Câu nói chuyển sang gõ vẫn báo là "nói" → điểm Nói sai.
+ *   · Lỗi mạng làm kẹt giữa bài.
+ *   · Bước Phản xạ câu trên lộ trình không mở đúng khung trọng tâm.
+ */
+import { describe, test, expect } from 'vitest';
+import { readFileSync } from 'node:fs';
+import { join, dirname } from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const doc = (...p) => readFileSync(join(__dirname, '..', '..', ...p), 'utf8');
+const src = doc('components', 'hoSoHoc', 'HoSoHocScreen.jsx');
+const loTrinh = doc('components', 'loTrinh', 'LoTrinhScreen.jsx');
+const phanXa = doc('components', 'phanXa', 'PhanXaScreen.jsx');
+
+describe('nối dây', () => {
+    test('lazy route và menu', () => {
+        const app = doc('App.jsx');
+        expect(app).toMatch(/import\('@components\/hoSoHoc\/HoSoHocScreen\.jsx'\)/);
+        expect(app).toMatch(/'ho-so-hoc-screen': HoSoHocScreen/);
+        expect(doc('layouts', 'SideMenu.jsx')).toMatch(/label: 'Mục tiêu & trình độ', icon: 'fa-bullseye', screen: 'ho-so-hoc-screen'/);
+    });
+    test('API đúng đường dẫn backend', () => {
+        const api = doc('api', 'hoSoHoc.js');
+        expect(api).toMatch(/'\/ho-so-hoc'/);
+        expect(api).toMatch(/'\/ho-so-hoc\/muc-tieu'/);
+        expect(api).toMatch(/'\/ho-so-hoc\/kiem-tra'/);
+        expect(api).toMatch(/\/ho-so-hoc\/kiem-tra\/\$\{encodeURIComponent\(id\)\}\/tra-loi/);
+    });
+});
+
+describe('mục tiêu và test', () => {
+    test('TOEIC, IELTS, HSK khoá ở "Sắp có"; chỉ Giao tiếp mở', () => {
+        expect(src.match(/khoa: true/g)).toHaveLength(3);
+        expect(src).toMatch(/key: 'giao-tiep', ten: 'Giao tiếp', icon: 'fa-comments', moTa: '[^']+' \}/);
+    });
+    test('hỏi khi thoát lúc đang test; rời màn thì dừng tiếng và micro', () => {
+        expect(src).toMatch(/useHoiKhiThoat\('ho-so-hoc-screen', pha === 'test', \{/);
+        const than = src.slice(src.indexOf('if (active) return undefined;'));
+        expect(than.slice(0, 120)).toMatch(/dungPhat\(\);\s+ghi\.lamLai\(\);/);
+    });
+    test('chỉ giọng nói thật hoặc "Chưa biết" ở câu nói mới gửi cach noi; gõ thay gửi cach go', () => {
+        expect(src).toMatch(/nop\(\{ traLoi: chu, cach: 'noi' \}\)/);
+        expect(src).toMatch(/if \(chu\) nop\(\{ traLoi: chu, cach: 'go' \}\)/);
+        expect(src).toMatch(/cach: canNoi \? 'noi' : 'go'/);
+    });
+    test('lỗi giữa bài có lối ra, không kẹt', () => {
+        expect(src).toMatch(/setLoiTest\(e\.message\)/);
+        expect(src).toMatch(/Làm lại từ đầu/);
+    });
+    test('kết quả nói rõ đây là ước lượng', () => {
+        expect(src).toMatch(/ước lượng ban đầu từ 15 câu/);
+    });
+});
+
+describe('lộ trình và Phản xạ câu', () => {
+    test('chưa có hồ sơ thì mời làm test; có thì hiện lý do của từng bước', () => {
+        expect(loTrinh).toMatch(/data\?\.moiLapHoSo/);
+        expect(loTrinh).toMatch(/showScreen\('ho-so-hoc-screen'\)/);
+        expect(loTrinh).toMatch(/b\.lyDo &&/);
+    });
+    test('bước Phản xạ mở đúng khung trọng tâm và Phản xạ đọc rồi xoá ngay', () => {
+        expect(loTrinh).toMatch(/sessionStorage\.setItem\('levelup\.phanXa\.khung', b\.khung/);
+        expect(phanXa).toMatch(/sessionStorage\.getItem\('levelup\.phanXa\.khung'\)/);
+        expect(phanXa).toMatch(/sessionStorage\.removeItem\('levelup\.phanXa\.khung'\)/);
+    });
+    test('Phản xạ báo cách trả lời để hồ sơ biết câu nào thật sự nói', () => {
+        expect(phanXa).toMatch(/if \(chu\) gui\(chu, 'noi'\);/);
+        expect(phanXa).toMatch(/gui\(chu, 'go'\);/);
+        expect(doc('api', 'phanXa.js')).toMatch(/\{ traLoi, cach \}/);
+    });
+});

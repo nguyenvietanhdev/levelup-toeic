@@ -31,12 +31,17 @@ jest.mock('../models/BuoiPhanXa', () => ({
         return { modifiedCount: 1 };
     }),
 }));
+jest.mock('../models/HoSoHocVien', () => ({
+    findOne: () => ({ select: () => ({ lean: async () => null }) }),
+    updateOne: jest.fn(async () => ({ modifiedCount: 1 })),
+}));
 let mockLang = 'en';
 jest.mock('../models/UserProfile', () => ({
     findOne: () => ({ select: () => ({ lean: async () => ({ settings: { vocabLang: mockLang } }) }) }),
 }));
 
 const PhanXaTienDo = require('../models/PhanXaTienDo');
+const HoSoHocVien = require('../models/HoSoHocVien');
 const S = require('../services/phanXa');
 const { KHUNG, TAT_CA, THEO_ID } = require('../services/phanXaKho');
 
@@ -129,6 +134,25 @@ describe('một lượt', () => {
         expect(r).toMatchObject({ dung: true, cauDung: c.en });
         expect(chatCompletion).not.toHaveBeenCalled();
         expect(PhanXaTienDo.updateOne.mock.calls[0][1].$inc).toEqual({ dung: 1 });
+    });
+
+    test('ghi hồ sơ: khung luôn được tính; kỹ năng Nói chỉ khi thật sự nói', async () => {
+        await moBuoi();
+        const c = THEO_ID.get(mockBuoi.doc.cau[0].cauId);
+        HoSoHocVien.updateOne.mockClear();
+        await S.traLoi('u1', 'b1', 0, { traLoi: c.en, cach: 'go' }, NOW);
+        expect(Object.keys(HoSoHocVien.updateOne.mock.calls[0][1].$set)).toEqual([`kyNang.${c.khung}`]);
+        HoSoHocVien.updateOne.mockClear();
+        const c2 = THEO_ID.get(mockBuoi.doc.cau[1].cauId);
+        await S.traLoi('u1', 'b1', 1, { traLoi: c2.en, cach: 'noi' }, NOW);
+        expect(Object.keys(HoSoHocVien.updateOne.mock.calls[0][1].$set)).toEqual([`kyNang.${c2.khung}`, 'kyNang.noi']);
+    });
+
+    test('hồ sơ lỗi không làm hỏng lượt luyện', async () => {
+        await moBuoi();
+        const c = THEO_ID.get(mockBuoi.doc.cau[0].cauId);
+        HoSoHocVien.updateOne.mockRejectedValueOnce(new Error('db'));
+        expect((await S.traLoi('u1', 'b1', 0, { traLoi: c.en }, NOW)).dung).toBe(true);
     });
 
     test('khác kho → hỏi AI; AI nhận đúng thì tính đúng', async () => {

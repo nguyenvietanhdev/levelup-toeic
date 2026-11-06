@@ -104,13 +104,24 @@ export default function PhanXaScreen({ active }) {
         }
     }, [dangMo]);
 
-    const gui = useCallback(async (chu) => {
+    // Đi từ bước Phản xạ của Lộ trình: mở thẳng lượt luyện đúng khung trọng tâm.
+    useEffect(() => {
+        if (!active || !isLoggedIn || pha !== 'tong') return;
+        let khung = '';
+        try {
+            khung = sessionStorage.getItem('levelup.phanXa.khung') || '';
+            sessionStorage.removeItem('levelup.phanXa.khung');
+        } catch { /* không đọc được thì hiện tổng quan */ }
+        if (khung) moLuot({ khung, som: true });
+    }, [active, isLoggedIn, pha, moLuot]);
+
+    const gui = useCallback(async (chu, cach = '') => {
         if (dangCham || !buoi || !cau) return;
         setDangCham(true);
         setBaoMic('');
         let kq;
         try {
-            kq = await PhanXaAPI.traLoi(buoi.id, i, chu);
+            kq = await PhanXaAPI.traLoi(buoi.id, i, chu, cach);
         } catch (e) {
             // Server có thể đã giữ chỗ câu này nên không gửi lại được: báo rồi cho sang câu tiếp.
             kq = { dung: false, khongChac: true, cauDung: '', ghiChu: e.message };
@@ -185,7 +196,7 @@ export default function PhanXaScreen({ active }) {
         const conLoi = !!ghi.loi;
         ghi.xongGui();
         if (pha !== 'hoi' || dangCham) return;
-        if (chu) gui(chu);
+        if (chu) gui(chu, 'noi');
         else if (!conLoi) setBaoMic('Chưa nghe rõ — thử nói lại, hoặc gõ câu trả lời.');
     }, [ghi.trangThai]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -246,7 +257,7 @@ export default function PhanXaScreen({ active }) {
         const chu = nhap.trim();
         if (!chu) return;
         vuaGo.current = true;
-        gui(chu);
+        gui(chu, 'go');
     };
 
     const soDung = lichSu.filter((c) => c.dung).length;

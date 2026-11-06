@@ -18,6 +18,12 @@ jest.mock('../models/PracticeSession', () => ({
     },
 }));
 jest.mock('../models/Conversation', () => mo('Conversation'));
+jest.mock('../models/BuoiPhanXa', () => mo('BuoiPhanXa'));
+let mockHoSo = null;
+jest.mock('../models/HoSoHocVien', () => ({
+    findOne: () => ({ select: () => ({ lean: async () => mockHoSo }) }),
+}));
+jest.mock('../services/nhamDiemYeu', () => ({ layNham: async () => [{ key: 'tense' }] }));
 jest.mock('../models/ListeningSession', () => mo('ListeningSession'));
 jest.mock('../models/ReadingAttempt', () => mo('ReadingAttempt'));
 jest.mock('../models/Essay', () => mo('Essay'));
@@ -135,5 +141,51 @@ describe('bước Ôn sai gộp ôn từ và ôn lỗi', () => {
         const r = await layLoTrinh('u1', new Date('2026-10-25T05:00:00Z'));
         expect(r.buoc[0]).toMatchObject({ loiDenHan: 2, soLan: 1, xong: true });
         expect(goi.find(([t]) => t === 'BuoiOnLoi')[1]).toMatchObject({ 'cau.daTra': true });
+    });
+});
+
+describe('lộ trình theo hồ sơ', () => {
+    const { dungLoTrinhHoSo, thuTuGiaoTiep, layLoTrinh } = require('../services/loTrinh');
+    const KHUNG = ['khung-cau', 'qua-khu', 'tell-say-talk', 'mau-giao-tiep'];
+    const tt = (khung, noi, nghe) => [
+        ...KHUNG.map((key) => ({ key, ten: key, diem: khung, duDuLieu: true })),
+        { key: 'noi', diem: noi, duDuLieu: true },
+        { key: 'nghe', diem: nghe, duDuLieu: true },
+    ];
+    const D = { onSai: 0, hocTu: 0, nghe: 0, doc: 0, noi: 0, viet: 0, dich: 0, tuDenHan: 0, phanXa: 0 };
+
+    test('chưa vững: dựng phản xạ trước hội thoại', () => {
+        expect(thuTuGiaoTiep(tt(40, 40, 80))).toEqual(['on-sai', 'phan-xa', 'noi', 'nghe', 'hoc-tu']);
+    });
+    test('nghe yếu: nghe trước khi hội thoại', () => {
+        expect(thuTuGiaoTiep(tt(40, 40, 30))).toEqual(['on-sai', 'nghe', 'phan-xa', 'noi', 'hoc-tu']);
+    });
+    test('khung câu và nói đều vững: hội thoại thật lên trước', () => {
+        expect(thuTuGiaoTiep(tt(90, 90, 90))).toEqual(['on-sai', 'noi', 'phan-xa', 'nghe', 'hoc-tu']);
+    });
+    test('thiếu dữ liệu một khung thì chưa coi là vững', () => {
+        const t = tt(90, 90, 90);
+        t[0].duDuLieu = false;
+        expect(thuTuGiaoTiep(t)[1]).toBe('phan-xa');
+    });
+    test('xong vẫn đếm từ việc đã làm, kèm lý do và khung trọng tâm', () => {
+        const r = dungLoTrinhHoSo({ ...D, phanXa: 1 }, tt(40, 40, 80), { khung: 'qua-khu', ten: 'Quá khứ', diem: 38, cungLapLai: true }, { ngay: 'x', soNgay: 1 });
+        const b = r.buoc.find((x) => x.key === 'phan-xa');
+        expect(b).toMatchObject({ xong: true, khung: 'qua-khu' });
+        expect(b.lyDo).toContain('38/100');
+        expect(b.lyDo).toContain('hay sai');
+        expect(r.tong).toBe(5);
+    });
+    test('chưa làm test: giữ 6 bước cũ và mời lập hồ sơ; có hồ sơ: theo hồ sơ', async () => {
+        mockHoSo = null;
+        const cu = await layLoTrinh('u1');
+        expect(cu.tong).toBe(6);
+        expect(cu.moiLapHoSo).toBe(true);
+        mockHoSo = { mucTieu: 'giao-tiep', testNgay: new Date(), kyNang: {} };
+        const moi = await layLoTrinh('u1');
+        expect(moi.tong).toBe(5);
+        expect(moi.buoc.map((b) => b.key)).toContain('phan-xa');
+        expect(moi.mucTieu).toBe('giao-tiep');
+        mockHoSo = null;
     });
 });

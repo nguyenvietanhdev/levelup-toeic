@@ -25,8 +25,11 @@ export const PhanXaAPI = {
         return unwrap(await Http.post('/phan-xa/buoi', { khung, som: som === true }));
     },
 
-    /** Trả lời câu `i` (`traLoi` rỗng = bỏ qua): `{ dung, khongChac, boQua, cauDung, ghiChu, daThuoc }`. */
-    async traLoi(id, i, traLoi) {
-        return unwrap(await Http.post(`/phan-xa/buoi/${encodeURIComponent(id)}/cau/${i}`, { traLoi }));
+    /**
+     * Trả lời câu `i` (`traLoi` rỗng = bỏ qua): `{ dung, khongChac, boQua, cauDung, ghiChu, daThuoc }`.
+     * `cach`: 'noi' | 'go' — chỉ câu thật sự nói mới tính vào kỹ năng Nói của hồ sơ.
+     */
+    async traLoi(id, i, traLoi, cach = '') {
+        return unwrap(await Http.post(`/phan-xa/buoi/${encodeURIComponent(id)}/cau/${i}`, { traLoi, cach }));
     },
 };
