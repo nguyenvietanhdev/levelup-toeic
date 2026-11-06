@@ -160,7 +160,7 @@ export default function HoSoHocScreen({ active }) {
 
     const canNoi = cau?.loai === 'noi' && !goThay;
     const canGo = cau?.loai === 'go' || (cau?.loai === 'noi' && goThay);
-    const lanTruoc = hoSo?.lichSuTest?.length > 1 ? hoSo.lichSuTest[hoSo.lichSuTest.length - 2] : null;
+    const soVoi = hoSo?.soVoiTruoc;
 
     return (
         <div id="ho-so-hoc-screen" className={`screen ${active ? 'active' : ''}`}>
@@ -205,8 +205,8 @@ export default function HoSoHocScreen({ active }) {
                             <div><strong>{hoSo.trinhDo.nhan}</strong><span>Trình độ ước lượng</span></div>
                             <div><strong>{hoSo.trinhDo.diem}/100</strong><span>Điểm chung</span></div>
                             <div>
-                                <strong>{lanTruoc ? `${hoSo.trinhDo.diem - lanTruoc.diem >= 0 ? '+' : ''}${hoSo.trinhDo.diem - lanTruoc.diem}` : '—'}</strong>
-                                <span>So với lần test trước</span>
+                                <strong>{soVoi ? `${soVoi.chenh >= 0 ? '+' : ''}${soVoi.chenh}` : '—'}</strong>
+                                <span>{soVoi ? `So với lần trước (${soVoi.soKyNang} kỹ năng chung)` : 'So với lần test trước'}</span>
                             </div>
                         </div>
 
@@ -250,13 +250,14 @@ export default function HoSoHocScreen({ active }) {
                                         <li key={c.de}>
                                             {c.dapAn}
                                             <small>{c.de}</small>
+                                            {c.cuaBan && <small>{c.daNoi ? 'Máy nghe được' : 'Bạn gõ'}: {c.cuaBan}</small>}
                                         </li>
                                     ))}
                                 </ul>
                             </>
                         )}
 
-                        <p className="px-goi-y">Đây là ước lượng ban đầu từ 15 câu và sẽ chính xác dần khi bạn luyện. Bộ nhận giọng nói đôi khi nghe nhầm nên phần nói có thể lệch một chút.</p>
+                        <p className="px-goi-y">Đây là ước lượng ban đầu từ 15 câu và sẽ chính xác dần khi bạn luyện. Bộ nhận giọng nói đôi khi nghe nhầm nên điểm nói có thể thấp hơn thực tế.</p>
                         <div className="px-nut">
                             <button type="button" className="btn btn-primary" onClick={() => showScreen('lo-trinh-screen')}>
                                 <i className="fas fa-route"></i> Xem lộ trình hôm nay

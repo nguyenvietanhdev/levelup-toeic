@@ -83,6 +83,28 @@ describe('điểm kỹ năng', () => {
     });
 });
 
+describe('so với lần test trước', () => {
+    test('chỉ so kỹ năng có ở cả hai lần: thêm Nói điểm thấp không làm tụt', () => {
+        const r = HS.soSanhTest([
+            { diem: 45, theoKyNang: { nghe: 75, 'qua-khu': 40 } },
+            { diem: 38, theoKyNang: { nghe: 80, 'qua-khu': 40, noi: 18 } },
+        ]);
+        expect(r).toEqual({ chenh: 3, soKyNang: 2 });
+    });
+    test('bản ghi cũ, một lần test, hoặc không có kỹ năng chung thì không so', () => {
+        expect(HS.soSanhTest([{ diem: 45 }, { diem: 38, theoKyNang: { nghe: 80 } }])).toBeNull();
+        expect(HS.soSanhTest([{ diem: 38, theoKyNang: { nghe: 80 } }])).toBeNull();
+        expect(HS.soSanhTest([{ theoKyNang: { noi: 1 } }, { theoKyNang: { nghe: 80 } }])).toBeNull();
+        expect(HS.soSanhTest()).toBeNull();
+    });
+    test('ảnh kỹ năng bỏ qua kỹ năng chưa đủ dữ liệu', () => {
+        expect(HS.anhKyNang([
+            { key: 'nghe', diem: 80, duDuLieu: true },
+            { key: 'noi', diem: 30, duDuLieu: false },
+        ])).toEqual({ nghe: 80 });
+    });
+});
+
 describe('trọng tâm', () => {
     const tt = (diem) => Object.entries(diem).map(([key, d]) => ({ key, ten: key, diem: d }));
     test('chọn khung điểm thấp nhất, không chọn Nghe/Nói', () => {
@@ -220,6 +242,17 @@ describe('một lượt test', () => {
             { kyNang: 'qua-khu', loai: 'go', dung: false, khongChac: true },
         ]);
         expect(r.find((x) => x.kyNang === 'qua-khu').ma).toBe('chua-chac');
+    });
+
+    test('câu sai cho xem máy đã nghe gì, để phân biệt nói sai với nghe nhầm', async () => {
+        await T.moTest('u1', {}, NOW);
+        mockBuoi.doc.cauHienTai = { id: 'qk1', kyNang: 'qua-khu', loai: 'noi', muc: 1 };
+        chatCompletion.mockResolvedValue({ success: true, content: '{"ok":false,"note":""}' });
+        await T.traLoiTest('u1', 'b1', { i: 0, traLoi: 'yesterday i want to the bank', cach: 'noi' }, NOW);
+        expect(T.cauCanXem(mockBuoi.doc.daLam)[0]).toMatchObject({
+            cuaBan: 'yesterday i want to the bank',
+            daNoi: true,
+        });
     });
 
     test('câu sai xem lại kèm đáp án đúng, câu AI lỗi không liệt vào', () => {

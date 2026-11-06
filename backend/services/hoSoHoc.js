@@ -63,6 +63,25 @@ function tongQuanTrinhDo(tomTat) {
     return { diem, nhan };
 }
 
+/** Điểm từng kỹ năng đã đủ dữ liệu, lưu kèm mỗi lần test để so sánh về sau. */
+function anhKyNang(tomTat) {
+    return Object.fromEntries(tomTat.filter((k) => k.duDuLieu).map((k) => [k.key, k.diem]));
+}
+
+/**
+ * Chênh lệch giữa hai lần test gần nhất, CHỈ trên các kỹ năng có ở cả hai lần (thuần).
+ * So điểm chung sẽ sai khi lần sau có thêm kỹ năng mới: thêm Nói điểm thấp làm điểm tụt
+ * dù không kỹ năng nào giảm. Bản ghi cũ không có điểm từng kỹ năng thì không so.
+ */
+function soSanhTest(lich = []) {
+    const [truoc, sau] = lich.slice(-2);
+    if (!sau || !truoc?.theoKyNang || !sau.theoKyNang) return null;
+    const chung = Object.keys(sau.theoKyNang).filter((k) => k in truoc.theoKyNang);
+    if (!chung.length) return null;
+    const tong = chung.reduce((s, k) => s + sau.theoKyNang[k] - truoc.theoKyNang[k], 0);
+    return { chenh: Math.round(tong / chung.length), soKyNang: chung.length };
+}
+
 /** Lỗi bài làm AI → khung câu tương ứng. Chỉ nối những cặp chắc chắn cùng một vấn đề. */
 const LOI_THEO_KHUNG = { tense: 'qua-khu', 'literal-translation': 'khung-cau' };
 
@@ -105,6 +124,7 @@ async function layHoSo(userId) {
         trinhDo: tongQuanTrinhDo(kyNang),
         chanDoan: doc?.chanDoan || [],
         lichSuTest: doc?.lichSuTest || [],
+        soVoiTruoc: soSanhTest(doc?.lichSuTest),
     };
 }
 
@@ -116,6 +136,6 @@ async function datMucTieu(userId, mucTieu) {
 
 module.exports = {
     KY_NANG, TEN_KY_NANG, MUC_TIEU_MO, NGUONG_YEU, NGUONG_VUNG,
-    capNhatKyNang, diemCua, mucCua, tomTatKyNang, tongQuanTrinhDo, chonTrongTam,
+    capNhatKyNang, diemCua, mucCua, tomTatKyNang, tongQuanTrinhDo, chonTrongTam, anhKyNang, soSanhTest,
     ghiKetQua, layHoSo, datMucTieu,
 };

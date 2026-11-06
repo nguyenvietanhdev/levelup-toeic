@@ -51,6 +51,11 @@ describe('mục tiêu và test', () => {
         expect(src).toMatch(/setLoiTest\(e\.message\)/);
         expect(src).toMatch(/Làm lại từ đầu/);
     });
+    test('so sánh lấy từ server (chỉ kỹ năng chung), câu sai hiện điều máy đã nghe', () => {
+        expect(src).toMatch(/const soVoi = hoSo\?\.soVoiTruoc;/);
+        expect(src).not.toMatch(/lanTruoc/);
+        expect(src).toMatch(/c\.daNoi \? 'Máy nghe được' : 'Bạn gõ'/);
+    });
     test('kết quả nói rõ đây là ước lượng', () => {
         expect(src).toMatch(/ước lượng ban đầu từ 15 câu/);
     });

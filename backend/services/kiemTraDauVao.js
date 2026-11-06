@@ -12,7 +12,7 @@ const HoSoHocVien = require('../models/HoSoHocVien');
 const UserProfile = require('../models/UserProfile');
 const { KHUNG, THEO_ID } = require('./phanXaKho');
 const { khopKho, aiCham } = require('./phanXa');
-const { TEN_KY_NANG, ghiKetQua, layHoSo, tomTatKyNang, tongQuanTrinhDo } = require('./hoSoHoc');
+const { TEN_KY_NANG, ghiKetQua, layHoSo, tomTatKyNang, tongQuanTrinhDo, anhKyNang } = require('./hoSoHoc');
 const { homNayVN } = require('./loTrinh');
 
 /** Test có câu chấm bằng AI nên giới hạn số lần mở mỗi ngày. */
@@ -208,9 +208,11 @@ async function chamCau(q, body, userId) {
     const cau = THEO_ID.get(q.id);
     const chu = typeof body.traLoi === 'string' ? body.traLoi.trim().slice(0, 200) : '';
     if (!chu) return { dung: false, khongChac: false, loai };
-    if (khopKho(chu, cau)) return { dung: true, khongChac: false, loai };
+    // Giữ lại câu trả lời để cuối bài người học thấy máy đã nghe gì: bộ nhận giọng nói có
+    // thể nghe nhầm, không xem được thì không phân biệt được nói sai với nghe nhầm.
+    if (khopKho(chu, cau)) return { dung: true, khongChac: false, loai, cuaBan: chu };
     const r = await aiCham(cau, chu, userId);
-    return r ? { dung: r.dung, khongChac: false, loai } : { dung: false, khongChac: true, loai };
+    return r ? { dung: r.dung, khongChac: false, loai, cuaBan: chu } : { dung: false, khongChac: true, loai, cuaBan: chu };
 }
 
 /** Câu sai để xem lại cuối bài, kèm đáp án (đến đây mới gửi đáp án về client). */
@@ -218,7 +220,7 @@ function cauCanXem(daLam) {
     return daLam.filter((c) => !c.dung && !c.khongChac).map((c) => {
         if (THEO_ID.has(c.id)) {
             const x = THEO_ID.get(c.id);
-            return { de: x.vi, dapAn: x.en };
+            return { de: x.vi, dapAn: x.en, cuaBan: c.cuaBan || '', daNoi: c.loai === 'noi' };
         }
         const x = timCauTracNghiem(c);
         return { de: x.doc || x.hoi, dapAn: x.lua[0] };
@@ -232,10 +234,11 @@ async function ketThuc(userId, daLam, now) {
     ]);
     await ghiKetQua(userId, ketQua, now);
     const hs = await HoSoHocVien.findOne({ userId }).select('kyNang').lean();
-    const { diem } = tongQuanTrinhDo(tomTatKyNang(hs?.kyNang));
+    const tomTat = tomTatKyNang(hs?.kyNang);
+    const { diem } = tongQuanTrinhDo(tomTat);
     await HoSoHocVien.updateOne({ userId }, {
         $set: { testNgay: now, chanDoan: chanDoan(daLam), mucTieu: 'giao-tiep' },
-        $push: { lichSuTest: { $each: [{ ngay: now, diem }], $slice: -12 } },
+        $push: { lichSuTest: { $each: [{ ngay: now, diem, theoKyNang: anhKyNang(tomTat) }], $slice: -12 } },
     }, { upsert: true });
     return { xong: true, hoSo: await layHoSo(userId), canXem: cauCanXem(daLam) };
 }

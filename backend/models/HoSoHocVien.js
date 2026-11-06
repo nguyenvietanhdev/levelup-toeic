@@ -13,7 +13,7 @@ const hoSoHocVienSchema = new mongoose.Schema(
         kyNang: { type: mongoose.Schema.Types.Mixed, default: {} },
         testNgay: { type: Date, default: null },
         chanDoan: { type: [mongoose.Schema.Types.Mixed], default: [] },
-        lichSuTest: { type: [{ ngay: Date, diem: Number, _id: false }], default: [] },
+        lichSuTest: { type: [{ ngay: Date, diem: Number, theoKyNang: mongoose.Schema.Types.Mixed, _id: false }], default: [] },
     },
     { timestamps: true, collection: 'ho_so_hoc_vien', minimize: false },
 );
