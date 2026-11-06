@@ -29,6 +29,16 @@
 | Ngữ cảnh | Học từ qua câu ví dụ thực tế |
 | Nghe gõ | Nghe và gõ lại từ (luyện chính tả) |
 
+### Học theo mục tiêu
+Chọn **Giao tiếp** hoặc **TOEIC**, hệ thống đo trình độ rồi sắp lộ trình mỗi ngày theo kết quả. Mỗi bước đều ghi lý do được giao.
+
+- **Giao tiếp**: test đầu vào 15 câu (chọn, gõ, nói, nghe) với độ khó đổi theo câu trả lời. So kết quả chọn, gõ và nói để chẩn đoán nguyên nhân: chưa nắm quy tắc, chưa tự dựng được câu, hay chưa nói kịp
+- **TOEIC**: đo từng Part từ các bài Mini/Full Test đã làm, dự đoán điểm, và chọn Part **mất nhiều câu nhất** thay vì Part có tỉ lệ thấp nhất
+- **Phản xạ câu**: nhìn câu tiếng Việt, nói hoặc gõ câu tiếng Anh, thấy câu đúng ngay; 48 câu viết từ lỗi thật, ôn giãn cách, có thẻ quy tắc khi cần (nhận giọng nói cần Chrome hoặc Edge)
+- **Công thức ngữ pháp**: tra không cần gõ dấu, mở được ngay trong lúc luyện tập mà không mất bài. Không có chủ điểm thì AI nhận diện xem đã tồn tại dưới tên khác chưa; thật sự mới thì soạn nháp và hỏi trước khi thêm vào thư viện
+
+IELTS và HSK đang được chuẩn bị.
+
 ### Hệ thống thi TOEIC
 - **Full Test**: 200 câu, 120 phút — mô phỏng đúng chuẩn thi thật
 - **Mini Test**: Luyện từng Part riêng (Part 1–7)
@@ -189,7 +199,7 @@ backend/
 Sau khi setup, tạo tài khoản admin qua API hoặc dùng script:
 
 ```bash
-node scripts/change-password.js
+node scripts/admin/change-password.js
 ```
 
 ---

@@ -12,8 +12,8 @@ in Vietnamese, see [`README.md`](README.md).
 | **Backend** | Express 4 · Mongoose 9 · MongoDB Atlas · BullMQ + Redis · JWT + Google Identity Services |
 | **Frontend** | React 19 · Vite 8 · plain CSS · no router library |
 | **Admin panel** | Vanilla JS, server-assembled HTML partials |
-| **Scale** | 42 Mongoose models · 29 mounted API routers · 129 React component files |
-| **Tests** | 464 tests across 39 Jest suites |
+| **Scale** | 65 Mongoose models · 46 mounted API routers · 125 React component files |
+| **Tests** | About 1,850 Jest tests (backend) and 2,700 Vitest tests (frontend) |
 | **Live** | [levelup-toeic.onrender.com](https://levelup-toeic.onrender.com) — backend serves the React build from the same origin |
 
 ---
@@ -158,6 +158,40 @@ and is never awaited during startup, because awaiting an unavailable Redis parks
 a reconnect loop and `app.listen()` is never reached — turning a missing cache into a total
 outage.
 
+### 9. The learner model is rules; AI only writes and grades
+
+Goals, skill scores, diagnosis and the daily path are computed by plain code on the server. AI is
+used for grading free-form answers and writing content. That keeps the cost low, makes the logic
+testable, and means the app can always say why it assigned something.
+
+Scores are smoothed and decayed, so one lucky answer cannot read as mastery and recent answers count
+more than old ones. Under three answers, a skill says "not enough data" rather than guess. If AI
+grading fails, the answer is not recorded: a machine fault must not lower a learner's level.
+
+Reading real results exposed two of my own bugs, neither of which any test had caught:
+
+- **The diagnosis ignored the third answer.** A learner who got the easier follow-up right was told
+  they "don't know the rule", because the rule only looked at the first two answers.
+- **A score drop that was not a drop.** The overall score fell by 7 after a retest, mostly because a
+  low speaking score joined the average for the first time. Retests now compare only the skills
+  present in both tests.
+
+The TOEIC goal picks the part that **loses the most questions**, not the lowest percentage. Half of
+Part 1 is 3 questions; 30% of Part 7 is 16. It also reads the same attempts through the same function
+as the score predictor, so the two cannot disagree.
+
+### 10. Grammar lookup: recognise before you create
+
+The grammar reference is hybrid: a hand-written core, extended by AI only when a learner asks. A plain
+"not found, generate it" would fill a shared library with duplicates, because "passive voice" and
+"the bi dong" are the same topic.
+
+So one AI call receives the list of existing topics and either maps the phrase to one of them or
+drafts a new entry. Drafts stay out of the library until a learner approves, and approval sends only a
+draft id, so a client cannot write arbitrary content to shared data. Names are compared again in code,
+both after generation and at save time, in case the AI misses a duplicate or someone else added the
+topic in the meantime. Recognised phrases are remembered, so the next lookup costs nothing.
+
 ---
 
 ## Architecture
@@ -217,7 +251,8 @@ npm run change-password   # prompts; input is hidden
 ## Testing
 
 ```bash
-cd backend && npm test    # 464 tests, 39 suites
+cd backend && npm test    # about 1,850 tests
+cd frontend && npm test   # about 2,700 tests
 ```
 
 The suite is deliberately **pure** — no database, no HTTP server — so it runs in seconds and can
@@ -233,6 +268,11 @@ interaction and deployment configuration are checked by hand against the deploye
 ## Known limitations
 
 - **No integration or end-to-end tests.** Guards are unit-tested; the composed HTTP path is not.
+- **Speech recognition needs Chrome or Edge.** It uses the browser's Web Speech API, so Firefox users
+  type instead and their speaking skill stays unscored.
+- **AI-written grammar entries are not reviewed.** They are labelled in the UI, but there is no way to
+  report or moderate one yet, and they are shared between users.
+- **Only the Communication and TOEIC goals exist so far.** IELTS and HSK are shown as coming soon.
 - **Development and production share one MongoDB cluster.** Convenient, and the reason several
   admin operations are more dangerous than they look.
 - **The admin panel has no module system.** Scripts are ordered by hand in one HTML file with
