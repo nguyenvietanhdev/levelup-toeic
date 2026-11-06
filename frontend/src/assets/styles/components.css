@@ -12867,3 +12867,11 @@ body.dang-phat-am .js-nut-am {
 .hs-noi { display: flex; flex-direction: column; align-items: center; gap: 4px; text-align: center; }
 .hs-nghe { justify-content: center; margin: 0 0 12px; }
 .lt-ly-do { margin-top: 4px; font-size: 13px; color: var(--accent-color); }
+
+/* Thẻ quy tắc của Phản xạ câu */
+.px-quy-tac { margin: 12px 0; padding: 12px 14px; border-radius: 12px; border: 1px solid var(--border-color); background: var(--bg-secondary); }
+.px-quy-tac ul { margin: 8px 0; padding-left: 18px; line-height: 1.6; }
+.px-quy-tac-vd p { margin: 8px 0 0; display: flex; flex-direction: column; gap: 2px; font-size: 14px; }
+.px-quy-tac-vd .is-sai { color: #ef4444; }
+.px-quy-tac-vd .is-dung { color: #16a34a; }
+.px-sai-ds .lt-ke-hoach-link { display: inline-block; margin-top: 4px; padding: 0; }

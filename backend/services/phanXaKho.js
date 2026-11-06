@@ -83,7 +83,62 @@ const KHUNG = [
     },
 ];
 
+/**
+ * Thẻ quy tắc của từng khung, hiện khi chẩn đoán cho thấy người học chưa nắm quy tắc.
+ * Ví dụ KHÔNG dùng câu trong kho luyện: đọc thẻ xong không được lộ đáp án của lượt sắp làm.
+ */
+const QUY_TAC = {
+    'khung-cau': {
+        y: [
+            'Câu cần đủ chủ ngữ + động từ. Trước tính từ thường phải có am/is/are.',
+            '"Có" chỉ sự tồn tại thì dùng There is/There are, không dùng have.',
+            'Hai động từ đi liền nhau thường cần to: want to go, need to buy.',
+        ],
+        vd: [
+            { sai: 'I very tired.', dung: 'I am very tired.' },
+            { sai: 'Here have a park.', dung: 'There is a park here.' },
+            { sai: 'I want go home.', dung: 'I want to go home.' },
+        ],
+    },
+    'qua-khu': {
+        y: [
+            'Việc đã xong (yesterday, last week, last night) thì động từ chuyển sang quá khứ.',
+            'Thường thêm -ed, nhưng nhiều từ hay dùng đổi hẳn: go → went, see → saw, eat → ate, buy → bought.',
+            'Câu phủ định và câu hỏi dùng did, còn động từ giữ nguyên: didn\'t go, Did you go?',
+        ],
+        vd: [
+            { sai: 'I see him on Monday.', dung: 'I saw him on Monday.' },
+            { sai: "She didn't came.", dung: "She didn't come." },
+            { sai: 'What you ate?', dung: 'What did you eat?' },
+        ],
+    },
+    'tell-say-talk': {
+        y: [
+            'tell + người: tell me, tell her. Bảo ai làm gì: tell someone to do something.',
+            'say + lời nói: say hello, say that... Có người thì dùng say something to someone.',
+            'talk to/with + người, talk about + chủ đề: dùng khi trò chuyện qua lại.',
+        ],
+        vd: [
+            { sai: 'She said me the news.', dung: 'She told me the news.' },
+            { sai: 'He told that he was tired.', dung: 'He said that he was tired.' },
+            { sai: 'I talked him about work.', dung: 'I talked to him about work.' },
+        ],
+    },
+    'mau-giao-tiep': {
+        y: [
+            "Xin hoặc gọi món: I'd like... hoặc Can I have...? (lịch sự hơn I want).",
+            'Nhờ người khác: Can you...? hoặc Could you...? (Could lịch sự hơn).',
+            'Học nguyên cụm câu thay vì dịch từng chữ từ tiếng Việt.',
+        ],
+        vd: [
+            { sai: 'Give me water.', dung: 'Can I have some water, please?' },
+            { sai: 'You open door for me?', dung: 'Could you open the door for me?' },
+            { sai: 'How many money these?', dung: 'How much are these?' },
+        ],
+    },
+};
+
 const TAT_CA = KHUNG.flatMap((k) => k.cau.map((c) => ({ ...c, khung: k.key, tenKhung: k.ten })));
 const THEO_ID = new Map(TAT_CA.map((c) => [c.id, c]));
 
-module.exports = { KHUNG, TAT_CA, THEO_ID };
+module.exports = { KHUNG, TAT_CA, THEO_ID, QUY_TAC };

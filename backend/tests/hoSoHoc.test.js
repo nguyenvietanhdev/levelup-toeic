@@ -137,6 +137,11 @@ describe('độ khó và chẩn đoán', () => {
         [{ tracNghiem: true, go: false, noi: false }, 'chua-tu-dung'],
         [{ tracNghiem: false, go: false, noi: false }, 'chua-nam'],
         [{ tracNghiem: false, go: true, noi: true }, 'chua-chac'],
+        [{ tracNghiem: true, go: false, noi: true }, 'cau-ngan-duoc'],
+        [{ tracNghiem: false, go: false, noi: true }, 'bat-dau-duoc'],
+        [{ tracNghiem: true, go: false, goThay: true }, 'cau-ngan-duoc'],
+        [{ tracNghiem: false, go: false, goThay: false }, 'chua-nam'],
+        [{ tracNghiem: true, go: true, goThay: true }, 'vung'],
     ])('nguyên nhân %j → %s', (kq, ma) => {
         expect(T.chanDoanKhung(kq)).toBe(ma);
     });
@@ -196,6 +201,17 @@ describe('một lượt test', () => {
         expect(mockHoSo.doc.chanDoan).toHaveLength(5);
         expect(mockHoSo.doc.mucTieu).toBe('giao-tiep');
         expect(chatCompletion).not.toHaveBeenCalled();
+    });
+
+    test('câu thứ ba được tính, dù gõ thay hay không có micro', () => {
+        const ba = (loai) => T.chanDoan([
+            { kyNang: 'qua-khu', loai: 'trac-nghiem', dung: false },
+            { kyNang: 'qua-khu', loai: 'go', dung: false },
+            { kyNang: 'qua-khu', loai, dung: true },
+        ]).find((x) => x.kyNang === 'qua-khu').ma;
+        expect(ba('go-thay')).toBe('bat-dau-duoc');
+        expect(ba('noi')).toBe('bat-dau-duoc');
+        expect(ba('go')).toBe('bat-dau-duoc');
     });
 
     test('AI lỗi: câu không ghi vào hồ sơ và không làm bằng chứng chẩn đoán', () => {

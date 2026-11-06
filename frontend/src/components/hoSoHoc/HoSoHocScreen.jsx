@@ -152,6 +152,12 @@ export default function HoSoHocScreen({ active }) {
         if (chu) nop({ traLoi: chu, cach: 'go' });
     };
 
+    /** Mở thẳng Phản xạ câu ở khung này; thẻ quy tắc tự hiện nếu cần. */
+    const luyenKhung = (khung) => {
+        try { sessionStorage.setItem('levelup.phanXa.khung', khung); } catch { /* mở tổng quan */ }
+        showScreen('phan-xa-screen');
+    };
+
     const canNoi = cau?.loai === 'noi' && !goThay;
     const canGo = cau?.loai === 'go' || (cau?.loai === 'noi' && goThay);
     const lanTruoc = hoSo?.lichSuTest?.length > 1 ? hoSo.lichSuTest[hoSo.lichSuTest.length - 2] : null;
@@ -225,6 +231,11 @@ export default function HoSoHocScreen({ active }) {
                                         <li key={c.kyNang}>
                                             <strong>{c.ten}:</strong> {c.nhan}
                                             <small>{c.viec}</small>
+                                            {c.kyNang !== 'nghe' && (
+                                                <button type="button" className="lt-ke-hoach-link" onClick={() => luyenKhung(c.kyNang)}>
+                                                    Luyện khung này
+                                                </button>
+                                            )}
                                         </li>
                                     ))}
                                 </ul>

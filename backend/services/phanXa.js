@@ -15,9 +15,10 @@
 const PhanXaTienDo = require('../models/PhanXaTienDo');
 const BuoiPhanXa = require('../models/BuoiPhanXa');
 const UserProfile = require('../models/UserProfile');
-const { KHUNG, TAT_CA, THEO_ID } = require('./phanXaKho');
+const { KHUNG, TAT_CA, THEO_ID, QUY_TAC } = require('./phanXaKho');
 const { parseJson } = require('./essayGrader');
-const { ghiKetQua } = require('./hoSoHoc');
+const HoSoHocVien = require('../models/HoSoHocVien');
+const { ghiKetQua, diemCua, NGUONG_YEU } = require('./hoSoHoc');
 const logger = require('../utils/logger');
 
 // Nạp trễ như các bộ chấm khác: nạp module không được khởi tạo client AI.
@@ -140,6 +141,23 @@ async function tongQuan(userId, now = new Date()) {
     };
 }
 
+/** Chẩn đoán cho thấy chưa nắm hoặc mới bắt đầu nắm quy tắc. */
+const MA_CAN_QUY_TAC = ['chua-nam', 'bat-dau-duoc'];
+
+/**
+ * Thẻ quy tắc cho các khung của lượt (thuần). `canXem`: thẻ tự hiện trước lượt, khi khung
+ * bị chẩn đoán yếu về quy tắc và điểm vẫn thấp; luyện lên rồi thì không làm phiền nữa.
+ */
+function quyTacChoLuot(chon, hoSo) {
+    const quyTac = {};
+    for (const c of chon) quyTac[c.khung] = { ten: c.tenKhung, ...QUY_TAC[c.khung] };
+    const canXem = (hoSo?.chanDoan || [])
+        .filter((d) => quyTac[d.kyNang] && MA_CAN_QUY_TAC.includes(d.ma))
+        .filter((d) => diemCua(hoSo?.kyNang?.[d.kyNang]) < NGUONG_YEU)
+        .map((d) => d.kyNang);
+    return { quyTac, canXem };
+}
+
 /** Mở một lượt. Client chỉ nhận câu tiếng Việt — đáp án trả về sau khi chấm từng câu. */
 async function taoBuoi(userId, { khung = '', som = false } = {}, now = new Date()) {
     if (!(await hoTro(userId))) return { buoi: null };
@@ -148,10 +166,13 @@ async function taoBuoi(userId, { khung = '', som = false } = {}, now = new Date(
     const chon = chonCau({ tienDo, khung: k, som, now });
     if (!chon.length) return { buoi: null };
     const buoi = await BuoiPhanXa.create({ userId, cau: chon.map((c) => ({ cauId: c.id })) });
+    // Không đọc được hồ sơ thì chỉ mất phần tự hiện thẻ, lượt luyện vẫn chạy.
+    const hoSo = await HoSoHocVien.findOne({ userId }).select('chanDoan kyNang').lean().catch(() => null);
     return {
         buoi: {
             id: String(buoi._id),
             cau: chon.map((c) => ({ vi: c.vi, khung: c.khung, tenKhung: c.tenKhung })),
+            ...quyTacChoLuot(chon, hoSo),
         },
     };
 }
@@ -209,4 +230,4 @@ async function traLoi(userId, buoiId, i, body = {}, now = new Date()) {
     return { dung, khongChac, boQua: !chu, cauDung: cau.en, ghiChu, daThuoc };
 }
 
-module.exports = { tongQuan, taoBuoi, traLoi, chuanHoa, khopKho, aiCham, capNhatLich, chonCau, SO_CAU, KHOANG };
+module.exports = { tongQuan, taoBuoi, traLoi, chuanHoa, khopKho, aiCham, capNhatLich, chonCau, quyTacChoLuot, SO_CAU, KHOANG };

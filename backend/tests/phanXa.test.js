@@ -31,8 +31,9 @@ jest.mock('../models/BuoiPhanXa', () => ({
         return { modifiedCount: 1 };
     }),
 }));
+let mockHoSoDoc = null;
 jest.mock('../models/HoSoHocVien', () => ({
-    findOne: () => ({ select: () => ({ lean: async () => null }) }),
+    findOne: () => ({ select: () => ({ lean: async () => mockHoSoDoc }) }),
     updateOne: jest.fn(async () => ({ modifiedCount: 1 })),
 }));
 let mockLang = 'en';
@@ -43,7 +44,7 @@ jest.mock('../models/UserProfile', () => ({
 const PhanXaTienDo = require('../models/PhanXaTienDo');
 const HoSoHocVien = require('../models/HoSoHocVien');
 const S = require('../services/phanXa');
-const { KHUNG, TAT_CA, THEO_ID } = require('../services/phanXaKho');
+const { KHUNG, TAT_CA, THEO_ID, QUY_TAC } = require('../services/phanXaKho');
 
 const NOW = new Date('2026-11-06T05:00:00Z');
 
@@ -63,6 +64,36 @@ describe('kho câu', () => {
             expect(c.vi && c.en).toBeTruthy();
             expect(c.id.length).toBeLessThanOrEqual(20);
         }
+    });
+});
+
+describe('thẻ quy tắc', () => {
+    const cau = [{ khung: 'qua-khu', tenKhung: 'Quá khứ' }, { khung: 'tell-say-talk', tenKhung: 'Tell' }];
+    const yeu = { d: 0, s: 3 };
+    const vung = { d: 5, s: 0 };
+
+    test('khung nào cũng đủ quy tắc và ví dụ', () => {
+        for (const k of KHUNG) {
+            expect(QUY_TAC[k.key].y.length).toBeGreaterThanOrEqual(2);
+            expect(QUY_TAC[k.key].vd.length).toBeGreaterThanOrEqual(2);
+        }
+    });
+    test('ví dụ trên thẻ không trùng đáp án trong kho luyện', () => {
+        const dapAn = new Set(TAT_CA.flatMap((c) => [c.en, ...c.chap]).map(S.chuanHoa));
+        for (const q of Object.values(QUY_TAC)) {
+            for (const v of q.vd) expect(dapAn.has(S.chuanHoa(v.dung))).toBe(false);
+        }
+    });
+    test('tự hiện khi chẩn đoán yếu về quy tắc và điểm còn thấp', () => {
+        const r = S.quyTacChoLuot(cau, { chanDoan: [{ kyNang: 'qua-khu', ma: 'chua-nam' }], kyNang: { 'qua-khu': yeu } });
+        expect(r.canXem).toEqual(['qua-khu']);
+        expect(r.quyTac['tell-say-talk'].y.length).toBeGreaterThan(0);
+    });
+    test('không làm phiền: đã luyện lên, chẩn đoán khác, khung không trong lượt, chưa có hồ sơ', () => {
+        expect(S.quyTacChoLuot(cau, { chanDoan: [{ kyNang: 'qua-khu', ma: 'chua-nam' }], kyNang: { 'qua-khu': vung } }).canXem).toEqual([]);
+        expect(S.quyTacChoLuot(cau, { chanDoan: [{ kyNang: 'qua-khu', ma: 'chua-noi-kip' }], kyNang: { 'qua-khu': yeu } }).canXem).toEqual([]);
+        expect(S.quyTacChoLuot(cau, { chanDoan: [{ kyNang: 'khung-cau', ma: 'chua-nam' }], kyNang: { 'khung-cau': yeu } }).canXem).toEqual([]);
+        expect(S.quyTacChoLuot(cau, null).canXem).toEqual([]);
     });
 });
 

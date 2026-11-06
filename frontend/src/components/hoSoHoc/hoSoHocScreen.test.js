@@ -67,6 +67,14 @@ describe('lộ trình và Phản xạ câu', () => {
         expect(phanXa).toMatch(/sessionStorage\.getItem\('levelup\.phanXa\.khung'\)/);
         expect(phanXa).toMatch(/sessionStorage\.removeItem\('levelup\.phanXa\.khung'\)/);
     });
+    test('thẻ quy tắc: tự hiện khi server yêu cầu, xem lại được sau câu sai', () => {
+        expect(phanXa).toMatch(/setPha\(b\.canXem\?\.length \? 'quyTac' : 'hoi'\)/);
+        expect(phanXa).toMatch(/!ketQua\.dung && buoi\.quyTac\?\.\[cau\.khung\]/);
+    });
+    test('chẩn đoán có lối đi thẳng tới luyện khung đó', () => {
+        expect(src).toMatch(/luyenKhung\(c\.kyNang\)/);
+        expect(src).toMatch(/sessionStorage\.setItem\('levelup\.phanXa\.khung', khung\)/);
+    });
     test('Phản xạ báo cách trả lời để hồ sơ biết câu nào thật sự nói', () => {
         expect(phanXa).toMatch(/if \(chu\) gui\(chu, 'noi'\);/);
         expect(phanXa).toMatch(/gui\(chu, 'go'\);/);

@@ -23,6 +23,25 @@ const phat = (text) => {
     try { GameLogic.speakWord(text, 'en-US'); } catch { /* không đọc được thì thôi */ }
 };
 
+/** Thẻ quy tắc của một khung: vài ý ngắn và ví dụ sai → đúng. */
+function TheQuyTac({ the }) {
+    if (!the) return null;
+    return (
+        <div className="px-quy-tac">
+            <strong>{the.ten}</strong>
+            <ul>{the.y?.map((y) => <li key={y}>{y}</li>)}</ul>
+            <div className="px-quy-tac-vd">
+                {the.vd?.map((v) => (
+                    <p key={v.dung}>
+                        <span className="is-sai"><i className="fas fa-xmark"></i> {v.sai}</span>
+                        <span className="is-dung"><i className="fas fa-check"></i> {v.dung}</span>
+                    </p>
+                ))}
+            </div>
+        </div>
+    );
+}
+
 /**
  * Phản xạ câu — lượt ngắn: nhìn câu tiếng Việt, nói (hoặc gõ) câu tiếng Anh, thấy ngay
  * câu đúng và nghe lại. Không tốn năng lượng, không XP: đây là bài tập lặp lại, mở lúc
@@ -45,6 +64,7 @@ export default function PhanXaScreen({ active }) {
     const [dangMo, setDangMo] = useState(false);
     const [baoMic, setBaoMic] = useState('');
     const [lichSu, setLichSu] = useState([]);
+    const [xemQuyTac, setXemQuyTac] = useState(false);
 
     const oNhap = useRef(null);
     const vuaGo = useRef(false); // câu trước gõ → câu sau đặt sẵn con trỏ vào ô nhập
@@ -96,7 +116,9 @@ export default function PhanXaScreen({ active }) {
             setBaoMic('');
             setLichSu([]);
             vuaGo.current = false;
-            setPha('hoi');
+            setXemQuyTac(false);
+            // Khung đang yếu về quy tắc thì đọc thẻ trước, nếu không người học chỉ đoán.
+            setPha(b.canXem?.length ? 'quyTac' : 'hoi');
         } catch (e) {
             Notification.error(e.message);
         } finally {
@@ -140,6 +162,7 @@ export default function PhanXaScreen({ active }) {
         setNhap('');
         setGiay(0);
         setBaoMic('');
+        setXemQuyTac(false);
         if (i + 1 >= (buoi?.cau?.length || 0)) {
             setPha('xong');
             return;
@@ -320,6 +343,18 @@ export default function PhanXaScreen({ active }) {
                     </>
                 )}
 
+                {pha === 'quyTac' && (
+                    <>
+                        <p className="px-mo-ta">Đọc nhanh quy tắc trước khi luyện. Bạn có thể xem lại sau mỗi câu sai.</p>
+                        {buoi?.canXem?.map((k) => <TheQuyTac key={k} the={buoi.quyTac?.[k]} />)}
+                        <div className="px-nut">
+                            <button type="button" className="btn btn-primary" autoFocus onClick={() => setPha('hoi')}>
+                                <i className="fas fa-bolt"></i> Bắt đầu luyện
+                            </button>
+                        </div>
+                    </>
+                )}
+
                 {dangLam && cau && (
                     <>
                         <div className="px-dau">
@@ -396,10 +431,16 @@ export default function PhanXaScreen({ active }) {
                                             <i className="fas fa-volume-high"></i> Nghe lại
                                         </button>
                                     )}
+                                    {!ketQua.dung && buoi.quyTac?.[cau.khung] && (
+                                        <button type="button" className="btn btn-secondary" onClick={() => setXemQuyTac((x) => !x)}>
+                                            <i className="fas fa-book-open"></i> {xemQuyTac ? 'Ẩn quy tắc' : 'Xem quy tắc'}
+                                        </button>
+                                    )}
                                     <button type="button" className="btn btn-primary" onClick={sangCau}>
                                         {i + 1 >= buoi.cau.length ? 'Xem kết quả' : 'Câu tiếp'}
                                     </button>
                                 </div>
+                                {xemQuyTac && <TheQuyTac the={buoi.quyTac?.[cau.khung]} />}
                             </>
                         )}
                     </>

@@ -137,14 +137,22 @@ const CHAN_DOAN_KHUNG = {
     vung: { nhan: 'Đã khá chắc', viec: 'Giữ nhịp bằng các câu khó hơn.' },
     'chua-noi-kip': { nhan: 'Biết cách viết nhưng chưa nói kịp', viec: 'Luyện Phản xạ câu bằng giọng nói để biến kiến thức thành phản xạ.' },
     'chua-tu-dung': { nhan: 'Nhận ra câu đúng nhưng chưa tự dựng được', viec: 'Luyện Phản xạ câu: tự dựng câu từ tiếng Việt thay vì chọn đáp án.' },
-    'chua-nam': { nhan: 'Chưa nắm quy tắc', viec: 'Bắt đầu với câu ngắn trong Phản xạ câu và đọc kỹ câu đúng sau mỗi lần sai.' },
+    'chua-nam': { nhan: 'Chưa nắm quy tắc', viec: 'Đọc thẻ quy tắc rồi bắt đầu với câu ngắn trong Phản xạ câu.' },
+    'bat-dau-duoc': { nhan: 'Đã bắt đầu làm được nhưng chưa chắc', viec: 'Đọc lại thẻ quy tắc rồi luyện thêm để giữ được ở mọi câu.' },
+    'cau-ngan-duoc': { nhan: 'Dựng được câu ngắn, câu dài còn vấp', viec: 'Luyện Phản xạ câu để quen dần với câu dài hơn.' },
     'chua-chac': { nhan: 'Kết quả chưa ổn định', viec: 'Luyện thêm vài lượt để hệ thống đánh giá chắc hơn.' },
 };
 
-/** Chẩn đoán nguyên nhân của một khung từ kết quả chọn / gõ / nói (thuần). */
-function chanDoanKhung({ tracNghiem, go, noi }) {
-    if (tracNghiem === true && go === true && noi !== false) return 'vung';
+/**
+ * Chẩn đoán nguyên nhân của một khung (thuần), từ câu chọn, câu gõ và câu thứ ba (nói,
+ * hoặc gõ thay). Câu gõ sai thì câu thứ ba là câu DỄ: làm đúng cho thấy đã làm được ở mức
+ * đơn giản, không được kết luận như sai cả ba.
+ */
+function chanDoanKhung({ tracNghiem, go, noi, goThay }) {
+    const thuBa = noi ?? goThay;
+    if (tracNghiem === true && go === true && thuBa !== false) return 'vung';
     if (go === true && noi === false) return 'chua-noi-kip';
+    if (go === false && thuBa === true) return tracNghiem === true ? 'cau-ngan-duoc' : 'bat-dau-duoc';
     if (tracNghiem === true && go === false) return 'chua-tu-dung';
     if (tracNghiem === false && go === false) return 'chua-nam';
     return 'chua-chac';
@@ -156,7 +164,14 @@ function chanDoan(daLam) {
     const ket = KHUNG.map((k) => {
         const cua = chac.filter((c) => c.kyNang === k.key);
         const lay = (loai) => cua.find((c) => c.loai === loai)?.dung;
-        const ma = chanDoanKhung({ tracNghiem: lay('trac-nghiem'), go: lay('go'), noi: lay('noi') });
+        // Không có micro thì câu thứ ba cũng là loại 'go', nên lấy câu gõ thứ hai.
+        const cauGo = cua.filter((c) => c.loai === 'go');
+        const ma = chanDoanKhung({
+            tracNghiem: lay('trac-nghiem'),
+            go: cauGo[0]?.dung,
+            noi: lay('noi'),
+            goThay: lay('go-thay') ?? cauGo[1]?.dung,
+        });
         return { kyNang: k.key, ten: k.ten, ma, ...CHAN_DOAN_KHUNG[ma] };
     });
     const nghe = chac.filter((c) => c.kyNang === 'nghe');
