@@ -15,7 +15,12 @@ const fullTest = (totalScore, listeningScore, readingScore) => ({
     totalScore, listeningScore, readingScore,
     partScores: [
         { partNumber: 1, correctAnswers: 5, totalQuestions: 6 },
+        { partNumber: 2, correctAnswers: 18, totalQuestions: 25 },
+        { partNumber: 3, correctAnswers: 26, totalQuestions: 39 },
+        { partNumber: 4, correctAnswers: 20, totalQuestions: 30 },
         { partNumber: 5, correctAnswers: 20, totalQuestions: 30 },
+        { partNumber: 6, correctAnswers: 10, totalQuestions: 16 },
+        { partNumber: 7, correctAnswers: 35, totalQuestions: 54 },
     ],
 });
 

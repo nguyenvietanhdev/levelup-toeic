@@ -11,7 +11,7 @@
  */
 const ToeicAttempt = require('../models/ToeicAttempt');
 const UserProfile = require('../models/UserProfile');
-const { predictToeicScore, partAccuracy, PART_COUNTS } = require('./toeicPrediction');
+const { predictToeicScore, partAccuracy, PART_COUNTS, SO_CAU_TOI_THIEU_FULL } = require('./toeicPrediction');
 
 /** Dưới mức này (số câu đã giảm trọng số) thì chưa đủ để kết luận về một Part. */
 const CAU_TOI_THIEU = 5;
@@ -99,4 +99,4 @@ async function layHoSoToeic(userId) {
     };
 }
 
-module.exports = { layHoSoToeic, tomTatPart, chonPartTrongTam, kyNangYeuHon, PART, CAU_TOI_THIEU };
+module.exports = { SO_CAU_TOI_THIEU_FULL, layHoSoToeic, tomTatPart, chonPartTrongTam, kyNangYeuHon, PART, CAU_TOI_THIEU };

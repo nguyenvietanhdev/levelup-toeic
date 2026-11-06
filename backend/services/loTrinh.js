@@ -22,7 +22,7 @@ const BuoiOnLoi = require('../models/BuoiOnLoi');
 const BuoiPhanXa = require('../models/BuoiPhanXa');
 const HoSoHocVien = require('../models/HoSoHocVien');
 const ToeicAttempt = require('../models/ToeicAttempt');
-const { layHoSoToeic } = require('./hoSoToeic');
+const { layHoSoToeic, SO_CAU_TOI_THIEU_FULL } = require('./hoSoToeic');
 const { tomTatKyNang, chonTrongTam, NGUONG_YEU, NGUONG_VUNG } = require('./hoSoHoc');
 
 /** Giờ Việt Nam = UTC+7, không đổi theo mùa. */
@@ -205,6 +205,8 @@ async function layLoTrinh(userId, now = new Date()) {
             ToeicAttempt.countDocuments({
                 ...daXong,
                 testType: { $in: ['full-test', 'full'] },
+                // Nộp sớm không tính là đã làm đề đầy đủ, đúng như ở bộ dự đoán điểm.
+                [`answers.${SO_CAU_TOI_THIEU_FULL - 1}`]: { $exists: true },
                 completedAt: { $gte: new Date(now.getTime() - NGAY_GIUA_HAI_FULL * MOT_NGAY) },
             }),
         ]);

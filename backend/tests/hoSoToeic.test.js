@@ -89,6 +89,27 @@ describe('kỹ năng yếu hơn', () => {
     });
 });
 
+describe('đề đầy đủ nộp sớm', () => {
+    const nopSom = { testType: 'full-test', totalScore: 35, listeningScore: 35, readingScore: 0, partScores: [{ partNumber: 1, correctAnswers: 4, totalQuestions: 6 }, { partNumber: 2, correctAnswers: 2, totalQuestions: 2 }] };
+    const duBai = { testType: 'full-test', totalScore: 600, listeningScore: 300, readingScore: 300, partScores: DU_BAY_PART.map(([partNumber, correctAnswers, totalQuestions]) => ({ partNumber, correctAnswers, totalQuestions })) };
+
+    test('không lấy điểm của bài nộp sớm làm điểm dự đoán', () => {
+        const r = predictToeicScore([nopSom], 0);
+        expect(r.basis).toBe('mini-test');
+        expect(r.predicted).toBeUndefined();
+        expect(r.enough).toBe(false);
+    });
+    test('có đề làm đủ thì chỉ tính đề đó, bài nộp sớm không kéo điểm xuống', () => {
+        const r = predictToeicScore([nopSom, duBai], 0);
+        expect(r.basis).toBe('full-test');
+        expect(r.predicted.mid).toBe(600);
+    });
+    test('bài nộp sớm vẫn góp vào độ chính xác từng Part', () => {
+        const p = T.tomTatPart([nopSom]).find((x) => x.part === 1);
+        expect(p).toMatchObject({ duDuLieu: true, doChinhXac: 67 });
+    });
+});
+
 describe('hồ sơ', () => {
     test('chưa làm bài: vẫn có trọng tâm để bắt đầu, không có dự đoán', async () => {
         const r = await T.layHoSoToeic('u1');

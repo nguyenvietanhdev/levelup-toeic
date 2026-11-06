@@ -33,6 +33,13 @@ const DECAY = 0.75;
 const SPREAD_BY_SAMPLES = { 1: 60, 2: 45 };
 const SPREAD_FLOOR = 35;
 
+/**
+ * Đề đầy đủ phải làm được từng này câu mới tính là đo được điểm thật. Nộp sớm thì `totalScore`
+ * chỉ phản ánh số câu đã làm: nộp sau 8 câu ra "35 điểm" dù đúng 6/8. Bài như vậy vẫn có ích ở
+ * độ chính xác từng Part nên được xử lý như mini test, không bỏ đi.
+ */
+const SO_CAU_TOI_THIEU_FULL = 150;
+
 const clampScore = (n) => Math.max(10, Math.min(990, n));
 /** Điểm TOEIC luôn là bội của 5. */
 const round5 = (n) => Math.round(n / 5) * 5;
@@ -117,7 +124,9 @@ function predictToeicScore(attempts = [], targetScore = 0) {
     const done = (attempts || []).filter(a => a && Array.isArray(a.partScores) && a.partScores.length);
     if (!done.length) return null;
 
-    const fullTests = done.filter(a => a.testType === 'full-test' || a.testType === 'full');
+    const soCau = (a) => a.partScores.reduce((s, p) => s + (Number(p.totalQuestions) || 0), 0);
+    const fullTests = done.filter(a => (a.testType === 'full-test' || a.testType === 'full')
+        && soCau(a) >= SO_CAU_TOI_THIEU_FULL);
     const fullScores = fullTests
         .map(a => Number(a.totalScore))
         .filter(n => Number.isFinite(n) && n > 0);
@@ -211,4 +220,5 @@ module.exports = {
     projectSection,
     weightedMean,
     PART_COUNTS,
+    SO_CAU_TOI_THIEU_FULL,
 };
