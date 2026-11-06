@@ -7,26 +7,34 @@ import { HoSoHocAPI } from '@api/hoSoHoc.js';
 import { isSpeechSupported, speechLangFor } from '@lib/speechInput.js';
 import { moNguPhap, NGU_PHAP_THEO_KHUNG } from '@lib/nguPhapLienKet.js';
 import { useGhiAm } from '../conversation/useGhiAm.js';
+import PanelToeic from './PanelToeic.jsx';
 import { useHoiKhiThoat } from '../ai/aiExitGuard.js';
 
 /** Chỉ mục tiêu đã có đủ nội dung mới chọn được, để không hứa lộ trình chưa tồn tại. */
 const MUC_TIEU = [
     { key: 'giao-tiep', ten: 'Giao tiếp', icon: 'fa-comments', moTa: 'Nói được câu tự nhiên trong đời sống hằng ngày.' },
-    { key: 'toeic', ten: 'TOEIC', icon: 'fa-file-lines', moTa: 'Sắp có', khoa: true },
+    { key: 'toeic', ten: 'TOEIC', icon: 'fa-file-lines', moTa: 'Theo dõi điểm từng Part, dự đoán điểm thi.' },
     { key: 'ielts', ten: 'IELTS', icon: 'fa-graduation-cap', moTa: 'Sắp có', khoa: true },
     { key: 'hsk', ten: 'HSK', icon: 'fa-language', moTa: 'Sắp có', khoa: true },
 ];
 
-/** Các mục tiêu: mục đang mở được đánh dấu chọn, mục chưa có nội dung ghi "Sắp có". */
-function LuoiMucTieu() {
+/** Chọn mục tiêu. Mục chưa có nội dung ghi "Sắp có" và không bấm được. */
+function LuoiMucTieu({ dangChon, dang, onChon }) {
     return (
         <div className="hs-muc-tieu">
             {MUC_TIEU.map((m) => (
-                <div key={m.key} className={`hs-muc ${m.khoa ? 'is-khoa' : 'is-chon'}`}>
+                <button
+                    key={m.key}
+                    type="button"
+                    className={`hs-muc ${m.khoa ? 'is-khoa' : ''} ${dangChon === m.key ? 'is-chon' : ''}`}
+                    aria-pressed={dangChon === m.key}
+                    disabled={!!m.khoa || dang}
+                    onClick={() => onChon(m.key)}
+                >
                     <i className={`fas ${m.icon}`}></i>
                     <strong>{m.ten}</strong>
                     <small>{m.moTa}</small>
-                </div>
+                </button>
             ))}
         </div>
     );
@@ -102,6 +110,20 @@ export default function HoSoHocScreen({ active }) {
         if (cau.loai === 'nghe') phat(cau.doc);
         if (cau.loai === 'go') oNhap.current?.focus();
     }, [cau]); // eslint-disable-line react-hooks/exhaustive-deps
+
+    /** Đổi mục tiêu không xoá gì: hồ sơ của mục tiêu kia vẫn còn khi đổi lại. */
+    const doiMucTieu = async (mucTieu, diemMucTieu) => {
+        if (dang) return;
+        setDang(true);
+        try {
+            setHoSo(await HoSoHocAPI.datMucTieu(mucTieu, diemMucTieu));
+            setCanXem(null);
+        } catch (e) {
+            Notification.error(e.message);
+        } finally {
+            setDang(false);
+        }
+    };
 
     const moTest = async () => {
         if (dang) return;
@@ -190,10 +212,20 @@ export default function HoSoHocScreen({ active }) {
             <div className="px-wrap">
                 {!isLoggedIn && <p className="px-mo-ta">Đăng nhập để lập hồ sơ và lộ trình riêng.</p>}
 
-                {isLoggedIn && pha === 'hoSo' && hoSo && !hoSo.testNgay && (
+                {isLoggedIn && pha === 'hoSo' && hoSo && (
                     <>
-                        <p className="px-mo-ta">Chọn mục tiêu rồi làm bài test khoảng 8 phút. Hệ thống sẽ tìm ra chỗ bạn đang vướng và sắp lộ trình theo đó.</p>
-                        <LuoiMucTieu />
+                        <h3 className="hs-tieu-de hs-tieu-de-dau">{hoSo.mucTieu ? 'Mục tiêu đang theo' : 'Bạn muốn học để làm gì?'}</h3>
+                        <LuoiMucTieu dangChon={hoSo.mucTieu} dang={dang} onChon={doiMucTieu} />
+                    </>
+                )}
+
+                {isLoggedIn && pha === 'hoSo' && hoSo?.mucTieu === 'toeic' && (
+                    <PanelToeic toeic={hoSo.toeic} dang={dang} onDatDiem={(d) => doiMucTieu('toeic', d)} />
+                )}
+
+                {isLoggedIn && pha === 'hoSo' && hoSo?.mucTieu === 'giao-tiep' && !hoSo.testNgay && (
+                    <>
+                        <p className="px-mo-ta">Làm bài test khoảng 8 phút. Hệ thống sẽ tìm ra chỗ bạn đang vướng và sắp lộ trình theo đó.</p>
                         <p className="px-goi-y">
                             {coMic
                                 ? 'Bài test có phần nói, hãy chuẩn bị micro. Không tiện nói thì chuyển sang gõ ở từng câu.'
@@ -207,11 +239,8 @@ export default function HoSoHocScreen({ active }) {
                     </>
                 )}
 
-                {isLoggedIn && pha === 'hoSo' && hoSo?.testNgay && (
+                {isLoggedIn && pha === 'hoSo' && hoSo?.mucTieu === 'giao-tiep' && hoSo.testNgay && (
                     <>
-                        {/* Làm test xong vẫn phải thấy mình đang theo mục tiêu nào và còn những mục tiêu gì. */}
-                        <h3 className="hs-tieu-de hs-tieu-de-dau">Mục tiêu đang theo</h3>
-                        <LuoiMucTieu />
                         <div className="px-so">
                             <div><strong>{hoSo.trinhDo.nhan}</strong><span>Trình độ ước lượng</span></div>
                             <div><strong>{hoSo.trinhDo.diem}/100</strong><span>Điểm chung</span></div>

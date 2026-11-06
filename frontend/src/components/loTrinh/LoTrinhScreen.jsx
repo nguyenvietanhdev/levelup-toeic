@@ -7,6 +7,7 @@ import { TopicSelector } from '@components/vocab/topic/topicSelector.js';
 import { PartSelector } from '@components/vocab/part/partSelector.js';
 import { LoTrinhAPI } from '@api/loTrinh.js';
 import { danhDauDaXem } from '@lib/chamDo.js';
+import { moNguPhap } from '@lib/nguPhapLienKet.js';
 
 /**
  * Lộ trình hôm nay — dẫn người học qua các kỹ năng với CÙNG bộ từ của Part đang học.
@@ -59,6 +60,17 @@ const BUOC = {
         ten: 'Phản xạ câu',
         icon: 'fa-bolt',
         moTa: 'Nhìn câu tiếng Việt và nói ngay câu tiếng Anh, tập trung vào chỗ đang yếu.',
+    },
+    // Chỉ có trong lộ trình mục tiêu TOEIC.
+    'toeic-part': {
+        ten: 'Luyện Part trọng tâm',
+        icon: 'fa-bullseye',
+        moTa: 'Làm một Mini Test đúng Part đang cần nhất.',
+    },
+    'toeic-full': {
+        ten: 'Đề đầy đủ định kỳ',
+        icon: 'fa-clipboard-list',
+        moTa: 'Đo điểm thật và cập nhật dự đoán.',
     },
 };
 
@@ -140,6 +152,30 @@ export default function LoTrinhScreen({ active }) {
                 </>
             );
         }
+        if (b.key === 'toeic-part' || b.key === 'toeic-full') {
+            const khoa = lockInfo('feature:toeic');
+            if (khoa.locked) {
+                return <span className="lt-khoa"><i className="fas fa-lock"></i> Mở ở Level {khoa.requiredLevel}</span>;
+            }
+            return (
+                <>
+                    <button
+                        type="button"
+                        className="btn btn-primary lt-nut"
+                        onClick={() => {
+                            const dich = b.key === 'toeic-full' ? 'full' : String(b.part || '');
+                            try { sessionStorage.setItem('levelup.toeic.moi', dich); } catch { /* mở tab mặc định */ }
+                            showScreen('toeic-screen');
+                        }}
+                    >
+                        {lam}{b.part ? `: Part ${b.part}` : ''}
+                    </button>
+                    {b.canNguPhap && (
+                        <button type="button" className="btn btn-secondary lt-nut" onClick={() => moNguPhap()}>Tra ngữ pháp</button>
+                    )}
+                </>
+            );
+        }
         if (b.key === 'phan-xa') {
             return (
                 <button
@@ -206,7 +242,7 @@ export default function LoTrinhScreen({ active }) {
                     <>
                         {data?.mucTieu ? (
                             <p className="lt-gioi-thieu">
-                                Lộ trình theo mục tiêu <strong>Giao tiếp</strong>, sắp theo trình độ của bạn.
+                                Lộ trình theo mục tiêu <strong>{data.mucTieu === 'toeic' ? `TOEIC${data.diemMucTieu ? ` ${data.diemMucTieu}` : ''}` : 'Giao tiếp'}</strong>, sắp theo trình độ của bạn.
                                 {' '}<button type="button" className="lt-ke-hoach-link" onClick={() => showScreen('ho-so-hoc-screen')}>Xem hồ sơ</button>
                             </p>
                         ) : (

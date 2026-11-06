@@ -269,7 +269,7 @@ describe('một lượt test', () => {
 
 describe('mục tiêu', () => {
     test('chỉ nhận mục tiêu đã có đủ nội dung', async () => {
-        expect(await HS.datMucTieu('u1', 'toeic')).toBe(false);
+        expect(await HS.datMucTieu('u1', 'ielts')).toBe(false);
         expect(await HS.datMucTieu('u1', 'giao-tiep')).toBe(true);
         expect(mockHoSo.doc.mucTieu).toBe('giao-tiep');
     });

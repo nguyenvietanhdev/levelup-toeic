@@ -12932,3 +12932,13 @@ body.dang-phat-am .js-nut-am {
 .cb-giai-thich + .lt-ke-hoach-link, .stl-giai-thich + .lt-ke-hoach-link { display: inline-block; margin: 4px 0 8px; padding: 0; }
 .px-sai-ds li .lt-ke-hoach-link + .lt-ke-hoach-link { margin-left: 12px; }
 @media (prefers-reduced-motion: reduce) { .np-ngan { transition: none; } }
+
+/* Mục tiêu chọn được, và phần TOEIC của hồ sơ */
+button.hs-muc { align-items: flex-start; color: inherit; font: inherit; text-align: left; cursor: pointer; }
+button.hs-muc:disabled { cursor: not-allowed; }
+button.hs-muc:not(:disabled):hover { border-color: var(--accent-color); }
+.hs-chon-diem { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 12px 0; }
+.hs-chon-diem select { padding: 8px 12px; border-radius: 10px; border: 2px solid var(--border-color); background: var(--bg-primary); color: var(--text-primary); font-size: 15px; }
+.hs-trong-tam { margin: 12px 0; padding: 12px 14px; border-radius: 12px; border: 2px solid var(--accent-color); background: var(--bg-secondary); }
+.hs-trong-tam .px-mo-ta { margin: 0 0 4px; }
+.hs-nhan.is-chua-du { color: var(--text-secondary); }

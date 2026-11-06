@@ -87,6 +87,22 @@ export default function ToeicScreen({ active }) {
         showScreen('toeic-result-screen');
     }, [showScreen]);
 
+    // Đi từ hồ sơ hoặc lộ trình TOEIC: mở đúng tab và đúng Part được gợi ý.
+    useEffect(() => {
+        if (!active) return;
+        let dich = '';
+        try {
+            dich = sessionStorage.getItem('levelup.toeic.moi') || '';
+            sessionStorage.removeItem('levelup.toeic.moi');
+        } catch { /* mở tab mặc định */ }
+        if (dich === 'full') {
+            setActiveTab('full-test');
+        } else if (/^[1-7]$/.test(dich)) {
+            setActiveTab('mini-test');
+            setPartFilter(Number(dich));
+        }
+    }, [active]);
+
     // Offer to resume an in-progress attempt the first time the screen is shown
     useEffect(() => {
         if (!active || inProgressChecked.current) return;

@@ -21,6 +21,8 @@ const LoiOn = require('../models/LoiOn');
 const BuoiOnLoi = require('../models/BuoiOnLoi');
 const BuoiPhanXa = require('../models/BuoiPhanXa');
 const HoSoHocVien = require('../models/HoSoHocVien');
+const ToeicAttempt = require('../models/ToeicAttempt');
+const { layHoSoToeic } = require('./hoSoToeic');
 const { tomTatKyNang, chonTrongTam, NGUONG_YEU, NGUONG_VUNG } = require('./hoSoHoc');
 
 /** Giờ Việt Nam = UTC+7, không đổi theo mùa. */
@@ -128,6 +130,43 @@ function dungLoTrinhHoSo(dem, tomTat, trongTam, { ngay, soNgay }) {
     return { ngay, buoc, soXong: buoc.filter((b) => b.xong).length, tong: buoc.length };
 }
 
+/** Làm lại đề đầy đủ sau khoảng này để đo điểm thật. */
+const NGAY_GIUA_HAI_FULL = 14;
+
+/**
+ * Lộ trình mục tiêu TOEIC (thuần): dọn ôn tập, luyện Part trọng tâm, học từ, luyện kỹ năng
+ * đang yếu hơn, và làm đề đầy đủ định kỳ. Đọc hay nghe theo chỗ đang mất nhiều điểm hơn.
+ */
+function dungLoTrinhToeic(dem, hs, { ngay, soNgay }) {
+    const goc = new Map(dungLoTrinh(dem, { ngay, soNgay }).buoc.map((b) => [b.key, b]));
+    const tt = hs.trongTam;
+    const kyNang = hs.kyYeu === 'doc' ? 'doc' : 'nghe';
+    const lyDoKy = hs.kyYeu
+        ? `Phần ${hs.kyYeu === 'doc' ? 'Đọc' : 'Nghe'} đang mất nhiều điểm hơn.`
+        : 'Giữ nhịp kỹ năng trong lúc chờ đủ dữ liệu.';
+    const buoc = [
+        goc.get('on-sai'),
+        {
+            key: 'toeic-part',
+            soLan: dem.toeicPart || 0,
+            xong: (dem.toeicPart || 0) > 0,
+            part: tt?.part || null,
+            tenPart: tt?.ten || '',
+            canNguPhap: !!tt?.canNguPhap,
+            lyDo: tt?.lyDo || '',
+        },
+        goc.get('hoc-tu'),
+        { ...goc.get(kyNang), lyDo: lyDoKy },
+        {
+            key: 'toeic-full',
+            soLan: dem.toeicFull || 0,
+            xong: (dem.toeicFull || 0) > 0,
+            lyDo: `Mỗi ${NGAY_GIUA_HAI_FULL} ngày làm một đề đầy đủ để đo điểm thật.`,
+        },
+    ];
+    return { ngay, buoc, soXong: buoc.filter((b) => b.xong).length, tong: buoc.length };
+}
+
 async function layLoTrinh(userId, now = new Date()) {
     const { dau, ngay, soNgay } = homNayVN(now);
     const profile = await UserProfile.findOne({ userId }).select('settings').lean();
@@ -156,6 +195,27 @@ async function layLoTrinh(userId, now = new Date()) {
     const dem = { onSai, hocTu, nghe, doc, noi, viet, dich, tuDenHan, loiDenHan, onLoi, phanXa };
     const keHoachTuan = tongKet?.keHoach || [];
 
+    if (lang !== 'zh' && hoSo?.mucTieu === 'toeic') {
+        const hs = await layHoSoToeic(userId);
+        const daXong = { userId, status: 'completed' };
+        const [toeicPart, toeicFull] = await Promise.all([
+            hs.trongTam
+                ? ToeicAttempt.countDocuments({ ...daXong, completedAt: tuNay, 'partScores.partNumber': hs.trongTam.part })
+                : 0,
+            ToeicAttempt.countDocuments({
+                ...daXong,
+                testType: { $in: ['full-test', 'full'] },
+                completedAt: { $gte: new Date(now.getTime() - NGAY_GIUA_HAI_FULL * MOT_NGAY) },
+            }),
+        ]);
+        return {
+            ...dungLoTrinhToeic({ ...dem, toeicPart, toeicFull }, hs, { ngay, soNgay }),
+            keHoachTuan,
+            mucTieu: 'toeic',
+            diemMucTieu: hs.diemMucTieu,
+        };
+    }
+
     // Chưa có mục tiêu + test (hoặc học tiếng Trung, chưa có kho): giữ lộ trình chung.
     if (lang === 'zh' || hoSo?.mucTieu !== 'giao-tiep' || !hoSo?.testNgay) {
         return { ...dungLoTrinh(dem, { ngay, soNgay }), keHoachTuan, moiLapHoSo: lang !== 'zh' };
@@ -172,4 +232,4 @@ async function layLoTrinh(userId, now = new Date()) {
     };
 }
 
-module.exports = { layLoTrinh, dungLoTrinh, dungLoTrinhHoSo, thuTuGiaoTiep, homNayVN, vietHayDich, dauTuanVN };
+module.exports = { layLoTrinh, dungLoTrinh, dungLoTrinhHoSo, dungLoTrinhToeic, thuTuGiaoTiep, homNayVN, vietHayDich, dauTuanVN };

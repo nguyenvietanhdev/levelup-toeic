@@ -9,6 +9,7 @@
  * để một câu may rủi không đẩy điểm lên 0 hay 100.
  */
 const HoSoHocVien = require('../models/HoSoHocVien');
+const UserProfile = require('../models/UserProfile');
 const { KHUNG } = require('./phanXaKho');
 
 const KHUNG_KEYS = KHUNG.map((k) => k.key);
@@ -23,8 +24,8 @@ const GIAM = 0.9;
 const NGUONG_YEU = 50;
 const NGUONG_VUNG = 75;
 const DU_DU_LIEU = 3;
-/** Hiện chỉ Giao tiếp có đủ nội dung và lộ trình riêng; mục tiêu khác mở khi có. */
-const MUC_TIEU_MO = ['giao-tiep'];
+/** Chỉ mục tiêu có đủ nội dung và lộ trình riêng mới chọn được; IELTS, HSK mở khi có. */
+const MUC_TIEU_MO = ['giao-tiep', 'toeic'];
 
 function capNhatKyNang(k, dung, now = new Date()) {
     return {
@@ -125,12 +126,21 @@ async function layHoSo(userId) {
         chanDoan: doc?.chanDoan || [],
         lichSuTest: doc?.lichSuTest || [],
         soVoiTruoc: soSanhTest(doc?.lichSuTest),
+        // Nạp trễ: chỉ đọc lịch sử thi khi đang theo mục tiêu này.
+        ...(doc?.mucTieu === 'toeic' ? { toeic: await require('./hoSoToeic').layHoSoToeic(userId) } : {}),
     };
 }
 
-async function datMucTieu(userId, mucTieu) {
+/** Điểm TOEIC hợp lệ: 0 (chưa đặt) đến 990, là bội của 5 (thuần). */
+const diemHopLe = (d) => Number.isInteger(d) && d >= 0 && d <= 990 && d % 5 === 0;
+
+async function datMucTieu(userId, mucTieu, { diemMucTieu } = {}) {
     if (!MUC_TIEU_MO.includes(mucTieu)) return false;
     await HoSoHocVien.updateOne({ userId }, { $set: { mucTieu } }, { upsert: true });
+    // Dùng chung cài đặt đã có ở màn Cài đặt để không có hai "điểm mục tiêu" khác nhau.
+    if (mucTieu === 'toeic' && diemHopLe(diemMucTieu)) {
+        await UserProfile.updateOne({ userId }, { $set: { 'settings.toeicTargetScore': diemMucTieu } });
+    }
     return true;
 }
 

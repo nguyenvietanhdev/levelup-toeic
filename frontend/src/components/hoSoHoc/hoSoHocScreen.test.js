@@ -33,13 +33,27 @@ describe('nối dây', () => {
 });
 
 describe('mục tiêu và test', () => {
-    test('TOEIC, IELTS, HSK khoá ở "Sắp có"; chỉ Giao tiếp mở', () => {
-        expect(src.match(/khoa: true/g)).toHaveLength(3);
+    test('IELTS, HSK khoá ở "Sắp có"; Giao tiếp và TOEIC chọn được', () => {
+        expect(src.match(/khoa: true/g)).toHaveLength(2);
+        expect(src).toMatch(/key: 'toeic', ten: 'TOEIC', icon: 'fa-file-lines', moTa: '[^']+' \}/);
+        expect(src).toMatch(/disabled=\{!!m\.khoa \|\| dang\}/);
         expect(src).toMatch(/key: 'giao-tiep', ten: 'Giao tiếp', icon: 'fa-comments', moTa: '[^']+' \}/);
     });
-    test('mục tiêu hiện cả trước và sau khi làm test', () => {
-        expect(src.match(/<LuoiMucTieu \/>/g)).toHaveLength(2);
-        expect(src).toMatch(/Mục tiêu đang theo/);
+    test('mục tiêu luôn hiện và đổi được, cả trước và sau khi làm test', () => {
+        expect(src).toMatch(/pha === 'hoSo' && hoSo && \(\s+<>\s+<h3[^>]*>\{hoSo\.mucTieu \? 'Mục tiêu đang theo'/);
+        expect(src).toMatch(/onChon=\{doiMucTieu\}/);
+    });
+    test('mỗi mục tiêu hiện đúng phần của nó', () => {
+        expect(src).toMatch(/hoSo\?\.mucTieu === 'toeic' && \(\s+<PanelToeic/);
+        expect(src).toMatch(/hoSo\?\.mucTieu === 'giao-tiep' && !hoSo\.testNgay/);
+        expect(src).toMatch(/hoSo\?\.mucTieu === 'giao-tiep' && hoSo\.testNgay/);
+    });
+    test('màn TOEIC mở đúng Part hệ thống gợi ý, đọc xong xoá ngay', () => {
+        const panel = doc('components', 'hoSoHoc', 'PanelToeic.jsx');
+        const toeic = doc('components', 'toeic', 'ToeicScreen.jsx');
+        expect(panel).toMatch(/sessionStorage\.setItem\('levelup\.toeic\.moi'/);
+        expect(toeic).toMatch(/sessionStorage\.getItem\('levelup\.toeic\.moi'\)/);
+        expect(toeic).toMatch(/sessionStorage\.removeItem\('levelup\.toeic\.moi'\)/);
     });
     test('hỏi khi thoát lúc đang test; rời màn thì dừng tiếng và micro', () => {
         expect(src).toMatch(/useHoiKhiThoat\('ho-so-hoc-screen', pha === 'test', \{/);

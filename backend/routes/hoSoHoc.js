@@ -19,7 +19,7 @@ router.get('/', async (req, res, next) => {
 
 router.put('/muc-tieu', async (req, res, next) => {
     try {
-        const ok = await datMucTieu(req.user.id, req.body?.mucTieu);
+        const ok = await datMucTieu(req.user.id, req.body?.mucTieu, { diemMucTieu: req.body?.diemMucTieu });
         if (!ok) return res.status(400).json({ success: false, message: 'Mục tiêu này chưa được hỗ trợ' });
         res.json({ success: true, data: await layHoSo(req.user.id) });
     } catch (err) { next(err); }

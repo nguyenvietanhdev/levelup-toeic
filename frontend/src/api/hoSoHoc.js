@@ -20,8 +20,9 @@ export const HoSoHocAPI = {
         return unwrap(await Http.get('/ho-so-hoc'));
     },
 
-    async datMucTieu(mucTieu) {
-        return unwrap(await Http.put('/ho-so-hoc/muc-tieu', { mucTieu }));
+    /** `diemMucTieu` chỉ dùng với TOEIC. */
+    async datMucTieu(mucTieu, diemMucTieu) {
+        return unwrap(await Http.put('/ho-so-hoc/muc-tieu', { mucTieu, diemMucTieu }));
     },
 
     /** Mở test: `{ id, cau }`. Không có micro thì câu nói đổi thành câu gõ. */

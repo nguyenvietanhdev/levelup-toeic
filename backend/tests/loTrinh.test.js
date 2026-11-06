@@ -24,6 +24,9 @@ jest.mock('../models/HoSoHocVien', () => ({
     findOne: () => ({ select: () => ({ lean: async () => mockHoSo }) }),
 }));
 jest.mock('../services/nhamDiemYeu', () => ({ layNham: async () => [{ key: 'tense' }] }));
+const mockToeic = { hs: null, dem: 0 };
+jest.mock('../models/ToeicAttempt', () => ({ countDocuments: async () => mockToeic.dem }));
+jest.mock('../services/hoSoToeic', () => ({ layHoSoToeic: async () => mockToeic.hs }));
 jest.mock('../models/ListeningSession', () => mo('ListeningSession'));
 jest.mock('../models/ReadingAttempt', () => mo('ReadingAttempt'));
 jest.mock('../models/Essay', () => mo('Essay'));
@@ -187,5 +190,38 @@ describe('lộ trình theo hồ sơ', () => {
         expect(moi.buoc.map((b) => b.key)).toContain('phan-xa');
         expect(moi.mucTieu).toBe('giao-tiep');
         mockHoSo = null;
+    });
+});
+
+describe('lộ trình mục tiêu TOEIC', () => {
+    const { dungLoTrinhToeic, layLoTrinh } = require('../services/loTrinh');
+    const D = { onSai: 0, hocTu: 0, nghe: 0, doc: 0, noi: 0, viet: 0, dich: 0, tuDenHan: 0 };
+    const hs = (o = {}) => ({
+        diemMucTieu: 750, kyYeu: null, trongTam: { part: 7, ten: 'Đọc hiểu', canNguPhap: false, lyDo: 'mất nhiều' }, ...o,
+    });
+    const keys = (r) => r.buoc.map((b) => b.key);
+
+    test('thứ tự: ôn, Part trọng tâm, học từ, kỹ năng, đề đầy đủ', () => {
+        expect(keys(dungLoTrinhToeic(D, hs(), { ngay: 'x', soNgay: 1 })))
+            .toEqual(['on-sai', 'toeic-part', 'hoc-tu', 'nghe', 'toeic-full']);
+    });
+    test('kỹ năng theo chỗ đang yếu hơn', () => {
+        expect(keys(dungLoTrinhToeic(D, hs({ kyYeu: 'doc' }), { ngay: 'x', soNgay: 1 }))[3]).toBe('doc');
+        expect(keys(dungLoTrinhToeic(D, hs({ kyYeu: 'nghe' }), { ngay: 'x', soNgay: 1 }))[3]).toBe('nghe');
+    });
+    test('xong đếm từ bài đã làm; bước Part mang đúng số Part và lý do', () => {
+        const r = dungLoTrinhToeic({ ...D, toeicPart: 1 }, hs(), { ngay: 'x', soNgay: 1 });
+        expect(r.buoc[1]).toMatchObject({ xong: true, part: 7, lyDo: 'mất nhiều' });
+        expect(r.buoc[4].xong).toBe(false);
+    });
+    test('đang theo mục tiêu TOEIC: API trả lộ trình TOEIC, không mời làm test giao tiếp', async () => {
+        mockHoSo = { mucTieu: 'toeic', kyNang: {} };
+        mockToeic.hs = hs();
+        mockToeic.dem = 1;
+        const r = await layLoTrinh('u1');
+        mockHoSo = null;
+        expect(r).toMatchObject({ mucTieu: 'toeic', diemMucTieu: 750, tong: 5 });
+        expect(r.moiLapHoSo).toBeUndefined();
+        expect(keys(r)).toContain('toeic-part');
     });
 });
