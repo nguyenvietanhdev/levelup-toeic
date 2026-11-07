@@ -140,6 +140,16 @@ export default function ConversationScreen({ active, voice = false }) {
     // Không còn chọn vai ở màn này: vai đi theo Part (tab Vai AI), nên phiên luôn gửi ''.
     const context = '';
     const [rubric, setRubric] = useState('giaotiep'); // bộ tiêu chí chấm cuối phiên
+
+    // Đi từ hồ sơ hoặc lộ trình IELTS/HSK: chọn sẵn bộ tiêu chí để phiên được tính cho mục tiêu.
+    useEffect(() => {
+        if (!active) return;
+        try {
+            const k = sessionStorage.getItem('levelup.kieuCham');
+            sessionStorage.removeItem('levelup.kieuCham');
+            if (k) setRubric(k);
+        } catch { /* giữ bộ đang chọn */ }
+    }, [active]);
     const [strictGrammar, setStrictGrammar] = useState(false); // ngữ pháp văn nói hay chuẩn viết
     const [feedbackClosed, setFeedbackClosed] = useState(false); // người học đã đóng popup kết quả
     // Phiên đang dở (thoát giữa chừng): mời nói tiếp thay vì mở phiên mới (tốn năng lượng + AI).

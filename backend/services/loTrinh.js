@@ -23,6 +23,7 @@ const BuoiPhanXa = require('../models/BuoiPhanXa');
 const HoSoHocVien = require('../models/HoSoHocVien');
 const ToeicAttempt = require('../models/ToeicAttempt');
 const { layHoSoToeic, SO_CAU_TOI_THIEU_FULL } = require('./hoSoToeic');
+const { layHoSoBang, CAU_HINH: CAU_HINH_BANG } = require('./hoSoBang');
 const { tomTatKyNang, chonTrongTam, NGUONG_YEU, NGUONG_VUNG } = require('./hoSoHoc');
 
 /** Giờ Việt Nam = UTC+7, không đổi theo mùa. */
@@ -167,6 +168,30 @@ function dungLoTrinhToeic(dem, hs, { ngay, soNgay }) {
     return { ngay, buoc, soXong: buoc.filter((b) => b.xong).length, tong: buoc.length };
 }
 
+/**
+ * Lộ trình mục tiêu IELTS / HSK (thuần): kỹ năng cần nhất lên ngay sau phần ôn, rồi tới các kỹ
+ * năng còn lại, cuối cùng là học từ. Viết và Nói mở với đúng kiểu chấm của mục tiêu.
+ */
+function dungLoTrinhBang(dem, hs, { ngay, soNgay }) {
+    const goc = new Map(dungLoTrinh(dem, { ngay, soNgay }).buoc.map((b) => [b.key, b]));
+    const ky = new Map(hs.kyNang.map((k) => [k.buoc, k]));
+    const buocKyNang = (key) => {
+        const k = ky.get(key);
+        const lyDo = hs.trongTam?.buoc === key ? hs.trongTam.lyDo
+            : (k?.duDuLieu ? `${k.ten}: ${k.diem}${k.donVi}.` : '');
+        if (key === 'bang-viet' || key === 'bang-noi') {
+            const soLan = key === 'bang-viet' ? (dem.bangViet || 0) : (dem.bangNoi || 0);
+            return { key, soLan, xong: soLan > 0, rubric: hs.rubric, tenMucTieu: hs.ten, lyDo };
+        }
+        return { ...goc.get(key), lyDo };
+    };
+    const thuTu = ['bang-viet', 'bang-noi', 'doc', 'nghe'];
+    const dau = hs.trongTam?.buoc;
+    const sap = dau ? [dau, ...thuTu.filter((k) => k !== dau)] : thuTu;
+    const buoc = [goc.get('on-sai'), ...sap.map(buocKyNang), goc.get('hoc-tu')];
+    return { ngay, buoc, soXong: buoc.filter((b) => b.xong).length, tong: buoc.length };
+}
+
 async function layLoTrinh(userId, now = new Date()) {
     const { dau, ngay, soNgay } = homNayVN(now);
     const profile = await UserProfile.findOne({ userId }).select('settings').lean();
@@ -190,10 +215,26 @@ async function layLoTrinh(userId, now = new Date()) {
         LoiOn.countDocuments({ userId, lang, denHan: { $lte: now } }),
         BuoiOnLoi.countDocuments({ userId, createdAt: tuNay, 'cau.daTra': true }),
         BuoiPhanXa.countDocuments({ userId, createdAt: tuNay, 'cau.daTra': true }),
-        HoSoHocVien.findOne({ userId }).select('mucTieu testNgay kyNang').lean(),
+        HoSoHocVien.findOne({ userId }).select('mucTieu testNgay kyNang chiTiet').lean(),
     ]);
     const dem = { onSai, hocTu, nghe, doc, noi, viet, dich, tuDenHan, loiDenHan, onLoi, phanXa };
     const keHoachTuan = tongKet?.keHoach || [];
+
+    const bang = CAU_HINH_BANG[hoSo?.mucTieu];
+    if (bang && bang.lang === lang) {
+        const hs = await layHoSoBang(userId, hoSo.mucTieu, hoSo.chiTiet);
+        const homNay = { userId, lang, rubric: bang.rubric };
+        const [bangViet, bangNoi] = await Promise.all([
+            Essay.countDocuments({ ...homNay, createdAt: tuNay }),
+            Conversation.countDocuments({ ...homNay, status: 'done', updatedAt: tuNay }),
+        ]);
+        return {
+            ...dungLoTrinhBang({ ...dem, bangViet, bangNoi }, hs, { ngay, soNgay }),
+            keHoachTuan,
+            mucTieu: hoSo.mucTieu,
+            diemMucTieu: hs.diemMucTieu,
+        };
+    }
 
     if (lang !== 'zh' && hoSo?.mucTieu === 'toeic') {
         const hs = await layHoSoToeic(userId);
@@ -234,4 +275,4 @@ async function layLoTrinh(userId, now = new Date()) {
     };
 }
 
-module.exports = { layLoTrinh, dungLoTrinh, dungLoTrinhHoSo, dungLoTrinhToeic, thuTuGiaoTiep, homNayVN, vietHayDich, dauTuanVN };
+module.exports = { layLoTrinh, dungLoTrinh, dungLoTrinhHoSo, dungLoTrinhToeic, dungLoTrinhBang, thuTuGiaoTiep, homNayVN, vietHayDich, dauTuanVN };

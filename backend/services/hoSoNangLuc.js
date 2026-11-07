@@ -83,6 +83,9 @@ function tongHop({ hoSo, tienBo, toeic, phanXaDaThuoc = 0, nguPhap = {}, taiKhoa
                 parts: toeic.parts,
             }
             : null,
+        bang: hoSo?.bang
+            ? { ten: hoSo.bang.ten, mucTieu: hoSo.bang.mucTieu, uocLuong: hoSo.bang.uocLuong, diemMucTieu: hoSo.bang.diemMucTieu, kyNang: hoSo.bang.kyNang }
+            : null,
         thanhTich: {
             tuDaThuoc: tienBo?.tuVung?.daThuoc || 0,
             tuDangOn: tienBo?.tuVung?.dangOn || 0,

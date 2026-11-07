@@ -5,7 +5,7 @@ import { loadUnlocks, lockInfo } from '@game/featureUnlocks.js';
 import { HoSoNangLucAPI } from '@api/hoSoNangLuc.js';
 import { moNguPhap, NGU_PHAP_THEO_LOI } from '@lib/nguPhapLienKet.js';
 
-const TEN_MUC_TIEU = { 'giao-tiep': 'Giao tiếp', toeic: 'TOEIC' };
+const TEN_MUC_TIEU = { 'giao-tiep': 'Giao tiếp', toeic: 'TOEIC', ielts: 'IELTS', hsk: 'HSK' };
 const MUI_TEN = { len: 'fa-arrow-trend-up', xuong: 'fa-arrow-trend-down', ngang: 'fa-minus' };
 const NHAN_MUC = { yeu: 'Cần luyện', 'dang-len': 'Đang lên', vung: 'Vững', 'chua-du': 'Chưa đủ dữ liệu' };
 
@@ -188,6 +188,24 @@ export default function HoSoNangLucScreen({ active }) {
                                     <div><strong>{data.toeic.diemMucTieu || '—'}</strong><span>Điểm mục tiêu</span></div>
                                     <div><strong>{data.toeic.soBai}</strong><span>Bài đã làm</span></div>
                                 </div>
+                            </>
+                        )}
+
+                        {data.bang && (
+                            <>
+                                <h3 className="hs-tieu-de">{data.bang.ten}</h3>
+                                <div className="nl-ky-nang">
+                                    {data.bang.kyNang.map((k) => (
+                                        <div key={k.key} className={k.duDuLieu ? '' : 'is-trong'}>
+                                            <span>{k.ten}</span>
+                                            <strong>{k.duDuLieu ? `${k.diem}${k.donVi}` : '—'}</strong>
+                                            <small>{k.duDuLieu ? `${k.soBai} bài` : 'chưa đủ dữ liệu'}</small>
+                                        </div>
+                                    ))}
+                                </div>
+                                {data.bang.uocLuong !== null && data.bang.uocLuong !== undefined && (
+                                    <p className="px-goi-y">Band ước lượng từ Viết và Nói: <strong>{Number(data.bang.uocLuong).toFixed(1)}</strong></p>
+                                )}
                             </>
                         )}
 

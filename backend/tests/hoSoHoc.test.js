@@ -268,9 +268,9 @@ describe('một lượt test', () => {
 });
 
 describe('mục tiêu', () => {
-    test('chỉ nhận mục tiêu đã có đủ nội dung', async () => {
-        expect(await HS.datMucTieu('u1', 'ielts')).toBe(false);
-        expect(await HS.datMucTieu('u1', 'giao-tiep')).toBe(true);
+    test('chỉ nhận mục tiêu có thật', async () => {
+        expect(await HS.datMucTieu('u1', 'toefl')).toMatchObject({ ma: 400 });
+        expect(await HS.datMucTieu('u1', 'giao-tiep')).toEqual({ ok: true });
         expect(mockHoSo.doc.mucTieu).toBe('giao-tiep');
     });
 });

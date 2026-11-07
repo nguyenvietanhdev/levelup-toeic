@@ -27,6 +27,11 @@ jest.mock('../services/nhamDiemYeu', () => ({ layNham: async () => [{ key: 'tens
 const mockToeic = { hs: null, dem: 0 };
 jest.mock('../models/ToeicAttempt', () => ({ countDocuments: async () => mockToeic.dem }));
 jest.mock('../services/hoSoToeic', () => ({ layHoSoToeic: async () => mockToeic.hs }));
+const mockBang = { hs: null };
+jest.mock('../services/hoSoBang', () => ({
+    layHoSoBang: async () => mockBang.hs,
+    CAU_HINH: { ielts: { lang: 'en', rubric: 'ielts', ten: 'IELTS' }, hsk: { lang: 'zh', rubric: 'hsk', ten: 'HSK' } },
+}));
 jest.mock('../models/ListeningSession', () => mo('ListeningSession'));
 jest.mock('../models/ReadingAttempt', () => mo('ReadingAttempt'));
 jest.mock('../models/Essay', () => mo('Essay'));
@@ -223,5 +228,36 @@ describe('lộ trình mục tiêu TOEIC', () => {
         expect(r).toMatchObject({ mucTieu: 'toeic', diemMucTieu: 750, tong: 5 });
         expect(r.moiLapHoSo).toBeUndefined();
         expect(keys(r)).toContain('toeic-part');
+    });
+});
+
+describe('lộ trình mục tiêu IELTS / HSK', () => {
+    const { dungLoTrinhBang, layLoTrinh } = require('../services/loTrinh');
+    const D = { onSai: 0, hocTu: 0, nghe: 0, doc: 0, noi: 0, viet: 0, dich: 0, tuDenHan: 0 };
+    const k = (key, buoc, duDuLieu = true, diem = 6, donVi = '/9') => ({ key, ten: key, buoc, duDuLieu, diem, donVi });
+    const hs = (tt) => ({
+        rubric: 'ielts', ten: 'IELTS', diemMucTieu: 7,
+        kyNang: [k('viet', 'bang-viet'), k('noi', 'bang-noi'), k('doc', 'doc', true, 80, '%'), k('nghe', 'nghe', true, 40, '%')],
+        trongTam: tt,
+    });
+    const keys = (r) => r.buoc.map((b) => b.key);
+
+    test('kỹ năng cần nhất lên ngay sau phần ôn, học từ cuối cùng', () => {
+        expect(keys(dungLoTrinhBang(D, hs({ buoc: 'nghe', lyDo: 'Nghe thấp nhất' }), { ngay: 'x', soNgay: 1 })))
+            .toEqual(['on-sai', 'nghe', 'bang-viet', 'bang-noi', 'doc', 'hoc-tu']);
+    });
+    test('Viết, Nói mang kiểu chấm để mở đúng; xong đếm bài chấm theo mục tiêu hôm nay', () => {
+        const r = dungLoTrinhBang({ ...D, bangViet: 1 }, hs({ buoc: 'bang-noi', lyDo: 'Chưa đủ bài' }), { ngay: 'x', soNgay: 1 });
+        expect(r.buoc[1]).toMatchObject({ key: 'bang-noi', rubric: 'ielts', xong: false, lyDo: 'Chưa đủ bài' });
+        expect(r.buoc.find((b) => b.key === 'bang-viet')).toMatchObject({ xong: true, lyDo: 'viet: 6/9.' });
+    });
+    test('API: theo IELTS khi học tiếng Anh; HSK mà đang học tiếng Anh thì không dùng lộ trình HSK', async () => {
+        mockBang.hs = hs({ buoc: 'bang-viet', lyDo: 'x' });
+        mockHoSo = { mucTieu: 'ielts', kyNang: {}, chiTiet: { ielts: 7 } };
+        const r = await layLoTrinh('u1');
+        expect(r).toMatchObject({ mucTieu: 'ielts', diemMucTieu: 7, tong: 6 });
+        mockHoSo = { mucTieu: 'hsk', kyNang: {}, chiTiet: { hsk: 3 } };
+        expect((await layLoTrinh('u1')).mucTieu).toBeUndefined();
+        mockHoSo = null;
     });
 });

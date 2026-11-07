@@ -8,14 +8,15 @@ import { isSpeechSupported, speechLangFor } from '@lib/speechInput.js';
 import { moNguPhap, NGU_PHAP_THEO_KHUNG } from '@lib/nguPhapLienKet.js';
 import { useGhiAm } from '../conversation/useGhiAm.js';
 import PanelToeic from './PanelToeic.jsx';
+import PanelBang from './PanelBang.jsx';
 import { useHoiKhiThoat } from '../ai/aiExitGuard.js';
 
 /** Chỉ mục tiêu đã có đủ nội dung mới chọn được, để không hứa lộ trình chưa tồn tại. */
 const MUC_TIEU = [
     { key: 'giao-tiep', ten: 'Giao tiếp', icon: 'fa-comments', moTa: 'Nói được câu tự nhiên trong đời sống hằng ngày.' },
     { key: 'toeic', ten: 'TOEIC', icon: 'fa-file-lines', moTa: 'Theo dõi điểm từng Part, dự đoán điểm thi.' },
-    { key: 'ielts', ten: 'IELTS', icon: 'fa-graduation-cap', moTa: 'Sắp có', khoa: true },
-    { key: 'hsk', ten: 'HSK', icon: 'fa-language', moTa: 'Sắp có', khoa: true },
+    { key: 'ielts', ten: 'IELTS', icon: 'fa-graduation-cap', moTa: 'Band Viết, Nói theo tiêu chí IELTS, đủ 4 kỹ năng. Cần học tiếng Anh.' },
+    { key: 'hsk', ten: 'HSK', icon: 'fa-language', moTa: '4 kỹ năng theo tiêu chí HSK. Cần học tiếng Trung.' },
 ];
 
 /** Chọn mục tiêu. Mục chưa có nội dung ghi "Sắp có" và không bấm được. */
@@ -217,6 +218,10 @@ export default function HoSoHocScreen({ active }) {
                         <h3 className="hs-tieu-de hs-tieu-de-dau">{hoSo.mucTieu ? 'Mục tiêu đang theo' : 'Bạn muốn học để làm gì?'}</h3>
                         <LuoiMucTieu dangChon={hoSo.mucTieu} dang={dang} onChon={doiMucTieu} />
                     </>
+                )}
+
+                {isLoggedIn && pha === 'hoSo' && ['ielts', 'hsk'].includes(hoSo?.mucTieu) && (
+                    <PanelBang bang={hoSo.bang} dang={dang} onDatDiem={(d) => doiMucTieu(hoSo.mucTieu, d)} />
                 )}
 
                 {isLoggedIn && pha === 'hoSo' && hoSo?.mucTieu === 'toeic' && (

@@ -11,6 +11,8 @@ const hoSoHocVienSchema = new mongoose.Schema(
         userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true, unique: true },
         mucTieu: { type: String, enum: ['giao-tiep', 'toeic', 'ielts', 'hsk', ''], default: '' },
         kyNang: { type: mongoose.Schema.Types.Mixed, default: {} },
+        // Mức muốn đạt của từng mục tiêu: { ielts: 7, hsk: 4 }. Điểm TOEIC nằm ở cài đặt có sẵn.
+        chiTiet: { type: mongoose.Schema.Types.Mixed, default: {} },
         testNgay: { type: Date, default: null },
         chanDoan: { type: [mongoose.Schema.Types.Mixed], default: [] },
         lichSuTest: { type: [{ ngay: Date, diem: Number, theoKyNang: mongoose.Schema.Types.Mixed, _id: false }], default: [] },

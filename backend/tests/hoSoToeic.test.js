@@ -126,11 +126,11 @@ describe('hồ sơ', () => {
 });
 
 describe('đặt mục tiêu', () => {
-    test('nhận Giao tiếp và TOEIC; chưa nhận IELTS, HSK', async () => {
-        expect(await HS.datMucTieu('u1', 'toeic')).toBe(true);
-        expect(await HS.datMucTieu('u1', 'giao-tiep')).toBe(true);
-        expect(await HS.datMucTieu('u1', 'ielts')).toBe(false);
-        expect(await HS.datMucTieu('u1', 'hsk')).toBe(false);
+    test('nhận Giao tiếp và TOEIC; IELTS cần tiếng Anh, HSK cần tiếng Trung', async () => {
+        expect(await HS.datMucTieu('u1', 'toeic')).toEqual({ ok: true });
+        expect(await HS.datMucTieu('u1', 'giao-tiep')).toEqual({ ok: true });
+        expect(await HS.datMucTieu('u1', 'ielts')).toEqual({ ok: true }); // đang học tiếng Anh
+        expect(await HS.datMucTieu('u1', 'hsk')).toMatchObject({ ma: 400 }); // cần tiếng Trung
     });
     test('điểm mục tiêu hợp lệ được lưu vào cài đặt có sẵn', async () => {
         await HS.datMucTieu('u1', 'toeic', { diemMucTieu: 750 });

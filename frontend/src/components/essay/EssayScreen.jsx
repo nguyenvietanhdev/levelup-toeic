@@ -145,6 +145,16 @@ export default function EssayScreen({ active }) {
     const [grading, setGrading] = useState(false);
     const [level, setLevel] = useState('medium');
     const [kieuChon, setKieuChon] = useState(null); // người học bấm chọn; null = mặc định theo ngôn ngữ
+
+    // Đi từ hồ sơ hoặc lộ trình IELTS/HSK: chọn sẵn kiểu chấm để bài được tính cho mục tiêu.
+    useEffect(() => {
+        if (!active) return;
+        try {
+            const k = sessionStorage.getItem('levelup.kieuCham');
+            sessionStorage.removeItem('levelup.kieuCham');
+            if (k) setKieuChon(k);
+        } catch { /* giữ kiểu đang chọn */ }
+    }, [active]);
     const [tab, setTab] = useState('luyen'); // 'luyen' | 'lichsu'
     const [dang, setDang] = useState('');     // '' = ngẫu nhiên
     const [tuChon, setTuChon] = useState(''); // dạng/chủ đề tự nhập, ưu tiên hơn `dang`

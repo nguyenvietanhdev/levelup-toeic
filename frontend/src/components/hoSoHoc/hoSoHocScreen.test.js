@@ -33,8 +33,12 @@ describe('nối dây', () => {
 });
 
 describe('mục tiêu và test', () => {
-    test('IELTS, HSK khoá ở "Sắp có"; Giao tiếp và TOEIC chọn được', () => {
-        expect(src.match(/khoa: true/g)).toHaveLength(2);
+    test('cả 4 mục tiêu chọn được; IELTS, HSK có phần riêng', () => {
+        expect(src.match(/khoa: true/g)).toBeNull();
+        expect(src).toMatch(/\['ielts', 'hsk'\]\.includes\(hoSo\?\.mucTieu\) && \(\s+<PanelBang/);
+        const bang = doc('components', 'hoSoHoc', 'PanelBang.jsx');
+        expect(bang).toMatch(/sessionStorage\.setItem\('levelup\.kieuCham', rubric\)/);
+        expect(bang).toMatch(/không quy ra/);
         expect(src).toMatch(/key: 'toeic', ten: 'TOEIC', icon: 'fa-file-lines', moTa: '[^']+' \}/);
         expect(src).toMatch(/disabled=\{!!m\.khoa \|\| dang\}/);
         expect(src).toMatch(/key: 'giao-tiep', ten: 'Giao tiếp', icon: 'fa-comments', moTa: '[^']+' \}/);

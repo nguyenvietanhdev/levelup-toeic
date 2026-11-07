@@ -291,7 +291,9 @@ interaction and deployment configuration are checked by hand against the deploye
   rejects bad practice questions before they are saved, but it misses some, such as a question where two
   options are correct. Any learner can report an item, which hides it for everyone straight away. Reports
   have a daily limit and keep a copy for restoring, but there is no admin screen yet, only a script.
-- **Only the Communication and TOEIC goals exist so far.** IELTS and HSK are shown as coming soon.
+- **IELTS and HSK goals only measure, they do not test.** Writing and speaking come from work graded with
+  the IELTS or HSK rubric; reading and listening are percentages on the app's own exercises and are not
+  converted to bands or levels, because those exercises are not real exam papers.
 - **Development and production share one MongoDB cluster.** Convenient, and the reason several
   admin operations are more dangerous than they look.
 - **The admin panel has no module system.** Scripts are ordered by hand in one HTML file with

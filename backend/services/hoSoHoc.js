@@ -24,8 +24,10 @@ const GIAM = 0.9;
 const NGUONG_YEU = 50;
 const NGUONG_VUNG = 75;
 const DU_DU_LIEU = 3;
-/** Chỉ mục tiêu có đủ nội dung và lộ trình riêng mới chọn được; IELTS, HSK mở khi có. */
-const MUC_TIEU_MO = ['giao-tiep', 'toeic'];
+/** Các mục tiêu và ngôn ngữ học mà mỗi mục tiêu cần. */
+const MUC_TIEU_MO = ['giao-tiep', 'toeic', 'ielts', 'hsk'];
+const NGON_NGU_CUA = { 'giao-tiep': 'en', toeic: 'en', ielts: 'en', hsk: 'zh' };
+const TEN_NGON_NGU = { en: 'tiếng Anh', zh: 'tiếng Trung' };
 
 function capNhatKyNang(k, dung, now = new Date()) {
     return {
@@ -128,20 +130,44 @@ async function layHoSo(userId) {
         soVoiTruoc: soSanhTest(doc?.lichSuTest),
         // Nạp trễ: chỉ đọc lịch sử thi khi đang theo mục tiêu này.
         ...(doc?.mucTieu === 'toeic' ? { toeic: await require('./hoSoToeic').layHoSoToeic(userId) } : {}),
+        ...(['ielts', 'hsk'].includes(doc?.mucTieu)
+            ? { bang: await require('./hoSoBang').layHoSoBang(userId, doc.mucTieu, doc.chiTiet) }
+            : {}),
     };
 }
 
 /** Điểm TOEIC hợp lệ: 0 (chưa đặt) đến 990, là bội của 5 (thuần). */
 const diemHopLe = (d) => Number.isInteger(d) && d >= 0 && d <= 990 && d % 5 === 0;
 
+/** Mức muốn đạt hợp lệ cho IELTS (band 4.0–9.0, bước 0.5) và HSK (cấp 1–6). 0 = chưa đặt (thuần). */
+const MUC_HOP_LE = {
+    ielts: (d) => d === 0 || (Number.isFinite(d) && d >= 4 && d <= 9 && Number.isInteger(d * 2)),
+    hsk: (d) => Number.isInteger(d) && d >= 0 && d <= 6,
+};
+
+/**
+ * Đặt mục tiêu. Mục tiêu phải khớp ngôn ngữ đang học: chọn HSK khi đang học tiếng Anh thì mọi
+ * bài làm vẫn là tiếng Anh và hồ sơ HSK sẽ trống mãi. Học cả hai ngôn ngữ thì chọn được mọi mục tiêu.
+ */
 async function datMucTieu(userId, mucTieu, { diemMucTieu } = {}) {
-    if (!MUC_TIEU_MO.includes(mucTieu)) return false;
-    await HoSoHocVien.updateOne({ userId }, { $set: { mucTieu } }, { upsert: true });
+    if (!MUC_TIEU_MO.includes(mucTieu)) return { loi: 'Mục tiêu này chưa được hỗ trợ.', ma: 400 };
+    const p = await UserProfile.findOne({ userId }).select('settings.vocabLang').lean();
+    const dangHoc = p?.settings?.vocabLang || 'en';
+    const can = NGON_NGU_CUA[mucTieu];
+    if (dangHoc !== 'bi' && dangHoc !== can) {
+        return {
+            loi: `Mục tiêu này dùng ${TEN_NGON_NGU[can]}. Hãy đổi ngôn ngữ học sang ${TEN_NGON_NGU[can]} ở thanh trên cùng rồi chọn lại.`,
+            ma: 400,
+        };
+    }
+    const doi = { mucTieu };
+    if (MUC_HOP_LE[mucTieu]?.(diemMucTieu)) doi[`chiTiet.${mucTieu}`] = diemMucTieu;
+    await HoSoHocVien.updateOne({ userId }, { $set: doi }, { upsert: true });
     // Dùng chung cài đặt đã có ở màn Cài đặt để không có hai "điểm mục tiêu" khác nhau.
     if (mucTieu === 'toeic' && diemHopLe(diemMucTieu)) {
         await UserProfile.updateOne({ userId }, { $set: { 'settings.toeicTargetScore': diemMucTieu } });
     }
-    return true;
+    return { ok: true };
 }
 
 module.exports = {

@@ -30,14 +30,15 @@
 | Nghe gõ | Nghe và gõ lại từ (luyện chính tả) |
 
 ### Học theo mục tiêu
-Chọn **Giao tiếp** hoặc **TOEIC**, hệ thống đo trình độ rồi sắp lộ trình mỗi ngày theo kết quả. Mỗi bước đều ghi lý do được giao.
+Chọn **Giao tiếp**, **TOEIC**, **IELTS** hoặc **HSK**, hệ thống đo trình độ rồi sắp lộ trình mỗi ngày theo kết quả. Mỗi bước đều ghi lý do được giao.
 
 - **Giao tiếp**: test đầu vào 15 câu (chọn, gõ, nói, nghe) với độ khó đổi theo câu trả lời. So kết quả chọn, gõ và nói để chẩn đoán nguyên nhân: chưa nắm quy tắc, chưa tự dựng được câu, hay chưa nói kịp
 - **TOEIC**: đo từng Part từ các bài Mini/Full Test đã làm, dự đoán điểm, và chọn Part **mất nhiều câu nhất** thay vì Part có tỉ lệ thấp nhất
 - **Phản xạ câu**: nhìn câu tiếng Việt, nói hoặc gõ câu tiếng Anh, thấy câu đúng ngay; 48 câu viết từ lỗi thật, ôn giãn cách, có thẻ quy tắc khi cần (nhận giọng nói cần Chrome hoặc Edge)
 - **Công thức ngữ pháp**: tra không cần gõ dấu, mở được ngay trong lúc luyện tập mà không mất bài. Không có chủ điểm thì AI nhận diện xem đã tồn tại dưới tên khác chưa; thật sự mới thì soạn nháp và hỏi trước khi thêm vào thư viện. Mỗi công thức có bài luyện 5 câu (chọn, sửa câu sai, tự dịch) kèm lịch ôn lại
 
-IELTS và HSK đang được chuẩn bị.
+- **IELTS / HSK**: 4 kỹ năng đọc từ bài đã làm. Viết và Nói lấy từ bài AI chấm theo đúng tiêu chí IELTS hoặc HSK; Đọc và Nghe chỉ là % ở bài luyện, không quy ra band hay cấp vì bài luyện không phải đề thật. IELTS có band ước lượng từ Viết và Nói
+- **Hồ sơ năng lực**: một trang gộp trình độ, điểm mạnh, điểm cần cải thiện, các kỹ năng và những gì đã thuộc
 
 ### Hệ thống thi TOEIC
 - **Full Test**: 200 câu, 120 phút — mô phỏng đúng chuẩn thi thật

@@ -67,6 +67,17 @@ const BUOC = {
         icon: 'fa-bullseye',
         moTa: 'Làm một Mini Test đúng Part đang cần nhất.',
     },
+    // Chỉ có trong lộ trình mục tiêu IELTS / HSK: mở với đúng kiểu chấm của mục tiêu.
+    'bang-viet': {
+        ten: 'Viết theo tiêu chí mục tiêu',
+        icon: 'fa-pen-nib',
+        moTa: 'Bài viết chấm theo tiêu chí IELTS hoặc HSK.',
+    },
+    'bang-noi': {
+        ten: 'Nói theo tiêu chí mục tiêu',
+        icon: 'fa-microphone-lines',
+        moTa: 'Hội thoại chấm theo tiêu chí IELTS hoặc HSK.',
+    },
     'toeic-full': {
         ten: 'Đề đầy đủ định kỳ',
         icon: 'fa-clipboard-list',
@@ -150,6 +161,25 @@ export default function LoTrinhScreen({ active }) {
                         </button>
                     )}
                 </>
+            );
+        }
+        if (b.key === 'bang-viet' || b.key === 'bang-noi') {
+            const dich = b.key === 'bang-viet' ? VIET : { screen: 'voice-conversation-screen', feature: 'feature:conversation' };
+            const khoa = lockInfo(dich.feature);
+            if (khoa.locked) {
+                return <span className="lt-khoa"><i className="fas fa-lock"></i> Mở ở Level {khoa.requiredLevel}</span>;
+            }
+            return (
+                <button
+                    type="button"
+                    className="btn btn-primary lt-nut"
+                    onClick={() => {
+                        try { sessionStorage.setItem('levelup.kieuCham', b.rubric || ''); } catch { /* kiểu mặc định */ }
+                        showScreen(dich.screen);
+                    }}
+                >
+                    {lam}{b.tenMucTieu ? ` (${b.tenMucTieu})` : ''}
+                </button>
             );
         }
         if (b.key === 'toeic-part' || b.key === 'toeic-full') {
@@ -242,7 +272,11 @@ export default function LoTrinhScreen({ active }) {
                     <>
                         {data?.mucTieu ? (
                             <p className="lt-gioi-thieu">
-                                Lộ trình theo mục tiêu <strong>{data.mucTieu === 'toeic' ? `TOEIC${data.diemMucTieu ? ` ${data.diemMucTieu}` : ''}` : 'Giao tiếp'}</strong>, sắp theo trình độ của bạn.
+                                Lộ trình theo mục tiêu <strong>{({
+                                    toeic: `TOEIC${data.diemMucTieu ? ` ${data.diemMucTieu}` : ''}`,
+                                    ielts: `IELTS${data.diemMucTieu ? ` ${Number(data.diemMucTieu).toFixed(1)}` : ''}`,
+                                    hsk: `HSK${data.diemMucTieu ? ` ${data.diemMucTieu}` : ''}`,
+                                })[data.mucTieu] || 'Giao tiếp'}</strong>, sắp theo trình độ của bạn.
                                 {' '}<button type="button" className="lt-ke-hoach-link" onClick={() => showScreen('ho-so-hoc-screen')}>Xem hồ sơ</button>
                             </p>
                         ) : (
