@@ -378,6 +378,7 @@ async function themViDu(userId, id, now = new Date()) {
 }
 
 module.exports = {
+    layMuc, layLuot, traLuot, conLuot,
     tim, hoi, themVaoThuVien, themViDu, aiNhanDien, boDau, timTrongKho, chuanHoaMucAI, chuanHoaViDu, docKetQuaAI,
     LUOT_MOI_NGAY, TOI_DA_VI_DU_THEM,
 };

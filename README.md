@@ -35,7 +35,7 @@ Chọn **Giao tiếp** hoặc **TOEIC**, hệ thống đo trình độ rồi s�
 - **Giao tiếp**: test đầu vào 15 câu (chọn, gõ, nói, nghe) với độ khó đổi theo câu trả lời. So kết quả chọn, gõ và nói để chẩn đoán nguyên nhân: chưa nắm quy tắc, chưa tự dựng được câu, hay chưa nói kịp
 - **TOEIC**: đo từng Part từ các bài Mini/Full Test đã làm, dự đoán điểm, và chọn Part **mất nhiều câu nhất** thay vì Part có tỉ lệ thấp nhất
 - **Phản xạ câu**: nhìn câu tiếng Việt, nói hoặc gõ câu tiếng Anh, thấy câu đúng ngay; 48 câu viết từ lỗi thật, ôn giãn cách, có thẻ quy tắc khi cần (nhận giọng nói cần Chrome hoặc Edge)
-- **Công thức ngữ pháp**: tra không cần gõ dấu, mở được ngay trong lúc luyện tập mà không mất bài. Không có chủ điểm thì AI nhận diện xem đã tồn tại dưới tên khác chưa; thật sự mới thì soạn nháp và hỏi trước khi thêm vào thư viện
+- **Công thức ngữ pháp**: tra không cần gõ dấu, mở được ngay trong lúc luyện tập mà không mất bài. Không có chủ điểm thì AI nhận diện xem đã tồn tại dưới tên khác chưa; thật sự mới thì soạn nháp và hỏi trước khi thêm vào thư viện. Mỗi công thức có bài luyện 5 câu (chọn, sửa câu sai, tự dịch) kèm lịch ôn lại
 
 IELTS và HSK đang được chuẩn bị.
 

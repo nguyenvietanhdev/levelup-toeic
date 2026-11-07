@@ -3,6 +3,7 @@ import { GameLogic } from '@game/gameLogic.js';
 import { useAuth } from '@components/auth/AuthContext.jsx';
 import { Notification } from '@ui/Toaster.jsx';
 import { NguPhapAPI } from '@api/nguPhap.js';
+import LuyenNguPhap from './LuyenNguPhap.jsx';
 
 const CHO_GO_MS = 250;
 
@@ -57,11 +58,13 @@ function NoiDungMuc({ m }) {
 }
 
 /** Một mục ngữ pháp, bấm tiêu đề để mở. */
-function TheMuc({ m, mo, onDoi, onThemViDu, dangThem, hetLuot }) {
+function TheMuc({ m, mo, onDoi, onThemViDu, onLuyen, dangThem, hetLuot }) {
     return (
         <article className={`np-the ${mo ? 'is-mo' : ''}`} data-np-id={m.id}>
             <button type="button" className="np-dau" aria-expanded={mo} onClick={onDoi}>
                 <strong>{m.ten}</strong>
+                {m.luyen?.denHan && <span className="np-nhan-on"><i className="fas fa-clock"></i> Đến hạn ôn</span>}
+                {!m.luyen?.denHan && m.luyen?.daThuoc && <span className="np-nhan-thuoc"><i className="fas fa-check"></i> Đã thuộc</span>}
                 {m.nguon === 'ai' && <span className="np-nhan-ai"><i className="fas fa-wand-magic-sparkles"></i> AI tạo</span>}
                 <i className={`fas fa-chevron-${mo ? 'up' : 'down'}`}></i>
             </button>
@@ -69,6 +72,9 @@ function TheMuc({ m, mo, onDoi, onThemViDu, dangThem, hetLuot }) {
                 <div className="np-than">
                     <NoiDungMuc m={m} />
                     <div className="px-nut">
+                        <button type="button" className="btn btn-primary" onClick={onLuyen}>
+                            <i className="fas fa-dumbbell"></i> {m.luyen?.denHan ? 'Ôn lại công thức này' : 'Luyện công thức này'}
+                        </button>
                         <button type="button" className="btn btn-secondary" disabled={dangThem || hetLuot} onClick={onThemViDu}>
                             <i className="fas fa-wand-magic-sparkles"></i> {dangThem ? 'Đang tạo…' : 'Thêm ví dụ bằng AI'}
                         </button>
@@ -98,6 +104,8 @@ export default function NguPhapTra({ active, dich = null }) {
     const [dangLuu, setDangLuu] = useState(false);
     const [bao, setBao] = useState('');
     const [nhap, setNhap] = useState(null);
+    const [luyen, setLuyen] = useState(null);
+    const [lanTai, setLanTai] = useState(0);
     const lanTra = useRef(0);
     const khung = useRef(null);
     const oTim = useRef(null);
@@ -109,6 +117,7 @@ export default function NguPhapTra({ active, dich = null }) {
         setQ(dich.q || '');
         setNhomChon(dich.nhom || '');
         setMo(dich.id || '');
+        setLuyen(null); // mở từ một lỗi: đưa về đúng mục, không kẹt ở bài luyện cũ
         cuonDen.current = dich.id || '';
         if (!dich.id && !dich.nhom) oTim.current?.focus();
     }, [dich]);
@@ -124,7 +133,7 @@ export default function NguPhapTra({ active, dich = null }) {
                 .catch((e) => { if (lan === lanTra.current) Notification.error(e.message); });
         }, CHO_GO_MS);
         return () => clearTimeout(t);
-    }, [active, isLoggedIn, q]);
+    }, [active, isLoggedIn, q, lanTai]);
 
     // Đổi câu tra: thông báo và bản nháp của câu cũ không còn liên quan.
     useEffect(() => { setBao(''); setNhap(null); }, [q]);
@@ -139,7 +148,11 @@ export default function NguPhapTra({ active, dich = null }) {
     }, [data, mo]);
 
     const tatCa = data?.muc || [];
-    const muc = tatCa.filter((m) => !nhomChon || m.nhom === nhomChon);
+    const soDenHan = tatCa.filter((m) => m.luyen?.denHan).length;
+    const muc = tatCa.filter((m) => {
+        if (nhomChon === 'den-han') return m.luyen?.denHan;
+        return !nhomChon || m.nhom === nhomChon;
+    });
     const conLuot = data?.conLuot ?? 0;
     const cauTra = q.trim();
 
@@ -232,7 +245,13 @@ export default function NguPhapTra({ active, dich = null }) {
             <div className="px-wrap" ref={khung}>
                 {!isLoggedIn && <p className="px-mo-ta">Đăng nhập để tra cứu công thức ngữ pháp.</p>}
 
-                {isLoggedIn && (
+                {isLoggedIn && luyen && (
+                    <LuyenNguPhap muc={luyen} onThoat={() => setLuyen(null)} onXong={() => setLanTai((n) => n + 1)}>
+                        <NoiDungMuc m={luyen} />
+                    </LuyenNguPhap>
+                )}
+
+                {isLoggedIn && !luyen && (
                     <>
                         <form className="np-tim" onSubmit={guiTim}>
                             <i className="fas fa-magnifying-glass"></i>
@@ -254,6 +273,11 @@ export default function NguPhapTra({ active, dich = null }) {
 
                         <div className="np-nhom">
                             <button type="button" className={!nhomChon ? 'is-chon' : ''} onClick={() => setNhomChon('')}>Tất cả</button>
+                            {soDenHan > 0 && (
+                                <button type="button" className={nhomChon === 'den-han' ? 'is-chon' : ''} onClick={() => setNhomChon('den-han')}>
+                                    Đến hạn ôn ({soDenHan})
+                                </button>
+                            )}
                             {data?.nhom?.map((n) => (
                                 <button key={n.key} type="button" className={nhomChon === n.key ? 'is-chon' : ''} onClick={() => setNhomChon(n.key)}>
                                     {n.ten}
@@ -292,6 +316,7 @@ export default function NguPhapTra({ active, dich = null }) {
                                     mo={mo === m.id}
                                     onDoi={() => setMo((x) => (x === m.id ? '' : m.id))}
                                     onThemViDu={() => themViDu(m)}
+                                    onLuyen={() => setLuyen(m)}
                                     dangThem={dangThem === m.id}
                                     hetLuot={conLuot <= 0}
                                 />

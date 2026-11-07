@@ -3,9 +3,11 @@
 // ===================================
 
 const express = require('express');
+const mongoose = require('mongoose');
 const router = express.Router();
 const { protect } = require('../middleware/auth');
 const { tim, hoi, themVaoThuVien, themViDu } = require('../services/nguPhap');
+const { moLuot, traLoi, ganTienDo } = require('../services/nguPhapLuyen');
 
 router.use(protect);
 
@@ -13,7 +15,8 @@ router.use(protect);
 router.get('/', async (req, res, next) => {
     try {
         const q = typeof req.query.q === 'string' ? req.query.q : '';
-        res.json({ success: true, data: await tim(req.user.id, q) });
+        const data = await tim(req.user.id, q);
+        res.json({ success: true, data: { ...data, muc: await ganTienDo(req.user.id, data.muc) } });
     } catch (err) { next(err); }
 });
 
@@ -30,6 +33,28 @@ router.post('/hoi', async (req, res, next) => {
 router.post('/nhap/:id/them', async (req, res, next) => {
     try {
         const r = await themVaoThuVien(req.user.id, req.params.id);
+        if (r.loi) return res.status(r.ma || 400).json({ success: false, message: r.loi });
+        res.json({ success: true, data: r });
+    } catch (err) { next(err); }
+});
+
+/** Trả lời một câu trong lượt luyện. Đặt trước `/:id/...` để `buoi` không bị hiểu là id mục. */
+router.post('/buoi/:id/cau/:i', async (req, res, next) => {
+    try {
+        const i = Number(req.params.i);
+        if (!mongoose.isValidObjectId(req.params.id) || !Number.isInteger(i) || i < 0) {
+            return res.status(400).json({ success: false, message: 'Câu hỏi không hợp lệ' });
+        }
+        const r = await traLoi(req.user.id, req.params.id, i, req.body || {});
+        if (r.loi) return res.status(r.ma || 400).json({ success: false, message: r.loi });
+        res.json({ success: true, data: r });
+    } catch (err) { next(err); }
+});
+
+/** Mở một lượt luyện công thức này. */
+router.post('/:id/luyen', async (req, res, next) => {
+    try {
+        const r = await moLuot(req.user.id, String(req.params.id).slice(0, 60));
         if (r.loi) return res.status(r.ma || 400).json({ success: false, message: r.loi });
         res.json({ success: true, data: r });
     } catch (err) { next(err); }

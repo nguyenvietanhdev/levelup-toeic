@@ -96,6 +96,37 @@ describe('tra trong lúc luyện tập', () => {
     });
 });
 
+describe('luyện từng công thức', () => {
+    const luyen = doc('components', 'nguPhap', 'LuyenNguPhap.jsx');
+    test('mỗi mục có nút luyện, đến hạn thì đổi thành ôn lại', () => {
+        expect(src).toMatch(/onClick=\{onLuyen\}/);
+        expect(src).toMatch(/Ôn lại công thức này/);
+        expect(src).toMatch(/Luyện công thức này/);
+    });
+    test('có lọc mục đến hạn ôn; xong lượt thì tải lại để cập nhật nhãn', () => {
+        expect(src).toMatch(/nhomChon === 'den-han'/);
+        expect(src).toMatch(/onXong=\{\(\) => setLanTai/);
+    });
+    test('API đúng đường dẫn', () => {
+        const api = doc('api', 'nguPhap.js');
+        expect(api).toMatch(/\/ngu-phap\/\$\{encodeURIComponent\(id\)\}\/luyen/);
+        expect(api).toMatch(/\/ngu-phap\/buoi\/\$\{encodeURIComponent\(buoiId\)\}\/cau\/\$\{i\}/);
+    });
+    test('đủ ba dạng câu; câu sửa điền sẵn câu sai; làm sai xem lại được công thức', () => {
+        expect(luyen).toMatch(/chon: 'Chọn đáp án đúng', sua: 'Sửa câu sai', dich: 'Dịch sang tiếng Anh'/);
+        expect(luyen).toMatch(/setNhap\(cau\.loai === 'sua' \? cau\.sai : ''\)/);
+        expect(luyen).toMatch(/!ketQua\.dung && \(/);
+        expect(luyen).toMatch(/xemCongThuc && <div className="np-luyen-cong-thuc">\{children\}/);
+    });
+    test('lỗi mạng không làm kẹt lượt; nói rõ câu do AI soạn', () => {
+        expect(luyen).toMatch(/setKetQua\(\{ dung: false, khongChac: true/);
+        expect(luyen).toMatch(/do AI soạn và chưa được người soát/);
+    });
+    test('Enter trong bài luyện không lọt ra bài đang làm: nằm trong ngăn đã chặn phím', () => {
+        expect(ngan).toMatch(/<NguPhapTra active=\{mo\} dich=\{dich\} \/>/);
+    });
+});
+
 describe('hành vi khác', () => {
     test('phản hồi cũ không đè kết quả mới', () => {
         expect(src).toMatch(/if \(lan === lanTra\.current\) setData\(d\)/);

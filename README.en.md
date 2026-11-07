@@ -287,6 +287,8 @@ interaction and deployment configuration are checked by hand against the deploye
 - **Speech recognition needs Chrome or Edge.** It uses the browser's Web Speech API, so Firefox users
   type instead and their speaking skill stays unscored.
 - **AI grading is noisy.** The same work can differ by about a point between runs.
+- **AI-written practice questions can still be wrong.** A second AI pass rejects bad items before they
+  are saved, but it misses some, such as a question where two options are correct.
 - **AI-written grammar entries are not reviewed.** They are labelled in the UI, but there is no way to
   report or moderate one yet, and they are shared between users.
 - **Only the Communication and TOEIC goals exist so far.** IELTS and HSK are shown as coming soon.

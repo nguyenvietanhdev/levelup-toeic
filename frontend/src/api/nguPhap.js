@@ -30,6 +30,16 @@ export const NguPhapAPI = {
         return unwrap(await Http.post(`/ngu-phap/nhap/${encodeURIComponent(nhapId)}/them`, {}));
     },
 
+    /** Mở một lượt luyện công thức: `{ id, cau: [...], conLuot }`, không kèm đáp án. */
+    async moLuyen(id) {
+        return unwrap(await Http.post(`/ngu-phap/${encodeURIComponent(id)}/luyen`, {}));
+    },
+
+    /** `{ dung, khongChac, dapAn, giaiThich, ghiChu, tongKet? }`. `traLoi` rỗng = chưa biết. */
+    async traLoiLuyen(buoiId, i, traLoi) {
+        return unwrap(await Http.post(`/ngu-phap/buoi/${encodeURIComponent(buoiId)}/cau/${i}`, { traLoi }));
+    },
+
     /** `{ viDuThem, daDu?, conLuot }`. */
     async themViDu(id) {
         return unwrap(await Http.post(`/ngu-phap/${encodeURIComponent(id)}/vi-du`, {}));

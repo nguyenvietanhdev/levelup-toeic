@@ -12942,3 +12942,13 @@ button.hs-muc:not(:disabled):hover { border-color: var(--accent-color); }
 .hs-trong-tam { margin: 12px 0; padding: 12px 14px; border-radius: 12px; border: 2px solid var(--accent-color); background: var(--bg-secondary); }
 .hs-trong-tam .px-mo-ta { margin: 0 0 4px; }
 .hs-nhan.is-chua-du { color: var(--text-secondary); }
+
+/* Luyện từng công thức ngữ pháp */
+.np-luyen-dau { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; margin-bottom: 8px; }
+.np-luyen-dau .lt-ke-hoach-link { padding: 0; }
+.np-luyen-nghia { font-size: 16px; font-weight: 500; }
+.np-luyen-cong-thuc { margin-top: 12px; padding: 12px 14px; border-radius: 12px; border: 1px solid var(--border-color); background: var(--bg-secondary); }
+.np-luyen-cong-thuc > h4:first-of-type { margin-top: 14px; }
+.np-nhan-on, .np-nhan-thuoc { flex-shrink: 0; padding: 2px 8px; border-radius: 999px; font-size: 11px; }
+.np-nhan-on { color: #ea580c; border: 1px solid rgba(234, 88, 12, 0.5); }
+.np-nhan-thuoc { color: #16a34a; border: 1px solid rgba(22, 163, 74, 0.5); }
