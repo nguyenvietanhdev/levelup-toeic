@@ -287,10 +287,10 @@ interaction and deployment configuration are checked by hand against the deploye
 - **Speech recognition needs Chrome or Edge.** It uses the browser's Web Speech API, so Firefox users
   type instead and their speaking skill stays unscored.
 - **AI grading is noisy.** The same work can differ by about a point between runs.
-- **AI-written practice questions can still be wrong.** A second AI pass rejects bad items before they
-  are saved, but it misses some, such as a question where two options are correct.
-- **AI-written grammar entries are not reviewed.** They are labelled in the UI, but there is no way to
-  report or moderate one yet, and they are shared between users.
+- **AI-written grammar content can still be wrong.** It is labelled in the UI, and a second AI pass
+  rejects bad practice questions before they are saved, but it misses some, such as a question where two
+  options are correct. Any learner can report an item, which hides it for everyone straight away. Reports
+  have a daily limit and keep a copy for restoring, but there is no admin screen yet, only a script.
 - **Only the Communication and TOEIC goals exist so far.** IELTS and HSK are shown as coming soon.
 - **Development and production share one MongoDB cluster.** Convenient, and the reason several
   admin operations are more dangerous than they look.

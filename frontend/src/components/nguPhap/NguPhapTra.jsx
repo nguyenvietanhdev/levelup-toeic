@@ -58,7 +58,9 @@ function NoiDungMuc({ m }) {
 }
 
 /** Một mục ngữ pháp, bấm tiêu đề để mở. */
-function TheMuc({ m, mo, onDoi, onThemViDu, onLuyen, dangThem, hetLuot }) {
+function TheMuc({ m, mo, onDoi, onThemViDu, onLuyen, onBaoSai, dangThem, hetLuot }) {
+    // Ẩn với mọi người nên hỏi lại một bước, ngay tại chỗ.
+    const [hoiBao, setHoiBao] = useState(false);
     return (
         <article className={`np-the ${mo ? 'is-mo' : ''}`} data-np-id={m.id}>
             <button type="button" className="np-dau" aria-expanded={mo} onClick={onDoi}>
@@ -79,6 +81,21 @@ function TheMuc({ m, mo, onDoi, onThemViDu, onLuyen, dangThem, hetLuot }) {
                             <i className="fas fa-wand-magic-sparkles"></i> {dangThem ? 'Đang tạo…' : 'Thêm ví dụ bằng AI'}
                         </button>
                     </div>
+                    {m.nguon === 'ai' && (
+                        <p className="px-goi-y">
+                            {hoiBao ? (
+                                <>
+                                    Ẩn mục này khỏi thư viện cho mọi người?{' '}
+                                    <button type="button" className="lt-ke-hoach-link np-bao-sai" onClick={onBaoSai}>Có, nội dung sai</button>{' '}
+                                    <button type="button" className="lt-ke-hoach-link" onClick={() => setHoiBao(false)}>Không</button>
+                                </>
+                            ) : (
+                                <button type="button" className="lt-ke-hoach-link np-bao-sai" onClick={() => setHoiBao(true)}>
+                                    <i className="fas fa-flag"></i> Mục này sai?
+                                </button>
+                            )}
+                        </p>
+                    )}
                 </div>
             )}
         </article>
@@ -223,6 +240,17 @@ export default function NguPhapTra({ active, dich = null }) {
         }
     };
 
+    const baoSaiMuc = async (m) => {
+        try {
+            await NguPhapAPI.baoSaiMuc(m.id);
+            setMo('');
+            setData((d) => ({ ...d, muc: d.muc.filter((x) => x.id !== m.id) }));
+            setBao(`Cảm ơn bạn. Mục "${m.ten}" đã được ẩn; bạn có thể tra lại để AI soạn bản mới.`);
+        } catch (e) {
+            Notification.error(e.message);
+        }
+    };
+
     const themViDu = async (m) => {
         if (dangThem) return;
         setDangThem(m.id);
@@ -317,6 +345,7 @@ export default function NguPhapTra({ active, dich = null }) {
                                     onDoi={() => setMo((x) => (x === m.id ? '' : m.id))}
                                     onThemViDu={() => themViDu(m)}
                                     onLuyen={() => setLuyen(m)}
+                                    onBaoSai={() => baoSaiMuc(m)}
                                     dangThem={dangThem === m.id}
                                     hetLuot={conLuot <= 0}
                                 />

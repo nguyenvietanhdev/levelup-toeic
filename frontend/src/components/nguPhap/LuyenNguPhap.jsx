@@ -27,6 +27,7 @@ export default function LuyenNguPhap({ muc, onThoat, onXong, children }) {
     const [loi, setLoi] = useState('');
     const [xemCongThuc, setXemCongThuc] = useState(false);
     const [lanMo, setLanMo] = useState(0);
+    const [baoSai, setBaoSai] = useState(''); // '' | 'dang' | 'xong' | câu báo lỗi
     const oNhap = useRef(null);
 
     useEffect(() => {
@@ -55,9 +56,23 @@ export default function LuyenNguPhap({ muc, onThoat, onXong, children }) {
         if (cau.loai !== 'chon') oNhap.current?.focus();
     }, [cau, ketQua]);
 
+    const baoCauSai = async () => {
+        if (baoSai === 'dang' || baoSai === 'xong') return;
+        setBaoSai('dang');
+        try {
+            await NguPhapAPI.baoSaiCau(buoi.id, i);
+            setBaoSai('xong');
+            // Câu bị báo không tính vào kết quả của lượt này.
+            setLichSu((d) => d.map((c, n) => (n === d.length - 1 ? { ...c, khongChac: true } : c)));
+        } catch (e) {
+            setBaoSai(e.message);
+        }
+    };
+
     const nop = async (traLoi) => {
         if (dang || !buoi) return;
         setDang(true);
+        setBaoSai('');
         try {
             const r = await NguPhapAPI.traLoiLuyen(buoi.id, i, traLoi);
             setKetQua({ ...r, cuaBan: traLoi });
@@ -182,6 +197,19 @@ export default function LuyenNguPhap({ muc, onThoat, onXong, children }) {
                                 </button>
                             </div>
                             {xemCongThuc && <div className="np-luyen-cong-thuc">{children}</div>}
+                            {/* Lỗi mạng thì server có thể chưa ghi câu trả lời nên chưa báo được. */}
+                            {ketQua.dapAn && (
+                                baoSai === 'xong'
+                                    ? <p className="px-goi-y" role="status"><i className="fas fa-check"></i> Cảm ơn bạn. Câu này đã được ẩn và không tính điểm.</p>
+                                    : (
+                                        <p className="px-goi-y">
+                                            <button type="button" className="lt-ke-hoach-link np-bao-sai" disabled={baoSai === 'dang'} onClick={baoCauSai}>
+                                                <i className="fas fa-flag"></i> Câu này sai?
+                                            </button>
+                                            {baoSai && baoSai !== 'dang' && <span> {baoSai}</span>}
+                                        </p>
+                                    )
+                            )}
                         </>
                     )}
                 </>

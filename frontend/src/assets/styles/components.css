@@ -12952,3 +12952,7 @@ button.hs-muc:not(:disabled):hover { border-color: var(--accent-color); }
 .np-nhan-on, .np-nhan-thuoc { flex-shrink: 0; padding: 2px 8px; border-radius: 999px; font-size: 11px; }
 .np-nhan-on { color: #ea580c; border: 1px solid rgba(234, 88, 12, 0.5); }
 .np-nhan-thuoc { color: #16a34a; border: 1px solid rgba(22, 163, 74, 0.5); }
+
+/* Báo nội dung ngữ pháp sai */
+.np-bao-sai { padding: 0; color: var(--text-secondary); }
+.np-bao-sai:hover { color: #ef4444; }

@@ -7,7 +7,7 @@
 import { describe, test, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 
-const api = vi.hoisted(() => ({ moLuyen: vi.fn(), traLoiLuyen: vi.fn() }));
+const api = vi.hoisted(() => ({ moLuyen: vi.fn(), traLoiLuyen: vi.fn(), baoSaiCau: vi.fn() }));
 vi.mock('@api/nguPhap.js', () => ({ NguPhapAPI: api }));
 vi.mock('@game/gameLogic.js', () => ({ GameLogic: { speakWord: vi.fn(), stopSpeaking: vi.fn() } }));
 
@@ -39,6 +39,7 @@ const sangCau = () => fireEvent.click(screen.getByRole('button', { name: /Câu t
 beforeEach(() => {
     api.moLuyen.mockReset().mockResolvedValue(BUOI);
     api.traLoiLuyen.mockReset().mockResolvedValue(DUNG);
+    api.baoSaiCau.mockReset().mockResolvedValue({ daBao: true });
 });
 
 describe('một lượt', () => {
@@ -100,6 +101,43 @@ describe('một lượt', () => {
         moLuot();
         fireEvent.click(await screen.findByRole('button', { name: 'Chưa biết' }));
         await waitFor(() => expect(api.traLoiLuyen).toHaveBeenCalledWith('b1', 0, ''));
+    });
+});
+
+describe('báo câu sai', () => {
+    const traLoiCauDau = async () => {
+        moLuot();
+        fireEvent.click(await screen.findByRole('button', { name: 'told' }));
+        await screen.findByText('Giải thích mẫu');
+    };
+
+    test('chưa trả lời thì chưa có nút báo', async () => {
+        moLuot();
+        await screen.findByRole('button', { name: 'told' });
+        expect(screen.queryByRole('button', { name: /Câu này sai/ })).toBeNull();
+    });
+    test('báo xong: gửi đúng câu, cảm ơn, nút biến mất', async () => {
+        await traLoiCauDau();
+        fireEvent.click(screen.getByRole('button', { name: /Câu này sai/ }));
+        await screen.findByText(/đã được ẩn và không tính điểm/);
+        expect(api.baoSaiCau).toHaveBeenCalledWith('b1', 0);
+        expect(screen.queryByRole('button', { name: /Câu này sai/ })).toBeNull();
+    });
+    test('lỗi khi báo (quá trần): hiện lý do, vẫn đi tiếp được', async () => {
+        api.baoSaiCau.mockRejectedValueOnce(new Error('Đã báo đủ số lần'));
+        await traLoiCauDau();
+        fireEvent.click(screen.getByRole('button', { name: /Câu này sai/ }));
+        await screen.findByText(/Đã báo đủ số lần/);
+        sangCau();
+        expect(await screen.findByRole('textbox', { name: 'Sửa câu sai' })).toBeInTheDocument();
+    });
+    test('sang câu mới: nút báo trở lại, không mang trạng thái câu trước', async () => {
+        await traLoiCauDau();
+        fireEvent.click(screen.getByRole('button', { name: /Câu này sai/ }));
+        await screen.findByText(/đã được ẩn/);
+        sangCau();
+        fireEvent.click(await screen.findByRole('button', { name: 'Chưa biết' }));
+        expect(await screen.findByRole('button', { name: /Câu này sai/ })).toBeInTheDocument();
     });
 });
 

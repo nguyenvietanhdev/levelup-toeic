@@ -40,6 +40,16 @@ export const NguPhapAPI = {
         return unwrap(await Http.post(`/ngu-phap/buoi/${encodeURIComponent(buoiId)}/cau/${i}`, { traLoi }));
     },
 
+    /** Báo một câu luyện đã trả lời bị sai: ẩn với mọi người. */
+    async baoSaiCau(buoiId, i) {
+        return unwrap(await Http.post(`/ngu-phap/buoi/${encodeURIComponent(buoiId)}/cau/${i}/bao-sai`, {}));
+    },
+
+    /** Báo một mục do AI tạo bị sai: ẩn khỏi thư viện. */
+    async baoSaiMuc(id) {
+        return unwrap(await Http.post(`/ngu-phap/${encodeURIComponent(id)}/bao-sai`, {}));
+    },
+
     /** `{ viDuThem, daDu?, conLuot }`. */
     async themViDu(id) {
         return unwrap(await Http.post(`/ngu-phap/${encodeURIComponent(id)}/vi-du`, {}));

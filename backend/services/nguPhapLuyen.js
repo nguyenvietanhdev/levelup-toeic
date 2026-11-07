@@ -137,11 +137,20 @@ async function aiSoatBoCau(muc, boCau, userId) {
 function chonCauLuot(boCau, tronDs = tron) {
     const out = [];
     for (const loai of Object.keys(CO_CAU_LUOT)) {
-        const ds = boCau.map((c, so) => ({ c, so })).filter((x) => x.c.loai === loai);
+        // Giữ `so` theo vị trí gốc: câu bị báo chỉ được đánh dấu ẩn, không rút khỏi mảng.
+        const ds = boCau.map((c, so) => ({ c, so })).filter((x) => x.c.loai === loai && !x.c.an);
         out.push(...tronDs(ds).slice(0, CO_CAU_LUOT[loai]));
     }
     return out.map((x) => x.so);
 }
+
+/** Bộ câu còn đủ cơ cấu cho một lượt không, tính cả câu đã bị báo (thuần). */
+function duCau(boCau = []) {
+    return Object.entries(CO_CAU_LUOT).every(([k, n]) => boCau.filter((c) => c.loai === k && !c.an).length >= n);
+}
+
+/** Khoá nhận ra hai câu giống nhau, để AI soạn lại đúng câu đã bị báo thì không nhận (thuần). */
+const khoaCau = (c) => `${c.loai}|${chuanHoa(c.de || c.sai || c.vi)}`;
 
 /** Phần gửi client: không có đáp án và giải thích (thuần). */
 function congKhai(c) {
@@ -165,23 +174,26 @@ async function moLuot(userId, mucId, now = new Date()) {
     if (daMo >= TOI_DA_LUOT_NGAY) return { loi: 'Hôm nay bạn đã luyện rất nhiều rồi. Hãy quay lại vào ngày mai nhé.', ma: 429 };
 
     let bo = await NguPhapBaiTap.findOne({ mucId: muc.id }).lean();
-    if (!bo) {
+    if (!bo || !duCau(bo.cau)) {
         if (!(await layLuot(userId, now))) {
             return { loi: `Mục này chưa có câu luyện và hôm nay bạn đã dùng hết ${LUOT_MOI_NGAY} lượt AI. Hãy thử lại vào ngày mai.`, ma: 429 };
         }
         const banDau = await aiSoanBoCau(muc, userId);
         const viTriLoi = banDau ? await aiSoatBoCau(muc, banDau, userId) : null;
         // Soát xong không còn đủ câu thì coi như chưa soạn được, không lưu bộ câu thiếu.
-        const cau = banDau && boCauLoi(banDau, viTriLoi);
-        if (!cau) {
+        const daDuyet = banDau && boCauLoi(banDau, viTriLoi);
+        const daBao = new Set((bo?.cau || []).filter((c) => c.an).map(khoaCau));
+        const cau = daDuyet && daDuyet.filter((c) => !daBao.has(khoaCau(c)));
+        if (!cau || !duCau([...(bo?.cau || []), ...cau])) {
             await traLuot(userId, now);
             logger.warn('Luyện ngữ pháp: AI không soạn được bộ câu', { mucId: muc.id });
             return { loi: 'AI chưa soạn được câu luyện, hãy thử lại sau ít phút.', ma: 503 };
         }
-        // Hai người mở cùng lúc thì giữ bộ đến trước.
+        // Bổ sung thì nối vào cuối để không lệch vị trí câu của các lượt đang làm. Mở mới mà hai
+        // người mở cùng lúc thì giữ bộ đến trước.
         bo = await NguPhapBaiTap.findOneAndUpdate(
             { mucId: muc.id },
-            { $setOnInsert: { mucId: muc.id, cau } },
+            bo ? { $push: { cau: { $each: cau } } } : { $setOnInsert: { mucId: muc.id, cau } },
             { upsert: true, new: true },
         ).lean();
     }
@@ -270,6 +282,6 @@ async function ganTienDo(userId, dsMuc, now = new Date()) {
 }
 
 module.exports = {
-    moLuot, traLoi, ganTienDo, chuanHoaBoCau, chonCauLuot, congKhai, tongKetLuot, aiSoanBoCau, aiSoatBoCau, boCauLoi,
+    moLuot, traLoi, ganTienDo, chuanHoaBoCau, chonCauLuot, congKhai, tongKetLuot, aiSoanBoCau, aiSoatBoCau, boCauLoi, duCau,
     CO_CAU_LUOT, TOI_DA_LUOT_NGAY,
 };

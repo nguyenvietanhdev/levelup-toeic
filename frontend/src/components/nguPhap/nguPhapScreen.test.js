@@ -127,6 +127,18 @@ describe('luyện từng công thức', () => {
     });
 });
 
+describe('báo mục sai', () => {
+    test('chỉ mục AI mới có nút; ẩn với mọi người nên hỏi lại một bước', () => {
+        expect(src).toMatch(/m\.nguon === 'ai' && \(\s+<p className="px-goi-y">\s+\{hoiBao/);
+        expect(src).toMatch(/Ẩn mục này khỏi thư viện cho mọi người\?/);
+    });
+    test('API đúng đường dẫn', () => {
+        const api = doc('api', 'nguPhap.js');
+        expect(api).toMatch(/\/ngu-phap\/\$\{encodeURIComponent\(id\)\}\/bao-sai/);
+        expect(api).toMatch(/\/cau\/\$\{i\}\/bao-sai/);
+    });
+});
+
 describe('hành vi khác', () => {
     test('phản hồi cũ không đè kết quả mới', () => {
         expect(src).toMatch(/if \(lan === lanTra\.current\) setData\(d\)/);
