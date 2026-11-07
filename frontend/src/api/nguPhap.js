@@ -15,14 +15,14 @@ function unwrap(res) {
 }
 
 export const NguPhapAPI = {
-    /** `{ nhom, muc: [...], conLuot }`. Không gọi AI. */
-    async tim(q = '') {
-        return unwrap(await Http.get(`/ngu-phap?q=${encodeURIComponent(q)}`));
+    /** `{ lang, nhom, muc: [...], conLuot }`. Không gọi AI. `lang`: 'en' | 'zh'. */
+    async tim(q = '', lang = 'en') {
+        return unwrap(await Http.get(`/ngu-phap?q=${encodeURIComponent(q)}&lang=${encodeURIComponent(lang)}`));
     },
 
     /** `{ ketQua: 'da-co' | 'ban-nhap' | 'khong-phai', muc?, nhap?, tuCache?, conLuot }`. */
-    async hoi(q) {
-        return unwrap(await Http.post('/ngu-phap/hoi', { q }));
+    async hoi(q, lang = 'en') {
+        return unwrap(await Http.post('/ngu-phap/hoi', { q, lang }));
     },
 
     /** Đưa nháp vào thư viện chung: `{ muc, daCo, conLuot }`. */

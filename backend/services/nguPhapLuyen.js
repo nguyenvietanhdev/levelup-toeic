@@ -53,10 +53,22 @@ const tron = (a) => {
     }
     return b;
 };
-const tiengAnh = (s) => !!s && !RE_VIET.test(s);
+const RE_HAN = /[\u4e00-\u9fff]/;
+/** Câu đúng ngôn ngữ của mục (thuần): tiếng Trung phải có chữ Hán; không câu nào được là tiếng Việt. */
+const dungNgonNgu = (s, lang = 'en') => !!s && !RE_VIET.test(s) && (lang !== 'zh' || RE_HAN.test(s));
+
+/**
+ * Chuẩn hoá để so câu trả lời (thuần). Tiếng Trung bỏ mọi khoảng trắng và dấu câu kể cả dấu Trung
+ * (，。！？…): người học gõ "我吃饭了" hay "我 吃饭 了。" đều là một câu.
+ */
+function soSanh(s, lang = 'en') {
+    if (lang !== 'zh') return chuanHoa(s);
+    return String(s || '').normalize('NFC').replace(/[\s.,!?;:"'()，。！？；：、“”‘’（）…—·]/g, '');
+}
 
 /** Kiểm định bộ câu AI soạn (thuần). Thiếu dạng nào thì null: một lượt phải đủ cả ba dạng. */
-function chuanHoaBoCau(o) {
+function chuanHoaBoCau(o, lang = 'en') {
+    const dungNN = (s) => dungNgonNgu(s, lang);
     const chon = (Array.isArray(o?.chon) ? o.chon : []).map((c) => {
         const lua = (Array.isArray(c?.lua) ? c.lua : []).map((x) => cat(x, 160)).filter(Boolean);
         const dapAn = cat(c?.dapAn, 160);
@@ -65,29 +77,38 @@ function chuanHoaBoCau(o) {
 
     const sua = (Array.isArray(o?.sua) ? o.sua : []).map((c) => ({
         loai: 'sua', sai: cat(c?.sai, 200), dung: cat(c?.dung, 200), vi: cat(c?.vi, 200), giaiThich: cat(c?.giaiThich, 300),
-    })).filter((c) => tiengAnh(c.sai) && tiengAnh(c.dung) && c.vi && c.giaiThich && chuanHoa(c.sai) !== chuanHoa(c.dung));
+    })).filter((c) => dungNN(c.sai) && dungNN(c.dung) && c.vi && c.giaiThich && soSanh(c.sai, lang) !== soSanh(c.dung, lang));
 
     const dich = (Array.isArray(o?.dich) ? o.dich : []).map((c) => ({
         loai: 'dich', vi: cat(c?.vi, 200), dung: cat(c?.en, 200), giaiThich: cat(c?.giaiThich, 300),
-    })).filter((c) => c.vi && tiengAnh(c.dung) && c.giaiThich);
+    })).filter((c) => c.vi && dungNN(c.dung) && c.giaiThich);
 
     if (Object.entries({ chon, sua, dich }).some(([k, ds]) => ds.length < CO_CAU_LUOT[k])) return null;
     return [...chon, ...sua, ...dich];
 }
 
+/** Phần prompt khác nhau giữa hai ngôn ngữ (thuần). */
+const NGON_NGU_LUYEN = {
+    en: { ten: 'English', cau: 'English sentence', thayDoi: '' },
+    zh: { ten: 'Mandarin Chinese', cau: 'sentence in simplified Chinese characters', thayDoi: 'Write Chinese in simplified characters, no pinyin in sentences or options.' },
+};
+
 async function aiSoanBoCau(muc, userId) {
+    const lang = muc.lang === 'zh' ? 'zh' : 'en';
+    const nn = NGON_NGU_LUYEN[lang];
     const res = await chatCompletion([
         {
             role: 'system',
             content: [
-                'You write practice questions on ONE English grammar point for Vietnamese learners.',
+                `You write practice questions on ONE ${nn.ten} grammar point for Vietnamese learners.`,
+                nn.thayDoi,
                 'Every question must test exactly this grammar point, in everyday situations. Double-check each answer is correct and that only one option is correct.',
                 'Reply ONLY with JSON:',
-                '{"chon":[{"de":"<English sentence with ___ , or a Vietnamese instruction>","lua":["<4 different options>"],"dapAn":"<the correct option, copied exactly>","giaiThich":"<why, in Vietnamese>"}],',
-                '"sua":[{"sai":"<English sentence with exactly one mistake on this grammar point>","dung":"<the corrected sentence>","vi":"<Vietnamese meaning>","giaiThich":"<the mistake, in Vietnamese>"}],',
-                '"dich":[{"vi":"<short Vietnamese sentence>","en":"<natural English translation using this grammar point>","giaiThich":"<which part of the formula applies, in Vietnamese>"}]}',
+                `{"chon":[{"de":"<${nn.cau} with ___ , or a Vietnamese instruction>","lua":["<4 different options>"],"dapAn":"<the correct option, copied exactly>","giaiThich":"<why, in Vietnamese>"}],`,
+                `"sua":[{"sai":"<${nn.cau} with exactly one mistake on this grammar point>","dung":"<the corrected sentence>","vi":"<Vietnamese meaning>","giaiThich":"<the mistake, in Vietnamese>"}],`,
+                `"dich":[{"vi":"<short Vietnamese sentence>","en":"<natural ${nn.ten} translation using this grammar point>","giaiThich":"<which part of the formula applies, in Vietnamese>"}]}`,
                 'Give 4 "chon", 3 "sua" and 3 "dich", from easy to harder. Keep sentences short.',
-            ].join('\n'),
+            ].filter(Boolean).join('\n'),
         },
         {
             role: 'user',
@@ -95,7 +116,7 @@ async function aiSoanBoCau(muc, userId) {
         },
     ], { maxTokens: 1400, temperature: 0.3, feature: 'ngu-phap-luyen', userId }).catch(() => null);
     if (!res?.success) return null;
-    return chuanHoaBoCau(parseJson(res.content));
+    return chuanHoaBoCau(parseJson(res.content), lang);
 }
 
 /** Bỏ các câu bị soát là sai; không còn đủ cơ cấu thì null (thuần). */
@@ -117,7 +138,7 @@ async function aiSoatBoCau(muc, boCau, userId) {
         {
             role: 'system',
             content: [
-                `You are a strict English teacher reviewing practice questions on: ${muc.ten}.`,
+                `You are a strict ${muc.lang === 'zh' ? 'Mandarin Chinese' : 'English'} teacher reviewing practice questions on: ${muc.ten}.`,
                 'Reject an item if any of these is true:',
                 '- multiple choice: put EACH option into the sentence in turn and judge it on its own. Reject if the marked answer is wrong, or if MORE THAN ONE option gives a grammatical, natural sentence, even when one sounds more common (for example "talk about it" and "speak about it" are both correct);',
                 '- correction: the corrected sentence is still wrong or unnatural, or the "wrong" sentence has no real mistake;',
@@ -247,15 +268,17 @@ async function traLoi(userId, buoiId, i, body = {}, now = new Date()) {
 
     const chu = typeof body.traLoi === 'string' ? body.traLoi.trim().slice(0, 240) : '';
     const dapAn = c.loai === 'chon' ? c.dapAn : c.dung;
+    // Ngôn ngữ theo id mục: kho tiếng Trung có tiền tố `zh-`; mục AI thì đọc từ bộ câu (chữ Hán).
+    const lang = String(buoi.mucId).startsWith('zh-') || RE_HAN.test(c.dung || c.de || '') ? 'zh' : 'en';
     let dung = false;
     let khongChac = false;
     let ghiChu = '';
     if (c.loai === 'chon') {
         dung = chu === c.dapAn;
-    } else if (chu && chuanHoa(chu) === chuanHoa(c.dung)) {
+    } else if (chu && soSanh(chu, lang) === soSanh(c.dung, lang)) {
         dung = true;
-    } else if (chu && !(c.loai === 'sua' && chuanHoa(chu) === chuanHoa(c.sai))) {
-        const r = await aiCham({ vi: c.vi, en: c.dung }, chu, userId);
+    } else if (chu && !(c.loai === 'sua' && soSanh(chu, lang) === soSanh(c.sai, lang))) {
+        const r = await aiCham({ vi: c.vi, en: c.dung }, chu, userId, lang);
         if (r) ({ dung, ghiChu } = r);
         else khongChac = true;
     }
@@ -282,6 +305,6 @@ async function ganTienDo(userId, dsMuc, now = new Date()) {
 }
 
 module.exports = {
-    moLuot, traLoi, ganTienDo, chuanHoaBoCau, chonCauLuot, congKhai, tongKetLuot, aiSoanBoCau, aiSoatBoCau, boCauLoi, duCau,
+    moLuot, traLoi, ganTienDo, chuanHoaBoCau, chonCauLuot, congKhai, tongKetLuot, aiSoanBoCau, aiSoatBoCau, boCauLoi, duCau, soSanh, dungNgonNgu,
     CO_CAU_LUOT, TOI_DA_LUOT_NGAY,
 };

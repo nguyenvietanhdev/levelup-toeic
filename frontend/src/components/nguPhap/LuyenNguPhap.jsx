@@ -2,13 +2,13 @@ import { useEffect, useRef, useState } from 'react';
 import { GameLogic } from '@game/gameLogic.js';
 import { NguPhapAPI } from '@api/nguPhap.js';
 
-const TEN_DANG = { chon: 'Chọn đáp án đúng', sua: 'Sửa câu sai', dich: 'Dịch sang tiếng Anh' };
+const tenDang = (zh) => ({ chon: 'Chọn đáp án đúng', sua: 'Sửa câu sai', dich: zh ? 'Dịch sang tiếng Trung' : 'Dịch sang tiếng Anh' });
 
-const phat = (text) => {
+const phat = (text, zh) => {
     if (!text) return;
     try {
         GameLogic.stopSpeaking?.();
-        GameLogic.speakWord(text, 'en-US');
+        GameLogic.speakWord(text, zh ? 'zh-CN' : 'en-US');
     } catch { /* không đọc được thì thôi */ }
 };
 
@@ -29,6 +29,8 @@ export default function LuyenNguPhap({ muc, onThoat, onXong, children }) {
     const [lanMo, setLanMo] = useState(0);
     const [baoSai, setBaoSai] = useState(''); // '' | 'dang' | 'xong' | câu báo lỗi
     const oNhap = useRef(null);
+    const zh = muc.lang === 'zh';
+    const TEN_DANG = tenDang(zh);
 
     useEffect(() => {
         let huy = false;
@@ -79,7 +81,7 @@ export default function LuyenNguPhap({ muc, onThoat, onXong, children }) {
             setLichSu((d) => [...d, { dung: r.dung, khongChac: r.khongChac }]);
             setXemCongThuc(false);
             if (r.tongKet) onXong?.();
-            phat(r.dapAn);
+            phat(r.dapAn, zh);
         } catch (e) {
             // Server có thể đã giữ chỗ câu này nên không gửi lại được: cho sang câu tiếp, không tính.
             setKetQua({ dung: false, khongChac: true, dapAn: '', giaiThich: '', ghiChu: e.message, cuaBan: traLoi });
@@ -157,7 +159,7 @@ export default function LuyenNguPhap({ muc, onThoat, onXong, children }) {
                                     autoComplete="off"
                                     spellCheck={false}
                                     aria-label={TEN_DANG[cau.loai]}
-                                    placeholder="Gõ câu tiếng Anh…"
+                                    placeholder={zh ? 'Gõ câu tiếng Trung (chữ Hán)…' : 'Gõ câu tiếng Anh…'}
                                     onChange={(e) => setNhap(e.target.value)}
                                 />
                                 <button type="submit" className="btn btn-primary" disabled={dang || !nhap.trim()}>{dang ? '…' : 'Kiểm tra'}</button>
@@ -183,7 +185,7 @@ export default function LuyenNguPhap({ muc, onThoat, onXong, children }) {
                             </div>
                             <div className="px-nut">
                                 {ketQua.dapAn && (
-                                    <button type="button" className="btn btn-secondary" onClick={() => phat(ketQua.dapAn)}>
+                                    <button type="button" className="btn btn-secondary" onClick={() => phat(ketQua.dapAn, zh)}>
                                         <i className="fas fa-volume-high"></i> Nghe
                                     </button>
                                 )}

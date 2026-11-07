@@ -3,18 +3,37 @@ import { GameLogic } from '@game/gameLogic.js';
 import { useAuth } from '@components/auth/AuthContext.jsx';
 import { Notification } from '@ui/Toaster.jsx';
 import { NguPhapAPI } from '@api/nguPhap.js';
+import { getVocabLang } from '@api/vocabulary.js';
 import LuyenNguPhap from './LuyenNguPhap.jsx';
 
 const CHO_GO_MS = 250;
+const KHOA_LANG = 'levelup.nguPhap.lang';
+const RE_HAN = /[\u4e00-\u9fff]/;
 
+/** Giọng đọc theo ngôn ngữ của câu: câu có chữ Hán đọc giọng Trung. */
 const phat = (text) => {
+    if (!text) return;
     try {
         GameLogic.stopSpeaking?.();
-        GameLogic.speakWord(text, 'en-US');
+        GameLogic.speakWord(text, RE_HAN.test(text) ? 'zh-CN' : 'en-US');
     } catch { /* không đọc được thì thôi */ }
 };
 
-/** Một câu ví dụ, bấm loa để nghe. */
+/** Ngôn ngữ mở đầu: lần chọn trước ở màn này, không có thì theo ngôn ngữ đang học từ vựng. */
+function langBanDau() {
+    try {
+        const daChon = localStorage.getItem(KHOA_LANG);
+        if (daChon === 'en' || daChon === 'zh') return daChon;
+    } catch { /* không đọc được thì theo từ vựng */ }
+    return getVocabLang() === 'en' ? 'en' : 'zh';
+}
+
+const NGON_NGU = {
+    en: { ten: 'Tiếng Anh', goiY: 'Tìm: hien tai don, bị động, used to…', khongPhai: 'tiếng Anh' },
+    zh: { ten: 'Tiếng Trung', goiY: 'Tìm: 了, ba, so sánh, lượng từ…', khongPhai: 'tiếng Trung' },
+};
+
+/** Một câu ví dụ, bấm loa để nghe. Câu tiếng Trung có thêm dòng pinyin. */
 function ViDu({ v }) {
     return (
         <li>
@@ -23,6 +42,7 @@ function ViDu({ v }) {
             </button>
             <span>
                 {v.en}
+                {v.py && <small className="np-pinyin">{v.py}</small>}
                 <small>{v.vi}</small>
             </span>
         </li>
@@ -112,6 +132,7 @@ function TheMuc({ m, mo, onDoi, onThemViDu, onLuyen, onBaoSai, dangThem, hetLuot
  */
 export default function NguPhapTra({ active, dich = null }) {
     const { isLoggedIn } = useAuth();
+    const [lang, setLang] = useState(langBanDau);
     const [q, setQ] = useState('');
     const [nhomChon, setNhomChon] = useState('');
     const [data, setData] = useState(null);
@@ -131,6 +152,8 @@ export default function NguPhapTra({ active, dich = null }) {
     // Được mở từ một lỗi hoặc một câu sai: đưa thẳng tới đúng mục, không bắt người học tìm.
     useEffect(() => {
         if (!dich?.lan) return;
+        // Mục trong kho tiếng Trung có id `zh-…`; mở tới một mục thì chuyển đúng ngôn ngữ của nó.
+        if (dich.id) setLang(dich.id.startsWith('zh-') ? 'zh' : 'en');
         setQ(dich.q || '');
         setNhomChon(dich.nhom || '');
         setMo(dich.id || '');
@@ -145,15 +168,24 @@ export default function NguPhapTra({ active, dich = null }) {
             // Gõ nhanh: phản hồi của lần tra cũ về sau không được đè kết quả mới.
             lanTra.current += 1;
             const lan = lanTra.current;
-            NguPhapAPI.tim(q.trim())
+            NguPhapAPI.tim(q.trim(), lang)
                 .then((d) => { if (lan === lanTra.current) setData(d); })
                 .catch((e) => { if (lan === lanTra.current) Notification.error(e.message); });
         }, CHO_GO_MS);
         return () => clearTimeout(t);
-    }, [active, isLoggedIn, q, lanTai]);
+    }, [active, isLoggedIn, q, lanTai, lang]);
 
-    // Đổi câu tra: thông báo và bản nháp của câu cũ không còn liên quan.
-    useEffect(() => { setBao(''); setNhap(null); }, [q]);
+    // Đổi câu tra hay ngôn ngữ: thông báo và bản nháp của câu cũ không còn liên quan.
+    useEffect(() => { setBao(''); setNhap(null); }, [q, lang]);
+
+    const doiLang = (moi) => {
+        if (moi === lang) return;
+        try { localStorage.setItem(KHOA_LANG, moi); } catch { /* chỉ là nhớ lựa chọn */ }
+        setLang(moi);
+        setData(null);
+        setNhomChon('');
+        setMo('');
+    };
 
     useEffect(() => {
         if (!cuonDen.current || !data) return;
@@ -172,6 +204,8 @@ export default function NguPhapTra({ active, dich = null }) {
     });
     const conLuot = data?.conLuot ?? 0;
     const cauTra = q.trim();
+    // Chủ điểm tiếng Trung có thể chỉ là một chữ Hán (了, 把).
+    const duDaiDeHoi = cauTra.length >= 2 || RE_HAN.test(cauTra);
 
     /** Đưa một mục lên đầu danh sách và mở nó. */
     const moMuc = (m, luot) => {
@@ -185,12 +219,12 @@ export default function NguPhapTra({ active, dich = null }) {
     };
 
     const hoiAI = async () => {
-        if (dangHoi || cauTra.length < 2) return;
+        if (dangHoi || !duDaiDeHoi) return;
         setDangHoi(true);
         setBao('');
         setNhap(null);
         try {
-            const r = await NguPhapAPI.hoi(cauTra);
+            const r = await NguPhapAPI.hoi(cauTra, lang);
             if (r.ketQua === 'da-co') {
                 setBao(`"${cauTra}" chính là chủ điểm "${r.muc.ten}" đã có trong thư viện.`);
                 moMuc(r.muc, r.conLuot);
@@ -198,7 +232,7 @@ export default function NguPhapTra({ active, dich = null }) {
                 setNhap(r.nhap);
                 setData((d) => ({ ...d, conLuot: r.conLuot }));
             } else {
-                setBao('Đây có vẻ không phải chủ điểm ngữ pháp tiếng Anh. Hãy thử gõ cụ thể hơn.');
+                setBao(`Đây có vẻ không phải chủ điểm ngữ pháp ${NGON_NGU[lang].khongPhai}. Hãy thử gõ cụ thể hơn.`);
                 setData((d) => ({ ...d, conLuot: r.conLuot }));
             }
         } catch (e) {
@@ -216,7 +250,7 @@ export default function NguPhapTra({ active, dich = null }) {
         let ds = tatCa;
         try {
             lanTra.current += 1;
-            const moi = await NguPhapAPI.tim(cauTra);
+            const moi = await NguPhapAPI.tim(cauTra, lang);
             setData(moi);
             ds = moi.muc;
         } catch { /* giữ kết quả đang có */ }
@@ -281,6 +315,13 @@ export default function NguPhapTra({ active, dich = null }) {
 
                 {isLoggedIn && !luyen && (
                     <>
+                        <div className="np-lang" role="group" aria-label="Ngôn ngữ">
+                            {Object.entries(NGON_NGU).map(([k, n]) => (
+                                <button key={k} type="button" className={lang === k ? 'is-chon' : ''} aria-pressed={lang === k} onClick={() => doiLang(k)}>
+                                    {n.ten}
+                                </button>
+                            ))}
+                        </div>
                         <form className="np-tim" onSubmit={guiTim}>
                             <i className="fas fa-magnifying-glass"></i>
                             <input
@@ -289,7 +330,7 @@ export default function NguPhapTra({ active, dich = null }) {
                                 maxLength={80}
                                 autoComplete="off"
                                 aria-label="Tìm công thức ngữ pháp"
-                                placeholder="Tìm: hien tai don, bị động, used to…"
+                                placeholder={NGON_NGU[lang].goiY}
                                 onChange={(e) => setQ(e.target.value)}
                             />
                             {q && (
@@ -352,7 +393,7 @@ export default function NguPhapTra({ active, dich = null }) {
                             ))}
                         </div>
 
-                        {data && cauTra.length >= 2 && !nhap && (
+                        {data && duDaiDeHoi && !nhap && (
                             <div className="np-hoi">
                                 <p>{tatCa.some((m) => m.khopTen) ? 'Chưa đúng điều bạn cần?' : `Chưa thấy mục đúng tên. Nhấn Enter hoặc bấm nút để AI tra "${cauTra}".`}</p>
                                 <button type="button" className="btn btn-primary" disabled={dangHoi || conLuot <= 0} onClick={hoiAI}>

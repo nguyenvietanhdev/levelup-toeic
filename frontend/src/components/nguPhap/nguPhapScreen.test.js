@@ -41,7 +41,7 @@ describe('luồng tìm không thấy', () => {
     });
     test('Enter tra lại câu mới nhất, có mục đúng tên thì mở, không có mới gọi AI', () => {
         const than = src.slice(src.indexOf('const guiTim'), src.indexOf('const themVaoThuVien'));
-        expect(than).toMatch(/NguPhapAPI\.tim\(cauTra\)/);
+        expect(than).toMatch(/NguPhapAPI\.tim\(cauTra, lang\)/);
         expect(than).toMatch(/if \(dungTen\) setMo\(dungTen\.id\);\s+else hoiAI\(\);/);
     });
     test('chủ điểm đã có: báo và mở mục đó, không hiện nháp', () => {
@@ -59,7 +59,7 @@ describe('luồng tìm không thấy', () => {
         expect(src).toMatch(/NguPhapAPI\.themVaoThuVien\(nhap\.id\)/);
     });
     test('đổi câu tra thì bỏ nháp cũ', () => {
-        expect(src).toMatch(/setBao\(''\); setNhap\(null\); \}, \[q\]\)/);
+        expect(src).toMatch(/setBao\(''\); setNhap\(null\); }, \[q, lang\]\)/);
     });
 });
 
@@ -113,7 +113,7 @@ describe('luyện từng công thức', () => {
         expect(api).toMatch(/\/ngu-phap\/buoi\/\$\{encodeURIComponent\(buoiId\)\}\/cau\/\$\{i\}/);
     });
     test('đủ ba dạng câu; câu sửa điền sẵn câu sai; làm sai xem lại được công thức', () => {
-        expect(luyen).toMatch(/chon: 'Chọn đáp án đúng', sua: 'Sửa câu sai', dich: 'Dịch sang tiếng Anh'/);
+        expect(luyen).toMatch(/chon: 'Chọn đáp án đúng', sua: 'Sửa câu sai', dich: zh \? 'Dịch sang tiếng Trung' : 'Dịch sang tiếng Anh'/);
         expect(luyen).toMatch(/setNhap\(cau\.loai === 'sua' \? cau\.sai : ''\)/);
         expect(luyen).toMatch(/!ketQua\.dung && \(/);
         expect(luyen).toMatch(/xemCongThuc && <div className="np-luyen-cong-thuc">\{children\}/);
@@ -152,7 +152,7 @@ describe('hành vi khác', () => {
         expect(src).toMatch(/disabled=\{dangHoi \|\| conLuot <= 0\}/);
         expect(src).toMatch(/hetLuot=\{conLuot <= 0\}/);
     });
-    test('ví dụ tiếng Anh luôn đọc giọng Anh', () => {
-        expect(src).toMatch(/GameLogic\.speakWord\(text, 'en-US'\)/);
+    test('ví dụ đọc đúng giọng: câu có chữ Hán đọc giọng Trung, còn lại giọng Anh', () => {
+        expect(src).toMatch(/GameLogic\.speakWord\(text, RE_HAN\.test\(text\) \? 'zh-CN' : 'en-US'\)/);
     });
 });

@@ -113,6 +113,28 @@ describe('kiểm định câu AI soạn', () => {
     });
 });
 
+describe('tiếng Trung', () => {
+    const BO_ZH = {
+        chon: [1, 2, 3, 4].map((n) => ({ de: `我买___${n}本书。`, lua: ['了', '过', '着', '的'], dapAn: '了', giaiThich: 'Hoàn thành.' })),
+        sua: [1, 2, 3].map((n) => ({ sai: `我没买了${n}本书。`, dung: `我没买${n}本书。`, vi: 'Tôi không mua.', giaiThich: 'Phủ định bỏ 了.' })),
+        dich: [1, 2, 3].map((n) => ({ vi: 'Tôi đã ăn rồi.', en: `我吃了${n}个。`, giaiThich: 'Dùng 了.' })),
+    };
+    test('so câu bỏ khoảng trắng và dấu câu Trung', () => {
+        expect(S.soSanh('我 吃饭 了。', 'zh')).toBe(S.soSanh('我吃饭了', 'zh'));
+        expect(S.soSanh('你好，再见！', 'zh')).toBe('你好再见');
+    });
+    test('bộ câu tiếng Trung: nhận khi có chữ Hán, từ chối câu tiếng Anh hay pinyin', () => {
+        expect(S.chuanHoaBoCau(BO_ZH, 'zh')).toHaveLength(10);
+        expect(S.chuanHoaBoCau({ ...BO_ZH, dich: BO_ZH.dich.map((c) => ({ ...c, en: 'Wǒ chī le.' })) }, 'zh')).toBeNull();
+        expect(S.chuanHoaBoCau(BO_AI, 'zh')).toBeNull();
+    });
+    test('soạn câu cho mục tiếng Trung dùng prompt tiếng Trung', async () => {
+        aiTra(BO_ZH);
+        await S.aiSoanBoCau({ id: 'zh-le', lang: 'zh', ten: 'Trợ từ 了', congThuc: [] }, 'u1');
+        expect(chatCompletion.mock.calls[0][0][0].content).toMatch(/Mandarin Chinese grammar point/);
+    });
+});
+
 describe('soát câu trước khi lưu', () => {
     const bo = S.chuanHoaBoCau(BO_AI);
     /** Lần gọi đầu là soạn, lần sau là soát. */

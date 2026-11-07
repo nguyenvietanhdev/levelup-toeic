@@ -7,6 +7,8 @@ const mongoose = require('mongoose');
 const nguPhapNhapSchema = new mongoose.Schema(
     {
         khoa: { type: String, required: true, unique: true, maxlength: 120 },
+        // Ngôn ngữ của chủ điểm. Bản ghi cũ không có trường này là tiếng Anh.
+        lang: { type: String, enum: ['en', 'zh'], default: 'en' },
         noiDung: { type: mongoose.Schema.Types.Mixed, required: true },
         taoLuc: { type: Date, default: Date.now },
     },

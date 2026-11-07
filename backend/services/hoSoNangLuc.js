@@ -91,7 +91,7 @@ function tongHop({ hoSo, tienBo, toeic, phanXaDaThuoc = 0, nguPhap = {}, taiKhoa
             tuDangOn: tienBo?.tuVung?.dangOn || 0,
             nguPhapDaThuoc: nguPhap.daThuoc || 0,
             nguPhapDaLuyen: nguPhap.daLuyen || 0,
-            nguPhapTong: MUC_NGU_PHAP.length,
+            nguPhapTong: MUC_NGU_PHAP.length, // cả hai thứ tiếng, khớp với số đã thuộc đếm chung
             phanXaDaThuoc,
             phanXaTong: CAU_PHAN_XA.length,
         },

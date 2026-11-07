@@ -95,14 +95,15 @@ function chonCau({ tienDo = [], khung = '', som = false, now = new Date(), soCau
 }
 
 /** AI chấm câu khác đáp án. null = không chấm được (không tính sai). */
-async function aiCham(cau, traLoi, userId) {
+async function aiCham(cau, traLoi, userId, lang = 'en') {
+    const ngonNgu = lang === 'zh' ? 'Mandarin Chinese (simplified characters)' : 'English';
     const res = await chatCompletion([
         {
             role: 'system',
             content: [
-                'A Vietnamese learner translated a short sentence into spoken English.',
-                'Decide: is it grammatical, natural English with the same meaning as the Vietnamese?',
-                'Ignore capitalization and punctuation: it may come from speech recognition.',
+                `A Vietnamese learner translated a short sentence into spoken ${ngonNgu}.`,
+                `Decide: is it grammatical, natural ${ngonNgu} with the same meaning as the Vietnamese?`,
+                'Ignore capitalization, punctuation and spacing: it may come from speech recognition.',
                 'Reply ONLY with JSON: {"ok":true|false,"note":"<one short Vietnamese sentence naming the main problem, empty if ok>"}',
             ].join('\n'),
         },

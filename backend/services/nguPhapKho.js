@@ -4,7 +4,7 @@
  *
  * `id` là khoá lưu ví dụ bổ sung — KHÔNG đổi id của mục đã có.
  */
-const NHOM = [
+const NHOM_EN = [
     { key: 'thi', ten: 'Các thì' },
     { key: 'cau-truc', ten: 'Cấu trúc câu' },
     { key: 'dong-tu', ten: 'Động từ' },
@@ -13,7 +13,7 @@ const NHOM = [
     { key: 'gioi-lien', ten: 'Giới từ & liên từ' },
 ];
 
-const MUC = [
+const MUC_EN = [
     // ── Các thì ──
     {
         id: 'hien-tai-don', nhom: 'thi', ten: 'Hiện tại đơn', tuKhoa: 'present simple always usually often every day',
@@ -461,6 +461,14 @@ const MUC = [
     },
 ];
 
+const { NHOM_ZH, MUC_ZH } = require('./nguPhapKhoZh');
+
+/** Hai kho gộp lại; mỗi mục và mỗi nhóm mang `lang` để lọc theo ngôn ngữ đang học. */
+const NHOM = [...NHOM_EN.map((n) => ({ ...n, lang: 'en' })), ...NHOM_ZH.map((n) => ({ ...n, lang: 'zh' }))];
+const MUC = [...MUC_EN.map((m) => ({ ...m, lang: 'en' })), ...MUC_ZH.map((m) => ({ ...m, lang: 'zh' }))];
 const THEO_ID = new Map(MUC.map((m) => [m.id, m]));
 
-module.exports = { NHOM, MUC, THEO_ID };
+/** Ngôn ngữ hợp lệ, mặc định tiếng Anh (thuần). */
+const chuanLang = (lang) => (lang === 'zh' ? 'zh' : 'en');
+
+module.exports = { NHOM, MUC, THEO_ID, chuanLang };

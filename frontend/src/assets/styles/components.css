@@ -12903,6 +12903,10 @@ body.dang-phat-am .js-nut-am {
 .np-vi-du { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
 .np-vi-du li { display: flex; align-items: flex-start; gap: 8px; }
 .np-vi-du small { display: block; color: var(--text-secondary); }
+.np-vi-du small.np-pinyin { font-style: italic; }
+.np-lang { display: inline-flex; gap: 4px; padding: 3px; margin-bottom: 10px; border-radius: 999px; border: 1px solid var(--border-color); background: var(--bg-secondary); }
+.np-lang button { padding: 5px 14px; border: none; border-radius: 999px; background: none; color: inherit; font: inherit; font-size: 13px; cursor: pointer; }
+.np-lang button.is-chon { background: var(--accent-color); color: #fff; }
 .np-loa { flex-shrink: 0; border: none; background: none; color: var(--accent-color); cursor: pointer; padding: 2px 4px; }
 .np-ai-tieu-de i { color: #9333ea; }
 .np-luu-y { margin: 12px 0 0; padding: 8px 12px; border-radius: 8px; background: rgba(234, 88, 12, 0.12); font-size: 14px; line-height: 1.5; }

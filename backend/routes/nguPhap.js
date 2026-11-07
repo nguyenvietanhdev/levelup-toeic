@@ -16,7 +16,7 @@ router.use(protect);
 router.get('/', async (req, res, next) => {
     try {
         const q = typeof req.query.q === 'string' ? req.query.q : '';
-        const data = await tim(req.user.id, q);
+        const data = await tim(req.user.id, q, undefined, req.query.lang);
         res.json({ success: true, data: { ...data, muc: await ganTienDo(req.user.id, data.muc) } });
     } catch (err) { next(err); }
 });
@@ -24,7 +24,7 @@ router.get('/', async (req, res, next) => {
 /** Tra chủ điểm chưa thấy: mở mục đã có, hoặc trả nháp chờ người học quyết định. */
 router.post('/hoi', async (req, res, next) => {
     try {
-        const r = await hoi(req.user.id, req.body?.q);
+        const r = await hoi(req.user.id, req.body?.q, undefined, req.body?.lang);
         if (r.loi) return res.status(r.ma || 400).json({ success: false, message: r.loi });
         res.json({ success: true, data: r });
     } catch (err) { next(err); }

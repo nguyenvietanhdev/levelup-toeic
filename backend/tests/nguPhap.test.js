@@ -16,10 +16,12 @@ function mockKho() {
     const docs = new Map();
     let dem = 0;
     const tao = (khoa) => ({ _id: (dem += 1).toString(16).padStart(24, '0'), khoa, viDuThem: [] });
+    // Bản ghi cũ không có `lang` là tiếng Anh, giống điều kiện { lang: { $in: ['en', null] } }.
+    const dungLang = (q, d) => !q.lang || (q.lang.$in ? q.lang.$in.includes(d.lang ?? null) : d.lang === q.lang);
     const timDoc = (q) => {
         if (q.khoa) return docs.get(q.khoa) || null;
         if (q._id) return [...docs.values()].find((d) => String(d._id) === String(q._id)) || null;
-        if (q.tenChuan) return [...docs.values()].find((d) => d.tenChuan === q.tenChuan) || null;
+        if (q.tenChuan) return [...docs.values()].find((d) => d.tenChuan === q.tenChuan && dungLang(q, d)) || null;
         return null;
     };
     const ghi = (q, u) => {
@@ -39,6 +41,7 @@ function mockKho() {
                 if (q?.khoa?.$in) return q.khoa.$in.map((k) => docs.get(k)).filter(Boolean);
                 const tu = (q?.$and || []).map((x) => x.timKiem.$regex);
                 return [...docs.values()].filter((d) => {
+                    if (!dungLang(q || {}, d)) return false;
                     if (q?.troDen && !d.troDen) return false;
                     if (q?.noiDung && !d.noiDung) return false;
                     return tu.every((t) => (d.timKiem || '').includes(t));
@@ -82,6 +85,8 @@ const Muc = require('../models/NguPhapMuc');
 const Nhap = require('../models/NguPhapNhap');
 const S = require('../services/nguPhap');
 const { NHOM, MUC } = require('../services/nguPhapKho');
+const MUC_EN = MUC.filter((m) => m.lang === 'en');
+const MUC_ZH = MUC.filter((m) => m.lang === 'zh');
 
 const NOW = new Date('2026-11-06T05:00:00Z');
 const BAN_AI = {
@@ -112,6 +117,26 @@ describe('kho lõi', () => {
             for (const v of m.vd) expect(v.en && v.vi).toBeTruthy();
         }
     });
+    test('mục và nhóm nào cũng có ngôn ngữ; nhóm của mục cùng ngôn ngữ với mục', () => {
+        const langNhom = new Map(NHOM.map((n) => [n.key, n.lang]));
+        for (const m of MUC) {
+            expect(['en', 'zh']).toContain(m.lang);
+            expect(langNhom.get(m.nhom)).toBe(m.lang);
+        }
+    });
+    test('kho tiếng Trung: id có tiền tố zh-, ví dụ có chữ Hán và pinyin, đủ cấu trúc HSK hay gặp', () => {
+        expect(MUC_ZH.length).toBeGreaterThanOrEqual(20);
+        for (const m of MUC_ZH) {
+            expect(m.id.startsWith('zh-')).toBe(true);
+            for (const v of m.vd) {
+                expect(v.en).toMatch(/[\u4e00-\u9fff]/);
+                expect(v.py).toMatch(/[āáǎàēéěèīíǐìōóǒòūúǔùǖǘǚǜ]/);
+            }
+        }
+        for (const id of ['zh-le', 'zh-guo', 'zh-ba', 'zh-bei', 'zh-bi', 'zh-de', 'zh-luong-tu', 'zh-bo-ngu-ket-qua']) {
+            expect(MUC_ZH.map((m) => m.id)).toContain(id);
+        }
+    });
     test('đủ các thì cơ bản', () => {
         expect(MUC.filter((m) => m.nhom === 'thi').length).toBeGreaterThanOrEqual(11);
     });
@@ -129,8 +154,17 @@ describe('tìm trong kho', () => {
         expect(ids('qua khu don')[0]).toBe('qua-khu-don');
     });
     test('rỗng trả cả kho; không có thì rỗng', () => {
-        expect(S.timTrongKho('')).toHaveLength(MUC.length);
+        expect(S.timTrongKho('')).toHaveLength(MUC_EN.length);
+        expect(S.timTrongKho('', 'zh')).toHaveLength(MUC_ZH.length);
         expect(S.timTrongKho('xyzabc')).toEqual([]);
+    });
+    test('tiếng Trung: tra bằng pinyin, tên Việt không dấu; không lẫn kho tiếng Anh', () => {
+        const zh = (q) => S.timTrongKho(q, 'zh').map((m) => m.id);
+        expect(zh('ba')).toContain('zh-ba');
+        expect(zh('luong tu')[0]).toBe('zh-luong-tu');
+        expect(zh('bi dong')).toContain('zh-bei');
+        expect(zh('bi dong')).not.toContain('bi-dong');
+        expect(ids('bi dong')).not.toContain('zh-bei');
     });
 });
 
@@ -335,7 +369,48 @@ describe('tra cứu', () => {
         const { nhap } = await S.hoi('u1', 'đảo ngữ', NOW);
         await S.themVaoThuVien('u1', nhap.id, NOW);
         const r = await S.tim('u2', '', NOW);
-        expect(r.muc).toHaveLength(MUC.length + 1);
+        expect(r.muc).toHaveLength(MUC_EN.length + 1);
         expect(r.nhom.map((n) => n.key)).toContain('ai');
+        expect(r.nhom.some((n) => n.lang === 'zh')).toBe(false);
+    });
+});
+
+describe('tiếng Trung', () => {
+    const BAN_ZH = {
+        ok: true,
+        ten: 'Câu kiêm ngữ 让',
+        congThuc: [{ nhan: 'Chung', ct: 'A + 让 + B + V' }],
+        dung: ['Bảo, để ai làm gì.'],
+        vd: [{ en: '妈妈让我早点儿回家。', py: 'Māma ràng wǒ zǎo diǎnr huí jiā.', vi: 'Mẹ bảo tôi về nhà sớm.' }],
+    };
+    test('khoá câu tra tách riêng: "bi dong" tiếng Trung không đè tiếng Anh', () => {
+        expect(S.khoaHoi('en', 'bi dong')).toBe('hoi:bi dong');
+        expect(S.khoaHoi('zh', 'bi dong')).toBe('hoi:zh:bi dong');
+    });
+    test('ví dụ tiếng Trung phải có chữ Hán, giữ pinyin', () => {
+        expect(S.chuanHoaViDu(BAN_ZH.vd, 'zh')[0].py).toMatch(/Māma/);
+        expect(S.chuanHoaViDu([{ en: 'Mom asks me to go home.', vi: 'x' }], 'zh')).toEqual([]);
+        // Bản tiếng Anh không mang trường pinyin.
+        expect(S.chuanHoaViDu([{ en: 'Hi.', py: 'x', vi: 'Chào.' }])[0]).not.toHaveProperty('py');
+    });
+    test('prompt AI theo tiếng Trung; mục thêm vào lưu lang zh, chỉ hiện khi tra tiếng Trung', async () => {
+        aiTra(BAN_ZH);
+        const r = await S.hoi('u1', '让', NOW, 'zh');
+        expect(r.ketQua).toBe('ban-nhap');
+        expect(chatCompletion.mock.calls[0][0][0].content).toMatch(/Mandarin Chinese grammar/);
+        await S.themVaoThuVien('u1', r.nhap.id, NOW);
+        const daThem = [...Muc.docs.values()].find((d) => d.noiDung);
+        expect(daThem).toMatchObject({ khoa: 'hoi:zh:让', lang: 'zh' });
+        expect((await S.tim('u2', '', NOW, 'zh')).muc.map((m) => m.ten)).toContain('Câu kiêm ngữ 让');
+        expect((await S.tim('u2', '', NOW, 'en')).muc.map((m) => m.ten)).not.toContain('Câu kiêm ngữ 让');
+    });
+    test('AI trả câu ví dụ không có chữ Hán thì không nhận làm mục tiếng Trung', async () => {
+        aiTra({ ...BAN_ZH, vd: [{ en: 'Mom lets me go home.', vi: 'Mẹ cho tôi về.' }] });
+        expect((await S.hoi('u1', 'kiem ngu', NOW, 'zh')).ketQua).not.toBe('ban-nhap');
+    });
+    test('trùng tên với mục tiếng Anh không bị coi là đã có', async () => {
+        aiTra({ ...BAN_ZH, ten: 'Câu bị động' });
+        const r = await S.hoi('u1', 'bei bi dong kieu khac', NOW, 'zh');
+        expect(r.muc?.id).not.toBe('bi-dong');
     });
 });
