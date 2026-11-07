@@ -17,16 +17,36 @@ const app = readFileSync(join(__dirname, '..', 'App.jsx'), 'utf8');
 const badges = readFileSync(join(__dirname, 'useMenuBadges.js'), 'utf8');
 
 describe('menu chia nhóm', () => {
-    test('Hội thoại nằm nhóm NÓI, Luyện viết nằm nhóm VIẾT (gom theo kỹ năng)', () => {
-        // Các chế độ AI gom theo kỹ năng: Nói / Đọc / Viết. Hội thoại là kỹ năng Nói,
-        // Luyện viết là kỹ năng Viết.
-        const nhom = (tieuDe) => {
-            const i = menu.indexOf(`title: '${tieuDe}'`);
-            expect(i).toBeGreaterThan(-1);
-            return menu.slice(i, menu.indexOf('},\n    {', i));
-        };
-        expect(nhom('Nói với AI')).toContain("screen: 'conversation-screen'");
-        expect(nhom('Viết với AI')).toContain("screen: 'essay-screen'");
+    const nhom = (tieuDe) => {
+        const i = menu.indexOf(`title: '${tieuDe}'`);
+        expect(i).toBeGreaterThan(-1);
+        return menu.slice(i, menu.indexOf('},\n    {', i));
+    };
+
+    test('chia theo việc người dùng muốn làm, đúng thứ tự', () => {
+        const tieuDe = [...menu.matchAll(/^ {8}title: '([^']+)'/gm)].map((m) => m[1]);
+        expect(tieuDe).toEqual(['Học hôm nay', 'Luyện với AI', 'Ôn thi & tra cứu', 'Trình độ của tôi', 'Thi đua & thưởng', 'Kho đồ', 'Tài khoản']);
+    });
+
+    test('việc hằng ngày ở nhóm đầu; nội dung học không nằm trong Kho đồ', () => {
+        expect(nhom('Học hôm nay')).toContain("mode: 'review-mistakes'");
+        expect(nhom('Học hôm nay')).toContain("screen: 'phan-xa-screen'");
+        expect(nhom('Ôn thi & tra cứu')).toContain("screen: 'vocab-screen'");
+        expect(nhom('Kho đồ')).not.toContain("screen: 'vocab-screen'");
+    });
+
+    test('mọi màn về trình độ ở một nhóm; thi đua tách riêng', () => {
+        for (const s of ['ho-so-nang-luc-screen', 'ho-so-hoc-screen', 'tien-bo-screen', 'statistics-screen']) {
+            expect(nhom('Trình độ của tôi')).toContain(`screen: '${s}'`);
+        }
+        for (const s of ['quest-screen', 'leaderboard-screen', 'achievements-screen']) {
+            expect(nhom('Thi đua & thưởng')).toContain(`screen: '${s}'`);
+        }
+    });
+
+    test('không còn hai mục cùng tên "Hồ sơ"', () => {
+        expect(menu).not.toMatch(/label: 'Hồ sơ',/);
+        expect(menu).toMatch(/label: 'Tài khoản của tôi', icon: 'fa-user', screen: 'profile-screen'/);
     });
 
     test('KHÔNG mục nào bị mất khi gom nhóm', () => {
@@ -59,6 +79,12 @@ describe('menu chia nhóm', () => {
         expect(menu).toMatch(/return group\.items\.some\(\(it\) => it\.screen && it\.screen === currentScreen\);/);
         // Đã bấm đóng/mở thì theo người dùng, không tự mở lại.
         expect(menu).toMatch(/if \(chon === true \|\| chon === false\) return chon;/);
+    });
+
+    test('nhóm chưa từng bấm theo mặc định, kể cả khi đã lưu trạng thái các nhóm cũ', () => {
+        // Sau khi sắp lại menu, người dùng cũ có trạng thái của các nhóm đã đổi tên. Không gộp với
+        // mặc định thì "Học hôm nay" bị thu lại với họ.
+        expect(menu).toMatch(/\? \{ \.\.\.NHOM_MO_SAN, \.\.\.v \} : NHOM_MO_SAN/);
     });
 
     test('nhớ trạng thái nhóm; localStorage hỏng không làm sập menu', () => {
@@ -164,22 +190,20 @@ describe('số "từ cần ôn" trên ô chế độ', () => {
     });
 });
 
-describe('các nhóm chế độ AI ở sidebar (theo kỹ năng)', () => {
-    // Gom mọi nhóm AI (Nói / Đọc / Viết) lại để kiểm tra chung.
-    const nhomAI = () => ['Nói với AI', 'Đọc với AI', 'Viết với AI']
-        .map((tieuDe) => {
-            const i = menu.indexOf(`title: '${tieuDe}'`);
-            expect(i).toBeGreaterThan(-1);
-            return menu.slice(i, menu.indexOf('},\n    {', i));
-        })
-        .join('\n');
+describe('nhóm chế độ AI ở sidebar', () => {
+    // Mọi chế độ AI nằm chung một nhóm "Luyện với AI".
+    const nhomAI = () => {
+        const i = menu.indexOf("title: 'Luyện với AI'");
+        expect(i).toBeGreaterThan(-1);
+        return menu.slice(i, menu.indexOf('},\n    {', i));
+    };
 
-    test('có ĐỦ ba chế độ AI', () => {
+    test('có ĐỦ các chế độ AI', () => {
         // Ba chế độ này cùng bản chất: gọi AI có phí, tốn năng lượng, có màn
         // hình riêng. Thiếu một cái ở đây thì nó chỉ vào được qua lưới trang
         // chủ, trong khi hai cái kia có lối tắt.
         const nhom = nhomAI();
-        for (const s of ['conversation-screen', 'essay-screen', 'translation-screen']) {
+        for (const s of ['listening-screen', 'reading-screen', 'conversation-screen', 'voice-conversation-screen', 'essay-screen', 'translation-screen']) {
             expect(nhom).toContain(s);
         }
     });

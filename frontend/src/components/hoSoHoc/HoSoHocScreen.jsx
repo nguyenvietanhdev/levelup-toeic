@@ -53,7 +53,7 @@ const phat = (text) => {
 };
 
 /**
- * Mục tiêu & trình độ: chọn mục tiêu → test đầu vào (chọn, gõ, nói, nghe) → chẩn đoán.
+ * Mục tiêu & bài test: chọn mục tiêu → test đầu vào (chọn, gõ, nói, nghe) → chẩn đoán.
  * Đáp án chỉ về client khi đã nộp xong cả bài, và trong lúc test không báo đúng/sai để
  * câu trước không ảnh hưởng tâm lý câu sau.
  */
@@ -207,7 +207,7 @@ export default function HoSoHocScreen({ active }) {
                 <button className="back-btn-screen icon-btn" onClick={() => showScreen('home-screen')}>
                     <i className="fas fa-arrow-left"></i>
                 </button>
-                <h2><i className="fas fa-bullseye"></i> Mục tiêu &amp; trình độ</h2>
+                <h2><i className="fas fa-bullseye"></i> Mục tiêu &amp; bài test</h2>
             </div>
 
             <div className="px-wrap">

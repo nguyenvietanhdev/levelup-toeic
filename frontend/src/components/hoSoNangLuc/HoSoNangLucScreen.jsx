@@ -221,7 +221,7 @@ export default function HoSoNangLucScreen({ active }) {
                                 <i className="fas fa-chart-line"></i> Xu hướng chi tiết
                             </button>
                             <button type="button" className="btn btn-secondary" onClick={() => showScreen('ho-so-hoc-screen')}>
-                                <i className="fas fa-bullseye"></i> Mục tiêu &amp; trình độ
+                                <i className="fas fa-bullseye"></i> Mục tiêu &amp; bài test
                             </button>
                         </div>
                         <p className="px-goi-y">Mọi con số được tính từ bài bạn đã làm. Hệ thống chỉ nhận xét khi đủ dữ liệu.</p>

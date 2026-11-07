@@ -18,79 +18,77 @@ import { moNguPhap } from '@lib/nguPhapLienKet.js';
 //
 // Nhóm THU / MỞ được (bấm tiêu đề). Menu đã dài quá một màn — phải cuộn mới thấy
 // nửa dưới. Nỗi lo cũ "thu lại là giấu mất, người ta quên là có" được xử lý bằng:
-//   · mặc định chỉ mở "Luyện tập" và nhóm chứa màn ĐANG mở;
+//   · mặc định chỉ mở "Học hôm nay" và nhóm chứa màn ĐANG mở;
 //   · nhóm đang thu vẫn hiện TỔNG badge (nhiệm vụ, từ đến hạn…) trên tiêu đề;
 //   · trình duyệt nhớ nhóm nào người dùng để mở / đóng.
+//
+// Nhóm chia theo VIỆC NGƯỜI DÙNG ĐANG MUỐN LÀM, không theo lúc tính năng được thêm vào:
+// học hôm nay → luyện với AI → ôn thi, tra cứu → xem trình độ → thi đua → kho đồ → tài khoản.
 const MENU_GROUPS = [
     {
-        title: 'Luyện tập',
-        icon: 'fa-dumbbell',
+        // Việc nên làm MỖI NGÀY, một chạm là vào. Lộ trình đặt đầu vì nó dẫn tới mọi thứ khác.
+        title: 'Học hôm nay',
+        icon: 'fa-sun',
         items: [
-            // Lộ trình hôm nay: dẫn qua các kỹ năng với cùng bộ từ, theo đúng thứ tự —
-            // để người tự học không chỉ chọn chế độ mình thích. Đặt ĐẦU nhóm.
             { label: 'Lộ trình hôm nay', icon: 'fa-route', screen: 'lo-trinh-screen' },
-            { label: 'Mục tiêu & trình độ', icon: 'fa-bullseye', screen: 'ho-so-hoc-screen' },
-            // Tra cứu nhanh: kho lõi viết tay, AI chỉ chạy khi người học bấm. Không khoá Level.
-            { label: 'Công thức ngữ pháp', icon: 'fa-spell-check', screen: 'ngu-phap-screen' },
-            { label: 'Luyện đề test TOEIC', icon: 'fa-graduation-cap', screen: 'toeic-screen', hot: true, feature: 'feature:toeic' },
             // Mục kiểu CHẠY CHẾ ĐỘ (`mode`) chứ không đổi màn (`screen`): ôn từ
-            // sai là một chế độ luyện tập, không phải một trang riêng.
-            //
-            // Đặt ở sidebar dù nó vẫn nằm trong lưới 16 chế độ: đây là thứ NÊN
-            // làm hằng ngày và có số từ đến hạn thay đổi liên tục, nên cần lối
-            // vào không phải cuộn tìm giữa 16 thẻ.
+            // sai là một chế độ luyện tập, không phải một trang riêng. Có số từ đến hạn
+            // thay đổi liên tục nên cần lối vào không phải cuộn tìm giữa 16 thẻ.
             { label: 'Ôn lại từ sai', icon: 'fa-repeat', mode: 'review-mistakes', badgeKey: 'reviewDue', badgeStyle: 'reward' },
-        ],
-    },
-    // Các chế độ AI gọi AI có phí và tốn năng lượng, khác hẳn những chế độ bấm-là-chơi.
-    // Gom theo KỸ NĂNG (Nghe, Nói, Đọc, Viết) để người học thấy mình đang luyện kỹ năng nào.
-    {
-        title: 'Nghe với AI',
-        icon: 'fa-headphones-simple',
-        items: [
-            { label: 'Nghe và chép lại', icon: 'fa-headphones', screen: 'listening-screen' },
-        ],
-    },
-    {
-        title: 'Nói với AI',
-        icon: 'fa-comment-dots',
-        items: [
-            { label: 'Chat', icon: 'fa-comments', screen: 'conversation-screen', feature: 'feature:conversation' },
-            // Hội thoại GIỌNG NÓI: AI gửi tin nhắn thoại, trả lời bằng ghi âm. Cùng khoá Level với Chat.
-            { label: 'Hội thoại', icon: 'fa-microphone-lines', screen: 'voice-conversation-screen', feature: 'feature:conversation' },
-            // Phản xạ câu: lượt ngắn luyện khung câu. Không khoá Level, không tốn năng lượng.
+            // Lượt ngắn luyện khung câu, viết tay, không tốn năng lượng: hợp làm hằng ngày,
+            // không thuộc nhóm "với AI" (nhóm đó tốn năng lượng).
             { label: 'Phản xạ câu', icon: 'fa-bolt', screen: 'phan-xa-screen' },
         ],
     },
     {
-        title: 'Đọc với AI',
-        icon: 'fa-book-open',
+        // Các chế độ gọi AI có phí và TỐN NĂNG LƯỢNG — điểm chung thật của nhóm. Một nhóm thay
+        // cho bốn nhóm kỹ năng (hai nhóm chỉ có một mục), xếp theo thứ tự Nghe, Đọc, Nói, Viết.
+        title: 'Luyện với AI',
+        icon: 'fa-robot',
         items: [
+            { label: 'Nghe và chép lại', icon: 'fa-headphones', screen: 'listening-screen' },
             { label: 'Đọc hiểu', icon: 'fa-book-open-reader', screen: 'reading-screen', feature: 'feature:reading' },
-        ],
-    },
-    {
-        // Dịch và viết đều là sản xuất chữ: gom chung. Dịch vẫn có Nhật ký lỗi trong màn.
-        title: 'Viết với AI',
-        icon: 'fa-feather-pointed',
-        items: [
+            { label: 'Chat', icon: 'fa-comments', screen: 'conversation-screen', feature: 'feature:conversation' },
+            // Hội thoại GIỌNG NÓI: AI gửi tin nhắn thoại, trả lời bằng ghi âm. Cùng khoá Level với Chat.
+            { label: 'Hội thoại', icon: 'fa-microphone-lines', screen: 'voice-conversation-screen', feature: 'feature:conversation' },
             { label: 'Luyện viết', icon: 'fa-pen-nib', screen: 'essay-screen', feature: 'feature:essay' },
             { label: 'Dịch đoạn văn', icon: 'fa-language', screen: 'translation-screen', feature: 'feature:translation' },
         ],
     },
     {
-        title: 'Tiến độ',
+        // Đề thi, tra cứu và kho từ của riêng mình: thứ người học tìm đến khi có việc cụ thể.
+        title: 'Ôn thi & tra cứu',
+        icon: 'fa-book',
+        items: [
+            { label: 'Luyện đề test TOEIC', icon: 'fa-graduation-cap', screen: 'toeic-screen', hot: true, feature: 'feature:toeic' },
+            // Tra cứu nhanh: kho lõi viết tay, AI chỉ chạy khi người học bấm. Không khoá Level.
+            { label: 'Công thức ngữ pháp', icon: 'fa-spell-check', screen: 'ngu-phap-screen' },
+            // MÀN HÌNH riêng, không phải popup: nó có 5 tab và người dùng ở lại lâu
+            // (thêm từ · dán JSON · quản lý · chia sẻ · duyệt bộ được chia sẻ). Là nội dung
+            // học nên nằm ở đây, không ở Kho đồ cạnh vật phẩm.
+            { label: 'Từ vựng riêng', icon: 'fa-cloud-upload-alt', screen: 'vocab-screen', feature: 'feature:upload-vocab' },
+        ],
+    },
+    {
+        // Mọi thứ về TRÌNH ĐỘ ở một chỗ. Hồ sơ năng lực là trang tổng hợp nên đứng đầu; các mục
+        // sau là phần chi tiết của nó. Không khoá Level — người mới cũng cần thấy mình đi lên.
+        title: 'Trình độ của tôi',
         icon: 'fa-chart-simple',
         items: [
-            // Tiến bộ của tôi: hồ sơ năng lực gom từ MỌI chế độ, xu hướng theo tuần.
-            // Không khoá Level — người mới cũng cần thấy mình đang đi lên.
-            // Một trang gộp: trình độ, điểm mạnh và cần cải thiện, kỹ năng, TOEIC, những gì đã thuộc.
             { label: 'Hồ sơ năng lực', icon: 'fa-id-card', screen: 'ho-so-nang-luc-screen' },
+            { label: 'Mục tiêu & bài test', icon: 'fa-bullseye', screen: 'ho-so-hoc-screen' },
             { label: 'Tiến bộ của tôi', icon: 'fa-chart-line', screen: 'tien-bo-screen' },
-            { label: 'Nhiệm vụ', icon: 'fa-tasks', screen: 'quest-screen', badgeKey: 'quest', feature: 'feature:quest' },
-            { label: 'Bảng xếp hạng', icon: 'fa-trophy', screen: 'leaderboard-screen', badgeKey: 'online', badgeStyle: 'info', feature: 'feature:leaderboard' },
-            { label: 'Thành tích', icon: 'fa-medal', screen: 'achievements-screen', badgeKey: 'achievement', feature: 'feature:achievements' },
             { label: 'Thống kê', icon: 'fa-chart-bar', screen: 'statistics-screen', badgeKey: 'statsExport', badgeStyle: 'dot', feature: 'feature:stats' },
+        ],
+    },
+    {
+        // Phần gamification: thi đua và phần thưởng, tách khỏi phần đo trình độ.
+        title: 'Thi đua & thưởng',
+        icon: 'fa-trophy',
+        items: [
+            { label: 'Nhiệm vụ', icon: 'fa-tasks', screen: 'quest-screen', badgeKey: 'quest', feature: 'feature:quest' },
+            { label: 'Bảng xếp hạng', icon: 'fa-ranking-star', screen: 'leaderboard-screen', badgeKey: 'online', badgeStyle: 'info', feature: 'feature:leaderboard' },
+            { label: 'Thành tích', icon: 'fa-medal', screen: 'achievements-screen', badgeKey: 'achievement', feature: 'feature:achievements' },
         ],
     },
     {
@@ -101,17 +99,14 @@ const MENU_GROUPS = [
             // KHÔNG khoá theo level (không có `feature:`): nhiệm vụ và thành tích phát
             // vật phẩm ngay từ level 1, khoá túi đồ là người mới có đồ mà không có chỗ dùng.
             { label: 'Túi đồ', icon: 'fa-briefcase', screen: 'inventory-screen' },
-            // MÀN HÌNH riêng, không phải popup: nó có 5 tab và người dùng ở lại lâu
-            // (thêm từ · dán JSON · quản lý · chia sẻ · duyệt bộ được chia sẻ) — đó là
-            // một nơi để ĐẾN, không phải hộp thoại làm nhanh rồi đóng.
-            { label: 'Từ vựng riêng', icon: 'fa-cloud-upload-alt', screen: 'vocab-screen', feature: 'feature:upload-vocab' },
         ],
     },
     {
         title: 'Tài khoản',
         icon: 'fa-user-gear',
         items: [
-            { label: 'Hồ sơ', icon: 'fa-user', screen: 'profile-screen' },
+            // "Tài khoản của tôi", không phải "Hồ sơ": tránh nhầm với "Hồ sơ năng lực".
+            { label: 'Tài khoản của tôi', icon: 'fa-user', screen: 'profile-screen' },
             { label: 'Cài đặt', icon: 'fa-cog', screen: 'settings-screen' },
             // Mục kiểu HÀNH ĐỘNG (`action`): mở lớp phủ, không đổi màn. Khách cũng xem được.
             { label: 'Phím tắt', icon: 'fa-keyboard', action: 'phim-tat', guestOk: true },
@@ -120,13 +115,15 @@ const MENU_GROUPS = [
 ];
 
 /** Nhóm mở sẵn lần đầu (chưa có lựa chọn nào được lưu). */
-const NHOM_MO_SAN = { 'Luyện tập': true };
+const NHOM_MO_SAN = { 'Học hôm nay': true };
 const KHOA_NHOM = 'levelup.menuNhomMo';
 
 function docNhomMo() {
     try {
         const v = JSON.parse(localStorage.getItem(KHOA_NHOM));
-        return v && typeof v === 'object' ? v : NHOM_MO_SAN;
+        // Gộp với mặc định: nhóm người dùng chưa từng bấm (vd nhóm mới sau khi sắp lại menu) vẫn
+        // theo mặc định, thay vì bị thu lại chỉ vì trình duyệt đã lưu trạng thái của các nhóm cũ.
+        return v && typeof v === 'object' ? { ...NHOM_MO_SAN, ...v } : NHOM_MO_SAN;
     } catch { return NHOM_MO_SAN; }
 }
 

@@ -11,9 +11,9 @@ const doc = (...p) => readFileSync(join(__dirname, '..', '..', ...p), 'utf8');
 const man = doc('components', 'loTrinh', 'LoTrinhScreen.jsx');
 
 describe('lối vào', () => {
-    test('mục ĐẦU nhóm Luyện tập trong menu, route lo-trinh-screen', () => {
+    test('mục ĐẦU nhóm Học hôm nay trong menu, route lo-trinh-screen', () => {
         const menu = doc('layouts', 'SideMenu.jsx');
-        const i = menu.indexOf("title: 'Luyện tập'");
+        const i = menu.indexOf("title: 'Học hôm nay'");
         const dau = menu.indexOf('{ label:', i);
         expect(menu.slice(dau, menu.indexOf('}', dau))).toMatch(/label: 'Lộ trình hôm nay'.*screen: 'lo-trinh-screen'/);
         expect(doc('App.jsx')).toMatch(/'lo-trinh-screen': LoTrinhScreen/);

@@ -114,7 +114,7 @@ export default function ProfileScreen({ active }) {
                     <button className="back-btn-screen icon-btn" onClick={() => showScreen('home-screen')}>
                         <i className="fas fa-arrow-left"></i>
                     </button>
-                    <h2><i className="fas fa-user"></i> Hồ sơ</h2>
+                    <h2><i className="fas fa-user"></i> Tài khoản của tôi</h2>
                 </div>
                 <div id="profile-content" className="profile-content">
                     <div className="not-logged-in">
@@ -133,7 +133,7 @@ export default function ProfileScreen({ active }) {
                 <button className="back-btn-screen icon-btn" onClick={() => showScreen('home-screen')}>
                     <i className="fas fa-arrow-left"></i>
                 </button>
-                <h2><i className="fas fa-user"></i> Hồ sơ</h2>
+                <h2><i className="fas fa-user"></i> Tài khoản của tôi</h2>
                 <button
                     className="profile-leaderboard-btn"
                     style={{ marginLeft: 'auto' }}

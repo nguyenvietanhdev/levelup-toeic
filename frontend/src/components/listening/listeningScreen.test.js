@@ -17,7 +17,7 @@ describe('màn Nghe với AI', () => {
     test('đã đăng ký trong App và có mục trong menu', () => {
         expect(app).toMatch(/'listening-screen': ListeningScreen/);
         expect(menu).toMatch(/screen: 'listening-screen'/);
-        expect(menu).toMatch(/title: 'Nghe với AI'/);
+        expect(menu).toMatch(/title: 'Luyện với AI'/);
     });
 
     test('đoạn gốc chỉ hiện trong kết quả sau khi nộp', () => {

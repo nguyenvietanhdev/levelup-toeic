@@ -16,14 +16,16 @@ const doc = (...p) => readFileSync(join(__dirname, '..', '..', ...p), 'utf8');
 const man = doc('components', 'tienBo', 'TienBoScreen.jsx');
 
 describe('lối vào', () => {
-    test('ngay sau Hồ sơ năng lực ở đầu nhóm Tiến độ, không khoá Level; route tien-bo-screen', () => {
+    test('trong nhóm Trình độ của tôi, sau trang tổng hợp Hồ sơ năng lực, không khoá Level', () => {
         // Hồ sơ năng lực là trang tổng hợp nên đứng đầu; Tiến bộ là phần xu hướng chi tiết của nó.
         const menu = doc('layouts', 'SideMenu.jsx');
-        const i = menu.indexOf("title: 'Tiến độ'");
-        const dau = menu.indexOf('{ label:', i);
-        const thuHai = menu.indexOf('{ label:', dau + 1);
-        const tongHop = menu.slice(dau, menu.indexOf('}', dau));
-        const muc = menu.slice(thuHai, menu.indexOf('}', thuHai));
+        const i = menu.indexOf("title: 'Trình độ của tôi'");
+        const nhom = menu.slice(i, menu.indexOf('},\n    {', i));
+        const dau = nhom.indexOf('{ label:');
+        const tongHop = nhom.slice(dau, nhom.indexOf('}', dau));
+        const viTri = nhom.indexOf("label: 'Tiến bộ của tôi'");
+        expect(viTri).toBeGreaterThan(dau);
+        const muc = nhom.slice(viTri, nhom.indexOf('}', viTri));
         expect(tongHop).toMatch(/label: 'Hồ sơ năng lực'.*screen: 'ho-so-nang-luc-screen'/);
         expect(muc).toMatch(/label: 'Tiến bộ của tôi'.*screen: 'tien-bo-screen'/);
         expect(tongHop).not.toMatch(/feature:/);

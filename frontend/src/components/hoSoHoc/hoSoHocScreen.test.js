@@ -1,5 +1,5 @@
 /**
- * Mục tiêu & trình độ: nối dây và các hành vi dễ hỏng mà không báo gì.
+ * Mục tiêu & bài test: nối dây và các hành vi dễ hỏng mà không báo gì.
  *   · Chọn được mục tiêu chưa có lộ trình → hứa điều hệ thống chưa làm.
  *   · Câu nói chuyển sang gõ vẫn báo là "nói" → điểm Nói sai.
  *   · Lỗi mạng làm kẹt giữa bài.
@@ -21,7 +21,7 @@ describe('nối dây', () => {
         const app = doc('App.jsx');
         expect(app).toMatch(/import\('@components\/hoSoHoc\/HoSoHocScreen\.jsx'\)/);
         expect(app).toMatch(/'ho-so-hoc-screen': HoSoHocScreen/);
-        expect(doc('layouts', 'SideMenu.jsx')).toMatch(/label: 'Mục tiêu & trình độ', icon: 'fa-bullseye', screen: 'ho-so-hoc-screen'/);
+        expect(doc('layouts', 'SideMenu.jsx')).toMatch(/label: 'Mục tiêu & bài test', icon: 'fa-bullseye', screen: 'ho-so-hoc-screen'/);
     });
     test('API đúng đường dẫn backend', () => {
         const api = doc('api', 'hoSoHoc.js');
