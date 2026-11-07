@@ -9,7 +9,7 @@ import { afterAnswer } from '@components/practice/practiceNav.js';
 import { startQuestionTimer } from '@components/practice/questionTimer.js';
 import { timeoutQuestion } from '@components/practice/questionTimeout.js';
 import { chenViDu } from '../exampleBlock.js';
-import { maCapHoc } from '../nhanNgonNgu.js';
+import { maCapHoc, maTheoChieu } from '../nhanNgonNgu.js';
 // Dùng lại bộ chấm của chế độ Phát âm: nó là logic thuần (vào chuỗi, ra điểm)
 // và đã xử lý những ca thật mà `===` bỏ sót — vd máy tự thêm trợ từ tiếng Trung.
 import { scoreAttempt, feedbackMessage, chotSomDuoc } from './pronunciationScoring.js';
@@ -220,6 +220,21 @@ function deBai(question) {
     return question?.displayWord || question?.question || question?.word?.en || '';
 }
 
+/**
+ * Đọc mặt đang hiện, bằng ĐÚNG giọng của mặt đó.
+ *
+ * Trắc nghiệm, điền từ, đúng/sai theo cài đặt đảo chiều: đảo chiều thì mặt hỏi là
+ * NGHĨA (tiếng Việt). Bản cũ luôn đọc bằng giọng của từ cần học, nên nghĩa tiếng
+ * Việt bị đọc bằng giọng Anh; nút loa còn đọc `word.en`, tức là đọc luôn đáp án.
+ * Kiểu nghe che mặt chữ, phải đọc từ cần học thì mới có gì để nghe.
+ */
+function giongDeBai(question) {
+    if (question?.kieu === 'listen' || !question?.reversed) {
+        return { chu: question?.kieu === 'listen' ? question.word.en : (deBai(question) || question?.word?.en), ma: maCapHoc(question?.word).tu };
+    }
+    return { chu: deBai(question), ma: maTheoChieu(true, question.word).trai };
+}
+
 export const ReviewMistakes = {
 
     config: null,
@@ -425,10 +440,10 @@ export const ReviewMistakes = {
             // Đọc THỨ ĐANG HIỆN (`deBai`), không phải luôn luôn `w.en`: cùng
             // hàm mà thẻ chữ ở trên dùng, nên nghe và nhìn luôn khớp nhau.
             // Nói thẳng mã ngôn ngữ: nghĩa tiếng Việt không dấu bị đoán nhầm
-            // sang giọng Anh. Chế độ này không đảo chiều nên mặt hỏi luôn là
-            // mặt `tu`.
-            setTimeout(() => GameLogic.speakWord(
-                deBai(question) || w.en, maCapHoc(question.word).tu), 300);
+            // sang giọng Anh. Câu đảo chiều hiện nghĩa thì đọc giọng của nghĩa
+            // (xem `giongDeBai`).
+            const { chu, ma } = giongDeBai(question);
+            setTimeout(() => GameLogic.speakWord(chu, ma), 300);
         }
     },
 
@@ -569,7 +584,8 @@ export const ReviewMistakes = {
             // trong `nutPhatAm` lo; chiều này thì không, vì lúc bấm chưa có
             // tiếng nào đang phát để mà khoá.
             this._dungNghe();
-            GameLogic.speakWord(question.word.en, maCapHoc(question.word).tu);
+            const { chu, ma } = giongDeBai(question);
+            GameLogic.speakWord(chu, ma);
         });
 
         if (question.kieu === 'fill') {

@@ -61,7 +61,7 @@ describe('tự động phát âm chạy ở CẢ HAI chiều', () => {
     test('"Ôn từ sai" cũng đọc mặt đang hiện', () => {
         // Thẻ chữ dùng `deBai(question)`; đọc `w.en` là nghe một đằng nhìn một nẻo.
         const i = rm.indexOf('autoPronunciation) {');
-        expect(rm.slice(i, i + 900)).toMatch(/speakWord\(\s*deBai\(question\) \|\| w\.en, maCapHoc\(question\.word\)\.tu\)/);
+        expect(rm.slice(i, i + 900)).toMatch(/const \{ chu, ma \} = giongDeBai\(question\);\s*setTimeout\(\(\) => GameLogic\.speakWord\(chu, ma\)/);
     });
 
     test('Flashcard vốn đã đúng — vẫn đọc mặt trước', () => {

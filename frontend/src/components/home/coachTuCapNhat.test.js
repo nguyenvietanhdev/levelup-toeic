@@ -129,6 +129,6 @@ describe('nghe theo NGÔN NGỮ CỦA CẶP, không đoán mặt chữ', () => {
     });
 
     test('có import `maCapHoc`', () => {
-        expect(review).toMatch(/import \{ maCapHoc \} from '\.\.\/nhanNgonNgu\.js'/);
+        expect(review).toMatch(/import \{ maCapHoc(, maTheoChieu)? \} from '\.\.\/nhanNgonNgu\.js'/);
     });
 });
