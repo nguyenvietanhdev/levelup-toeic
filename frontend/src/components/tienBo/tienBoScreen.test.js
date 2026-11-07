@@ -16,12 +16,17 @@ const doc = (...p) => readFileSync(join(__dirname, '..', '..', ...p), 'utf8');
 const man = doc('components', 'tienBo', 'TienBoScreen.jsx');
 
 describe('lối vào', () => {
-    test('mục ĐẦU nhóm Tiến độ trong menu, không khoá Level; route tien-bo-screen', () => {
+    test('ngay sau Hồ sơ năng lực ở đầu nhóm Tiến độ, không khoá Level; route tien-bo-screen', () => {
+        // Hồ sơ năng lực là trang tổng hợp nên đứng đầu; Tiến bộ là phần xu hướng chi tiết của nó.
         const menu = doc('layouts', 'SideMenu.jsx');
         const i = menu.indexOf("title: 'Tiến độ'");
         const dau = menu.indexOf('{ label:', i);
-        const muc = menu.slice(dau, menu.indexOf('}', dau));
+        const thuHai = menu.indexOf('{ label:', dau + 1);
+        const tongHop = menu.slice(dau, menu.indexOf('}', dau));
+        const muc = menu.slice(thuHai, menu.indexOf('}', thuHai));
+        expect(tongHop).toMatch(/label: 'Hồ sơ năng lực'.*screen: 'ho-so-nang-luc-screen'/);
         expect(muc).toMatch(/label: 'Tiến bộ của tôi'.*screen: 'tien-bo-screen'/);
+        expect(tongHop).not.toMatch(/feature:/);
         expect(muc).not.toMatch(/feature:/);
         expect(doc('App.jsx')).toMatch(/'tien-bo-screen': TienBoScreen/);
         expect(doc('api', 'tienBo.js')).toMatch(/Http\.get\('\/tien-bo'\)/);

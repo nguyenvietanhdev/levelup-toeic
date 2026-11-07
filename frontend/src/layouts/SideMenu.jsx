@@ -84,6 +84,8 @@ const MENU_GROUPS = [
         items: [
             // Tiến bộ của tôi: hồ sơ năng lực gom từ MỌI chế độ, xu hướng theo tuần.
             // Không khoá Level — người mới cũng cần thấy mình đang đi lên.
+            // Một trang gộp: trình độ, điểm mạnh và cần cải thiện, kỹ năng, TOEIC, những gì đã thuộc.
+            { label: 'Hồ sơ năng lực', icon: 'fa-id-card', screen: 'ho-so-nang-luc-screen' },
             { label: 'Tiến bộ của tôi', icon: 'fa-chart-line', screen: 'tien-bo-screen' },
             { label: 'Nhiệm vụ', icon: 'fa-tasks', screen: 'quest-screen', badgeKey: 'quest', feature: 'feature:quest' },
             { label: 'Bảng xếp hạng', icon: 'fa-trophy', screen: 'leaderboard-screen', badgeKey: 'online', badgeStyle: 'info', feature: 'feature:leaderboard' },

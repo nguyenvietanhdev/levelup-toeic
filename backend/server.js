@@ -274,6 +274,7 @@ app.use('/api/listening', require('./routes/listening')); // Nghe với AI (TTS)
 app.use('/api/dang-goi-y', require('./routes/dangGoiY')); // Dạng bài AI gợi ý hợp bộ từ của Part
 app.use('/api/lo-trinh', require('./routes/loTrinh')); // Lộ trình hôm nay: các bước học trong ngày, tính từ dữ liệu đã có
 app.use('/api/bai-nhap', require('./routes/baiNhap')); // Bài làm dở Viết/Dịch: vào lại làm tiếp, không gọi AI lấy đề mới
+app.use('/api/ho-so-nang-luc', require('./routes/hoSoNangLuc')); // Hồ sơ năng lực: gộp trình độ, kỹ năng, TOEIC, đã thuộc
 app.use('/api/ngu-phap', require('./routes/nguPhap')); // Công thức ngữ pháp: kho lõi + AI mở rộng
 app.use('/api/ho-so-hoc', require('./routes/hoSoHoc')); // Mục tiêu, trình độ theo kỹ năng, test đầu vào
 app.use('/api/phan-xa', require('./routes/phanXa')); // Phản xạ câu: nhìn câu Việt, nói/gõ câu Anh

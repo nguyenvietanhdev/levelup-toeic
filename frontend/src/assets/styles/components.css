@@ -12956,3 +12956,30 @@ button.hs-muc:not(:disabled):hover { border-color: var(--accent-color); }
 /* Báo nội dung ngữ pháp sai */
 .np-bao-sai { padding: 0; color: var(--text-secondary); }
 .np-bao-sai:hover { color: #ef4444; }
+
+/* ── Hồ sơ năng lực ─────────────────────────────────────────────────── */
+.nl-dau { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin: 4px 0 12px; }
+.nl-dau > div, .nl-thanh-tich > div, .nl-ky-nang > div { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 10px 6px; border-radius: 12px; background: var(--bg-secondary); border: 1px solid var(--border-color); text-align: center; }
+.nl-dau strong { font-size: 18px; }
+.nl-dau span, .nl-thanh-tich span { font-size: 12px; color: var(--text-secondary); }
+.nl-nhan-xet { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.nl-nhan-xet .hs-tieu-de i { color: var(--accent-color); }
+.nl-ds { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.nl-ds li { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 8px 12px; border-radius: 10px; background: var(--bg-secondary); font-size: 14px; }
+.nl-ds .lt-ke-hoach-link { flex-shrink: 0; padding: 0; }
+.nl-ky-nang { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.nl-ky-nang span { font-size: 13px; }
+.nl-ky-nang strong { font-size: 18px; display: flex; align-items: center; gap: 6px; }
+.nl-ky-nang small, .nl-thanh-tich small { font-size: 11px; color: var(--text-secondary); }
+.nl-ky-nang > div.is-trong { opacity: 0.55; }
+.nl-xu-huong { font-size: 13px; }
+.nl-xu-huong.is-len { color: #16a34a; }
+.nl-xu-huong.is-xuong { color: #ef4444; }
+.nl-xu-huong.is-ngang { color: var(--text-secondary); }
+.nl-thanh-tich { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.nl-thanh-tich strong { font-size: 20px; }
+@media (max-width: 480px) {
+  .nl-dau { grid-template-columns: repeat(2, 1fr); }
+  .nl-nhan-xet { grid-template-columns: minmax(0, 1fr); }
+  .nl-ky-nang, .nl-thanh-tich { grid-template-columns: repeat(2, 1fr); }
+}
