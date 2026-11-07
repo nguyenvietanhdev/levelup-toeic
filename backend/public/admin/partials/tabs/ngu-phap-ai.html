@@ -1,0 +1,62 @@
+          <!-- ===== NỘI DUNG NGỮ PHÁP DO AI TẠO TAB ===== -->
+          <div id="main-tab-ngu-phap-ai" class="main-tab-content">
+            <div class="card">
+              <div class="card-header">
+                <h2><i class="fas fa-flag"></i> Báo cáo nội dung ngữ pháp sai</h2>
+                <div class="card-header-actions">
+                  <select id="npai-trang-thai" class="form-control" style="width:auto">
+                    <option value="cho-xu-ly">Chờ xử lý</option>
+                    <option value="da-xac-nhan">Đã xác nhận sai</option>
+                    <option value="da-khoi-phuc">Đã khôi phục</option>
+                  </select>
+                  <button class="btn btn-secondary btn-sm" id="btn-npai-reload"><i class="fas fa-rotate"></i> Tải lại</button>
+                </div>
+              </div>
+              <div style="padding:0 4px 12px;font-size:13px;color:var(--text-secondary)">
+                Người học báo là nội dung bị <b>ẩn với mọi người ngay</b>. Ở đây bạn quyết định:
+                <b>Khôi phục</b> nếu báo nhầm, hoặc <b>Xác nhận sai</b> để giữ ẩn và khỏi xem lại.
+                Nhiều người báo cùng một nội dung thì xử lý một lần là xong cả.
+              </div>
+              <div id="npai-thong-ke" style="padding:0 4px 8px;font-size:13px"></div>
+              <div class="table-container">
+                <table class="data-table">
+                  <thead><tr>
+                    <th style="width:150px">Công thức</th>
+                    <th>Nội dung bị báo</th>
+                    <th style="width:170px">Người báo</th>
+                    <th style="width:120px">Lúc</th>
+                    <th style="width:200px">Thao tác</th>
+                  </tr></thead>
+                  <tbody id="npai-bao-cao">
+                    <tr><td colspan="5" class="loading"><i class="fas fa-spinner fa-spin"></i> Đang tải...</td></tr>
+                  </tbody>
+                </table>
+              </div>
+              <div id="npai-trang-bao-cao" style="padding:8px 4px"></div>
+            </div>
+
+            <div class="card" style="margin-top:20px">
+              <div class="card-header">
+                <h2><i class="fas fa-wand-magic-sparkles"></i> Mục AI trong thư viện</h2>
+              </div>
+              <div style="padding:0 4px 12px;font-size:13px;color:var(--text-secondary)">
+                Các chủ điểm do AI soạn và người học đã đồng ý thêm. Ẩn một mục sai thì nó vào danh sách báo cáo ở trên,
+                khôi phục được, và người học tra lại sẽ được AI soạn bản mới.
+              </div>
+              <div class="table-container">
+                <table class="data-table">
+                  <thead><tr>
+                    <th>Chủ điểm</th>
+                    <th style="width:200px">Câu tra ban đầu</th>
+                    <th style="width:140px">Công thức / Ví dụ</th>
+                    <th style="width:120px">Lúc</th>
+                    <th style="width:110px">Thao tác</th>
+                  </tr></thead>
+                  <tbody id="npai-thu-vien">
+                    <tr><td colspan="5" class="loading"><i class="fas fa-spinner fa-spin"></i> Đang tải...</td></tr>
+                  </tbody>
+                </table>
+              </div>
+              <div id="npai-trang-thu-vien" style="padding:8px 4px"></div>
+            </div>
+          </div>

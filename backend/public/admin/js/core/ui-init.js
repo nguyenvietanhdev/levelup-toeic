@@ -122,6 +122,8 @@ function initMainTabs() {
             window.loadGameConfig?.();
         } else if (tab === 'feature-unlocks') {
             window.loadFeatureUnlocks?.();
+        } else if (tab === 'ngu-phap-ai') {
+            window.loadNguPhapAi?.();
         } else if (tab === 'mode-schedules') {
             window.loadModeSchedules?.();
         } else if (tab === 'answer-keys') {

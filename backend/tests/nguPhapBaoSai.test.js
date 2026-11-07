@@ -60,7 +60,7 @@ jest.mock('../models/UserProfile', () => ({}));
 
 const S = require('../services/nguPhapBaoSai');
 const L = require('../services/nguPhapLuyen');
-const { tomTat } = require('../scripts/xemBaoSai');
+const { tomTat } = require('../services/nguPhapQuanTri');
 
 const NOW = new Date('2026-11-07T05:00:00Z');
 const ID = 'a'.repeat(24);

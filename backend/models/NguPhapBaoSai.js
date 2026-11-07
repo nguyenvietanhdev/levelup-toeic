@@ -12,6 +12,8 @@ const nguPhapBaoSaiSchema = new mongoose.Schema(
         so: { type: Number, default: -1 }, // vị trí câu trong bộ câu; mục thì -1
         banSao: { type: mongoose.Schema.Types.Mixed, default: null },
         daKhoiPhuc: { type: Boolean, default: false },
+        // Người quản trị đã xác nhận nội dung sai: giữ ẩn, không cần xem lại.
+        daXuLy: { type: Boolean, default: false },
     },
     { timestamps: true, collection: 'ngu_phap_bao_sai' },
 );

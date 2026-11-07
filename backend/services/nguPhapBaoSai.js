@@ -55,11 +55,12 @@ async function baoSaiCau(userId, buoiId, i, now = new Date()) {
  * Báo một mục AI tạo trong thư viện. Chuyển nội dung sang chỗ cất và trả lại tên, để tra lần sau
  * AI soạn được bản mới; bỏ các cách gọi đang trỏ tới mục này để chúng không thành đường cụt.
  */
-async function baoSaiMuc(userId, id, now = new Date()) {
+async function baoSaiMuc(userId, id, now = new Date(), { boQuaTran = false } = {}) {
     if (!RE_OBJECT_ID.test(String(id))) return { loi: 'Chỉ báo được mục do AI tạo.', ma: 400 };
     const doc = await NguPhapMuc.findOne({ _id: id }).lean();
     if (!doc?.noiDung) return { loi: 'Không tìm thấy mục này.', ma: 404 };
-    if (await quaTran(userId, now)) return HET_LUOT;
+    // Người quản trị chủ động ẩn thì không tính vào trần báo của người học.
+    if (!boQuaTran && await quaTran(userId, now)) return HET_LUOT;
 
     await ghiBaoCao(userId, 'muc', String(doc._id), -1, { khoa: doc.khoa, tenChuan: doc.tenChuan, timKiem: doc.timKiem, noiDung: doc.noiDung });
     await NguPhapMuc.updateOne(
