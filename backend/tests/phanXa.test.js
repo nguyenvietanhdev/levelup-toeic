@@ -79,9 +79,11 @@ describe('thẻ quy tắc', () => {
         }
     });
     test('ví dụ trên thẻ không trùng đáp án trong kho luyện', () => {
-        const dapAn = new Set(TAT_CA.flatMap((c) => [c.en, ...c.chap]).map(S.chuanHoa));
+        // So theo cách chấm thật của từng ngôn ngữ (tiếng Trung bỏ cả dấu câu Trung).
+        const ch = (s) => S.chuanHoaZh(S.chuanHoa(s));
+        const dapAn = new Set(TAT_CA.flatMap((c) => [c.en, ...c.chap]).map(ch));
         for (const q of Object.values(QUY_TAC)) {
-            for (const v of q.vd) expect(dapAn.has(S.chuanHoa(v.dung))).toBe(false);
+            for (const v of q.vd) expect(dapAn.has(ch(v.dung))).toBe(false);
         }
     });
     test('tự hiện khi chẩn đoán yếu về quy tắc và điểm còn thấp', () => {
@@ -217,9 +219,51 @@ describe('một lượt', () => {
         expect(chatCompletion).toHaveBeenCalledTimes(1);
     });
 
-    test('người học tiếng Trung: báo chưa hỗ trợ, không mở lượt', async () => {
+    test('người học tiếng Trung: tổng quan và lượt dùng kho tiếng Trung', async () => {
         mockLang = 'zh';
-        expect(await S.tongQuan('u1')).toEqual({ hoTro: false });
-        expect(await S.taoBuoi('u1')).toEqual({ buoi: null });
+        const tq = await S.tongQuan('u1');
+        expect(tq).toMatchObject({ hoTro: true, lang: 'zh', tong: 48 });
+        expect(tq.khung.map((k) => k.key)).toEqual(['zh-trat-tu', 'zh-da-lam', 'zh-luong-tu', 'zh-giao-tiep']);
+        const { buoi } = await S.taoBuoi('u1');
+        expect(buoi.lang).toBe('zh');
+        expect(buoi.cau).toHaveLength(S.SO_CAU);
+        for (const c of mockBuoi.doc.cau) expect(c.cauId.startsWith('zh-')).toBe(true);
+    });
+    test('kho song ngữ (bi) luyện tiếng Anh', async () => {
+        mockLang = 'bi';
+        expect((await S.tongQuan('u1')).lang).toBe('en');
+    });
+});
+
+describe('tiếng Trung', () => {
+    const { THEO_ID, KHUNG_ZH } = require('../services/phanXaKho');
+    test('kho: id có tiền tố zh-, câu có chữ Hán và pinyin có dấu thanh', () => {
+        for (const k of KHUNG_ZH) {
+            expect(k.cau).toHaveLength(12);
+            for (const c of k.cau) {
+                expect(c.id.startsWith('zh-')).toBe(true);
+                for (const x of [c.en, ...c.chap]) expect(x).toMatch(/[一-鿿]/);
+                expect(c.py).toMatch(/[āáǎàēéěèīíǐìōóǒòūúǔùǖǘǚǜ]/);
+            }
+        }
+    });
+    test('khớp kho bỏ qua khoảng trắng và dấu câu, nhận cách nói khác', () => {
+        const cau = THEO_ID.get('zh-tt1');
+        expect(S.khopKho('我 明天 在家 学习', cau)).toBe(true);
+        expect(S.khopKho('明天我在家学习！', cau)).toBe(true);
+        expect(S.khopKho('我学习在家明天', cau)).toBe(false);
+    });
+    test('trả lời: câu khác kho thì AI chấm theo tiếng Trung; trả kèm pinyin; không tính vào kỹ năng Nói', async () => {
+        mockLang = 'zh';
+        await S.taoBuoi('u1');
+        const i = 0;
+        const cau = THEO_ID.get(mockBuoi.doc.cau[i].cauId);
+        chatCompletion.mockResolvedValue({ success: true, content: '{"ok":true,"note":""}' });
+        const HoSo = require('../models/HoSoHocVien');
+        HoSo.updateOne.mockClear();
+        const r = await S.traLoi('u1', 'b1', i, { traLoi: '一个完全不同的句子', cach: 'noi' });
+        expect(chatCompletion.mock.calls[0][0][0].content).toMatch(/Mandarin Chinese/);
+        expect(r).toMatchObject({ dung: true, cauDung: cau.en, pinyin: cau.py });
+        expect(Object.keys(HoSo.updateOne.mock.calls[0][1].$set)).toEqual([`kyNang.${cau.khung}`]);
     });
 });

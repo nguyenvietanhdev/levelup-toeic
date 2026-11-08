@@ -53,4 +53,9 @@ export const NGU_PHAP_THEO_KHUNG = {
     'qua-khu': { id: 'qua-khu-don' },
     'tell-say-talk': { id: 'tell-say-talk' },
     'mau-giao-tiep': { id: 'modal' },
+    // Tiếng Trung
+    'zh-trat-tu': { id: 'zh-trat-tu' },
+    'zh-da-lam': { id: 'zh-le' },
+    'zh-luong-tu': { id: 'zh-luong-tu' },
+    'zh-giao-tiep': { id: 'zh-nang-nguyen' },
 };

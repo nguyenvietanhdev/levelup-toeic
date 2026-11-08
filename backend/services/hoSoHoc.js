@@ -10,7 +10,7 @@
  */
 const HoSoHocVien = require('../models/HoSoHocVien');
 const UserProfile = require('../models/UserProfile');
-const { KHUNG } = require('./phanXaKho');
+const { KHUNG, KHUNG_ZH } = require('./phanXaKho');
 
 const KHUNG_KEYS = KHUNG.map((k) => k.key);
 const KY_NANG = [
@@ -18,7 +18,13 @@ const KY_NANG = [
     { key: 'nghe', ten: 'Nghe hiểu câu', icon: 'fa-headphones' },
     { key: 'noi', ten: 'Nói thành câu', icon: 'fa-microphone-lines' },
 ];
-const TEN_KY_NANG = new Map(KY_NANG.map((k) => [k.key, k.ten]));
+/**
+ * Khung Phản xạ câu tiếng Trung: GHI được điểm (để dành cho hồ sơ HSK), nhưng chưa vào
+ * `KY_NANG` — danh sách đó là hồ sơ Giao tiếp tiếng Anh, thêm vào thì người học tiếng Anh
+ * thấy cả khung tiếng Trung và lộ trình có thể chọn nhầm trọng tâm.
+ */
+const KY_NANG_ZH = KHUNG_ZH.map((k) => ({ key: k.key, ten: k.ten, icon: k.icon }));
+const TEN_KY_NANG = new Map([...KY_NANG, ...KY_NANG_ZH].map((k) => [k.key, k.ten]));
 
 const GIAM = 0.9;
 const NGUONG_YEU = 50;
@@ -171,7 +177,7 @@ async function datMucTieu(userId, mucTieu, { diemMucTieu } = {}) {
 }
 
 module.exports = {
-    KY_NANG, TEN_KY_NANG, MUC_TIEU_MO, NGUONG_YEU, NGUONG_VUNG,
+    KY_NANG, KY_NANG_ZH, TEN_KY_NANG, MUC_TIEU_MO, NGUONG_YEU, NGUONG_VUNG,
     capNhatKyNang, diemCua, mucCua, tomTatKyNang, tongQuanTrinhDo, chonTrongTam, anhKyNang, soSanhTest,
     ghiKetQua, layHoSo, datMucTieu,
 };

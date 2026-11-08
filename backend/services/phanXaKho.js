@@ -138,7 +138,18 @@ const QUY_TAC = {
     },
 };
 
-const TAT_CA = KHUNG.flatMap((k) => k.cau.map((c) => ({ ...c, khung: k.key, tenKhung: k.ten })));
+const { KHUNG_ZH, QUY_TAC_ZH } = require('./phanXaKhoZh');
+
+/**
+ * `KHUNG` vẫn chỉ là bốn khung tiếng Anh: hồ sơ người học, bài test đầu vào và lộ trình
+ * Giao tiếp được dựng trên chúng. `khungCua(lang)` cho đúng bộ khung của ngôn ngữ đang học.
+ */
+const khungCua = (lang) => (lang === 'zh' ? KHUNG_ZH : KHUNG);
+const QUY_TAC_TAT_CA = { ...QUY_TAC, ...QUY_TAC_ZH };
+
+const phang = (ds, lang) => ds.flatMap((k) => k.cau.map((c) => ({ ...c, khung: k.key, tenKhung: k.ten, lang })));
+/** Mọi câu của cả hai ngôn ngữ; mỗi câu mang `lang`. */
+const TAT_CA = [...phang(KHUNG, 'en'), ...phang(KHUNG_ZH, 'zh')];
 const THEO_ID = new Map(TAT_CA.map((c) => [c.id, c]));
 
-module.exports = { KHUNG, TAT_CA, THEO_ID, QUY_TAC };
+module.exports = { KHUNG, KHUNG_ZH, khungCua, TAT_CA, THEO_ID, QUY_TAC: QUY_TAC_TAT_CA };

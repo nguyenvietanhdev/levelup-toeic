@@ -15,7 +15,7 @@
 const PhanXaTienDo = require('../models/PhanXaTienDo');
 const BuoiPhanXa = require('../models/BuoiPhanXa');
 const UserProfile = require('../models/UserProfile');
-const { KHUNG, TAT_CA, THEO_ID, QUY_TAC } = require('./phanXaKho');
+const { khungCua, TAT_CA, THEO_ID, QUY_TAC } = require('./phanXaKho');
 const { parseJson } = require('./essayGrader');
 const HoSoHocVien = require('../models/HoSoHocVien');
 const { ghiKetQua, diemCua, NGUONG_YEU } = require('./hoSoHoc');
@@ -40,6 +40,14 @@ const VIET_TAT = [
     [/\b(do|does|did|is|are|was|were|have|has|had|would|could|should)n't\b/g, '$1 not'],
 ];
 
+/**
+ * Chuẩn hoá câu tiếng Trung để so (thuần): bỏ mọi khoảng trắng và dấu câu, cả dấu Trung.
+ * Giọng nói không có dấu câu, và gõ "我 明天 在家" hay "我明天在家。" đều là một câu.
+ */
+function chuanHoaZh(s) {
+    return String(s || '').normalize('NFC').replace(/[\s.,!?;:"'()，。！？；：、“”‘’（）…—·]/g, '');
+}
+
 /** Chuẩn hoá để so: bỏ hoa/thường, dấu câu, khác biệt viết tắt (giọng nói không có dấu câu). */
 function chuanHoa(s) {
     let t = String(s || '').normalize('NFC').replace(/[‘’]/g, "'").toLowerCase();
@@ -49,8 +57,9 @@ function chuanHoa(s) {
 
 /** Khớp câu mẫu hoặc cách nói khác trong kho. */
 function khopKho(traLoi, cau) {
-    const a = chuanHoa(traLoi);
-    return !!a && [cau.en, ...(cau.chap || [])].some((x) => chuanHoa(x) === a);
+    const ch = cau.lang === 'zh' ? chuanHoaZh : chuanHoa;
+    const a = ch(traLoi);
+    return !!a && [cau.en, ...(cau.chap || [])].some((x) => ch(x) === a);
 }
 
 /** Lịch ôn sau một câu trả lời (thuần). */
@@ -77,9 +86,9 @@ const tron = (a) => {
  * đều các khung. Xen kẽ khung nhớ lâu hơn cày một khung. `som`: hết câu đến hạn và câu
  * mới thì lấy những câu sắp đến hạn nhất.
  */
-function chonCau({ tienDo = [], khung = '', som = false, now = new Date(), soCau = SO_CAU }) {
+function chonCau({ tienDo = [], khung = '', som = false, now = new Date(), soCau = SO_CAU, lang = 'en' }) {
     const theoId = new Map(tienDo.map((t) => [t.cauId, t]));
-    const kho = TAT_CA.filter((c) => !khung || c.khung === khung);
+    const kho = TAT_CA.filter((c) => c.lang === (lang === 'zh' ? 'zh' : 'en') && (!khung || c.khung === khung));
     const denHan = kho
         .filter((c) => theoId.has(c.id) && new Date(theoId.get(c.id).denHan) <= now)
         .sort((a, b) => (theoId.get(b.id).sai || 0) - (theoId.get(a.id).sai || 0));
@@ -115,16 +124,21 @@ async function aiCham(cau, traLoi, userId, lang = 'en') {
     return { dung: o.ok, ghiChu: String(o.note || '').slice(0, 200) };
 }
 
-async function hoTro(userId) {
+/**
+ * Ngôn ngữ luyện, theo ngôn ngữ đang học từ vựng. Kho song ngữ (`bi`) học bằng tiếng Anh,
+ * cùng quy ước với mọi chỗ khác (hồ sơ, tiến bộ, sổ tay lỗi).
+ */
+async function langCua(userId) {
     const p = await UserProfile.findOne({ userId }).select('settings').lean();
-    return p?.settings?.vocabLang !== 'zh';
+    return p?.settings?.vocabLang === 'zh' ? 'zh' : 'en';
 }
 
-/** Số câu mới / đến hạn / đã thuộc theo từng khung. */
+/** Số câu mới / đến hạn / đã thuộc theo từng khung của ngôn ngữ đang học. */
 async function tongQuan(userId, now = new Date()) {
-    if (!(await hoTro(userId))) return { hoTro: false };
-    const ds = await PhanXaTienDo.find({ userId }).select('cauId khung denHan daThuoc').lean();
-    const khung = KHUNG.map((k) => {
+    const lang = await langCua(userId);
+    const bo = khungCua(lang);
+    const ds = await PhanXaTienDo.find({ userId, khung: { $in: bo.map((k) => k.key) } }).select('cauId khung denHan daThuoc').lean();
+    const khung = bo.map((k) => {
         const cua = ds.filter((t) => t.khung === k.key);
         const denHan = cua.filter((t) => new Date(t.denHan) <= now).length;
         return {
@@ -134,11 +148,12 @@ async function tongQuan(userId, now = new Date()) {
     });
     return {
         hoTro: true,
+        lang,
         khung,
         denHan: khung.reduce((s, k) => s + k.denHan, 0),
         moi: khung.reduce((s, k) => s + k.moi, 0),
         daThuoc: khung.reduce((s, k) => s + k.daThuoc, 0),
-        tong: TAT_CA.length,
+        tong: khung.reduce((s, k) => s + k.tong, 0),
     };
 }
 
@@ -161,10 +176,10 @@ function quyTacChoLuot(chon, hoSo) {
 
 /** Mở một lượt. Client chỉ nhận câu tiếng Việt — đáp án trả về sau khi chấm từng câu. */
 async function taoBuoi(userId, { khung = '', som = false } = {}, now = new Date()) {
-    if (!(await hoTro(userId))) return { buoi: null };
-    const k = KHUNG.some((x) => x.key === khung) ? khung : '';
+    const lang = await langCua(userId);
+    const k = khungCua(lang).some((x) => x.key === khung) ? khung : '';
     const tienDo = await PhanXaTienDo.find({ userId }).select('cauId denHan sai').lean();
-    const chon = chonCau({ tienDo, khung: k, som, now });
+    const chon = chonCau({ tienDo, khung: k, som, now, lang });
     if (!chon.length) return { buoi: null };
     const buoi = await BuoiPhanXa.create({ userId, cau: chon.map((c) => ({ cauId: c.id })) });
     // Không đọc được hồ sơ thì chỉ mất phần tự hiện thẻ, lượt luyện vẫn chạy.
@@ -172,6 +187,7 @@ async function taoBuoi(userId, { khung = '', som = false } = {}, now = new Date(
     return {
         buoi: {
             id: String(buoi._id),
+            lang,
             cau: chon.map((c) => ({ vi: c.vi, khung: c.khung, tenKhung: c.tenKhung })),
             ...quyTacChoLuot(chon, hoSo),
         },
@@ -202,7 +218,7 @@ async function traLoi(userId, buoiId, i, body = {}, now = new Date()) {
         if (khopKho(chu, cau)) {
             dung = true;
         } else {
-            const r = await aiCham(cau, chu, userId);
+            const r = await aiCham(cau, chu, userId, cau.lang);
             if (r) ({ dung, ghiChu } = r);
             else {
                 khongChac = true;
@@ -222,13 +238,16 @@ async function traLoi(userId, buoiId, i, body = {}, now = new Date()) {
             { $set: { ...lich, khung: cau.khung }, $inc: dung ? { dung: 1 } : { sai: 1 } },
             { upsert: true },
         );
-        // Hồ sơ lỗi không được làm hỏng lượt luyện. Chỉ câu thật sự NÓI mới tính kỹ năng Nói.
+        // Hồ sơ lỗi không được làm hỏng lượt luyện. Chỉ câu thật sự NÓI mới tính kỹ năng Nói,
+        // và chỉ với tiếng Anh: kỹ năng Nói của hồ sơ hiện là của mục tiêu Giao tiếp tiếng Anh.
         await ghiKetQua(userId, [
             { kyNang: cau.khung, dung },
-            ...(body.cach === 'noi' && chu ? [{ kyNang: 'noi', dung }] : []),
+            ...(body.cach === 'noi' && chu && cau.lang !== 'zh' ? [{ kyNang: 'noi', dung }] : []),
         ], now).catch((e) => logger.warn('Phản xạ câu: không ghi được hồ sơ', { message: e?.message }));
     }
-    return { dung, khongChac, boQua: !chu, cauDung: cau.en, ghiChu, daThuoc };
+    return { dung, khongChac, boQua: !chu, cauDung: cau.en, ...(cau.py ? { pinyin: cau.py } : {}), ghiChu, daThuoc };
 }
 
-module.exports = { tongQuan, taoBuoi, traLoi, chuanHoa, khopKho, aiCham, capNhatLich, chonCau, quyTacChoLuot, SO_CAU, KHOANG };
+module.exports = {
+    tongQuan, taoBuoi, traLoi, chuanHoa, chuanHoaZh, khopKho, aiCham, capNhatLich, chonCau, quyTacChoLuot, SO_CAU, KHOANG,
+};

@@ -54,7 +54,15 @@ describe('hành vi', () => {
         const giay = src.slice(src.indexOf('const t = setInterval'), src.indexOf('const batDauNoi'));
         expect(giay).not.toMatch(/gui\(/);
     });
-    test('kho câu tiếng Anh: luôn đọc giọng Anh', () => {
-        expect(src).toMatch(/GameLogic\.speakWord\(text, 'en-US'\)/);
+    test('đọc và nghe đúng ngôn ngữ đang luyện (server quyết), không để máy đoán', () => {
+        expect(src).toMatch(/GameLogic\.speakWord\(text, lang === 'zh' \? 'zh-CN' : 'en-US'\)/);
+        expect(src).toMatch(/const lang = tongQuan\?\.lang \|\| \(getVocabLang\(\) === 'zh' \? 'zh' : 'en'\);/);
+        expect(src).toMatch(/useGhiAm\(speechLangFor\(lang\)\)/);
+        expect(src).toMatch(/phat\(kq\.cauDung, lang\)/);
+        expect(src).toMatch(/phat\(ketQua\.cauDung, lang\)/);
+    });
+    test('tiếng Trung hiện pinyin ở kết quả và danh sách cần ôn', () => {
+        expect(src).toMatch(/\{ketQua\.pinyin && <p className="px-pinyin">\{ketQua\.pinyin\}<\/p>\}/);
+        expect(src).toMatch(/\{c\.pinyin && <small className="px-pinyin">\{c\.pinyin\}<\/small>\}/);
     });
 });

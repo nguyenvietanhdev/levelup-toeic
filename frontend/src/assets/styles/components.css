@@ -12904,6 +12904,8 @@ body.dang-phat-am .js-nut-am {
 .np-vi-du li { display: flex; align-items: flex-start; gap: 8px; }
 .np-vi-du small { display: block; color: var(--text-secondary); }
 .np-vi-du small.np-pinyin { font-style: italic; }
+.px-pinyin { margin: 2px 0 0; font-style: italic; color: var(--text-secondary); }
+.px-sai-ds small.px-pinyin { display: block; }
 .np-lang { display: inline-flex; gap: 4px; padding: 3px; margin-bottom: 10px; border-radius: 999px; border: 1px solid var(--border-color); background: var(--bg-secondary); }
 .np-lang button { padding: 5px 14px; border: none; border-radius: 999px; background: none; color: inherit; font: inherit; font-size: 13px; cursor: pointer; }
 .np-lang button.is-chon { background: var(--accent-color); color: #fff; }

@@ -8,6 +8,7 @@ import { isSpeechSupported, speechLangFor } from '@lib/speechInput.js';
 import { moNguPhap, NGU_PHAP_THEO_KHUNG } from '@lib/nguPhapLienKet.js';
 import { useGhiAm } from '../conversation/useGhiAm.js';
 import { useHoiKhiThoat } from '../ai/aiExitGuard.js';
+import { getVocabLang } from '@api/vocabulary.js';
 
 /** Thanh giờ chỉ để giục, hết giờ KHÔNG tính sai: bắt lỗi phản xạ chứ không phạt người chậm. */
 const GIAY_GOI_Y = 10;
@@ -17,12 +18,14 @@ const GIU_MS = 350;
 const dungPhat = () => {
     try { GameLogic.stopSpeaking?.(); } catch { /* chưa phát gì */ }
 };
-const phat = (text) => {
+/** Đọc câu đúng bằng giọng của ngôn ngữ đang luyện (không để máy đoán theo mặt chữ). */
+const phat = (text, lang = 'en') => {
     if (!text) return;
     dungPhat();
-    // Kho câu chỉ có tiếng Anh nên luôn đọc giọng Anh, không theo ngôn ngữ từ vựng đang chọn.
-    try { GameLogic.speakWord(text, 'en-US'); } catch { /* không đọc được thì thôi */ }
+    try { GameLogic.speakWord(text, lang === 'zh' ? 'zh-CN' : 'en-US'); } catch { /* không đọc được thì thôi */ }
 };
+
+const TEN_NGON_NGU = { en: 'tiếng Anh', zh: 'tiếng Trung' };
 
 /** Thẻ quy tắc của một khung: vài ý ngắn và ví dụ sai → đúng. */
 function TheQuyTac({ the }) {
@@ -44,7 +47,8 @@ function TheQuyTac({ the }) {
 }
 
 /**
- * Phản xạ câu — lượt ngắn: nhìn câu tiếng Việt, nói (hoặc gõ) câu tiếng Anh, thấy ngay
+ * Phản xạ câu — lượt ngắn: nhìn câu tiếng Việt, nói (hoặc gõ) câu tiếng Anh hoặc tiếng Trung
+ * (theo ngôn ngữ đang học), thấy ngay
  * câu đúng và nghe lại. Không tốn năng lượng, không XP: đây là bài tập lặp lại, mở lúc
  * nào cũng được. Đáp án chỉ về client SAU khi đã chấm từng câu.
  */
@@ -52,9 +56,11 @@ export default function PhanXaScreen({ active }) {
     const { showScreen } = useGame();
     const { isLoggedIn } = useAuth();
     const coMic = isSpeechSupported();
-    const ghi = useGhiAm(speechLangFor('en'));
-
     const [tongQuan, setTongQuan] = useState(null);
+    // Ngôn ngữ do server quyết (theo ngôn ngữ học, kho song ngữ học tiếng Anh); chưa tải xong
+    // thì đoán cùng quy tắc để micro không mở nhầm ngôn ngữ ngay từ câu đầu.
+    const lang = tongQuan?.lang || (getVocabLang() === 'zh' ? 'zh' : 'en');
+    const ghi = useGhiAm(speechLangFor(lang));
     const [pha, setPha] = useState('tong'); // tong → hoi ⇄ ketqua → xong
     const [buoi, setBuoi] = useState(null);
     const [i, setI] = useState(0);
@@ -151,10 +157,10 @@ export default function PhanXaScreen({ active }) {
         }
         setDangCham(false);
         setKetQua({ ...kq, cuaBan: chu });
-        setLichSu((d) => [...d, { vi: cau.vi, cauDung: kq.cauDung, dung: kq.dung, khongChac: kq.khongChac }]);
+        setLichSu((d) => [...d, { vi: cau.vi, cauDung: kq.cauDung, pinyin: kq.pinyin, dung: kq.dung, khongChac: kq.khongChac }]);
         setPha('ketqua');
-        phat(kq.cauDung);
-    }, [dangCham, buoi, cau, i]);
+        phat(kq.cauDung, lang);
+    }, [dangCham, buoi, cau, i, lang]);
 
     const sangCau = useCallback(() => {
         dungPhat();
@@ -306,7 +312,7 @@ export default function PhanXaScreen({ active }) {
 
                 {isLoggedIn && pha === 'tong' && tongQuan?.hoTro && (
                     <>
-                        <p className="px-mo-ta">Nhìn câu tiếng Việt và nói ngay câu tiếng Anh. Mỗi lượt khoảng 3 phút, câu sai sẽ quay lại vào hôm sau.</p>
+                        <p className="px-mo-ta">Nhìn câu tiếng Việt và nói ngay câu {TEN_NGON_NGU[lang]}. Mỗi lượt khoảng 3 phút, câu sai sẽ quay lại vào hôm sau.</p>
                         <div className="px-so">
                             <div><strong>{tongQuan.denHan}</strong><span>Đến hạn ôn</span></div>
                             <div><strong>{tongQuan.moi}</strong><span>Câu mới</span></div>
@@ -422,13 +428,14 @@ export default function PhanXaScreen({ active }) {
                                                 : ketQua.boQua ? 'Câu đúng là' : <><i className="fas fa-xmark"></i> Chưa đúng</>}
                                     </div>
                                     {ketQua.cauDung && <p className="px-cau-dung">{ketQua.cauDung}</p>}
+                                    {ketQua.pinyin && <p className="px-pinyin">{ketQua.pinyin}</p>}
                                     {ketQua.cuaBan && <p className="px-cua-ban">Bạn: {ketQua.cuaBan}</p>}
                                     {ketQua.ghiChu && <p className="px-ghi-chu">{ketQua.ghiChu}</p>}
                                 </div>
                                 <p className="px-goi-y">Nói lại câu đúng một lần trước khi sang câu tiếp.</p>
                                 <div className="px-nut">
                                     {ketQua.cauDung && (
-                                        <button type="button" className="btn btn-secondary" onClick={() => phat(ketQua.cauDung)}>
+                                        <button type="button" className="btn btn-secondary" onClick={() => phat(ketQua.cauDung, lang)}>
                                             <i className="fas fa-volume-high"></i> Nghe lại
                                         </button>
                                     )}
@@ -464,6 +471,7 @@ export default function PhanXaScreen({ active }) {
                                 {canOn.map((c) => (
                                     <li key={c.vi}>
                                         {c.cauDung}
+                                        {c.pinyin && <small className="px-pinyin">{c.pinyin}</small>}
                                         <small>{c.vi}</small>
                                     </li>
                                 ))}
