@@ -408,7 +408,15 @@ startServer().catch(err => {
     process.exit(1);
 });
 
-async function shutdown(signal) {
+/**
+ * Tắt êm. `maThoat` là mã báo cho nền tảng (Render) biết tắt vì sao:
+ *   · 0 — được bảo tắt (SIGTERM khi deploy hay cho ngủ, SIGINT khi Ctrl+C).
+ *   · 1 — sập vì lỗi chưa bắt. Trước đây vẫn thoát 0, tức là báo "tắt bình
+ *     thường" dù server vừa chết, nên nền tảng không coi đó là sự cố.
+ */
+async function shutdown(signal, maThoat = 0) {
+    if (dangTat) return; // lỗi thứ hai trong lúc đang tắt: không chạy lại từ đầu
+    dangTat = true;
     logger.info(`${signal} received — shutting down gracefully...`);
 
     const forceExit = setTimeout(() => {
@@ -438,19 +446,20 @@ async function shutdown(signal) {
     ]);
     clearTimeout(forceExit);
     logger.info('All connections closed.');
-    process.exit(0);
+    process.exit(maThoat);
 }
+let dangTat = false;
 
 process.on('SIGINT',  () => shutdown('SIGINT'));
 process.on('SIGTERM', () => shutdown('SIGTERM'));
 
 process.on('unhandledRejection', (reason) => {
     logger.error('Unhandled Promise Rejection', { reason: String(reason) });
-    shutdown('unhandledRejection');
+    shutdown('unhandledRejection', 1);
 });
 
 process.on('uncaughtException', (err) => {
     logger.error('Uncaught Exception', { error: err.message, stack: err.stack });
-    shutdown('uncaughtException');
+    shutdown('uncaughtException', 1);
 });
 
