@@ -17,17 +17,19 @@ const { thongKe } = require('../services/errorTaxonomy');
  */
 
 /** Lỗi ngữ pháp hay mắc nhất trong 90 ngày. `null` nếu chưa có bài nào. */
-async function loiHayMacNhat(userId) {
+async function loiHayMacNhat(userId, lang = 'en') {
     const tu = new Date(Date.now() - 90 * 86400000);
+    // Chỉ bài của ngôn ngữ đang học: học tiếng Trung mà được khuyên "hay sai mạo từ" là vô nghĩa.
+    const theoLang = lang === 'zh' ? { lang: 'zh' } : { lang: { $ne: 'zh' } };
     const [dich, luan] = await Promise.all([
-        Translation.find({ userId, createdAt: { $gte: tu } }).select('notes').lean(),
-        Essay.find({ userId, createdAt: { $gte: tu } }).select('issues').lean(),
+        Translation.find({ userId, createdAt: { $gte: tu }, ...theoLang }).select('notes').lean(),
+        Essay.find({ userId, createdAt: { $gte: tu }, ...theoLang }).select('issues').lean(),
     ]);
     const all = [
         ...dich.flatMap((d) => d.notes || []),
         ...luan.flatMap((e) => e.issues || []),
     ];
-    const stats = thongKe(all);
+    const stats = thongKe(all, lang);
     // Bỏ qua nhóm "Khác": nói "bạn hay sai Khác" không dạy được gì, mà nó lại
     // hay đứng đầu khi AI chưa gán nhãn cho các bài cũ.
     const dau = stats.find((s) => s.key !== 'other');
@@ -54,7 +56,7 @@ exports.suggestions = async (req, res, next) => {
                 nextReviewDate: { $lte: new Date() },
                 ...WrongWord.langFilter(lang),
             }),
-            loiHayMacNhat(userId),
+            loiHayMacNhat(userId, lang),
         ]);
 
         const items = dungGoiY({

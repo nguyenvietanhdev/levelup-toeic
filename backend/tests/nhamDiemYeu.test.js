@@ -75,10 +75,30 @@ describe('lấy từ hồ sơ', () => {
         expect(mockSoLanGoi).toBe(1);
     });
 
-    test('tiếng Trung hoặc chưa đăng nhập → không nhắm, không đọc hồ sơ', async () => {
-        expect(await layNham('u1', 'zh')).toEqual([]);
+    test('chưa đăng nhập → không nhắm, không đọc hồ sơ', async () => {
         expect(await layNham(null, 'en')).toEqual([]);
         expect(mockSoLanGoi).toBe(0);
+    });
+
+    test('tiếng Trung: nhắm theo bộ nhóm lỗi tiếng Trung khi hồ sơ là của tiếng Trung', async () => {
+        mockHoSo = { lang: 'zh', diemYeu: [
+            { loai: 'ngu-phap', key: 'measure-word', vi: 'Lượng từ' },
+            { loai: 'ngu-phap', key: 'article', vi: 'Mạo từ' }, // không thuộc tiếng Trung: bỏ
+            { loai: 'ngu-phap', key: 'aspect', vi: 'Trợ từ 了 / 过 / 着' },
+        ] };
+        expect((await layNham('u-zh', 'zh')).map((x) => x.key)).toEqual(['measure-word', 'aspect']);
+    });
+
+    test('hồ sơ đang tính cho ngôn ngữ khác với bài → không nhắm', async () => {
+        mockHoSo = { lang: 'en', diemYeu: [{ loai: 'ngu-phap', key: 'word-order', vi: 'Trật tự từ' }] };
+        expect(await layNham('u-lech', 'zh')).toEqual([]);
+    });
+
+    test('chỉ thị tiếng Trung tạo cơ hội dùng cấu trúc, câu dịch nói đúng ngôn ngữ', () => {
+        const ct = chiThiNham(['measure-word'], 'dich', 'zh');
+        expect(ct).toMatch(/measure words/);
+        expect(ct).toMatch(/correct Chinese translation/);
+        expect(chiThiNham(['article'], 'viet', 'zh')).toBe('');
     });
 
     test('lỗi đọc hồ sơ → [] chứ không ném', async () => {

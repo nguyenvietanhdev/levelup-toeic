@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { moNguPhap, NGU_PHAP_THEO_LOI } from '@lib/nguPhapLienKet.js';
+import { moNguPhap, nguPhapChoLoi } from '@lib/nguPhapLienKet.js';
 import {
     chuanHoaLoi, dinhViLoi, chiaManh, khopSua, chonHien, nhanLoai,
 } from '@lib/chuaBai.js';
@@ -159,8 +159,8 @@ export default function ChuaBai({ text, loi, tieuDe = 'Chữa bài' }) {
                                 </div>
                                 {dangChon.quote && <div className="cb-trich">“{dangChon.quote}”</div>}
                                 {dangChon.issue && <p className="cb-giai-thich">{dangChon.issue}</p>}
-                                {NGU_PHAP_THEO_LOI[dangChon.loai] && (
-                                    <button type="button" className="lt-ke-hoach-link" onClick={() => moNguPhap(NGU_PHAP_THEO_LOI[dangChon.loai])}>
+                                {nguPhapChoLoi(dangChon.loai) && (
+                                    <button type="button" className="lt-ke-hoach-link" onClick={() => moNguPhap(nguPhapChoLoi(dangChon.loai))}>
                                         <i className="fas fa-spell-check"></i> Xem công thức liên quan
                                     </button>
                                 )}

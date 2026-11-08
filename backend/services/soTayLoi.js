@@ -42,7 +42,7 @@ function mucSoTay(raw, { nguon, baiId, at, i }) {
  * Dựng sổ tay từ bài đã chấm (thuần — test được không cần DB).
  * Mục nào không có cả trích dẫn lẫn cách sửa thì bỏ: không có gì để học lại.
  */
-function dungSoTay({ viet = [], dich = [], noi = [] }) {
+function dungSoTay({ viet = [], dich = [], noi = [] }, lang) {
     const ds = [];
     for (const b of viet) {
         (b.issues || []).forEach((raw, i) => ds.push(mucSoTay(raw, { nguon: 'viet', baiId: b._id, at: b.createdAt, i })));
@@ -59,7 +59,7 @@ function dungSoTay({ viet = [], dich = [], noi = [] }) {
         .slice(0, TOI_DA);
     // "Khác" xuống CUỐI dù nhiều nhất: bài chấm trước khi có phân loại dồn hết vào
     // đó, đứng đầu thì người học mở sổ tay ra gặp ngay nhóm không dạy được gì.
-    const nhom = thongKe(muc);
+    const nhom = thongKe(muc, lang);
     return { tong: muc.length, nhom: [...nhom.filter((n) => n.key !== 'other'), ...nhom.filter((n) => n.key === 'other')], muc };
 }
 
@@ -77,7 +77,7 @@ async function laySoTay(userId, now = new Date()) {
             userId, status: 'done', updatedAt: { $gte: tu }, ...theoLang, 'feedback.corrections.0': { $exists: true },
         }).select('feedback.corrections updatedAt').lean(),
     ]);
-    return { ...dungSoTay({ viet, dich, noi }), soNgay: SO_NGAY, lang };
+    return { ...dungSoTay({ viet, dich, noi }, lang), soNgay: SO_NGAY, lang };
 }
 
 module.exports = { laySoTay, dungSoTay, mucSoTay, SO_NGAY, TOI_DA };

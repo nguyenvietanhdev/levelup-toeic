@@ -9,6 +9,8 @@ export function moNguPhap(dich = {}) {
     window.dispatchEvent(new CustomEvent(SU_KIEN_NGU_PHAP, { detail: dich }));
 }
 
+import { getVocabLang } from '@api/vocabulary.js';
+
 /** Nhóm lỗi → nơi cần xem. Lỗi không gắn được với một công thức thì không có lối vào. */
 export const NGU_PHAP_THEO_LOI = {
     article: { id: 'mao-tu' },
@@ -20,6 +22,30 @@ export const NGU_PHAP_THEO_LOI = {
     pronoun: { id: 'dai-tu' },
     plural: { id: 'dem-duoc' },
 };
+
+/** Như trên, cho lỗi trong bài tiếng Trung — trỏ vào kho tiếng Trung (`zh-…`). */
+export const NGU_PHAP_THEO_LOI_ZH = {
+    'measure-word': { id: 'zh-luong-tu' },
+    aspect: { id: 'zh-le' },
+    negation: { id: 'zh-bu-mei' },
+    'particle-de': { id: 'zh-de' },
+    complement: { id: 'zh-bo-ngu-ket-qua' },
+    'ba-bei': { id: 'zh-ba' },
+    comparison: { id: 'zh-bi' },
+    'word-order': { id: 'zh-trat-tu' },
+    'literal-translation': { id: 'zh-trat-tu' },
+};
+
+/**
+ * Nơi cần xem cho một nhóm lỗi, theo ngôn ngữ của bài; không có thì `null`.
+ * Mặc định là ngôn ngữ đang học (cùng quy ước với backend: chỉ `zh` là tiếng Trung).
+ * Kèm `lang` để ngăn ngữ pháp mở đúng thư viện, kể cả khi chỉ lọc theo nhóm.
+ */
+export function nguPhapChoLoi(key, lang = getVocabLang() === 'zh' ? 'zh' : 'en') {
+    const zh = lang === 'zh';
+    const dich = (zh ? NGU_PHAP_THEO_LOI_ZH : NGU_PHAP_THEO_LOI)[key];
+    return dich ? { ...dich, lang: zh ? 'zh' : 'en' } : null;
+}
 
 /** Khung câu của Phản xạ câu → mục ngữ pháp. */
 export const NGU_PHAP_THEO_KHUNG = {

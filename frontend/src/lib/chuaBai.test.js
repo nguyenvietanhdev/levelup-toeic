@@ -20,7 +20,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 
 test('bảng nhãn khớp backend (cùng khoá, cùng nhãn)', () => {
     const be = readFileSync(join(__dirname, '..', '..', '..', 'backend', 'services', 'errorTaxonomy.js'), 'utf8');
-    const cap = [...be.matchAll(/\{ key: '([\w-]+)', vi: '([^']+)'/g)].map((m) => [m[1], m[2]]);
+    const cap = [...be.matchAll(/key: '([\w-]+)', lang: \w+, vi: '([^']+)'/g)].map((m) => [m[1], m[2]]);
     expect(cap.length).toBeGreaterThan(5);
     expect(Object.entries(LOAI_LOI)).toEqual(cap);
 });

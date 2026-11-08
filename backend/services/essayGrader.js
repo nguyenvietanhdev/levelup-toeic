@@ -347,7 +347,7 @@ async function generatePrompt({ topicHint = '', userId = null, lang = 'en', leve
                 : 'Write one Task 2 question on a common IELTS topic.');
 
     // Lỗi ngữ pháp lặp lại của người học (chỉ tiếng Anh): chọn đề cần đúng cấu trúc đó.
-    const nhamDong = zh ? '' : chiThiNham(nham, 'viet');
+    const nhamDong = chiThiNham(nham, 'viet', zh ? 'zh' : 'en');
     const messages = [
         { role: 'system', content: [system, nhamDong, chiThi].filter(Boolean).join('\n') },
         { role: 'user', content: user },
@@ -386,7 +386,7 @@ async function deTheoDang({ chon, zh, rb, level, topicHint, userId, nham = [], c
         GIONG_DE_VIET[rb] || '',
         // Có chủ đề của bộ từ: đặt đề vào bối cảnh hợp cả dạng bài lẫn chủ đề, không ghép gượng.
         topicHint ? 'Set the task in a situation that fits both this kind of text and the topic naturally.' : '',
-        zh ? '' : chiThiNham(nham, 'viet'),
+        chiThiNham(nham, 'viet', zh ? 'zh' : 'en'),
         chiThi,
     ].filter(Boolean).join('\n');
 
@@ -443,7 +443,7 @@ function khungChamChung(crit, zh, rb) {
         'Write every comment, issue and strength in VIETNAMESE.',
         `Keep "quote", "fix" and "improved" in ${ngonNguBai} (they are the learner's text).`,
         'Be specific: quote the actual wording, never say "some grammar errors".',
-        chiThiPhanLoai(),
+        chiThiPhanLoai(zh ? 'zh' : 'en'),
         chiThiChuaBai('fix'),
     ].join('\n');
 }
@@ -480,7 +480,7 @@ async function gradeEssay({ prompt = '', essay = '', userId = null, lang = 'en',
             'Write every comment, issue and strength in VIETNAMESE.',
             'Keep "quote", "fix" and "improved" in CHINESE (they are the composition text).',
             'Be specific: quote the actual wording, never say "some grammar errors".',
-            chiThiPhanLoai(),
+            chiThiPhanLoai(lang),
             chiThiChuaBai('fix'),
         ].join('\n')
         : [
@@ -502,7 +502,7 @@ async function gradeEssay({ prompt = '', essay = '', userId = null, lang = 'en',
             'Write every comment, issue and strength in VIETNAMESE.',
             'Keep "quote", "fix" and "improved" in English (they are the essay text).',
             'Be specific: quote the actual wording, never say "some grammar errors".',
-            chiThiPhanLoai(),
+            chiThiPhanLoai(lang),
             chiThiChuaBai('fix'),
         ].join('\n');
 
@@ -550,7 +550,7 @@ async function gradeEssay({ prompt = '', essay = '', userId = null, lang = 'en',
             // chuỗi khác nhau, để nguyên thì thống kê tách thành ba dòng.
             errors: (Array.isArray(parsed.errors) ? parsed.errors.slice(0, 12) : [])
                 // `muc`: 'loi' (sai) / 'nen' (nên sửa cho tự nhiên) — tô màu khi chữa bài.
-                .map((e) => ({ ...e, type: chuanHoaLoai(e?.type), muc: chuanHoaMuc(e?.level) })),
+                .map((e) => ({ ...e, type: chuanHoaLoai(e?.type, lang), muc: chuanHoaMuc(e?.level) })),
             strengths: Array.isArray(parsed.strengths) ? parsed.strengths.slice(0, 5) : [],
             improved: typeof parsed.improved === 'string' ? parsed.improved : '',
         },

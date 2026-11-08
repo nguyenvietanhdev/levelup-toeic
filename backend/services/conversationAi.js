@@ -158,7 +158,7 @@ function systemPrompt({ lang, topic, scenario, words, level, voice = false, nham
         '   them mid-conversation; corrections come at the end.',
         // Lỗi ngữ pháp lặp lại trong hồ sơ người học: thỉnh thoảng hỏi câu cần đúng
         // cấu trúc đó (xem `nhamDiemYeu`). Rỗng thì không thêm gì.
-        chiThiNham(nham, 'hoi-thoai'),
+        chiThiNham(nham, 'hoi-thoai', lang),
         chiThi,
     ].filter(Boolean).join('\n');
 }

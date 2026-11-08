@@ -120,7 +120,7 @@ function xuHuong(truoc, ganDay, nguong) {
  * Bỏ nhóm "Khác" (không dạy được gì) và nhóm dưới `TOI_THIEU_LOI` lần (một lần sai
  * có thể là AI chấm nhầm, chưa phải thói quen).
  */
-function phanTichNguPhap(bai, soNgayHomNay) {
+function phanTichNguPhap(bai, soNgayHomNay, lang) {
     const soBai = { truoc: 0, ganDay: 0 };
     const loi = [];
     for (const b of bai) {
@@ -130,7 +130,7 @@ function phanTichNguPhap(bai, soNgayHomNay) {
         soBai[nua] += 1;
         for (const it of b.loi) loi.push({ ...it, nua });
     }
-    return thongKe(loi)
+    return thongKe(loi, lang)
         .filter((s) => s.key !== 'other' && s.count >= TOI_THIEU_LOI)
         .slice(0, 5)
         .map((s) => {
@@ -216,7 +216,7 @@ function diemYeu({ kyNang, nguPhap }) {
  *
  * @param {object} du  các mảng lượt đã chuẩn hoá + số đếm từ vựng
  */
-function dungTienBo(du, { soNgay }) {
+function dungTienBo(du, { soNgay, lang }) {
     const tyLe = { heSo: 100, buoc: 1 };
     const band = { heSo: 1, buoc: 0.1 };
     const luotTheo = {
@@ -247,7 +247,7 @@ function dungTienBo(du, { soNgay }) {
         };
     });
 
-    const nguPhap = phanTichNguPhap([...(du.viet || []), ...(du.dich || [])], soNgay);
+    const nguPhap = phanTichNguPhap([...(du.viet || []), ...(du.dich || [])], soNgay, lang);
     const tuVung = {
         dangOn: du.tuDangOn || 0,
         denHan: du.tuDenHan || 0,
@@ -311,7 +311,7 @@ async function layTienBo(userId, now = new Date()) {
         viet: viet.map((b) => ({ at: b.createdAt, overall: b.overall, loi: b.issues || [] })),
         dich: dich.map((b) => ({ at: b.createdAt, overall: b.overall, loi: b.notes || [] })),
         tuDangOn, tuDenHan, tuDaThuoc, tuMoiThuoc,
-    }, { soNgay }), lang };
+    }, { soNgay, lang }), lang };
 }
 
 module.exports = { layTienBo, dungTienBo, tuanCua, xuHuong, SO_TUAN, KY_NANG };

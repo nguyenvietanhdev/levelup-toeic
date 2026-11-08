@@ -173,7 +173,7 @@ async function generatePassage({ tuVung = [], userId = null, lang = 'en', level 
     // Lỗi ngữ pháp lặp lại của người học (chỉ khi dịch sang tiếng Anh): cài một
     // hai câu mà dịch đúng phải dùng đúng cấu trúc đó.
     if (!zh) {
-        const nhamDong = chiThiNham(nham, 'dich');
+        const nhamDong = chiThiNham(nham, 'dich', zh ? 'zh' : 'en');
         if (nhamDong) system.push(nhamDong);
     }
     if (chiThi) system.push(chiThi);
@@ -245,7 +245,7 @@ async function gradeTranslation({ passage = '', translation = '', userId = null,
         'Write "issue" and "summary" in Vietnamese. Keep "quote" and "better"',
         `in ${dich}, quoting the learner's own words exactly.`,
         'Give at most 4 notes — the most useful ones, not every small slip.',
-        chiThiPhanLoai(),
+        chiThiPhanLoai(lang),
         chiThiChuaBai('better'),
     ].join('\n');
 
@@ -284,7 +284,7 @@ async function gradeTranslation({ passage = '', translation = '', userId = null,
             quote: String(n?.quote || ''),
             issue: String(n?.issue || ''),
             better: String(n?.better || ''),
-            loai: chuanHoaLoai(n?.type),
+            loai: chuanHoaLoai(n?.type, lang),
             muc: chuanHoaMuc(n?.level),
         }))
         .filter((n) => n.issue);

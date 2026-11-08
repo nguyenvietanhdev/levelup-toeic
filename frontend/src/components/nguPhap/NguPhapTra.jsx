@@ -152,8 +152,9 @@ export default function NguPhapTra({ active, dich = null }) {
     // Được mở từ một lỗi hoặc một câu sai: đưa thẳng tới đúng mục, không bắt người học tìm.
     useEffect(() => {
         if (!dich?.lan) return;
-        // Mục trong kho tiếng Trung có id `zh-…`; mở tới một mục thì chuyển đúng ngôn ngữ của nó.
-        if (dich.id) setLang(dich.id.startsWith('zh-') ? 'zh' : 'en');
+        // Mục trong kho tiếng Trung có id `zh-…`; mở tới một mục hay một nhóm thì chuyển đúng ngôn ngữ của nó.
+        if (dich.lang === 'zh' || dich.lang === 'en') setLang(dich.lang);
+        else if (dich.id) setLang(dich.id.startsWith('zh-') ? 'zh' : 'en');
         setQ(dich.q || '');
         setNhomChon(dich.nhom || '');
         setMo(dich.id || '');

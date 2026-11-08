@@ -27,7 +27,7 @@ const Essay = require('../models/Essay');
 const Translation = require('../models/Translation');
 const Conversation = require('../models/Conversation');
 const UserProfile = require('../models/UserProfile');
-const { LOAI_LOI, chuanHoaLoai, nhanLoi, goiYLoi } = require('./errorTaxonomy');
+const { loaiCua, chuanHoaLoai, nhanLoi, goiYLoi } = require('./errorTaxonomy');
 const { homNayVN } = require('./loTrinh');
 const { parseJson } = require('./essayGrader');
 const logger = require('../utils/logger');
@@ -205,6 +205,15 @@ const MO_TA_LOI = {
     plural: 'a singular/plural or countable/uncountable noun mistake',
     spelling: 'one misspelled word',
     punctuation: 'a punctuation mistake',
+    // Tiếng Trung
+    'measure-word': 'a wrong or missing measure word (个, 本, 张…)',
+    aspect: 'a wrong, missing or extra aspect particle (了, 过, 着)',
+    negation: 'using 不 where 没 is needed, or the other way round',
+    'particle-de': 'confusing 的, 得 and 地',
+    complement: 'a wrong or missing result, direction or potential complement',
+    'ba-bei': 'a wrong 把 or 被 sentence (for example a bare verb with nothing after it)',
+    comparison: 'a wrong comparison with 比 (for example adding 很)',
+    character: 'one wrong character with the same or similar pinyin',
 };
 
 const tron = (a) => {
@@ -325,11 +334,12 @@ function dungCau(loi, dang, cauMoi) {
         return { de: { cau: loi.cau, lang: loi.lang, ...span }, dapAn: { ...span, sua: loi.sua, issue: loi.issue } };
     }
     if (dang === 'ly-do') {
-        const khac = tron(LOAI_LOI.filter((l) => l.key !== 'other' && l.key !== loi.loai)).slice(0, 3);
+        // Lựa chọn sai lấy trong bộ nhóm của đúng ngôn ngữ: hỏi "lỗi mạo từ?" cho câu tiếng Trung là lộ đáp án.
+        const khac = tron(loaiCua(loi.lang).filter((l) => l.key !== 'other' && l.key !== loi.loai)).slice(0, 3);
         const lua = tron([{ key: loi.loai, vi: nhanLoi(loi.loai) }, ...khac.map((l) => ({ key: l.key, vi: l.vi }))]);
         return {
             de: { cau: loi.cau, quote: loi.quote, sua: loi.sua, lua, lang: loi.lang },
-            dapAn: { loai: loi.loai, vi: nhanLoi(loi.loai), hint: goiYLoi(loi.loai), issue: loi.issue },
+            dapAn: { loai: loi.loai, vi: nhanLoi(loi.loai), hint: goiYLoi(loi.loai, loi.lang), issue: loi.issue },
         };
     }
     // cau-moi
@@ -377,7 +387,7 @@ function cauTuDat(loi) {
     const span = viTriTrong(loi.cau, loi.quote);
     const cauDung = gon(loi.cau.slice(0, span.start) + loi.sua + loi.cau.slice(span.end));
     return {
-        de: { loai: nhanLoi(loi.loai), hint: goiYLoi(loi.loai), mau: gon(loi.sua), lang: loi.lang },
+        de: { loai: nhanLoi(loi.loai), hint: goiYLoi(loi.loai, loi.lang), mau: gon(loi.sua), lang: loi.lang },
         dapAn: { cauDung, cauGoc: loi.cau, quote: loi.quote, sua: loi.sua, loai: loi.loai, issue: loi.issue },
     };
 }

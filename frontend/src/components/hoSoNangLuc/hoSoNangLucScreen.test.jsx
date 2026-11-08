@@ -18,7 +18,7 @@ vi.mock('@game/featureUnlocks.js', () => ({
     loadUnlocks: async () => {},
     lockInfo: (f) => (khoa.ds[f] ? { locked: true, requiredLevel: khoa.ds[f] } : { locked: false }),
 }));
-vi.mock('@lib/nguPhapLienKet.js', () => ({ moNguPhap, NGU_PHAP_THEO_LOI: { article: { id: 'mao-tu' } } }));
+vi.mock('@lib/nguPhapLienKet.js', () => ({ moNguPhap, nguPhapChoLoi: (k) => (k === 'article' ? { id: 'mao-tu', lang: 'en' } : null) }));
 
 import HoSoNangLucScreen from './HoSoNangLucScreen.jsx';
 
@@ -93,7 +93,7 @@ describe('hồ sơ năng lực', () => {
         expect(game.showScreen).toHaveBeenLastCalledWith('phan-xa-screen');
 
         fireEvent.click(nut[2]); // Mạo từ
-        expect(moNguPhap).toHaveBeenCalledWith({ id: 'mao-tu' });
+        expect(moNguPhap).toHaveBeenCalledWith({ id: 'mao-tu', lang: 'en' });
 
         fireEvent.click(nut[3]); // Part 7
         expect(sessionStorage.getItem('levelup.toeic.moi')).toBe('7');

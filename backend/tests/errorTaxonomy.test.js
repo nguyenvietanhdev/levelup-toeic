@@ -69,12 +69,14 @@ describe('nhãn và gợi ý hiển thị', () => {
 });
 
 describe('chỉ thị gửi cho AI', () => {
-    test('liệt kê ĐÚNG các khoá trong danh sách', () => {
+    test('liệt kê ĐÚNG các khoá của ngôn ngữ bài, không lẫn ngôn ngữ kia', () => {
         // Lệch nhau thì AI gán nhãn ta không nhận ra, và mọi lỗi rơi vào `other`.
-        const chiThi = chiThiPhanLoai();
-        for (const l of LOAI_LOI) {
-            expect(chiThi).toContain(l.key);
+        for (const lang of ['en', 'zh']) {
+            const khoa = chiThiPhanLoai(lang).match(/one of: ([^.]+)\./)[1].split(', ');
+            expect(khoa.sort()).toEqual(LOAI_LOI.filter((l) => l.lang.includes(lang)).map((l) => l.key).sort());
         }
+        expect(chiThiPhanLoai('zh')).not.toMatch(/article/);
+        expect(chiThiPhanLoai('en')).not.toMatch(/measure-word/);
     });
 
     test('dặn dùng chữ thường và có lối thoát', () => {
@@ -152,17 +154,41 @@ describe('chỉ thị phân loại thật sự có trong prompt chấm bài', ()
     test('bộ chấm DỊCH có gọi `chiThiPhanLoai()`', () => {
         // Thiếu nó thì AI không bao giờ gán nhãn, mọi lỗi rơi vào `other`, và
         // nhật ký chỉ hiện đúng một dòng "Khác" — hỏng hoàn toàn nhưng im lặng.
-        expect(tr).toMatch(/chiThiPhanLoai\(\)/);
+        expect(tr).toMatch(/chiThiPhanLoai\(lang\)/);
     });
 
     test('bộ chấm LUẬN có gọi, cho CẢ HAI ngôn ngữ', () => {
         // Hai prompt riêng (tiếng Anh IELTS/HSK và tiếng Trung) cộng khung chấm chung
         // cho Giao tiếp/TOEIC. Chèn thiếu một chỗ thì nguồn đó im lặng không gán nhãn.
-        expect(es.split('chiThiPhanLoai()').length - 1).toBe(3);
+        expect(es.match(/chiThiPhanLoai\((lang|zh \? 'zh' : 'en')\)/g)).toHaveLength(3);
     });
 
     test('cả hai bộ chấm đều chuẩn hoá nhãn trước khi lưu', () => {
-        expect(tr).toMatch(/chuanHoaLoai\(n\?\.type\)/);
-        expect(es).toMatch(/chuanHoaLoai\(e\?\.type\)/);
+        expect(tr).toMatch(/chuanHoaLoai\(n\?\.type, lang\)/);
+        expect(es).toMatch(/chuanHoaLoai\(e\?\.type, lang\)/);
+    });
+});
+
+describe('tiếng Trung', () => {
+    const { loaiCua, goiYLoi: goiY, thongKe: tk } = require('../services/errorTaxonomy');
+    test('nhãn không thuộc ngôn ngữ của bài thì về "other"; không truyền ngôn ngữ thì giữ như cũ', () => {
+        expect(chuanHoaLoai('article', 'zh')).toBe('other');
+        expect(chuanHoaLoai('measure-word', 'en')).toBe('other');
+        expect(chuanHoaLoai('measure_word', 'zh')).toBe('measure-word');
+        expect(chuanHoaLoai('word-order', 'zh')).toBe('word-order');
+        expect(chuanHoaLoai('article')).toBe('article');
+    });
+    test('đủ các nhóm người Việt hay sai khi học tiếng Trung; nhóm nào cũng có gợi ý', () => {
+        const zh = loaiCua('zh').map((l) => l.key);
+        for (const k of ['measure-word', 'aspect', 'negation', 'particle-de', 'complement', 'ba-bei', 'comparison', 'character']) {
+            expect(zh).toContain(k);
+        }
+        for (const l of loaiCua('zh')) if (l.key !== 'other') expect(goiY(l.key, 'zh')).toBeTruthy();
+        expect(zh).not.toContain('article');
+    });
+    test('nhóm dùng chung có gợi ý riêng cho tiếng Trung', () => {
+        expect(goiY('word-order', 'zh')).toMatch(/TRƯỚC động từ/);
+        expect(goiY('word-order', 'en')).toMatch(/chủ ngữ – động từ – tân ngữ/);
+        expect(tk([{ type: 'word-order' }], 'zh')[0].hint).toMatch(/TRƯỚC động từ/);
     });
 });

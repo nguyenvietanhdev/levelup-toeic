@@ -39,7 +39,7 @@ function promptXemLai({ lang, kieu, passage }) {
         'Do NOT give scores.',
         'Return ONLY valid JSON, no markdown:',
         '{"old":[{"n":1,"status":"da-sua","note":"<short Vietnamese note>"}],"new":[{"quote":"...","issue":"<Vietnamese>","fix":"...","type":"...","level":"error|style"}]}',
-        chiThiPhanLoai(),
+        chiThiPhanLoai(lang),
         chiThiChuaBai('fix'),
         passage ? `(Vietnamese source of the translation, for meaning only: ${String(passage).slice(0, 1500)})` : '',
     ].filter(Boolean).join('\n');

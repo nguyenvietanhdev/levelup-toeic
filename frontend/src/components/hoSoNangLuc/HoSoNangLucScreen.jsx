@@ -3,7 +3,7 @@ import { useGame } from '@game/GameContext.jsx';
 import { useAuth } from '@components/auth/AuthContext.jsx';
 import { loadUnlocks, lockInfo } from '@game/featureUnlocks.js';
 import { HoSoNangLucAPI } from '@api/hoSoNangLuc.js';
-import { moNguPhap, NGU_PHAP_THEO_LOI } from '@lib/nguPhapLienKet.js';
+import { moNguPhap, nguPhapChoLoi } from '@lib/nguPhapLienKet.js';
 
 const TEN_MUC_TIEU = { 'giao-tiep': 'Giao tiếp', toeic: 'TOEIC', ielts: 'IELTS', hsk: 'HSK' };
 const MUI_TEN = { len: 'fa-arrow-trend-up', xuong: 'fa-arrow-trend-down', ngang: 'fa-minus' };
@@ -66,7 +66,7 @@ export default function HoSoNangLucScreen({ active }) {
         if (x.loai === 'ky-nang-con' && x.key === 'nghe') return { chay: () => showScreen('listening-screen') };
         if (x.loai === 'ky-nang-con' && x.key === 'noi') return ganKhoa(MAN_KY_NANG.noi, () => showScreen(MAN_KY_NANG.noi.screen));
         if (x.loai === 'ky-nang' && MAN_KY_NANG[x.key]) return ganKhoa(MAN_KY_NANG[x.key], () => showScreen(MAN_KY_NANG[x.key].screen));
-        if (x.loai === 'loi' && NGU_PHAP_THEO_LOI[x.key]) return { chay: () => moNguPhap(NGU_PHAP_THEO_LOI[x.key]) };
+        if (x.loai === 'loi' && nguPhapChoLoi(x.key)) return { chay: () => moNguPhap(nguPhapChoLoi(x.key)) };
         if (x.loai === 'toeic-part') {
             return ganKhoa({ feature: 'feature:toeic' }, () => {
                 try { sessionStorage.setItem('levelup.toeic.moi', String(x.key)); } catch { /* mở tab mặc định */ }

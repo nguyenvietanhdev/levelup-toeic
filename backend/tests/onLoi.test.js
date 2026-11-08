@@ -281,3 +281,17 @@ describe('dạng mới: chọn cách sửa, tự đặt câu', () => {
         expect(mockBuoi.doc.cau[i].daTra).toBeFalsy();
     });
 });
+
+describe('ôn lỗi tiếng Trung', () => {
+    test('câu "vì sao sai" chỉ đưa lựa chọn trong bộ nhóm lỗi tiếng Trung, gợi ý theo tiếng Trung', () => {
+        const { loaiCua } = require('../services/errorTaxonomy');
+        const zh = new Set(loaiCua('zh').map((l) => l.key));
+        const loi = { cau: '我昨天在家学习了汉语。', quote: '学习了', sua: '学习', issue: 'x', loai: 'word-order', lang: 'zh' };
+        for (let i = 0; i < 20; i += 1) {
+            const c = S.dungCau(loi, 'ly-do');
+            expect(c.de.lua).toHaveLength(4);
+            for (const l of c.de.lua) expect(zh.has(l.key)).toBe(true);
+            expect(c.dapAn.hint).toMatch(/TRƯỚC động từ/);
+        }
+    });
+});

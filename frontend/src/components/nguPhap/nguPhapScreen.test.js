@@ -15,7 +15,8 @@ const doc = (...p) => readFileSync(join(__dirname, '..', '..', ...p), 'utf8');
 const src = doc('components', 'nguPhap', 'NguPhapTra.jsx');
 const ngan = doc('components', 'nguPhap', 'NganNguPhap.jsx');
 const lienKet = doc('lib', 'nguPhapLienKet.js');
-const khoLoi = readFileSync(join(__dirname, '..', '..', '..', '..', 'backend', 'services', 'nguPhapKho.js'), 'utf8');
+const khoBE = (f) => readFileSync(join(__dirname, '..', '..', '..', '..', 'backend', 'services', f), 'utf8');
+const khoLoi = khoBE('nguPhapKho.js') + khoBE('nguPhapKhoZh.js');
 
 describe('nối dây', () => {
     test('lazy route và menu', () => {
@@ -89,8 +90,8 @@ describe('tra trong lúc luyện tập', () => {
         for (const [, n] of lienKet.matchAll(/\{ nhom: '([a-z-]+)' \}/g)) expect(khoLoi).toContain(`key: '${n}'`);
     });
     test('có lối mở từ lỗi đã chữa, Sổ tay lỗi, câu sai và chẩn đoán', () => {
-        expect(doc('components', 'chuaBai', 'ChuaBai.jsx')).toMatch(/moNguPhap\(NGU_PHAP_THEO_LOI\[dangChon\.loai\]\)/);
-        expect(doc('components', 'tienBo', 'SoTayLoi.jsx')).toMatch(/moNguPhap\(NGU_PHAP_THEO_LOI\[m\.loai\]\)/);
+        expect(doc('components', 'chuaBai', 'ChuaBai.jsx')).toMatch(/moNguPhap\(nguPhapChoLoi\(dangChon\.loai\)\)/);
+        expect(doc('components', 'tienBo', 'SoTayLoi.jsx')).toMatch(/moNguPhap\(nguPhapChoLoi\(m\.loai\)\)/);
         expect(doc('components', 'phanXa', 'PhanXaScreen.jsx')).toMatch(/moNguPhap\(NGU_PHAP_THEO_KHUNG\[cau\.khung\]\)/);
         expect(doc('components', 'hoSoHoc', 'HoSoHocScreen.jsx')).toMatch(/moNguPhap\(NGU_PHAP_THEO_KHUNG\[c\.kyNang\]\)/);
     });

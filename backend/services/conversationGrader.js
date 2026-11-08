@@ -8,8 +8,7 @@
  * từng kỳ thi khác nhau — ghi rõ trong phần mô tả để người học hiểu.
  */
 const { textCompletion } = require('./aiClient');
-const { LOAI_LOI, chuanHoaLoai, chuanHoaMuc } = require('./errorTaxonomy');
-const LOAI_KEYS = LOAI_LOI.map((l) => l.key).join(', ');
+const { khoaCua, chuanHoaLoai, chuanHoaMuc } = require('./errorTaxonomy');
 const logger = require('../utils/logger');
 
 const BO_TIEU_CHI = {
@@ -164,7 +163,7 @@ function buildGradingMessages({ rubric, lang, track, level, turns, nghiemNguPhap
                 '  "said": the exact words copied from ONE learner line (short, a few words),',
                 `  "better": the corrected or more natural wording that replaces them, in ${ngonNgu},`,
                 '  "issue": one short Vietnamese explanation,',
-                `  "type": one of ${LOAI_KEYS}, "level": "error" (a real mistake) or "style" (correct but unnatural).`,
+                `  "type": one of ${khoaCua(lang)}, "level": "error" (a real mistake) or "style" (correct but unnatural).`,
                 luatNguPhap ? 'Follow the grammar rule above: do not correct accepted spoken forms.' : '',
                 'If there is nothing worth correcting, use an empty list.',
                 '',
