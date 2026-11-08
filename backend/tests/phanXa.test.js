@@ -253,7 +253,7 @@ describe('tiếng Trung', () => {
         expect(S.khopKho('明天我在家学习！', cau)).toBe(true);
         expect(S.khopKho('我学习在家明天', cau)).toBe(false);
     });
-    test('trả lời: câu khác kho thì AI chấm theo tiếng Trung; trả kèm pinyin; không tính vào kỹ năng Nói', async () => {
+    test('trả lời: câu khác kho thì AI chấm theo tiếng Trung; trả kèm pinyin; nói thì tính vào kỹ năng Nói tiếng Trung', async () => {
         mockLang = 'zh';
         await S.taoBuoi('u1');
         const i = 0;
@@ -264,6 +264,7 @@ describe('tiếng Trung', () => {
         const r = await S.traLoi('u1', 'b1', i, { traLoi: '一个完全不同的句子', cach: 'noi' });
         expect(chatCompletion.mock.calls[0][0][0].content).toMatch(/Mandarin Chinese/);
         expect(r).toMatchObject({ dung: true, cauDung: cau.en, pinyin: cau.py });
-        expect(Object.keys(HoSo.updateOne.mock.calls[0][1].$set)).toEqual([`kyNang.${cau.khung}`]);
+        // Kỹ năng Nói của nền tảng HSK (`zh-noi`), không đụng kỹ năng Nói của hồ sơ Giao tiếp.
+        expect(Object.keys(HoSo.updateOne.mock.calls[0][1].$set)).toEqual([`kyNang.${cau.khung}`, 'kyNang.zh-noi']);
     });
 });

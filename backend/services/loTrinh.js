@@ -24,7 +24,7 @@ const HoSoHocVien = require('../models/HoSoHocVien');
 const ToeicAttempt = require('../models/ToeicAttempt');
 const { layHoSoToeic, SO_CAU_TOI_THIEU_FULL } = require('./hoSoToeic');
 const { layHoSoBang, CAU_HINH: CAU_HINH_BANG } = require('./hoSoBang');
-const { tomTatKyNang, chonTrongTam, NGUONG_YEU, NGUONG_VUNG } = require('./hoSoHoc');
+const { tomTatKyNang, chonTrongTam, nenTangZh, NGUONG_YEU, NGUONG_VUNG } = require('./hoSoHoc');
 
 /** Giờ Việt Nam = UTC+7, không đổi theo mùa. */
 const LECH_GIO_VN = 7 * 60 * 60 * 1000;
@@ -188,7 +188,16 @@ function dungLoTrinhBang(dem, hs, { ngay, soNgay }) {
     const thuTu = ['bang-viet', 'bang-noi', 'doc', 'nghe'];
     const dau = hs.trongTam?.buoc;
     const sap = dau ? [dau, ...thuTu.filter((k) => k !== dau)] : thuTu;
-    const buoc = [goc.get('on-sai'), ...sap.map(buocKyNang), goc.get('hoc-tu')];
+    // HSK đã làm test đầu vào tiếng Trung: thêm Phản xạ câu nhắm khung yếu nhất, ngay sau
+    // kỹ năng cần nhất — khung câu chưa vững thì viết và nói đều vấp.
+    const tt = hs.nenTang?.testNgay ? hs.nenTang.trongTam : null;
+    const phanXa = tt && {
+        key: 'phan-xa', soLan: dem.phanXa || 0, xong: (dem.phanXa || 0) > 0, khung: tt.khung,
+        lyDo: `Nền tảng câu: ${tt.ten} (${tt.diem}/100).`,
+    };
+    const giua = sap.map(buocKyNang);
+    if (phanXa) giua.splice(1, 0, phanXa);
+    const buoc = [goc.get('on-sai'), ...giua, goc.get('hoc-tu')];
     return { ngay, buoc, soXong: buoc.filter((b) => b.xong).length, tong: buoc.length };
 }
 
@@ -215,7 +224,7 @@ async function layLoTrinh(userId, now = new Date()) {
         LoiOn.countDocuments({ userId, lang, denHan: { $lte: now } }),
         BuoiOnLoi.countDocuments({ userId, createdAt: tuNay, 'cau.daTra': true }),
         BuoiPhanXa.countDocuments({ userId, createdAt: tuNay, 'cau.daTra': true }),
-        HoSoHocVien.findOne({ userId }).select('mucTieu testNgay kyNang chiTiet').lean(),
+        HoSoHocVien.findOne({ userId }).select('mucTieu testNgay testNgayZh chanDoanZh lichSuTestZh kyNang chiTiet').lean(),
     ]);
     const dem = { onSai, hocTu, nghe, doc, noi, viet, dich, tuDenHan, loiDenHan, onLoi, phanXa };
     const keHoachTuan = tongKet?.keHoach || [];
@@ -223,6 +232,7 @@ async function layLoTrinh(userId, now = new Date()) {
     const bang = CAU_HINH_BANG[hoSo?.mucTieu];
     if (bang && bang.lang === lang) {
         const hs = await layHoSoBang(userId, hoSo.mucTieu, hoSo.chiTiet);
+        if (hoSo.mucTieu === 'hsk') hs.nenTang = nenTangZh(hoSo);
         const homNay = { userId, lang, rubric: bang.rubric };
         const [bangViet, bangNoi] = await Promise.all([
             Essay.countDocuments({ ...homNay, createdAt: tuNay }),

@@ -183,7 +183,8 @@ async function taoBuoi(userId, { khung = '', som = false } = {}, now = new Date(
     if (!chon.length) return { buoi: null };
     const buoi = await BuoiPhanXa.create({ userId, cau: chon.map((c) => ({ cauId: c.id })) });
     // Không đọc được hồ sơ thì chỉ mất phần tự hiện thẻ, lượt luyện vẫn chạy.
-    const hoSo = await HoSoHocVien.findOne({ userId }).select('chanDoan kyNang').lean().catch(() => null);
+    const doc = await HoSoHocVien.findOne({ userId }).select('chanDoan chanDoanZh kyNang').lean().catch(() => null);
+    const hoSo = doc && { ...doc, chanDoan: lang === 'zh' ? (doc.chanDoanZh || []) : (doc.chanDoan || []) };
     return {
         buoi: {
             id: String(buoi._id),
@@ -239,10 +240,10 @@ async function traLoi(userId, buoiId, i, body = {}, now = new Date()) {
             { upsert: true },
         );
         // Hồ sơ lỗi không được làm hỏng lượt luyện. Chỉ câu thật sự NÓI mới tính kỹ năng Nói,
-        // và chỉ với tiếng Anh: kỹ năng Nói của hồ sơ hiện là của mục tiêu Giao tiếp tiếng Anh.
+        // và vào đúng kỹ năng Nói của ngôn ngữ đó (hồ sơ Giao tiếp và nền tảng HSK tách riêng).
         await ghiKetQua(userId, [
             { kyNang: cau.khung, dung },
-            ...(body.cach === 'noi' && chu && cau.lang !== 'zh' ? [{ kyNang: 'noi', dung }] : []),
+            ...(body.cach === 'noi' && chu ? [{ kyNang: cau.lang === 'zh' ? 'zh-noi' : 'noi', dung }] : []),
         ], now).catch((e) => logger.warn('Phản xạ câu: không ghi được hồ sơ', { message: e?.message }));
     }
     return { dung, khongChac, boQua: !chu, cauDung: cau.en, ...(cau.py ? { pinyin: cau.py } : {}), ghiChu, daThuoc };

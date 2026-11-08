@@ -23,7 +23,13 @@ const KY_NANG = [
  * `KY_NANG` — danh sách đó là hồ sơ Giao tiếp tiếng Anh, thêm vào thì người học tiếng Anh
  * thấy cả khung tiếng Trung và lộ trình có thể chọn nhầm trọng tâm.
  */
-const KY_NANG_ZH = KHUNG_ZH.map((k) => ({ key: k.key, ten: k.ten, icon: k.icon }));
+const KY_NANG_ZH = [
+    ...KHUNG_ZH.map((k) => ({ key: k.key, ten: k.ten, icon: k.icon })),
+    { key: 'zh-nghe', ten: 'Nghe hiểu câu', icon: 'fa-headphones' },
+    { key: 'zh-noi', ten: 'Nói thành câu', icon: 'fa-microphone-lines' },
+];
+const KHUNG_KEYS_ZH = KHUNG_ZH.map((k) => k.key);
+const kyNangCua = (lang) => (lang === 'zh' ? KY_NANG_ZH : KY_NANG);
 const TEN_KY_NANG = new Map([...KY_NANG, ...KY_NANG_ZH].map((k) => [k.key, k.ten]));
 
 const GIAM = 0.9;
@@ -52,8 +58,8 @@ function mucCua(diem) {
 }
 
 /** Tóm tắt để hiển thị. Ít dữ liệu thì báo chưa đủ, không đoán. */
-function tomTatKyNang(kyNang = {}) {
-    return KY_NANG.map((k) => {
+function tomTatKyNang(kyNang = {}, lang = 'en') {
+    return kyNangCua(lang).map((k) => {
         const x = kyNang[k.key];
         const duDuLieu = (x?.soLan || 0) >= DU_DU_LIEU;
         const diem = diemCua(x);
@@ -98,10 +104,10 @@ const LOI_THEO_KHUNG = { tense: 'qua-khu', 'literal-translation': 'khung-cau' };
  * Chọn khung cần luyện nhất: điểm thấp nhất; khung cũng đang hay sai trong bài viết/nói
  * thì được ưu tiên thêm, vì hai nguồn cùng chỉ một chỗ.
  */
-function chonTrongTam(tomTat, loiGanDay = []) {
+function chonTrongTam(tomTat, loiGanDay = [], khungKeys = KHUNG_KEYS) {
     const lapLai = new Set(loiGanDay.map((l) => LOI_THEO_KHUNG[l]).filter(Boolean));
     const ds = tomTat
-        .filter((k) => KHUNG_KEYS.includes(k.key))
+        .filter((k) => khungKeys.includes(k.key))
         .map((k) => ({ ...k, uuTien: k.diem - (lapLai.has(k.key) ? 15 : 0) }))
         .sort((a, b) => a.uuTien - b.uuTien);
     if (!ds.length) return null;
@@ -123,6 +129,22 @@ async function ghiKetQua(userId, ketQua, now = new Date()) {
     if (Object.keys(doi).length) await HoSoHocVien.updateOne({ userId }, { $set: doi }, { upsert: true });
 }
 
+/**
+ * Nền tảng câu tiếng Trung từ test đầu vào HSK và Phản xạ câu tiếng Trung (thuần). Cùng
+ * cách tính với hồ sơ Giao tiếp, nhưng trên bộ khung tiếng Trung và phần lưu riêng.
+ */
+function nenTangZh(doc) {
+    const kyNang = tomTatKyNang(doc?.kyNang, 'zh');
+    return {
+        testNgay: doc?.testNgayZh || null,
+        kyNang,
+        trinhDo: tongQuanTrinhDo(kyNang),
+        chanDoan: doc?.chanDoanZh || [],
+        soVoiTruoc: soSanhTest(doc?.lichSuTestZh),
+        trongTam: chonTrongTam(kyNang, [], KHUNG_KEYS_ZH),
+    };
+}
+
 async function layHoSo(userId) {
     const doc = await HoSoHocVien.findOne({ userId }).lean();
     const kyNang = tomTatKyNang(doc?.kyNang);
@@ -139,6 +161,7 @@ async function layHoSo(userId) {
         ...(['ielts', 'hsk'].includes(doc?.mucTieu)
             ? { bang: await require('./hoSoBang').layHoSoBang(userId, doc.mucTieu, doc.chiTiet) }
             : {}),
+        ...(doc?.mucTieu === 'hsk' ? { nenTang: nenTangZh(doc) } : {}),
     };
 }
 
@@ -177,7 +200,7 @@ async function datMucTieu(userId, mucTieu, { diemMucTieu } = {}) {
 }
 
 module.exports = {
-    KY_NANG, KY_NANG_ZH, TEN_KY_NANG, MUC_TIEU_MO, NGUONG_YEU, NGUONG_VUNG,
+    KY_NANG, KY_NANG_ZH, KHUNG_KEYS_ZH, TEN_KY_NANG, MUC_TIEU_MO, NGUONG_YEU, NGUONG_VUNG, nenTangZh,
     capNhatKyNang, diemCua, mucCua, tomTatKyNang, tongQuanTrinhDo, chonTrongTam, anhKyNang, soSanhTest,
     ghiKetQua, layHoSo, datMucTieu,
 };

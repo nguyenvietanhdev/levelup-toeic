@@ -10,6 +10,7 @@ import { useGhiAm } from '../conversation/useGhiAm.js';
 import PanelToeic from './PanelToeic.jsx';
 import PanelBang from './PanelBang.jsx';
 import { useHoiKhiThoat } from '../ai/aiExitGuard.js';
+import { getVocabLang } from '@api/vocabulary.js';
 
 /** Chỉ mục tiêu đã có đủ nội dung mới chọn được, để không hứa lộ trình chưa tồn tại. */
 const MUC_TIEU = [
@@ -46,11 +47,115 @@ const NHAN_MUC = { yeu: 'Cần luyện', 'dang-len': 'Đang lên', vung: 'Vững
 const dungPhat = () => {
     try { GameLogic.stopSpeaking?.(); } catch { /* chưa phát gì */ }
 };
-const phat = (text) => {
+/** Đọc bằng giọng của ngôn ngữ bài test, không để máy đoán theo mặt chữ. */
+const phat = (text, lang = 'en') => {
     if (!text) return;
     dungPhat();
-    try { GameLogic.speakWord(text, 'en-US'); } catch { /* không đọc được thì thôi */ }
+    try { GameLogic.speakWord(text, lang === 'zh' ? 'zh-CN' : 'en-US'); } catch { /* không đọc được thì thôi */ }
 };
+
+const TEN_NGON_NGU = { en: 'tiếng Anh', zh: 'tiếng Trung' };
+const KY_NGHE = ['nghe', 'zh-nghe'];
+
+/**
+ * Kết quả test và chẩn đoán — dùng chung cho hồ sơ Giao tiếp (tiếng Anh) và nền tảng câu
+ * tiếng Trung của mục tiêu HSK. `kq` = `{ trinhDo, soVoiTruoc, kyNang, chanDoan }`.
+ */
+function KetQuaTest({ kq, canXem, dang, onLuyen, onLamLai, onLoTrinh }) {
+    const soVoi = kq.soVoiTruoc;
+    return (
+        <>
+            <div className="px-so">
+                <div><strong>{kq.trinhDo.nhan}</strong><span>Trình độ ước lượng</span></div>
+                <div><strong>{kq.trinhDo.diem}/100</strong><span>Điểm chung</span></div>
+                <div>
+                    <strong>{soVoi ? `${soVoi.chenh >= 0 ? '+' : ''}${soVoi.chenh}` : '—'}</strong>
+                    <span>{soVoi ? `So với lần trước (${soVoi.soKyNang} kỹ năng chung)` : 'So với lần test trước'}</span>
+                </div>
+            </div>
+
+            <h3 className="hs-tieu-de">Kỹ năng</h3>
+            <ul className="hs-ky-nang">
+                {kq.kyNang.map((k) => (
+                    <li key={k.key}>
+                        <div className="hs-ky-nang-dau">
+                            <span><i className={`fas ${k.icon}`}></i> {k.ten}</span>
+                            <span className={`hs-nhan is-${k.muc}`}>{NHAN_MUC[k.muc]}</span>
+                        </div>
+                        {k.duDuLieu && <div className="hs-thanh"><span className={`is-${k.muc}`} style={{ width: `${k.diem}%` }}></span></div>}
+                    </li>
+                ))}
+            </ul>
+
+            {kq.chanDoan?.length > 0 && (
+                <>
+                    <h3 className="hs-tieu-de">Chẩn đoán</h3>
+                    <ul className="px-sai-ds">
+                        {kq.chanDoan.map((c) => (
+                            <li key={c.kyNang}>
+                                <strong>{c.ten}:</strong> {c.nhan}
+                                <small>{c.viec}</small>
+                                {!KY_NGHE.includes(c.kyNang) && (
+                                    <button type="button" className="lt-ke-hoach-link" onClick={() => onLuyen(c.kyNang)}>
+                                        Luyện khung này
+                                    </button>
+                                )}
+                                {NGU_PHAP_THEO_KHUNG[c.kyNang] && (
+                                    <button type="button" className="lt-ke-hoach-link" onClick={() => moNguPhap(NGU_PHAP_THEO_KHUNG[c.kyNang])}>
+                                        Xem công thức
+                                    </button>
+                                )}
+                            </li>
+                        ))}
+                    </ul>
+                </>
+            )}
+
+            {canXem?.length > 0 && (
+                <>
+                    <h3 className="hs-tieu-de">Câu cần xem lại</h3>
+                    <ul className="px-sai-ds">
+                        {canXem.map((c) => (
+                            <li key={c.de}>
+                                {c.dapAn}
+                                {c.pinyin && <small className="px-pinyin">{c.pinyin}</small>}
+                                <small>{c.de}</small>
+                                {c.cuaBan && <small>{c.daNoi ? 'Máy nghe được' : 'Bạn gõ'}: {c.cuaBan}</small>}
+                            </li>
+                        ))}
+                    </ul>
+                </>
+            )}
+
+            <p className="px-goi-y">Đây là ước lượng ban đầu từ 15 câu và sẽ chính xác dần khi bạn luyện. Bộ nhận giọng nói đôi khi nghe nhầm nên điểm nói có thể thấp hơn thực tế.</p>
+            <div className="px-nut">
+                <button type="button" className="btn btn-primary" onClick={onLoTrinh}>
+                    <i className="fas fa-route"></i> Xem lộ trình hôm nay
+                </button>
+                <button type="button" className="btn btn-secondary" disabled={dang} onClick={onLamLai}>Làm lại test</button>
+            </div>
+        </>
+    );
+}
+
+/** Lời mời làm test lần đầu. */
+function MoiLamTest({ moTa, coMic, dang, onBatDau }) {
+    return (
+        <>
+            <p className="px-mo-ta">{moTa}</p>
+            <p className="px-goi-y">
+                {coMic
+                    ? 'Bài test có phần nói, hãy chuẩn bị micro. Không tiện nói thì chuyển sang gõ ở từng câu.'
+                    : 'Trình duyệt này chưa nhận được giọng nói nên phần nói sẽ đổi thành gõ, và kỹ năng Nói chưa được đánh giá. Muốn đánh giá cả phần nói, hãy mở bằng Chrome hoặc Edge.'}
+            </p>
+            <div className="px-nut">
+                <button type="button" className="btn btn-primary" disabled={dang} onClick={onBatDau}>
+                    <i className="fas fa-play"></i> Bắt đầu test
+                </button>
+            </div>
+        </>
+    );
+}
 
 /**
  * Mục tiêu & bài test: chọn mục tiêu → test đầu vào (chọn, gõ, nói, nghe) → chẩn đoán.
@@ -61,7 +166,9 @@ export default function HoSoHocScreen({ active }) {
     const { showScreen } = useGame();
     const { isLoggedIn } = useAuth();
     const coMic = isSpeechSupported();
-    const ghi = useGhiAm(speechLangFor('en'));
+    // Ngôn ngữ của bài test đang làm: nghe micro, đọc câu nghe và lời nhắc đều theo nó.
+    const [langTest, setLangTest] = useState(getVocabLang() === 'zh' ? 'zh' : 'en');
+    const ghi = useGhiAm(speechLangFor(langTest));
 
     const [hoSo, setHoSo] = useState(null);
     const [pha, setPha] = useState('hoSo'); // hoSo | test
@@ -108,7 +215,7 @@ export default function HoSoHocScreen({ active }) {
         setGoThay(false);
         setBaoMic('');
         ghi.lamLai();
-        if (cau.loai === 'nghe') phat(cau.doc);
+        if (cau.loai === 'nghe') phat(cau.doc, cau.lang);
         if (cau.loai === 'go') oNhap.current?.focus();
     }, [cau]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -126,13 +233,15 @@ export default function HoSoHocScreen({ active }) {
         }
     };
 
-    const moTest = async () => {
+    /** `lang`: 'en' = test Giao tiếp (đặt mục tiêu Giao tiếp), 'zh' = nền tảng câu cho mục tiêu HSK. */
+    const moTest = async (lang = 'en') => {
         if (dang) return;
         setDang(true);
         setLoiTest('');
         try {
-            await HoSoHocAPI.datMucTieu('giao-tiep');
-            const r = await HoSoHocAPI.moTest(coMic);
+            if (lang !== 'zh') await HoSoHocAPI.datMucTieu('giao-tiep');
+            const r = await HoSoHocAPI.moTest(coMic, lang);
+            setLangTest(r.lang || lang);
             setBuoiId(r.id);
             setCau(r.cau);
             setCanXem(null);
@@ -199,7 +308,6 @@ export default function HoSoHocScreen({ active }) {
 
     const canNoi = cau?.loai === 'noi' && !goThay;
     const canGo = cau?.loai === 'go' || (cau?.loai === 'noi' && goThay);
-    const soVoi = hoSo?.soVoiTruoc;
 
     return (
         <div id="ho-so-hoc-screen" className={`screen ${active ? 'active' : ''}`}>
@@ -224,97 +332,51 @@ export default function HoSoHocScreen({ active }) {
                     <PanelBang bang={hoSo.bang} dang={dang} onDatDiem={(d) => doiMucTieu(hoSo.mucTieu, d)} />
                 )}
 
+                {isLoggedIn && pha === 'hoSo' && hoSo?.mucTieu === 'hsk' && hoSo.nenTang && (
+                    <>
+                        <h3 className="hs-tieu-de">Nền tảng câu tiếng Trung</h3>
+                        {hoSo.nenTang.testNgay ? (
+                            <KetQuaTest
+                                kq={hoSo.nenTang}
+                                canXem={canXem}
+                                dang={dang}
+                                onLuyen={luyenKhung}
+                                onLamLai={() => moTest('zh')}
+                                onLoTrinh={() => showScreen('lo-trinh-screen')}
+                            />
+                        ) : (
+                            <MoiLamTest
+                                moTa="Làm bài test tiếng Trung khoảng 8 phút: trật tự câu, 了/过/没, lượng từ, mẫu câu giao tiếp và nghe. Hệ thống tìm chỗ bạn đang vướng và thêm bài luyện vào lộ trình HSK."
+                                coMic={coMic}
+                                dang={dang}
+                                onBatDau={() => moTest('zh')}
+                            />
+                        )}
+                    </>
+                )}
+
                 {isLoggedIn && pha === 'hoSo' && hoSo?.mucTieu === 'toeic' && (
                     <PanelToeic toeic={hoSo.toeic} dang={dang} onDatDiem={(d) => doiMucTieu('toeic', d)} />
                 )}
 
                 {isLoggedIn && pha === 'hoSo' && hoSo?.mucTieu === 'giao-tiep' && !hoSo.testNgay && (
-                    <>
-                        <p className="px-mo-ta">Làm bài test khoảng 8 phút. Hệ thống sẽ tìm ra chỗ bạn đang vướng và sắp lộ trình theo đó.</p>
-                        <p className="px-goi-y">
-                            {coMic
-                                ? 'Bài test có phần nói, hãy chuẩn bị micro. Không tiện nói thì chuyển sang gõ ở từng câu.'
-                                : 'Trình duyệt này chưa nhận được giọng nói nên phần nói sẽ đổi thành gõ, và kỹ năng Nói chưa được đánh giá. Muốn đánh giá cả phần nói, hãy mở bằng Chrome hoặc Edge.'}
-                        </p>
-                        <div className="px-nut">
-                            <button type="button" className="btn btn-primary" disabled={dang} onClick={moTest}>
-                                <i className="fas fa-play"></i> Bắt đầu test
-                            </button>
-                        </div>
-                    </>
+                    <MoiLamTest
+                        moTa="Làm bài test khoảng 8 phút. Hệ thống sẽ tìm ra chỗ bạn đang vướng và sắp lộ trình theo đó."
+                        coMic={coMic}
+                        dang={dang}
+                        onBatDau={() => moTest('en')}
+                    />
                 )}
 
                 {isLoggedIn && pha === 'hoSo' && hoSo?.mucTieu === 'giao-tiep' && hoSo.testNgay && (
-                    <>
-                        <div className="px-so">
-                            <div><strong>{hoSo.trinhDo.nhan}</strong><span>Trình độ ước lượng</span></div>
-                            <div><strong>{hoSo.trinhDo.diem}/100</strong><span>Điểm chung</span></div>
-                            <div>
-                                <strong>{soVoi ? `${soVoi.chenh >= 0 ? '+' : ''}${soVoi.chenh}` : '—'}</strong>
-                                <span>{soVoi ? `So với lần trước (${soVoi.soKyNang} kỹ năng chung)` : 'So với lần test trước'}</span>
-                            </div>
-                        </div>
-
-                        <h3 className="hs-tieu-de">Kỹ năng</h3>
-                        <ul className="hs-ky-nang">
-                            {hoSo.kyNang.map((k) => (
-                                <li key={k.key}>
-                                    <div className="hs-ky-nang-dau">
-                                        <span><i className={`fas ${k.icon}`}></i> {k.ten}</span>
-                                        <span className={`hs-nhan is-${k.muc}`}>{NHAN_MUC[k.muc]}</span>
-                                    </div>
-                                    {k.duDuLieu && <div className="hs-thanh"><span className={`is-${k.muc}`} style={{ width: `${k.diem}%` }}></span></div>}
-                                </li>
-                            ))}
-                        </ul>
-
-                        {hoSo.chanDoan?.length > 0 && (
-                            <>
-                                <h3 className="hs-tieu-de">Chẩn đoán</h3>
-                                <ul className="px-sai-ds">
-                                    {hoSo.chanDoan.map((c) => (
-                                        <li key={c.kyNang}>
-                                            <strong>{c.ten}:</strong> {c.nhan}
-                                            <small>{c.viec}</small>
-                                            {c.kyNang !== 'nghe' && (
-                                                <button type="button" className="lt-ke-hoach-link" onClick={() => luyenKhung(c.kyNang)}>
-                                                    Luyện khung này
-                                                </button>
-                                            )}
-                                            {NGU_PHAP_THEO_KHUNG[c.kyNang] && (
-                                                <button type="button" className="lt-ke-hoach-link" onClick={() => moNguPhap(NGU_PHAP_THEO_KHUNG[c.kyNang])}>
-                                                    Xem công thức
-                                                </button>
-                                            )}
-                                        </li>
-                                    ))}
-                                </ul>
-                            </>
-                        )}
-
-                        {canXem?.length > 0 && (
-                            <>
-                                <h3 className="hs-tieu-de">Câu cần xem lại</h3>
-                                <ul className="px-sai-ds">
-                                    {canXem.map((c) => (
-                                        <li key={c.de}>
-                                            {c.dapAn}
-                                            <small>{c.de}</small>
-                                            {c.cuaBan && <small>{c.daNoi ? 'Máy nghe được' : 'Bạn gõ'}: {c.cuaBan}</small>}
-                                        </li>
-                                    ))}
-                                </ul>
-                            </>
-                        )}
-
-                        <p className="px-goi-y">Đây là ước lượng ban đầu từ 15 câu và sẽ chính xác dần khi bạn luyện. Bộ nhận giọng nói đôi khi nghe nhầm nên điểm nói có thể thấp hơn thực tế.</p>
-                        <div className="px-nut">
-                            <button type="button" className="btn btn-primary" onClick={() => showScreen('lo-trinh-screen')}>
-                                <i className="fas fa-route"></i> Xem lộ trình hôm nay
-                            </button>
-                            <button type="button" className="btn btn-secondary" disabled={dang} onClick={moTest}>Làm lại test</button>
-                        </div>
-                    </>
+                    <KetQuaTest
+                        kq={hoSo}
+                        canXem={canXem}
+                        dang={dang}
+                        onLuyen={luyenKhung}
+                        onLamLai={() => moTest('en')}
+                        onLoTrinh={() => showScreen('lo-trinh-screen')}
+                    />
                 )}
 
                 {pha === 'test' && cau && (
@@ -326,14 +388,14 @@ export default function HoSoHocScreen({ active }) {
                             <>
                                 <p className="px-mo-ta">{loiTest}</p>
                                 <div className="px-nut">
-                                    <button type="button" className="btn btn-primary" disabled={dang} onClick={moTest}>Làm lại từ đầu</button>
+                                    <button type="button" className="btn btn-primary" disabled={dang} onClick={() => moTest(langTest)}>Làm lại từ đầu</button>
                                 </div>
                             </>
                         ) : (
                             <>
                                 {cau.loai === 'nghe' && (
                                     <div className="px-nut hs-nghe">
-                                        <button type="button" className="btn btn-secondary" onClick={() => phat(cau.doc)}>
+                                        <button type="button" className="btn btn-secondary" onClick={() => phat(cau.doc, cau.lang)}>
                                             <i className="fas fa-volume-high"></i> Nghe lại
                                         </button>
                                     </div>
@@ -359,7 +421,7 @@ export default function HoSoHocScreen({ active }) {
                                         >
                                             <i className={`fas ${dangGhi ? 'fa-stop' : 'fa-microphone'}`}></i>
                                         </button>
-                                        <p className="px-goi-y">{dangGhi ? (ghi.chu || 'Đang nghe… chạm để dừng.') : 'Chạm micro, nói câu tiếng Anh, chạm lần nữa để nộp.'}</p>
+                                        <p className="px-goi-y">{dangGhi ? (ghi.chu || 'Đang nghe… chạm để dừng.') : `Chạm micro, nói câu ${TEN_NGON_NGU[langTest]}, chạm lần nữa để nộp.`}</p>
                                         {(ghi.loi || baoMic) && <p className="px-goi-y">{ghi.loi || baoMic}</p>}
                                     </div>
                                 )}
@@ -372,7 +434,7 @@ export default function HoSoHocScreen({ active }) {
                                             disabled={dang}
                                             maxLength={200}
                                             autoComplete="off"
-                                            placeholder="Gõ câu tiếng Anh…"
+                                            placeholder={langTest === 'zh' ? 'Gõ câu tiếng Trung (chữ Hán)…' : 'Gõ câu tiếng Anh…'}
                                             onChange={(e) => setNhap(e.target.value)}
                                         />
                                         <button type="submit" className="btn btn-primary" disabled={dang || !nhap.trim()}>Gửi</button>

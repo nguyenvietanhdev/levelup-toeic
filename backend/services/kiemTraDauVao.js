@@ -1,5 +1,7 @@
 /**
- * TEST ĐẦU VÀO cho mục tiêu Giao tiếp — 15 câu, khoảng 8 phút.
+ * TEST ĐẦU VÀO — 15 câu, khoảng 8 phút. Hai bộ đề: tiếng Anh cho mục tiêu Giao tiếp, tiếng
+ * Trung cho mục tiêu HSK (khung câu của Phản xạ câu tiếng Trung). Kết quả tiếng Trung lưu ở
+ * phần riêng của hồ sơ, không đè kết quả tiếng Anh.
  *
  * Mỗi khung câu hỏi theo 3 mức tạo ra câu: chọn đáp án → tự gõ → nói. So ba kết quả mới
  * chẩn đoán được NGUYÊN NHÂN: chưa biết quy tắc, biết nhưng chưa tự dựng được câu, hay
@@ -10,7 +12,7 @@
 const BuoiKiemTra = require('../models/BuoiKiemTra');
 const HoSoHocVien = require('../models/HoSoHocVien');
 const UserProfile = require('../models/UserProfile');
-const { KHUNG, THEO_ID } = require('./phanXaKho');
+const { THEO_ID, khungCua } = require('./phanXaKho');
 const { khopKho, aiCham } = require('./phanXa');
 const { TEN_KY_NANG, ghiKetQua, layHoSo, tomTatKyNang, tongQuanTrinhDo, anhKyNang } = require('./hoSoHoc');
 const { homNayVN } = require('./loTrinh');
@@ -83,12 +85,88 @@ const CAU_THEO_MUC = {
     'tell-say-talk': { 1: ['ts3', 'ts4', 'ts12'], 2: ['ts1', 'ts2', 'ts7'] },
 };
 
-const KE_HOACH = [
-    ...['mau-giao-tiep', 'khung-cau', 'qua-khu', 'tell-say-talk'].flatMap((kyNang) => (
-        ['trac-nghiem', 'go', 'noi'].map((loai) => ({ kyNang, loai }))
-    )),
-    ...[1, 2, 3].map(() => ({ kyNang: 'nghe', loai: 'nghe' })),
+// ── Bộ đề tiếng Trung. Đáp án đúng luôn là `lua[0]`; các lựa chọn sai là lỗi người Việt hay mắc.
+const TRAC_NGHIEM_ZH = {
+    'zh-giao-tiep': {
+        1: [
+            { id: 'zgt-t1', hoi: 'Bạn muốn hỏi giá một món đồ. Câu nào tự nhiên nhất?', lua: ['这个多少钱？', '多少钱这个？', '这个是钱多少？', '钱多少这个？'] },
+            { id: 'zgt-t2', hoi: 'Người khác nói "谢谢！". Bạn đáp:', lua: ['不客气。', '对不起。', '再见。', '你好。'] },
+        ],
+        2: [
+            { id: 'zgt-t3', hoi: 'Nhờ người khác nói chậm lại một cách lịch sự:', lua: ['你能说慢一点儿吗？', '你说一点儿慢。', '你慢说一点儿吗？', '慢一点儿你说吗？'] },
+            { id: 'zgt-t4', hoi: 'Bạn muốn hỏi nhà vệ sinh ở đâu:', lua: ['请问，洗手间在哪儿？', '请问，哪儿洗手间？', '请问，洗手间哪儿在？', '请问，在洗手间哪儿？'] },
+        ],
+    },
+    'zh-trat-tu': {
+        1: [
+            { id: 'ztt-t1', hoi: 'Chọn câu đúng: "Tôi làm việc ở bệnh viện."', lua: ['我在医院工作。', '我工作在医院。', '我医院在工作。', '工作我在医院。'] },
+            { id: 'ztt-t2', hoi: 'Chọn câu đúng: "Tối nay tôi xem phim."', lua: ['我今天晚上看电影。', '我看电影今天晚上。', '我看今天晚上电影。', '看电影我今天晚上。'] },
+        ],
+        2: [
+            { id: 'ztt-t3', hoi: 'Chọn câu đúng: "Hằng ngày anh ấy ăn sáng ở nhà."', lua: ['他每天在家吃早饭。', '他吃早饭每天在家。', '他每天吃早饭在家。', '他在家吃早饭每天。'] },
+            { id: 'ztt-t4', hoi: 'Chọn câu đúng: "Bạn học tiếng Trung ở đâu?"', lua: ['你在哪儿学习汉语？', '哪儿你学习汉语？', '你学习汉语在哪儿？', '你学习在哪儿汉语？'] },
+        ],
+    },
+    'zh-da-lam': {
+        1: [
+            { id: 'zdl-t1', hoi: 'Chọn câu đúng: "Hôm qua tôi không đi siêu thị."', lua: ['我昨天没去超市。', '我昨天不去超市。', '我昨天没去了超市。', '我昨天不去了超市。'] },
+            { id: 'zdl-t2', hoi: 'Điền vào chỗ trống: "我去___北京。" (Tôi đã từng đến Bắc Kinh.)', lua: ['过', '着', '的', '在'] },
+        ],
+        2: [
+            { id: 'zdl-t3', hoi: 'Chọn câu đúng: "Tôi chưa từng ăn món này."', lua: ['我没吃过这个菜。', '我不吃过这个菜。', '我没吃了这个菜。', '我吃没过这个菜。'] },
+            { id: 'zdl-t4', hoi: 'Chọn câu đúng: "Hôm qua tôi mua hai cái áo."', lua: ['我昨天买了两件衣服。', '我昨天买着两件衣服。', '我昨天在买两件衣服。', '我昨天了买两件衣服。'] },
+        ],
+    },
+    'zh-luong-tu': {
+        1: [
+            { id: 'zlt-t1', hoi: 'Điền lượng từ: "我有三___书。"', lua: ['本', '个', '张', '只'] },
+            { id: 'zlt-t2', hoi: 'Chọn cách nói đúng: "hai người"', lua: ['两个人', '二个人', '两人个', '二人个'] },
+        ],
+        2: [
+            { id: 'zlt-t3', hoi: 'Điền lượng từ: "请给我一___咖啡。"', lua: ['杯', '本', '张', '件'] },
+            { id: 'zlt-t4', hoi: 'Điền lượng từ: "这___衣服很漂亮。"', lua: ['件', '本', '杯', '只'] },
+        ],
+    },
+};
+
+const NGHE_ZH = {
+    1: [
+        { id: 'zng1', doc: '多少钱？', hoi: 'Bạn vừa nghe câu nào?', lua: ['Bao nhiêu tiền?', 'Mấy giờ rồi?', 'Bạn tên là gì?', 'Bạn ở đâu?'] },
+        { id: 'zng2', doc: '明天见。', hoi: 'Bạn vừa nghe câu nào?', lua: ['Hẹn gặp lại ngày mai.', 'Hôm qua tôi gặp bạn.', 'Ngày mai tôi bận.', 'Hôm nay gặp nhau nhé.'] },
+        { id: 'zng3', doc: '我是越南人。', hoi: 'Bạn vừa nghe câu nào?', lua: ['Tôi là người Việt Nam.', 'Tôi sống ở Việt Nam.', 'Tôi đi Việt Nam.', 'Tôi không phải người Việt Nam.'] },
+    ],
+    2: [
+        { id: 'zng4', doc: '我昨天没去上班。', hoi: 'Bạn vừa nghe câu nào?', lua: ['Hôm qua tôi không đi làm.', 'Ngày mai tôi không đi làm.', 'Hôm qua tôi đi làm muộn.', 'Hôm nay tôi không đi làm.'] },
+        { id: 'zng5', doc: '你能说慢一点儿吗？', hoi: 'Bạn vừa nghe câu nào?', lua: ['Bạn có thể nói chậm một chút không?', 'Bạn có thể nói to hơn không?', 'Bạn nói nhanh quá.', 'Bạn có thể nói lại không?'] },
+        { id: 'zng6', doc: '我在银行工作。', hoi: 'Bạn vừa nghe câu nào?', lua: ['Tôi làm việc ở ngân hàng.', 'Tôi đi ngân hàng.', 'Ngân hàng ở gần nhà tôi.', 'Tôi muốn mở tài khoản ngân hàng.'] },
+    ],
+};
+
+const CAU_THEO_MUC_ZH = {
+    'zh-giao-tiep': { 1: ['zh-gt2', 'zh-gt9', 'zh-gt11'], 2: ['zh-gt3', 'zh-gt5', 'zh-gt7'] },
+    'zh-trat-tu': { 1: ['zh-tt2', 'zh-tt8', 'zh-tt12'], 2: ['zh-tt1', 'zh-tt3', 'zh-tt9'] },
+    'zh-da-lam': { 1: ['zh-dl6', 'zh-dl7', 'zh-dl10'], 2: ['zh-dl2', 'zh-dl4', 'zh-dl9'] },
+    'zh-luong-tu': { 1: ['zh-lt3', 'zh-lt6', 'zh-lt8'], 2: ['zh-lt4', 'zh-lt5', 'zh-lt11'] },
+};
+
+const keHoachCho = (khung, nghe) => [
+    ...khung.flatMap((kyNang) => ['trac-nghiem', 'go', 'noi'].map((loai) => ({ kyNang, loai }))),
+    ...[1, 2, 3].map(() => ({ kyNang: nghe, loai: 'nghe' })),
 ];
+
+/** Bộ đề theo ngôn ngữ: khung, câu hỏi, và khoá kỹ năng Nghe / Nói trong hồ sơ. */
+const BO_DE = {
+    en: {
+        tracNghiem: TRAC_NGHIEM, nghe: NGHE, cauTheoMuc: CAU_THEO_MUC, kyNghe: 'nghe', kyNoi: 'noi',
+        keHoach: keHoachCho(['mau-giao-tiep', 'khung-cau', 'qua-khu', 'tell-say-talk'], 'nghe'),
+    },
+    zh: {
+        tracNghiem: TRAC_NGHIEM_ZH, nghe: NGHE_ZH, cauTheoMuc: CAU_THEO_MUC_ZH, kyNghe: 'zh-nghe', kyNoi: 'zh-noi',
+        keHoach: keHoachCho(['zh-giao-tiep', 'zh-trat-tu', 'zh-da-lam', 'zh-luong-tu'], 'zh-nghe'),
+    },
+};
+const boDe = (lang) => BO_DE[lang === 'zh' ? 'zh' : 'en'];
+const KE_HOACH = BO_DE.en.keHoach;
 
 const NGAU_NHIEN = (a) => a[Math.floor(Math.random() * a.length)];
 const tron = (a) => [...a].sort(() => Math.random() - 0.5);
@@ -102,8 +180,9 @@ function mucTiep(daLam, kyNang) {
 }
 
 /** Chọn câu thứ `i` theo kế hoạch (thuần; `chon` thay được trong test). */
-function chonCauTest(i, daLam, coMic, chon = NGAU_NHIEN) {
-    const { kyNang, loai: loaiGoc } = KE_HOACH[i];
+function chonCauTest(i, daLam, coMic, chon = NGAU_NHIEN, lang = 'en') {
+    const bo = boDe(lang);
+    const { kyNang, loai: loaiGoc } = bo.keHoach[i];
     // Không có micro thì đổi sang gõ; kỹ năng Nói sẽ ghi là chưa đủ dữ liệu, không đoán.
     const loai = loaiGoc === 'noi' && !coMic ? 'go' : loaiGoc;
     const muc = mucTiep(daLam, kyNang);
@@ -111,23 +190,27 @@ function chonCauTest(i, daLam, coMic, chon = NGAU_NHIEN) {
     const conLai = (ds) => ds.filter((x) => !daDung.has(x.id ?? x));
 
     let ds;
-    if (loai === 'trac-nghiem') ds = TRAC_NGHIEM[kyNang];
-    else if (loai === 'nghe') ds = NGHE;
-    else ds = CAU_THEO_MUC[kyNang];
+    if (loai === 'trac-nghiem') ds = bo.tracNghiem[kyNang];
+    else if (loai === 'nghe') ds = bo.nghe;
+    else ds = bo.cauTheoMuc[kyNang];
     // Hết câu ở mức cần thì lấy mức kia, không để test đứt giữa chừng.
     const mau = conLai(ds[muc]).length ? ds[muc] : ds[muc === 1 ? 2 : 1];
     const x = chon(conLai(mau));
-    return { id: x.id ?? x, kyNang, loai, muc };
+    return { id: x.id ?? x, kyNang, loai, muc, ...(lang === 'zh' ? { lang: 'zh' } : {}) };
 }
 
 function timCauTracNghiem(q) {
-    const nguon = q.loai === 'nghe' ? Object.values(NGHE) : Object.values(TRAC_NGHIEM[q.kyNang]);
+    const bo = boDe(q.lang);
+    const nguon = q.loai === 'nghe' ? Object.values(bo.nghe) : Object.values(bo.tracNghiem[q.kyNang]);
     return nguon.flat().find((x) => x.id === q.id);
 }
 
 /** Phần gửi client: không có đáp án và không đánh dấu thứ tự đúng. */
 function congKhai(q, i) {
-    const chung = { i, tong: KE_HOACH.length, loai: q.loai, kyNang: q.kyNang, tenKyNang: TEN_KY_NANG.get(q.kyNang) };
+    const chung = {
+        i, tong: boDe(q.lang).keHoach.length, loai: q.loai, kyNang: q.kyNang, tenKyNang: TEN_KY_NANG.get(q.kyNang),
+        lang: q.lang === 'zh' ? 'zh' : 'en',
+    };
     if (q.loai === 'go' || q.loai === 'noi') return { ...chung, vi: THEO_ID.get(q.id).vi };
     const x = timCauTracNghiem(q);
     return { ...chung, hoi: x.hoi, lua: tron(x.lua), ...(x.doc ? { doc: x.doc } : {}) };
@@ -159,9 +242,10 @@ function chanDoanKhung({ tracNghiem, go, noi, goThay }) {
 }
 
 /** Chẩn đoán toàn bài (thuần). Câu "không chấm được" không dùng làm bằng chứng. */
-function chanDoan(daLam) {
+function chanDoan(daLam, lang = 'en') {
     const chac = daLam.filter((c) => !c.khongChac);
-    const ket = KHUNG.map((k) => {
+    const kyNghe = boDe(lang).kyNghe;
+    const ket = khungCua(lang).map((k) => {
         const cua = chac.filter((c) => c.kyNang === k.key);
         const lay = (loai) => cua.find((c) => c.loai === loai)?.dung;
         // Không có micro thì câu thứ ba cũng là loại 'go', nên lấy câu gõ thứ hai.
@@ -174,12 +258,12 @@ function chanDoan(daLam) {
         });
         return { kyNang: k.key, ten: k.ten, ma, ...CHAN_DOAN_KHUNG[ma] };
     });
-    const nghe = chac.filter((c) => c.kyNang === 'nghe');
+    const nghe = chac.filter((c) => c.kyNang === kyNghe);
     if (nghe.length) {
         const tot = nghe.filter((c) => c.dung).length >= 2;
         ket.push({
-            kyNang: 'nghe',
-            ten: TEN_KY_NANG.get('nghe'),
+            kyNang: kyNghe,
+            ten: TEN_KY_NANG.get(kyNghe),
             ma: tot ? 'vung' : 'can-nghe',
             nhan: tot ? 'Nghe được câu thông dụng' : 'Còn khó nghe câu thông dụng',
             viec: tot ? 'Chuyển dần sang nghe đoạn dài hơn.' : 'Nghe và chép lại câu ngắn mỗi ngày.',
@@ -188,14 +272,32 @@ function chanDoan(daLam) {
     return ket;
 }
 
-async function moTest(userId, { coMic = true } = {}, now = new Date()) {
+/**
+ * Ngôn ngữ của bài test (thuần). Client nói muốn test gì (theo mục tiêu đang chọn), server
+ * kiểm có khớp ngôn ngữ đang học không — cùng quy tắc với lúc chọn mục tiêu: kho song ngữ
+ * (`bi`) làm được cả hai. Không khớp thì trả lỗi kèm lời nhắn.
+ */
+function langTest(muon, vocabLang) {
+    const lang = muon === 'zh' ? 'zh' : 'en';
+    const dangHoc = vocabLang || 'en';
+    if (dangHoc === 'bi' || dangHoc === lang) return { lang };
+    return {
+        loi: lang === 'zh'
+            ? 'Test tiếng Trung cần học tiếng Trung. Hãy đổi ngôn ngữ học sang tiếng Trung ở thanh trên cùng.'
+            : 'Test này dùng tiếng Anh. Hãy đổi ngôn ngữ học sang tiếng Anh ở thanh trên cùng.',
+    };
+}
+
+async function moTest(userId, { coMic = true, lang: muon = '' } = {}, now = new Date()) {
     const p = await UserProfile.findOne({ userId }).select('settings').lean();
-    if (p?.settings?.vocabLang === 'zh') return { loi: 'Test hiện chỉ có tiếng Anh. Đổi ngôn ngữ học sang tiếng Anh để làm.', ma: 400 };
+    // Không nói rõ thì theo ngôn ngữ đang học, như trước khi có bộ đề tiếng Trung.
+    const chon = langTest(muon || (p?.settings?.vocabLang === 'zh' ? 'zh' : 'en'), p?.settings?.vocabLang);
+    if (chon.loi) return { loi: chon.loi, ma: 400 };
     const daMo = await BuoiKiemTra.countDocuments({ userId, createdAt: { $gte: homNayVN(now).dau } });
     if (daMo >= TOI_DA_MOI_NGAY) return { loi: 'Hôm nay bạn đã mở đủ số lượt test. Hãy thử lại vào ngày mai.', ma: 429 };
-    const cauHienTai = chonCauTest(0, [], !!coMic);
-    const buoi = await BuoiKiemTra.create({ userId, coMic: !!coMic, cauHienTai });
-    return { id: String(buoi._id), cau: congKhai(cauHienTai, 0) };
+    const cauHienTai = chonCauTest(0, [], !!coMic, NGAU_NHIEN, chon.lang);
+    const buoi = await BuoiKiemTra.create({ userId, coMic: !!coMic, lang: chon.lang, cauHienTai });
+    return { id: String(buoi._id), lang: chon.lang, cau: congKhai(cauHienTai, 0) };
 }
 
 async function chamCau(q, body, userId) {
@@ -211,7 +313,7 @@ async function chamCau(q, body, userId) {
     // Giữ lại câu trả lời để cuối bài người học thấy máy đã nghe gì: bộ nhận giọng nói có
     // thể nghe nhầm, không xem được thì không phân biệt được nói sai với nghe nhầm.
     if (khopKho(chu, cau)) return { dung: true, khongChac: false, loai, cuaBan: chu };
-    const r = await aiCham(cau, chu, userId);
+    const r = await aiCham(cau, chu, userId, cau.lang);
     return r ? { dung: r.dung, khongChac: false, loai, cuaBan: chu } : { dung: false, khongChac: true, loai, cuaBan: chu };
 }
 
@@ -220,26 +322,30 @@ function cauCanXem(daLam) {
     return daLam.filter((c) => !c.dung && !c.khongChac).map((c) => {
         if (THEO_ID.has(c.id)) {
             const x = THEO_ID.get(c.id);
-            return { de: x.vi, dapAn: x.en, cuaBan: c.cuaBan || '', daNoi: c.loai === 'noi' };
+            return { de: x.vi, dapAn: x.en, ...(x.py ? { pinyin: x.py } : {}), cuaBan: c.cuaBan || '', daNoi: c.loai === 'noi' };
         }
         const x = timCauTracNghiem(c);
         return { de: x.doc || x.hoi, dapAn: x.lua[0] };
     });
 }
 
-async function ketThuc(userId, daLam, now) {
+async function ketThuc(userId, daLam, now, lang = 'en') {
+    const zh = lang === 'zh';
+    const kyNoi = boDe(lang).kyNoi;
     const ketQua = daLam.filter((c) => !c.khongChac).flatMap((c) => [
         { kyNang: c.kyNang, dung: c.dung },
-        ...(c.loai === 'noi' ? [{ kyNang: 'noi', dung: c.dung }] : []),
+        ...(c.loai === 'noi' ? [{ kyNang: kyNoi, dung: c.dung }] : []),
     ]);
     await ghiKetQua(userId, ketQua, now);
     const hs = await HoSoHocVien.findOne({ userId }).select('kyNang').lean();
-    const tomTat = tomTatKyNang(hs?.kyNang);
+    const tomTat = tomTatKyNang(hs?.kyNang, lang);
     const { diem } = tongQuanTrinhDo(tomTat);
-    await HoSoHocVien.updateOne({ userId }, {
-        $set: { testNgay: now, chanDoan: chanDoan(daLam), mucTieu: 'giao-tiep' },
-        $push: { lichSuTest: { $each: [{ ngay: now, diem, theoKyNang: anhKyNang(tomTat) }], $slice: -12 } },
-    }, { upsert: true });
+    const lan = { ngay: now, diem, theoKyNang: anhKyNang(tomTat) };
+    // Tiếng Trung ghi vào phần riêng và giữ mục tiêu HSK; tiếng Anh như cũ (mục tiêu Giao tiếp).
+    await HoSoHocVien.updateOne({ userId }, zh
+        ? { $set: { testNgayZh: now, chanDoanZh: chanDoan(daLam, 'zh'), mucTieu: 'hsk' }, $push: { lichSuTestZh: { $each: [lan], $slice: -12 } } }
+        : { $set: { testNgay: now, chanDoan: chanDoan(daLam), mucTieu: 'giao-tiep' }, $push: { lichSuTest: { $each: [lan], $slice: -12 } } },
+    { upsert: true });
     return { xong: true, hoSo: await layHoSo(userId), canXem: cauCanXem(daLam) };
 }
 
@@ -257,16 +363,17 @@ async function traLoiTest(userId, buoiId, body = {}, now = new Date()) {
     const r = await chamCau(q, body, userId);
     const daLam = [...buoi.daLam, { ...q, ...r }];
 
-    if (i + 1 >= KE_HOACH.length) {
+    const lang = buoi.lang === 'zh' ? 'zh' : 'en';
+    if (i + 1 >= boDe(lang).keHoach.length) {
         await BuoiKiemTra.updateOne({ _id: buoiId, userId }, { $set: { daLam, cauHienTai: null } });
-        return ketThuc(userId, daLam, now);
+        return ketThuc(userId, daLam, now, lang);
     }
-    const tiep = chonCauTest(i + 1, daLam, buoi.coMic);
+    const tiep = chonCauTest(i + 1, daLam, buoi.coMic, NGAU_NHIEN, lang);
     await BuoiKiemTra.updateOne({ _id: buoiId, userId }, { $set: { daLam, cauHienTai: tiep } });
     return { xong: false, cau: congKhai(tiep, i + 1) };
 }
 
 module.exports = {
-    moTest, traLoiTest, chonCauTest, mucTiep, congKhai, chanDoan, chanDoanKhung, cauCanXem,
-    KE_HOACH, TRAC_NGHIEM, NGHE, CAU_THEO_MUC, TOI_DA_MOI_NGAY,
+    moTest, traLoiTest, chonCauTest, mucTiep, congKhai, chanDoan, chanDoanKhung, cauCanXem, langTest,
+    KE_HOACH, TRAC_NGHIEM, NGHE, CAU_THEO_MUC, TRAC_NGHIEM_ZH, NGHE_ZH, CAU_THEO_MUC_ZH, BO_DE, TOI_DA_MOI_NGAY,
 };

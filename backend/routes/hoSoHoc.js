@@ -27,7 +27,7 @@ router.put('/muc-tieu', async (req, res, next) => {
 
 router.post('/kiem-tra', async (req, res, next) => {
     try {
-        const r = await moTest(req.user.id, { coMic: req.body?.coMic !== false });
+        const r = await moTest(req.user.id, { coMic: req.body?.coMic !== false, lang: req.body?.lang === 'zh' ? 'zh' : (req.body?.lang === 'en' ? 'en' : '') });
         if (r.loi) return res.status(r.ma || 400).json({ success: false, message: r.loi });
         res.json({ success: true, data: r });
     } catch (err) { next(err); }

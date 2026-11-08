@@ -251,6 +251,19 @@ describe('lộ trình mục tiêu IELTS / HSK', () => {
         expect(r.buoc[1]).toMatchObject({ key: 'bang-noi', rubric: 'ielts', xong: false, lyDo: 'Chưa đủ bài' });
         expect(r.buoc.find((b) => b.key === 'bang-viet')).toMatchObject({ xong: true, lyDo: 'viet: 6/9.' });
     });
+    test('HSK đã test tiếng Trung: thêm Phản xạ câu nhắm khung yếu nhất, ngay sau kỹ năng cần nhất', () => {
+        const h = {
+            ...hs({ buoc: 'nghe', lyDo: 'Nghe thấp nhất' }),
+            nenTang: { testNgay: new Date(), trongTam: { khung: 'zh-luong-tu', ten: 'Lượng từ & số đếm', diem: 32 } },
+        };
+        const r = dungLoTrinhBang({ ...D, phanXa: 0 }, h, { ngay: 'x', soNgay: 1 });
+        expect(keys(r)).toEqual(['on-sai', 'nghe', 'phan-xa', 'bang-viet', 'bang-noi', 'doc', 'hoc-tu']);
+        expect(r.buoc[2]).toMatchObject({ khung: 'zh-luong-tu', xong: false, lyDo: 'Nền tảng câu: Lượng từ & số đếm (32/100).' });
+    });
+    test('HSK chưa test tiếng Trung: không thêm Phản xạ câu', () => {
+        const h = { ...hs({ buoc: 'nghe', lyDo: 'x' }), nenTang: { testNgay: null, trongTam: { khung: 'zh-tt' } } };
+        expect(keys(dungLoTrinhBang(D, h, { ngay: 'x', soNgay: 1 }))).not.toContain('phan-xa');
+    });
     test('API: theo IELTS khi học tiếng Anh; HSK mà đang học tiếng Anh thì không dùng lộ trình HSK', async () => {
         mockBang.hs = hs({ buoc: 'bang-viet', lyDo: 'x' });
         mockHoSo = { mucTieu: 'ielts', kyNang: {}, chiTiet: { ielts: 7 } };

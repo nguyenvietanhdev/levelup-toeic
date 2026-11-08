@@ -74,7 +74,7 @@ describe('mục tiêu và test', () => {
         expect(src).toMatch(/Làm lại từ đầu/);
     });
     test('so sánh lấy từ server (chỉ kỹ năng chung), câu sai hiện điều máy đã nghe', () => {
-        expect(src).toMatch(/const soVoi = hoSo\?\.soVoiTruoc;/);
+        expect(src).toMatch(/const soVoi = kq\.soVoiTruoc;/);
         expect(src).not.toMatch(/lanTruoc/);
         expect(src).toMatch(/c\.daNoi \? 'Máy nghe được' : 'Bạn gõ'/);
     });
@@ -99,7 +99,7 @@ describe('lộ trình và Phản xạ câu', () => {
         expect(phanXa).toMatch(/!ketQua\.dung && buoi\.quyTac\?\.\[cau\.khung\]/);
     });
     test('chẩn đoán có lối đi thẳng tới luyện khung đó', () => {
-        expect(src).toMatch(/luyenKhung\(c\.kyNang\)/);
+        expect(src).toMatch(/onLuyen\(c\.kyNang\)/);
         expect(src).toMatch(/sessionStorage\.setItem\('levelup\.phanXa\.khung', khung\)/);
     });
     test('Phản xạ báo cách trả lời để hồ sơ biết câu nào thật sự nói', () => {

@@ -46,6 +46,8 @@ jest.mock('../models/UserProfile', () => ({
     findOne: () => ({ select: () => ({ lean: async () => ({ settings: { vocabLang: mockLang } }) }) }),
 }));
 jest.mock('../models/PhanXaTienDo', () => ({}));
+// Hồ sơ HSK đọc bài Viết/Nói/Đọc/Nghe — ngoài phạm vi file này.
+jest.mock('../services/hoSoBang', () => ({ layHoSoBang: async () => null }));
 jest.mock('../models/BuoiPhanXa', () => ({}));
 
 const HS = require('../services/hoSoHoc');
@@ -184,12 +186,17 @@ describe('một lượt test', () => {
         expect(JSON.stringify(go)).not.toContain('bank');
     });
 
-    test('giới hạn số lượt mỗi ngày; học tiếng Trung thì chưa mở', async () => {
+    test('giới hạn số lượt mỗi ngày', async () => {
         mockBuoi.daMo = T.TOI_DA_MOI_NGAY;
         expect((await T.moTest('u1', {}, NOW)).ma).toBe(429);
-        mockBuoi.daMo = 0;
-        mockLang = 'zh';
-        expect((await T.moTest('u1', {}, NOW)).ma).toBe(400);
+    });
+
+    test('ngôn ngữ test phải khớp ngôn ngữ đang học; song ngữ làm được cả hai', () => {
+        expect(T.langTest('zh', 'zh')).toEqual({ lang: 'zh' });
+        expect(T.langTest('zh', 'bi')).toEqual({ lang: 'zh' });
+        expect(T.langTest('en', 'bi')).toEqual({ lang: 'en' });
+        expect(T.langTest('zh', 'en').loi).toMatch(/tiếng Trung/);
+        expect(T.langTest('en', 'zh').loi).toMatch(/tiếng Anh/);
     });
 
     test('trả lời lại cùng câu → 409, không tốn thêm AI', async () => {
@@ -272,5 +279,77 @@ describe('mục tiêu', () => {
         expect(await HS.datMucTieu('u1', 'toefl')).toMatchObject({ ma: 400 });
         expect(await HS.datMucTieu('u1', 'giao-tiep')).toEqual({ ok: true });
         expect(mockHoSo.doc.mucTieu).toBe('giao-tiep');
+    });
+});
+
+describe('test đầu vào tiếng Trung (HSK)', () => {
+    /** Trả lời đúng mọi câu: trắc nghiệm chọn `lua[0]`, câu tự tạo gõ đúng câu mẫu, câu nói thì nói. */
+    async function lamHet() {
+        const mo = await T.moTest('u1', { lang: 'zh' }, NOW);
+        let cau = mo.cau;
+        let r = null;
+        for (let n = 0; n < 15; n += 1) {
+            const q = mockBuoi.doc.cauHienTai;
+            let body;
+            if (q.loai === 'trac-nghiem' || q.loai === 'nghe') {
+                const nguon = q.loai === 'nghe' ? Object.values(T.NGHE_ZH) : Object.values(T.TRAC_NGHIEM_ZH[q.kyNang]);
+                body = { chon: nguon.flat().find((x) => x.id === q.id).lua[0] };
+            } else {
+                body = { traLoi: THEO_ID.get(q.id).en, cach: q.loai === 'noi' ? 'noi' : 'go' };
+            }
+            r = await T.traLoiTest('u1', 'b1', { i: cau.i, ...body }, NOW);
+            cau = r.cau;
+        }
+        return { mo, r };
+    }
+
+    test('bộ đề: mỗi khung đủ câu ở hai mức; câu tự tạo có trong kho Phản xạ tiếng Trung; đáp án không lặp', () => {
+        for (const [k, muc] of Object.entries(T.CAU_THEO_MUC_ZH)) {
+            for (const ids of Object.values(muc)) for (const id of ids) expect(THEO_ID.get(id)?.khung).toBe(k);
+            for (const ds of Object.values(T.TRAC_NGHIEM_ZH[k])) {
+                for (const x of ds) expect(new Set(x.lua).size).toBe(4);
+            }
+        }
+        expect(T.BO_DE.zh.keHoach).toHaveLength(15);
+    });
+
+    test('câu gửi client mang lang zh, câu nghe đọc chữ Hán', async () => {
+        mockLang = 'zh';
+        const { mo } = await T.moTest('u1', { lang: 'zh' }, NOW).then((m) => ({ mo: m }));
+        expect(mo.lang).toBe('zh');
+        expect(mo.cau).toMatchObject({ lang: 'zh', kyNang: 'zh-giao-tiep', tong: 15 });
+        expect(mo.cau.hoi).toBeTruthy();
+    });
+
+    test('làm xong: ghi vào phần tiếng Trung, mục tiêu HSK, không đè test Giao tiếp', async () => {
+        mockLang = 'zh';
+        mockHoSo.doc = { kyNang: {}, testNgay: new Date('2026-10-01'), chanDoan: [{ kyNang: 'qua-khu', ma: 'chua-nam' }] };
+        const { r } = await lamHet();
+        expect(r.xong).toBe(true);
+        expect(mockHoSo.doc.mucTieu).toBe('hsk');
+        expect(mockHoSo.doc.testNgayZh).toEqual(NOW);
+        expect(mockHoSo.doc.testNgay).toEqual(new Date('2026-10-01'));
+        expect(mockHoSo.doc.chanDoan).toEqual([{ kyNang: 'qua-khu', ma: 'chua-nam' }]);
+        expect(mockHoSo.doc.chanDoanZh.map((c) => c.kyNang)).toEqual(['zh-trat-tu', 'zh-da-lam', 'zh-luong-tu', 'zh-giao-tiep', 'zh-nghe']);
+        expect(mockHoSo.doc.chanDoanZh.every((c) => c.ma === 'vung')).toBe(true);
+        for (const k of ['zh-trat-tu', 'zh-nghe', 'zh-noi']) expect(mockHoSo.doc.kyNang[k]).toBeTruthy();
+        expect(mockHoSo.doc.kyNang.noi).toBeUndefined();
+        // Hồ sơ trả về có nền tảng câu tiếng Trung cho mục tiêu HSK.
+        expect(r.hoSo.nenTang.testNgay).toEqual(NOW);
+        expect(r.hoSo.nenTang.kyNang.map((k) => k.key)).toContain('zh-noi');
+    });
+
+    test('câu sai cần xem lại kèm pinyin', () => {
+        const ds = T.cauCanXem([{ id: 'zh-tt1', kyNang: 'zh-trat-tu', loai: 'go', dung: false, cuaBan: '我学习在家明天' }]);
+        expect(ds[0]).toMatchObject({ dapAn: '我明天在家学习。', pinyin: 'Wǒ míngtiān zài jiā xuéxí.' });
+    });
+});
+
+describe('nền tảng câu tiếng Trung (thuần)', () => {
+    test('chưa test: không có ngày; trọng tâm là khung tiếng Trung, không lẫn khung tiếng Anh', () => {
+        const nt = HS.nenTangZh({ kyNang: { 'qua-khu': { d: 0, s: 5, soLan: 5 } } });
+        expect(nt.testNgay).toBeNull();
+        expect(nt.trongTam.khung.startsWith('zh-')).toBe(true);
+        expect(nt.kyNang.map((k) => k.key)).not.toContain('qua-khu');
     });
 });

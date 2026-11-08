@@ -16,6 +16,10 @@ const hoSoHocVienSchema = new mongoose.Schema(
         testNgay: { type: Date, default: null },
         chanDoan: { type: [mongoose.Schema.Types.Mixed], default: [] },
         lichSuTest: { type: [{ ngay: Date, diem: Number, theoKyNang: mongoose.Schema.Types.Mixed, _id: false }], default: [] },
+        // Test đầu vào tiếng Trung (mục tiêu HSK): lưu riêng để không đè test Giao tiếp tiếng Anh.
+        testNgayZh: { type: Date, default: null },
+        chanDoanZh: { type: [mongoose.Schema.Types.Mixed], default: [] },
+        lichSuTestZh: { type: [{ ngay: Date, diem: Number, theoKyNang: mongoose.Schema.Types.Mixed, _id: false }], default: [] },
     },
     { timestamps: true, collection: 'ho_so_hoc_vien', minimize: false },
 );

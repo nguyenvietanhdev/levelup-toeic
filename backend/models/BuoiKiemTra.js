@@ -8,6 +8,7 @@ const buoiKiemTraSchema = new mongoose.Schema(
     {
         userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
         coMic: { type: Boolean, default: true },
+        lang: { type: String, enum: ['en', 'zh'], default: 'en' },
         i: { type: Number, default: 0 },
         cauHienTai: { type: mongoose.Schema.Types.Mixed, default: null },
         daLam: { type: [mongoose.Schema.Types.Mixed], default: [] },

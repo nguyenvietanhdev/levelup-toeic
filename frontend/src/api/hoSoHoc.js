@@ -25,9 +25,12 @@ export const HoSoHocAPI = {
         return unwrap(await Http.put('/ho-so-hoc/muc-tieu', { mucTieu, diemMucTieu }));
     },
 
-    /** Mở test: `{ id, cau }`. Không có micro thì câu nói đổi thành câu gõ. */
-    async moTest(coMic) {
-        return unwrap(await Http.post('/ho-so-hoc/kiem-tra', { coMic: coMic === true }));
+    /**
+     * Mở test: `{ id, lang, cau }`. Không có micro thì câu nói đổi thành câu gõ.
+     * `lang`: 'en' (Giao tiếp) hoặc 'zh' (nền tảng câu cho mục tiêu HSK).
+     */
+    async moTest(coMic, lang = 'en') {
+        return unwrap(await Http.post('/ho-so-hoc/kiem-tra', { coMic: coMic === true, lang }));
     },
 
     /** `{ xong: false, cau }` hoặc khi hết bài `{ xong: true, hoSo, canXem }`. */
