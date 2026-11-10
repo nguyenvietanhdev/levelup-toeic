@@ -3,9 +3,9 @@ const mongoose = require('mongoose');
 /**
  * Bài nghe có script chạy theo (nguồn chính: VOA Learning English — phạm vi công cộng).
  *
- * Âm thanh lưu trên Cloudinary, không trỏ thẳng về máy chủ gốc: trang VOA bị chặn ở Việt
- * Nam, người học bấm phát sẽ không tải được. `cau` là script đã chia câu, mỗi câu có mốc
- * thời gian (giây) lấy từ chính file âm thanh đó nên luôn khớp.
+ * File (âm thanh hoặc video) lưu trên Cloudinary, không trỏ thẳng về máy chủ gốc: trang VOA bị
+ * chặn ở Việt Nam, người học bấm phát sẽ không tải được. `coHinh` = video có hình. `cau` là
+ * script đã chia câu, mỗi câu có mốc thời gian (giây) lấy từ chính file đó nên luôn khớp.
  */
 const cauSchema = new mongoose.Schema(
     {
@@ -24,7 +24,8 @@ const baiNgheSchema = new mongoose.Schema(
         // Ghi công nguồn: bắt buộc hiển thị cùng bài (VOA yêu cầu ghi nguồn khi dùng lại).
         nguon: { type: String, default: 'VOA Learning English', maxlength: 120 },
         nguonUrl: { type: String, default: '', maxlength: 500 },
-        audioUrl: { type: String, required: true },
+        mediaUrl: { type: String, required: true },
+        coHinh: { type: Boolean, default: false },
         cloudinaryId: { type: String, default: '' },
         thoiLuong: { type: Number, default: 0 },
         cau: { type: [cauSchema], default: [] },

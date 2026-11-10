@@ -46,25 +46,57 @@
     }
   }
 
+  /** Tải file lên Cloudinary bằng chữ ký server cấp, báo tiến độ; trả `public_id`. */
+  function taiLenCloudinary(file, ck, baoTienDo) {
+    return new Promise((resolve, reject) => {
+      const fd = new FormData();
+      fd.append('file', file);
+      fd.append('api_key', ck.apiKey);
+      fd.append('timestamp', ck.timestamp);
+      fd.append('signature', ck.signature);
+      fd.append('folder', ck.folder);
+      const xhr = new XMLHttpRequest();
+      // Âm thanh và video đều thuộc nhóm `video` của Cloudinary.
+      xhr.open('POST', `https://api.cloudinary.com/v1_1/${encodeURIComponent(ck.cloudName)}/video/upload`);
+      xhr.upload.onprogress = (e) => { if (e.lengthComputable) baoTienDo(Math.round((e.loaded / e.total) * 100)); };
+      xhr.onload = () => {
+        let j = {};
+        try { j = JSON.parse(xhr.responseText); } catch (_) { /* phản hồi lạ */ }
+        if (xhr.status >= 200 && xhr.status < 300 && j.public_id) resolve(j.public_id);
+        else reject(new Error(j.error?.message || `Tải lên Cloudinary thất bại (HTTP ${xhr.status}).`));
+      };
+      xhr.onerror = () => reject(new Error('Mất kết nối khi tải file lên Cloudinary.'));
+      xhr.send(fd);
+    });
+  }
+
   async function them(ev) {
     ev.preventDefault();
     const nut = document.getElementById('bn-gui');
     const tt = document.getElementById('bn-trang-thai');
     const file = document.getElementById('bn-file').files[0];
     const url = document.getElementById('bn-url').value.trim();
-    if (!file && !url) { tt.textContent = 'Hãy chọn file âm thanh hoặc dán link.'; return; }
-    const fd = new FormData();
-    fd.append('tieuDe', document.getElementById('bn-tieu-de').value);
-    fd.append('lang', document.getElementById('bn-lang').value);
-    fd.append('capDo', document.getElementById('bn-cap-do').value);
-    fd.append('nguon', document.getElementById('bn-nguon').value);
-    fd.append('nguonUrl', document.getElementById('bn-nguon-url').value);
-    if (file) fd.append('audio', file); else fd.append('url', url);
+    if (!file && !url) { tt.textContent = 'Hãy chọn file (MP3 hoặc MP4) hoặc dán link.'; return; }
+    const thongTin = {
+      tieuDe: document.getElementById('bn-tieu-de').value,
+      lang: document.getElementById('bn-lang').value,
+      capDo: document.getElementById('bn-cap-do').value,
+      nguon: document.getElementById('bn-nguon').value,
+      nguonUrl: document.getElementById('bn-nguon-url').value,
+    };
     nut.disabled = true;
-    tt.textContent = 'Đang lưu âm thanh và chép lời… (có thể mất vài phút, đừng đóng trang)';
     try {
-      const b = await goi('', { method: 'POST', body: fd });
-      tt.textContent = `Đã thêm "${b.tieuDe}": ${b.soCau} câu, ${gioPhut(b.thoiLuong)}.`;
+      if (file) {
+        // Tải THẲNG lên Cloudinary (file không đi qua server), rồi chỉ gửi mã file cho server.
+        const ck = await goi('/chu-ky');
+        if (file.size > ck.toiDaByte) throw new Error(`File ${Math.round(file.size / 1048576)} MB, tối đa ${Math.round(ck.toiDaByte / 1048576)} MB.`);
+        thongTin.cloudinaryId = await taiLenCloudinary(file, ck, (pt) => { tt.textContent = `Đang tải file lên… ${pt}%`; });
+      } else {
+        thongTin.url = url;
+      }
+      tt.textContent = 'Đang chép lời và chia câu… (có thể mất vài phút, đừng đóng trang)';
+      const b = await goi('', { method: 'POST', json: thongTin });
+      tt.textContent = `Đã thêm "${b.tieuDe}"${b.coHinh ? ' (có video)' : ''}: ${b.soCau} câu, ${gioPhut(b.thoiLuong)}.`;
       document.getElementById('bn-form').reset();
       taiDs();
     } catch (e) {

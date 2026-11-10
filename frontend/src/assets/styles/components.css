@@ -12912,7 +12912,9 @@ body.dang-phat-am .js-nut-am {
 .bn-the:hover { border-color: var(--accent-color); }
 .bn-the span { font-size: 13px; color: var(--text-secondary); }
 .bn-may { position: sticky; top: 0; z-index: 2; padding: 8px 0; background: var(--bg-primary); }
-.bn-may audio { width: 100%; }
+.bn-may audio, .bn-may video { width: 100%; }
+/* Video: giới hạn chiều cao để script vẫn hiện bên dưới, nhất là trên điện thoại nằm dọc. */
+.bn-may.is-video video { max-height: 42vh; background: #000; border-radius: 10px; }
 .bn-dieu-khien { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; }
 .bn-toc-do { margin: 0; }
 .bn-script { list-style: none; margin: 8px 0 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }

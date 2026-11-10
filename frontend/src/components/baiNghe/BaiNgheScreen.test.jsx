@@ -25,7 +25,7 @@ const CAU = [
     { batDau: 3.1, ketThuc: 5.3, text: 'Today, Anna goes to the bank.' },
     { batDau: 6.4, ketThuc: 8.4, text: 'She needs to open an account.' },
 ];
-const BAI = { id: 'b1', tieuDe: 'Lesson 1', capDo: 'de', thoiLuong: 62, soCau: 3, nguon: 'VOA Learning English', nguonUrl: 'https://learningenglish.voanews.com/a/1.html', audioUrl: 'https://res.cloudinary.com/x/a.mp3', cau: CAU };
+const BAI = { id: 'b1', tieuDe: 'Lesson 1', capDo: 'de', thoiLuong: 62, soCau: 3, nguon: 'VOA Learning English', nguonUrl: 'https://learningenglish.voanews.com/a/1.html', mediaUrl: 'https://res.cloudinary.com/x/a.mp3', coHinh: false, cau: CAU };
 
 let thoiGian = 0;
 beforeEach(() => {
@@ -77,11 +77,22 @@ describe('màn nghe', () => {
     test('script tô sáng theo thời điểm phát; có ghi nguồn VOA', async () => {
         await moBai();
         const audio = document.querySelector('audio');
-        expect(audio.getAttribute('src')).toBe(BAI.audioUrl);
+        expect(audio.getAttribute('src')).toBe(BAI.mediaUrl);
         thoiGian = 4;
         fireEvent.timeUpdate(audio);
         expect(document.querySelector('[data-cau="1"]').className).toContain('is-hien');
         expect(screen.getByText(/Nguồn: VOA Learning English/)).toBeTruthy();
+    });
+
+    test('bài có hình phát bằng video, script vẫn chạy theo', async () => {
+        api.lay.mockResolvedValue({ ...BAI, coHinh: true, mediaUrl: 'https://res.cloudinary.com/x/a.mp4' });
+        await moBai();
+        const video = document.querySelector('video');
+        expect(video.getAttribute('src')).toBe('https://res.cloudinary.com/x/a.mp4');
+        expect(document.querySelector('audio')).toBeNull();
+        thoiGian = 7;
+        fireEvent.timeUpdate(video);
+        expect(document.querySelector('[data-cau="2"]').className).toContain('is-hien');
     });
 
     test('bấm câu: tua tới đầu câu, phát, và dừng ở cuối câu đó', async () => {

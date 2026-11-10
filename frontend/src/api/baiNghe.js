@@ -15,12 +15,12 @@ function unwrap(res) {
 }
 
 export const BaiNgheAPI = {
-    /** Thư viện: `[{ id, tieuDe, lang, capDo, nguon, thoiLuong, soCau }]`, không kèm script. */
+    /** Thư viện: `[{ id, tieuDe, lang, capDo, nguon, thoiLuong, soCau, coHinh }]`, không kèm script. */
     async danhSach(lang = 'en') {
         return unwrap(await Http.get(`/bai-nghe?lang=${encodeURIComponent(lang)}`));
     },
 
-    /** Một bài: thêm `audioUrl`, `nguonUrl`, `cau: [{ batDau, ketThuc, text }]` (giây). */
+    /** Một bài: thêm `mediaUrl` (video nếu `coHinh`, không thì âm thanh), `nguonUrl`, `cau: [{ batDau, ketThuc, text }]` (giây). */
     async lay(id) {
         return unwrap(await Http.get(`/bai-nghe/${encodeURIComponent(id)}`));
     },

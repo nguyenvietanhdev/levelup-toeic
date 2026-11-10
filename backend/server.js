@@ -104,7 +104,10 @@ app.use(helmet({
             // thì mọi lời gọi là cùng origin, `'self'` phủ hết — giữ lại chỉ là cấp
             // quyền cho MỌI subdomain onrender.com mà không ai dùng. Tách host trở
             // lại thì thêm đúng origin cụ thể, đừng thêm wildcard.
-            connectSrc: ["'self'", "https://translate.googleapis.com", "https://accounts.google.com"],
+            // `api.cloudinary.com`: trang admin tải file bài nghe (MP3/MP4) THẲNG lên Cloudinary
+            // bằng chữ ký server cấp (routes/adminBaiNghe.js `/chu-ky`) — video không đi qua RAM
+            // của server. Đúng một host upload, không wildcard.
+            connectSrc: ["'self'", "https://translate.googleapis.com", "https://accounts.google.com", "https://api.cloudinary.com"],
         }
     },
     // COOP KHÔNG nằm trong CSP — khai CSP đủ cho Google vẫn không cứu được.

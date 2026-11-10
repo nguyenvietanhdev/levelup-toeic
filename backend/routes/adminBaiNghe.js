@@ -1,21 +1,16 @@
 // ===================================
-// ADMIN — thêm bài nghe từ file âm thanh (VOA Learning English), ẩn/hiện, sửa thông tin
+// ADMIN — thêm bài nghe (MP3 hoặc MP4, VOA Learning English), ẩn/hiện, sửa thông tin
 // ===================================
+// File KHÔNG đi qua server: trình duyệt admin tải thẳng lên Cloudinary bằng chữ ký lấy ở
+// `/chu-ky`, rồi gửi `cloudinaryId` vào `POST /`. Video có thể vài chục MB, giữ trong RAM của
+// server Render (512 MB) là dễ sập cả app.
 const express = require('express');
 const mongoose = require('mongoose');
-const multer = require('multer');
 const router = express.Router();
 const { protect, authorize } = require('../middleware/auth');
 const S = require('../services/baiNghe');
 
 router.use(protect, authorize('admin'));
-
-// Giữ trong RAM rồi đẩy thẳng lên Cloudinary và Whisper: ổ đĩa Render mất khi khởi động lại.
-const upload = multer({
-    storage: multer.memoryStorage(),
-    limits: { fileSize: S.TOI_DA_BYTE, files: 1 },
-    fileFilter: (req, file, cb) => cb(null, /^(audio|video)\//.test(file.mimetype)),
-});
 
 const traVe = (res, r) => (r.loi
     ? res.status(r.ma || 400).json({ success: false, message: r.loi })
@@ -25,22 +20,28 @@ router.get('/', async (req, res, next) => {
     try { res.json({ success: true, data: await S.danhSachAdmin() }); } catch (err) { next(err); }
 });
 
-router.post('/', (req, res, next) => {
-    upload.single('audio')(req, res, (loi) => {
-        if (loi) return res.status(400).json({ success: false, message: loi.code === 'LIMIT_FILE_SIZE' ? 'File âm thanh lớn hơn 25 MB.' : 'File tải lên không hợp lệ.' });
-        S.themBai({
-            url: req.body?.url,
-            buffer: req.file?.buffer,
-            tenFile: req.file?.originalname,
-            tieuDe: req.body?.tieuDe,
-            capDo: req.body?.capDo,
-            lang: req.body?.lang,
-            nguon: req.body?.nguon,
-            nguonUrl: req.body?.nguonUrl,
+router.get('/chu-ky', (req, res) => {
+    try {
+        res.json({ success: true, data: S.chuKyTaiLen() });
+    } catch (e) {
+        res.status(e.ma || 500).json({ success: false, message: e.ma ? e.message : 'Không tạo được chữ ký tải lên.' });
+    }
+});
+
+router.post('/', async (req, res, next) => {
+    try {
+        const b = req.body || {};
+        traVe(res, await S.themBai({
+            cloudinaryId: typeof b.cloudinaryId === 'string' ? b.cloudinaryId : '',
+            url: typeof b.url === 'string' ? b.url : '',
+            tieuDe: b.tieuDe,
+            capDo: b.capDo,
+            lang: b.lang,
+            nguon: b.nguon,
+            nguonUrl: b.nguonUrl,
             adminId: req.user.id,
-        }).then((r) => traVe(res, r)).catch(next);
-        return undefined;
-    });
+        }));
+    } catch (err) { next(err); }
 });
 
 router.patch('/:id', async (req, res, next) => {

@@ -2,9 +2,14 @@
  * BÀI NGHE CÓ SCRIPT CHẠY THEO — admin thêm bài từ file âm thanh (VOA Learning English, phạm
  * vi công cộng), người học nghe với script tô sáng theo từng câu.
  *
- * Luồng thêm bài (admin): lấy âm thanh (link hoặc file tải lên) → lưu Cloudinary → Whisper chép
- * lời kèm mốc thời gian → chia thành câu. Mốc lấy từ CHÍNH file đã lưu nên luôn khớp, không phải
- * căn tay. Mỗi bài chỉ tốn Whisper một lần (khoảng 0,006 USD/phút), mọi người học dùng chung.
+ * Luồng thêm bài (admin), file KHÔNG đi qua server Render (RAM 512 MB, video dễ làm sập):
+ *   1. Trình duyệt admin tải file (MP3 hoặc MP4) thẳng lên Cloudinary bằng chữ ký server cấp;
+ *      hoặc admin dán link và Cloudinary tự tải về.
+ *   2. Server hỏi Cloudinary thông tin file (không tin số liệu client gửi), nhờ Cloudinary tách
+ *      âm thanh thành MP3 64 kbps nhẹ, đưa qua Whisper lấy mốc từng câu.
+ * Mốc lấy từ CHÍNH file đã lưu nên luôn khớp. Mỗi bài chỉ chép lời một lần, mọi người dùng chung.
+ *
+ * Giới hạn 40 MB: gói miễn phí của Cloudinary chỉ biến đổi (tách âm thanh) file dưới 40 MB.
  *
  * Vì sao không tự cào trang VOA: trang bị chặn ở Việt Nam (admin cũng không mở được), và cấu
  * trúc trang có thể đổi bất cứ lúc nào. Admin chọn bài và đưa file — chắc chắn hơn.
@@ -12,8 +17,11 @@
 const BaiNghe = require('../models/BaiNghe');
 const logger = require('../utils/logger');
 
-/** Whisper nhận tối đa 25 MB mỗi file. */
+/** Whisper nhận tối đa 25 MB mỗi file (MP3 64 kbps ≈ 50 phút). */
 const TOI_DA_BYTE = 25 * 1024 * 1024;
+/** File gốc trên Cloudinary: gói miễn phí chỉ tách âm thanh được từ file dưới 40 MB. */
+const TOI_DA_GOC = 40 * 1024 * 1024;
+const THU_MUC = 'bai-nghe';
 const GIA_WHISPER_PHUT = 0.006;
 const CAP_DO = ['de', 'vua', 'kho'];
 const LANG = ['en', 'zh'];
@@ -50,19 +58,52 @@ async function taiAudio(url) {
     return buf;
 }
 
-/** Lưu lên Cloudinary (âm thanh nằm trong nhóm `video` của Cloudinary). */
-function luuCloudinary(buffer) {
-    const { cloudinary, isConfigured } = require('../utils/cloudinary');
-    if (!isConfigured()) {
-        return Promise.reject(Object.assign(new Error('Chưa cấu hình Cloudinary nên không lưu được âm thanh.'), { ma: 503 }));
+function cloud() {
+    const c = require('../utils/cloudinary');
+    if (!c.isConfigured()) throw Object.assign(new Error('Chưa cấu hình Cloudinary nên không lưu được file.'), { ma: 503 });
+    return c.cloudinary;
+}
+
+/**
+ * Chữ ký cho trình duyệt admin tải thẳng lên Cloudinary, khoá vào thư mục bài nghe. Ký ở server
+ * vì API secret không bao giờ được ra client.
+ */
+function chuKyTaiLen(now = Date.now()) {
+    const c = cloud();
+    const timestamp = Math.floor(now / 1000);
+    const signature = c.utils.api_sign_request({ folder: THU_MUC, timestamp }, c.config().api_secret);
+    return { cloudName: c.config().cloud_name, apiKey: c.config().api_key, timestamp, signature, folder: THU_MUC, toiDaByte: TOI_DA_GOC };
+}
+
+/**
+ * Thông tin file trên Cloudinary (thuần): link phát, thời lượng, có hình hay không. Cloudinary
+ * xếp âm thanh vào nhóm `video` và đánh dấu `is_audio`; video có hình thì có chiều rộng.
+ */
+function docTaiNguyen(r) {
+    return {
+        id: r.public_id,
+        url: r.secure_url,
+        thoiLuong: Number(r.duration) || 0,
+        byte: Number(r.bytes) || 0,
+        coHinh: !r.is_audio && Number(r.width) > 0,
+    };
+}
+
+/** Link MP3 nhẹ tách từ file gốc, để đưa qua Whisper. */
+const linkAmThanh = (id) => cloud().url(id, { resource_type: 'video', format: 'mp3', bit_rate: '64k', secure: true });
+
+/** File đã có trên Cloudinary (trình duyệt vừa tải lên), hoặc nhờ Cloudinary tải từ link. */
+async function layTaiNguyen({ cloudinaryId, url }) {
+    const c = cloud();
+    if (cloudinaryId) {
+        // Chỉ nhận file trong thư mục bài nghe: không cho trỏ vào ảnh/audio đề TOEIC.
+        if (!String(cloudinaryId).startsWith(`${THU_MUC}/`)) throw Object.assign(new Error('File không hợp lệ.'), { ma: 400 });
+        return docTaiNguyen(await c.api.resource(cloudinaryId, { resource_type: 'video' }));
     }
-    return new Promise((resolve, reject) => {
-        const stream = cloudinary.uploader.upload_stream(
-            { folder: 'bai-nghe', resource_type: 'video', unique_filename: true, overwrite: false },
-            (err, kq) => (err ? reject(err) : resolve({ url: kq.secure_url, id: kq.public_id, thoiLuong: Number(kq.duration) || 0 })),
-        );
-        stream.end(buffer);
-    });
+    const link = kiemUrl(url);
+    if (!link) throw Object.assign(new Error('Hãy tải file lên hoặc dán link http(s) hợp lệ.'), { ma: 400 });
+    // Cloudinary tự tải từ link: file lớn không đi qua RAM của server.
+    return docTaiNguyen(await c.uploader.upload(link, { resource_type: 'video', folder: THU_MUC, unique_filename: true, overwrite: false }));
 }
 
 /**
@@ -147,23 +188,18 @@ function tachCau(doan, lang = 'en') {
 }
 
 /**
- * Thêm một bài: `{ url }` hoặc `{ buffer, tenFile }`, kèm tiêu đề, cấp độ, link nguồn.
- * Trả `{ bai }` hoặc `{ loi, ma }`.
+ * Thêm một bài: `{ cloudinaryId }` (trình duyệt đã tải lên) hoặc `{ url }`, kèm tiêu đề, cấp độ,
+ * link nguồn. Trả `{ bai }` hoặc `{ loi, ma }`.
  */
-async function themBai({ url, buffer, tenFile, tieuDe, capDo, lang, nguon, nguonUrl, adminId } = {}) {
+async function themBai({ cloudinaryId, url, tieuDe, capDo, lang, nguon, nguonUrl, adminId } = {}) {
     const td = cat(tieuDe, 160);
     if (!td) return { loi: 'Hãy nhập tiêu đề bài.', ma: 400 };
     const ngonNgu = LANG.includes(lang) ? lang : 'en';
-    let du = buffer;
+    if (!cloudinaryId && !url) return { loi: 'Hãy tải file lên hoặc dán link http(s) hợp lệ.', ma: 400 };
     try {
-        if (!du) {
-            const link = kiemUrl(url);
-            if (!link) return { loi: 'Hãy tải file âm thanh lên hoặc dán link http(s) hợp lệ.', ma: 400 };
-            du = await taiAudio(link);
-        }
-        if (!du?.length || du.length > TOI_DA_BYTE) return { loi: 'File âm thanh rỗng hoặc lớn hơn 25 MB.', ma: 400 };
-
-        const [luu, chep] = await Promise.all([luuCloudinary(du), chepLoi(du, ngonNgu, tenFile || 'audio.mp3')]);
+        const luu = await layTaiNguyen({ cloudinaryId, url });
+        if (luu.byte > TOI_DA_GOC) return { loi: 'File lớn hơn 40 MB: gói Cloudinary hiện tại không tách được âm thanh. Hãy dùng file nhỏ hơn.', ma: 400 };
+        const chep = await chepLoi(await taiAudio(linkAmThanh(luu.id)), ngonNgu, 'audio.mp3');
         const cau = tachCau(chep.doan, ngonNgu);
         if (!cau.length) return { loi: 'Không nhận ra lời nói trong file này.', ma: 400 };
         const thoiLuong = luu.thoiLuong || chep.thoiLuong;
@@ -175,22 +211,23 @@ async function themBai({ url, buffer, tenFile, tieuDe, capDo, lang, nguon, nguon
             capDo: CAP_DO.includes(capDo) ? capDo : 'vua',
             nguon: cat(nguon, 120) || 'VOA Learning English',
             nguonUrl: kiemUrl(nguonUrl) || '',
-            audioUrl: luu.url,
+            mediaUrl: luu.url,
+            coHinh: luu.coHinh,
             cloudinaryId: luu.id,
             thoiLuong: lamTron(thoiLuong),
             cau,
             taoBoi: adminId || null,
         });
-        return { bai: { id: String(bai._id), tieuDe: bai.tieuDe, soCau: cau.length, thoiLuong: bai.thoiLuong } };
+        return { bai: { id: String(bai._id), tieuDe: bai.tieuDe, soCau: cau.length, thoiLuong: bai.thoiLuong, coHinh: luu.coHinh } };
     } catch (e) {
         logger.warn('Bài nghe: thêm thất bại', { message: e?.message });
-        return { loi: e?.ma ? e.message : 'Không xử lý được file âm thanh này. Thử lại hoặc dùng file khác.', ma: e?.ma || 502 };
+        return { loi: e?.ma ? e.message : 'Không xử lý được file này. Thử lại hoặc dùng file khác.', ma: e?.ma || 502 };
     }
 }
 
 const tomTat = (b) => ({
     id: String(b._id), tieuDe: b.tieuDe, lang: b.lang, capDo: b.capDo, nguon: b.nguon,
-    thoiLuong: b.thoiLuong, soCau: b.soCau ?? (b.cau || []).length,
+    thoiLuong: b.thoiLuong, soCau: b.soCau ?? (b.cau || []).length, coHinh: !!b.coHinh,
 });
 
 /** Thư viện cho người học: bài đang hiện, của ngôn ngữ đang học. Không gửi script cho danh sách. */
@@ -199,7 +236,7 @@ async function danhSach(lang = 'en') {
         { $match: { an: false, lang: lang === 'zh' ? 'zh' : 'en' } },
         { $sort: { createdAt: -1 } },
         { $limit: 200 },
-        { $project: { tieuDe: 1, lang: 1, capDo: 1, nguon: 1, thoiLuong: 1, soCau: { $size: '$cau' } } },
+        { $project: { tieuDe: 1, lang: 1, capDo: 1, nguon: 1, thoiLuong: 1, coHinh: 1, soCau: { $size: '$cau' } } },
     ]);
     return ds.map(tomTat);
 }
@@ -208,7 +245,7 @@ async function danhSach(lang = 'en') {
 async function layBai(id) {
     const b = await BaiNghe.findOne({ _id: id, an: false }).lean();
     if (!b) return { loi: 'Không tìm thấy bài nghe.', ma: 404 };
-    return { ...tomTat(b), nguonUrl: b.nguonUrl, audioUrl: b.audioUrl, cau: b.cau };
+    return { ...tomTat(b), nguonUrl: b.nguonUrl, mediaUrl: b.mediaUrl, cau: b.cau };
 }
 
 /** Danh sách cho admin, gồm cả bài đã ẩn. */
@@ -216,7 +253,7 @@ async function danhSachAdmin() {
     const ds = await BaiNghe.aggregate([
         { $sort: { createdAt: -1 } },
         { $limit: 500 },
-        { $project: { tieuDe: 1, lang: 1, capDo: 1, nguon: 1, thoiLuong: 1, an: 1, createdAt: 1, soCau: { $size: '$cau' } } },
+        { $project: { tieuDe: 1, lang: 1, capDo: 1, nguon: 1, thoiLuong: 1, coHinh: 1, an: 1, createdAt: 1, soCau: { $size: '$cau' } } },
     ]);
     return ds.map((b) => ({ ...tomTat(b), an: b.an, taoLuc: b.createdAt }));
 }
@@ -234,6 +271,6 @@ async function capNhat(id, { an, tieuDe, capDo } = {}) {
 }
 
 module.exports = {
-    themBai, danhSach, layBai, danhSachAdmin, capNhat,
-    kiemUrl, tachCau, taiAudio, luuCloudinary, chepLoi, nhaChepLoi, TOI_DA_BYTE,
+    themBai, danhSach, layBai, danhSachAdmin, capNhat, chuKyTaiLen,
+    kiemUrl, tachCau, taiAudio, chepLoi, nhaChepLoi, docTaiNguyen, TOI_DA_BYTE, TOI_DA_GOC,
 };

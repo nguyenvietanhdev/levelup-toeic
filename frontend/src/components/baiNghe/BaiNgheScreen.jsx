@@ -159,6 +159,7 @@ export default function BaiNgheScreen({ active }) {
                                 <button key={b.id} type="button" className="bn-the" disabled={!!dangMo} onClick={() => moBai(b.id)}>
                                     <strong>{b.tieuDe}</strong>
                                     <span>
+                                        {b.coHinh && <><i className="fas fa-film" aria-label="Có video"></i> </>}
                                         {TEN_CAP_DO[b.capDo]} · {gioPhut(b.thoiLuong)} · {b.soCau} câu
                                         {dangMo === b.id && <> · <i className="fas fa-spinner fa-spin"></i></>}
                                     </span>
@@ -170,15 +171,29 @@ export default function BaiNgheScreen({ active }) {
 
                 {isLoggedIn && bai && (
                     <>
-                        <div className="bn-may">
-                            <audio
-                                ref={audio}
-                                src={bai.audioUrl}
-                                controls
-                                preload="metadata"
-                                onTimeUpdate={theoDoi}
-                                onSeeking={() => { dungTai.current = null; }}
-                            />
+                        <div className={`bn-may ${bai.coHinh ? 'is-video' : ''}`}>
+                            {/* Video và audio dùng chung cách điều khiển (HTMLMediaElement), nên
+                                script chạy theo, nghe từng câu, tốc độ đều như nhau. */}
+                            {bai.coHinh ? (
+                                <video
+                                    ref={audio}
+                                    src={bai.mediaUrl}
+                                    controls
+                                    playsInline
+                                    preload="metadata"
+                                    onTimeUpdate={theoDoi}
+                                    onSeeking={() => { dungTai.current = null; }}
+                                />
+                            ) : (
+                                <audio
+                                    ref={audio}
+                                    src={bai.mediaUrl}
+                                    controls
+                                    preload="metadata"
+                                    onTimeUpdate={theoDoi}
+                                    onSeeking={() => { dungTai.current = null; }}
+                                />
+                            )}
                             <div className="bn-dieu-khien">
                                 <div className="np-nhom bn-toc-do" role="group" aria-label="Tốc độ">
                                     {TOC_DO.map((t) => (

@@ -7,22 +7,28 @@
  *   3. Link admin dán trỏ vào máy nội bộ của server.
  *   4. Bài đã ẩn vẫn mở được; danh sách gửi cả script nặng.
  *   5. Whisper/Cloudinary lỗi mà vẫn tạo bài rỗng.
+ *   6. Tin số liệu client gửi (thời lượng, có hình) thay vì hỏi Cloudinary; trỏ vào file
+ *      ngoài thư mục bài nghe (ảnh/audio đề TOEIC).
+ *   7. Đưa nguyên file video vào Whisper (quá 25 MB) thay vì MP3 tách ra.
  */
+const mockTaiNguyen = (o = {}) => ({
+    public_id: 'bai-nghe/a', secure_url: 'https://res.cloudinary.com/x/video/upload/bai-nghe/a.mp4', duration: 62.5, bytes: 9e6, width: 1280, is_audio: false, ...o,
+});
 jest.mock('../utils/cloudinary', () => ({
     isConfigured: () => true,
     cloudinary: {
-        uploader: {
-            upload_stream: (opts, cb) => ({
-                end: () => (mockMay.cloudLoi ? cb(new Error('cloud down')) : cb(null, { secure_url: 'https://res.cloudinary.com/x/bai-nghe/a.mp3', public_id: 'bai-nghe/a', duration: 62.5 })),
-            }),
-        },
+        config: () => ({ cloud_name: 'demo', api_key: 'k', api_secret: 's' }),
+        utils: { api_sign_request: (p, secret) => `ky:${p.folder}:${p.timestamp}:${secret}` },
+        url: (id, o) => `https://res.cloudinary.com/demo/video/upload/br_${o.bit_rate}/${id}.${o.format}`,
+        api: { resource: async (id) => { mockMay.hoi.push(id); if (mockMay.cloudLoi) throw new Error('cloud down'); return mockTaiNguyen(mockMay.taiNguyen); } },
+        uploader: { upload: async (link, o) => { mockMay.taiTuLink.push({ link, o }); return mockTaiNguyen(mockMay.taiNguyen); } },
     },
 }));
 jest.mock('openai', () => ({
     OpenAI: jest.fn(() => ({ audio: { transcriptions: { create: async (o) => { mockMay.whisper.push(o); if (mockMay.whisperLoi) throw new Error('whisper down'); return mockMay.kqWhisper; } } } })),
     toFile: async (buf, ten) => ({ buf, ten }),
 }));
-const mockMay = { cloudLoi: false, whisperLoi: false, whisper: [], kqWhisper: null, tao: [] };
+const mockMay = { cloudLoi: false, whisperLoi: false, whisper: [], kqWhisper: null, tao: [], hoi: [], taiTuLink: [], taiNguyen: {}, tai: [] };
 jest.mock('../models/BaiNghe', () => ({
     create: jest.fn(async (d) => { mockMay.tao.push(d); return { _id: 'b1', ...d }; }),
     findOne: jest.fn((q) => ({ lean: async () => (mockMay.doc && (q.an === false ? !mockMay.doc.an : true) ? mockMay.doc : null) })),
@@ -43,7 +49,12 @@ const DOAN = [
 ];
 
 beforeEach(() => {
-    Object.assign(mockMay, { cloudLoi: false, whisperLoi: false, whisper: [], tao: [], doc: null, kqWhisper: { segments: DOAN, duration: 13 } });
+    Object.assign(mockMay, { cloudLoi: false, whisperLoi: false, whisper: [], tao: [], hoi: [], taiTuLink: [], taiNguyen: {}, tai: [], doc: null, kqWhisper: { segments: DOAN, duration: 13 } });
+    // MP3 tách từ Cloudinary: giả lập tải về.
+    global.fetch = jest.fn(async (url) => {
+        mockMay.tai.push(url);
+        return { ok: true, status: 200, headers: { get: (k) => (k === 'content-type' ? 'audio/mpeg' : '1000') }, arrayBuffer: async () => new ArrayBuffer(1000) };
+    });
 });
 
 describe('chia câu', () => {
@@ -98,30 +109,58 @@ describe('link âm thanh', () => {
 });
 
 describe('thêm bài', () => {
-    test('file tải lên: lưu Cloudinary, Whisper có mốc thời gian, lưu script đã chia câu', async () => {
-        const r = await S.themBai({ buffer: Buffer.from('mp3'), tenFile: 'lesson1.mp3', tieuDe: ' Lesson 1: Welcome ', capDo: 'de', nguonUrl: 'https://learningenglish.voanews.com/a/1.html' });
-        expect(r.bai).toMatchObject({ id: 'b1', tieuDe: 'Lesson 1: Welcome', soCau: 3, thoiLuong: 62.5 });
+    const ID = 'bai-nghe/a';
+    test('video trình duyệt đã tải lên: hỏi Cloudinary, Whisper nghe MP3 tách ra, lưu có hình', async () => {
+        const r = await S.themBai({ cloudinaryId: ID, tieuDe: ' Lesson 1: Welcome ', capDo: 'de', nguonUrl: 'https://learningenglish.voanews.com/a/1.html' });
+        expect(r.bai).toMatchObject({ id: 'b1', tieuDe: 'Lesson 1: Welcome', soCau: 3, thoiLuong: 62.5, coHinh: true });
+        expect(mockMay.hoi).toEqual([ID]);
+        // Whisper nhận MP3 64 kbps tách từ video, không phải file video gốc.
+        expect(mockMay.tai).toEqual(['https://res.cloudinary.com/demo/video/upload/br_64k/bai-nghe/a.mp3']);
         expect(mockMay.whisper[0]).toMatchObject({ response_format: 'verbose_json', language: 'en' });
-        expect(mockMay.tao[0]).toMatchObject({ capDo: 'de', nguon: 'VOA Learning English', audioUrl: 'https://res.cloudinary.com/x/bai-nghe/a.mp3', cloudinaryId: 'bai-nghe/a' });
+        expect(mockMay.tao[0]).toMatchObject({
+            capDo: 'de', nguon: 'VOA Learning English', coHinh: true, cloudinaryId: ID,
+            mediaUrl: 'https://res.cloudinary.com/x/video/upload/bai-nghe/a.mp4',
+        });
     });
-    test('thiếu tiêu đề, thiếu âm thanh, link nội bộ → báo lỗi, không gọi Whisper', async () => {
-        expect((await S.themBai({ buffer: Buffer.from('x') })).ma).toBe(400);
+    test('file âm thanh thì không có hình', async () => {
+        mockMay.taiNguyen = { is_audio: true, width: 0 };
+        expect((await S.themBai({ cloudinaryId: ID, tieuDe: 'a' })).bai.coHinh).toBe(false);
+    });
+    test('dán link: Cloudinary tự tải về vào thư mục bài nghe, file không qua server', async () => {
+        await S.themBai({ url: 'https://example.com/lesson.mp4', tieuDe: 'a' });
+        expect(mockMay.taiTuLink[0]).toMatchObject({ link: 'https://example.com/lesson.mp4', o: { resource_type: 'video', folder: 'bai-nghe' } });
+    });
+    test('thiếu tiêu đề, thiếu file, link nội bộ, file ngoài thư mục bài nghe → báo lỗi, không gọi Whisper', async () => {
+        expect((await S.themBai({ cloudinaryId: ID })).ma).toBe(400);
         expect((await S.themBai({ tieuDe: 'a' })).ma).toBe(400);
         expect((await S.themBai({ tieuDe: 'a', url: 'http://127.0.0.1/a.mp3' })).ma).toBe(400);
+        expect((await S.themBai({ tieuDe: 'a', cloudinaryId: 'toeic/audio/ets26/q1' })).ma).toBe(400);
+        expect(mockMay.whisper).toHaveLength(0);
+        expect(mockMay.hoi).toHaveLength(0);
+    });
+    test('file trên 40 MB → báo rõ, không gọi Whisper', async () => {
+        mockMay.taiNguyen = { bytes: 60 * 1024 * 1024 };
+        expect((await S.themBai({ cloudinaryId: ID, tieuDe: 'a' })).loi).toMatch(/40 MB/);
         expect(mockMay.whisper).toHaveLength(0);
     });
     test('Whisper hoặc Cloudinary lỗi → không tạo bài', async () => {
         mockMay.whisperLoi = true;
-        expect((await S.themBai({ buffer: Buffer.from('x'), tieuDe: 'a' })).loi).toBeTruthy();
+        expect((await S.themBai({ cloudinaryId: ID, tieuDe: 'a' })).loi).toBeTruthy();
         mockMay.whisperLoi = false;
         mockMay.cloudLoi = true;
-        expect((await S.themBai({ buffer: Buffer.from('x'), tieuDe: 'a' })).loi).toBeTruthy();
+        expect((await S.themBai({ cloudinaryId: ID, tieuDe: 'a' })).loi).toBeTruthy();
         expect(mockMay.tao).toHaveLength(0);
     });
     test('file không có lời nói → báo, không tạo bài', async () => {
         mockMay.kqWhisper = { segments: [], duration: 3 };
-        expect((await S.themBai({ buffer: Buffer.from('x'), tieuDe: 'a' })).loi).toMatch(/lời nói/);
+        expect((await S.themBai({ cloudinaryId: ID, tieuDe: 'a' })).loi).toMatch(/lời nói/);
         expect(mockMay.tao).toHaveLength(0);
+    });
+    test('chữ ký tải lên khoá vào thư mục bài nghe, không lộ API secret ra ngoài', () => {
+        const ck = S.chuKyTaiLen(1_700_000_000_000);
+        expect(ck).toMatchObject({ cloudName: 'demo', apiKey: 'k', timestamp: 1_700_000_000, folder: 'bai-nghe', toiDaByte: 40 * 1024 * 1024 });
+        expect(ck.signature).toBe('ky:bai-nghe:1700000000:s');
+        expect(JSON.stringify(ck)).not.toMatch(/api_secret/);
     });
 });
 
