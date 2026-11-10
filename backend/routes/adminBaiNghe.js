@@ -20,12 +20,16 @@ router.get('/', async (req, res, next) => {
     try { res.json({ success: true, data: await S.danhSachAdmin() }); } catch (err) { next(err); }
 });
 
-router.get('/chu-ky', (req, res) => {
+router.get('/chu-ky', async (req, res) => {
     try {
-        res.json({ success: true, data: S.chuKyTaiLen() });
+        res.json({ success: true, data: await S.chuKyTaiLen() });
     } catch (e) {
         res.status(e.ma || 500).json({ success: false, message: e.ma ? e.message : 'Không tạo được chữ ký tải lên.' });
     }
+});
+
+router.get('/dung-luong', async (req, res, next) => {
+    try { res.json({ success: true, data: await S.tongQuanDungLuong() }); } catch (err) { next(err); }
 });
 
 router.post('/', async (req, res, next) => {
@@ -41,6 +45,13 @@ router.post('/', async (req, res, next) => {
             nguonUrl: b.nguonUrl,
             adminId: req.user.id,
         }));
+    } catch (err) { next(err); }
+});
+
+router.delete('/:id', async (req, res, next) => {
+    try {
+        if (!mongoose.isValidObjectId(req.params.id)) return res.status(400).json({ success: false, message: 'Id không hợp lệ' });
+        traVe(res, await S.xoaBai(req.params.id));
     } catch (err) { next(err); }
 });
 

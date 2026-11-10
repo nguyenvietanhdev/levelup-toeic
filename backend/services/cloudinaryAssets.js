@@ -109,6 +109,12 @@ async function dbPublicIds() {
         const id = publicIdFromUrl(r.url);
         if (id) ids.add(id);
     }
+    // Bài nghe (MP3/MP4) cũng nằm trên Cloudinary. Thiếu dòng này thì mọi file bài nghe
+    // hiện là "mồ côi" ở tab Cloudinary và một cú bấm "xoá" là mất cả thư viện bài nghe.
+    const BaiNghe = require('../models/BaiNghe');
+    for (const b of await BaiNghe.find({ cloudinaryId: { $ne: '' } }).select('cloudinaryId').lean()) {
+        ids.add(b.cloudinaryId);
+    }
     return ids;
 }
 

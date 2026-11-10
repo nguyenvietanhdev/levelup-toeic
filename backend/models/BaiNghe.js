@@ -27,6 +27,8 @@ const baiNgheSchema = new mongoose.Schema(
         mediaUrl: { type: String, required: true },
         coHinh: { type: Boolean, default: false },
         cloudinaryId: { type: String, default: '' },
+        // Dung lượng file gốc trên Cloudinary — để admin thấy bài nào chiếm chỗ.
+        byte: { type: Number, default: 0 },
         thoiLuong: { type: Number, default: 0 },
         cau: { type: [cauSchema], default: [] },
         // Ẩn thay vì xoá: xoá file trên Cloudinary là không lấy lại được.
