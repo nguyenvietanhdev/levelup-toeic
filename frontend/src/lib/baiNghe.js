@@ -16,6 +16,12 @@ export function cauTai(cau, t) {
     return i;
 }
 
+/**
+ * Vị trí cuộn để câu đang nói nằm ở khoảng 1/3 từ trên xuống của khung script (thuần): đủ thấy
+ * vài câu đã qua để theo mạch, và phần lớn khung dành cho câu sắp tới.
+ */
+export const viTriCuon = (viTriCau, caoKhung) => Math.round(viTriCau - caoKhung / 3);
+
 /** Tách câu tiếng Anh thành từ bấm được, giữ nguyên dấu câu và khoảng trắng để hiển thị (thuần). */
 export function tachTu(text) {
     return String(text || '').split(/(\s+)/).map((p) => {

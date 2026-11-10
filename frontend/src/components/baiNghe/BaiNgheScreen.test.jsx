@@ -6,7 +6,7 @@
  */
 import { describe, test, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import { gioPhut, cauTai, tachTu } from '@lib/baiNghe.js';
+import { gioPhut, cauTai, tachTu, viTriCuon } from '@lib/baiNghe.js';
 
 const api = vi.hoisted(() => ({ danhSach: vi.fn(), lay: vi.fn() }));
 const fav = vi.hoisted(() => ({ add: vi.fn() }));
@@ -59,6 +59,9 @@ describe('hàm thuần', () => {
         expect(cauTai(CAU, 6)).toBe(1);
         expect(cauTai(CAU, 100)).toBe(2);
     });
+    test('vị trí cuộn: câu đang nói ở 1/3 từ trên xuống của khung script', () => {
+        expect(viTriCuon(900, 600)).toBe(700);
+    });
     test('tách từ bấm được, giữ dấu câu để hiển thị', () => {
         const p = tachTu("Today, Anna's bank.");
         expect(p.map((x) => x.hien).join('')).toBe("Today, Anna's bank.");
@@ -93,6 +96,32 @@ describe('màn nghe', () => {
         thoiGian = 7;
         fireEvent.timeUpdate(video);
         expect(document.querySelector('[data-cau="2"]').className).toContain('is-hien');
+    });
+
+    test('script tự cuộn trong khung của nó theo câu đang nói; người học tự cuộn thì để yên', async () => {
+        await moBai();
+        const khung = document.querySelector('.bn-script');
+        khung.scrollTo = vi.fn();
+        Object.defineProperty(khung, 'clientHeight', { configurable: true, value: 300 });
+        Object.defineProperty(document.querySelector('[data-cau="2"]'), 'offsetTop', { configurable: true, value: 500 });
+        thoiGian = 7;
+        fireEvent.timeUpdate(document.querySelector('audio'));
+        expect(khung.scrollTo).toHaveBeenLastCalledWith({ top: 400, behavior: 'smooth' });
+        // Người học tự cuộn: không giật script về câu đang nói nữa.
+        khung.scrollTo.mockClear();
+        fireEvent.wheel(khung);
+        thoiGian = 4;
+        fireEvent.timeUpdate(document.querySelector('audio'));
+        expect(khung.scrollTo).not.toHaveBeenCalled();
+    });
+
+    test('bài video dùng bố cục hai cột; nghĩa của từ hiện cạnh khung phát', async () => {
+        api.lay.mockResolvedValue({ ...BAI, coHinh: true, mediaUrl: 'https://res.cloudinary.com/x/a.mp4' });
+        await moBai();
+        expect(document.querySelector('.bn-hoc').className).toContain('co-hinh');
+        fireEvent.click(screen.getByRole('button', { name: 'bank.' }));
+        await screen.findByText('ngân hàng');
+        expect(document.querySelector('.bn-may .bn-tu-chon')).toBeTruthy();
     });
 
     test('bấm câu: tua tới đầu câu, phát, và dừng ở cuối câu đó', async () => {

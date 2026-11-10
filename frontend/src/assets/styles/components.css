@@ -12911,13 +12911,25 @@ body.dang-phat-am .js-nut-am {
 .bn-the { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; width: 100%; padding: 12px 14px; border-radius: 12px; border: 1px solid var(--border-color); background: var(--bg-secondary); color: inherit; font: inherit; text-align: left; cursor: pointer; }
 .bn-the:hover { border-color: var(--accent-color); }
 .bn-the span { font-size: 13px; color: var(--text-secondary); }
-.bn-may { position: sticky; top: 0; z-index: 2; padding: 8px 0; background: var(--bg-primary); }
-.bn-may audio, .bn-may video { width: 100%; }
-/* Video: giới hạn chiều cao để script vẫn hiện bên dưới, nhất là trên điện thoại nằm dọc. */
-.bn-may.is-video video { max-height: 42vh; background: #000; border-radius: 10px; }
+/* Khung học: điện thoại xếp dọc (video trên, script dưới); máy tính hai cột. Chiều cao thanh
+   điều hướng (--bn-nav) và khung phát (--bn-may) do JS đo, số dưới đây chỉ là dự phòng. */
+.bn-hoc { --bn-nav: 64px; --bn-may: 240px; display: grid; gap: 12px; }
+.bn-may { position: sticky; top: var(--bn-nav); z-index: 2; padding: 8px 0; background: var(--bg-primary); display: flex; flex-direction: column; gap: 8px; }
+.bn-may audio, .bn-may video { width: 100%; display: block; }
+/* Video vừa khung, không cắt: giữ tỉ lệ, chừa chỗ cho script bên dưới trên điện thoại. */
+.bn-may.is-video video { max-height: 34dvh; object-fit: contain; background: #000; border-radius: 10px; }
+.bn-script { position: relative; overflow-y: auto; overscroll-behavior: contain; max-height: calc(100dvh - var(--bn-nav) - var(--bn-may) - 24px); min-height: 160px; padding-right: 4px; }
+@media (min-width: 1024px) {
+    .px-wrap.bn-wrap-rong { max-width: 1280px; }
+    .bn-hoc.co-hinh { grid-template-columns: minmax(0, 3fr) minmax(320px, 2fr); align-items: start; }
+    .bn-hoc.co-hinh .bn-may { top: calc(var(--bn-nav) + 8px); }
+    /* Hai cột: video cao tối đa vừa màn, script cao bằng phần màn còn lại dưới thanh điều hướng. */
+    .bn-hoc.co-hinh .bn-may.is-video video { max-height: calc(100dvh - var(--bn-nav) - 140px); }
+    .bn-hoc.co-hinh .bn-script, .bn-hoc.co-hinh .bn-script-an { position: sticky; top: calc(var(--bn-nav) + 8px); max-height: calc(100dvh - var(--bn-nav) - 24px); }
+}
 .bn-dieu-khien { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; }
 .bn-toc-do { margin: 0; }
-.bn-script { list-style: none; margin: 8px 0 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.bn-script { list-style: none; margin: 0; padding: 0 4px 0 0; display: flex; flex-direction: column; gap: 4px; }
 .bn-script li { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 10px; align-items: start; padding: 8px 10px; border-radius: 10px; border: 1px solid transparent; }
 .bn-script li.is-hien { background: var(--bg-secondary); border-color: var(--accent-color); }
 .bn-moc { border: none; background: none; color: var(--text-secondary); font: inherit; font-size: 12px; cursor: pointer; padding: 2px 0; white-space: nowrap; }
@@ -12926,11 +12938,12 @@ body.dang-phat-am .js-nut-am {
 .bn-tu:hover { text-decoration: underline; color: var(--accent-color); }
 .bn-dich { display: block; margin-top: 4px; color: var(--text-secondary); }
 .bn-nut-dich { font-size: 13px; white-space: nowrap; }
-.bn-tu-chon { position: sticky; bottom: 8px; display: flex; flex-direction: column; gap: 6px; margin-top: 12px; padding: 12px 14px; border-radius: 12px; border: 1px solid var(--accent-color); background: var(--bg-secondary); box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15); }
+.bn-tu-chon { display: flex; flex-direction: column; gap: 6px; padding: 10px 12px; border-radius: 12px; border: 1px solid var(--accent-color); background: var(--bg-secondary); box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15); }
+.bn-tu-chon .px-nut { margin: 0; }
 .bn-nguon a { color: var(--accent-color); }
 @media (max-width: 480px) {
     .bn-script li { grid-template-columns: minmax(0, 1fr) auto; }
-    .bn-moc { grid-column: 1 / -1; }
+    .bn-moc { grid-column: 1 / -1; justify-self: start; }
 }
 .px-sai-ds small.px-pinyin { display: block; }
 .np-lang { display: inline-flex; gap: 4px; padding: 3px; margin-bottom: 10px; border-radius: 999px; border: 1px solid var(--border-color); background: var(--bg-secondary); }

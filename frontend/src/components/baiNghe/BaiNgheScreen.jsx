@@ -6,10 +6,12 @@ import { BaiNgheAPI } from '@api/baiNghe.js';
 import { FavoritesAPI } from '@api/favorites.js';
 import { getVocabLang } from '@api/vocabulary.js';
 import { dichSangViet } from '@lib/dichNhanh.js';
-import { gioPhut, cauTai, tachTu } from '@lib/baiNghe.js';
+import { gioPhut, cauTai, tachTu, viTriCuon } from '@lib/baiNghe.js';
 
 const TEN_CAP_DO = { de: 'Dễ', vua: 'Vừa', kho: 'Khó' };
 const TOC_DO = [0.75, 1, 1.25];
+/** Người học tự cuộn script thì ngừng tự cuộn theo câu trong khoảng này. */
+const TU_CUON_NGHI_MS = 4000;
 
 /**
  * Bài nghe có script chạy theo: thư viện bài (VOA Learning English) → nghe với script tô sáng theo
@@ -32,6 +34,8 @@ export default function BaiNgheScreen({ active }) {
     const [tuChon, setTuChon] = useState(null); // { tu, cau, nghia, dang }
 
     const audio = useRef(null);
+    const boCuc = useRef(null);
+    const tuCuonLuc = useRef(0); // lúc người học tự cuộn script gần nhất
     const dungTai = useRef(null); // nghe một câu: dừng ở cuối câu đó
     const khung = useRef(null);
 
@@ -49,12 +53,36 @@ export default function BaiNgheScreen({ active }) {
         if (audio.current) audio.current.playbackRate = tocDo;
     }, [tocDo, bai]);
 
-    // Câu đang nói luôn nằm trong tầm nhìn.
+    // Câu đang nói giữ ở khoảng 1/3 từ trên xuống của KHUNG SCRIPT (khung tự cuộn), không dính
+    // mép dưới màn hình. Người học vừa tự cuộn script thì để yên một lúc, không giật ngược lại.
     useEffect(() => {
-        if (hien < 0 || anScript) return;
-        const el = khung.current?.querySelector(`[data-cau="${hien}"]`);
-        el?.scrollIntoView?.({ block: 'nearest', behavior: 'smooth' });
+        const c = khung.current;
+        if (hien < 0 || anScript || !c) return;
+        if (Date.now() - tuCuonLuc.current < TU_CUON_NGHI_MS) return;
+        const el = c.querySelector(`[data-cau="${hien}"]`);
+        if (!el) return;
+        c.scrollTo?.({ top: Math.max(0, viTriCuon(el.offsetTop, c.clientHeight)), behavior: 'smooth' });
     }, [hien, anScript]);
+
+    // Đo thanh điều hướng và khung phát để khung script vừa khít phần màn hình còn lại, ở mọi
+    // cỡ màn (thanh điều hướng điện thoại thấp hơn máy tính). Không có ResizeObserver thì giữ
+    // số dự phòng trong CSS.
+    useEffect(() => {
+        const vo = boCuc.current;
+        if (!vo || !bai) return undefined;
+        const nav = document.querySelector('.top-nav');
+        const may = vo.querySelector('.bn-may');
+        const doLai = () => {
+            vo.style.setProperty('--bn-nav', `${nav?.offsetHeight || 0}px`);
+            vo.style.setProperty('--bn-may', `${may?.offsetHeight || 0}px`);
+        };
+        doLai();
+        if (typeof ResizeObserver === 'undefined') return undefined;
+        const ro = new ResizeObserver(doLai);
+        if (nav) ro.observe(nav);
+        if (may) ro.observe(may);
+        return () => ro.disconnect();
+    }, [bai, anScript]);
 
     const moBai = async (id) => {
         if (dangMo) return;
@@ -140,7 +168,8 @@ export default function BaiNgheScreen({ active }) {
                 <h2><i className="fas fa-podcast"></i> {bai ? bai.tieuDe : 'Bài nghe có script'}</h2>
             </div>
 
-            <div className="px-wrap">
+            {/* Bài có video: khung nội dung rộng hơn để hai cột video và script đều dễ nhìn. */}
+            <div className={`px-wrap ${bai?.coHinh ? 'bn-wrap-rong' : ''}`}>
                 {!isLoggedIn && <p className="px-mo-ta">Đăng nhập để nghe bài.</p>}
 
                 {isLoggedIn && !bai && (
@@ -171,6 +200,9 @@ export default function BaiNgheScreen({ active }) {
 
                 {isLoggedIn && bai && (
                     <>
+                      {/* Máy tính: hai cột, video trái, script phải. Điện thoại: video trên,
+                          script dưới trong khung tự cuộn chiếm phần màn hình còn lại. */}
+                      <div className={`bn-hoc ${bai.coHinh ? 'co-hinh' : ''}`} ref={boCuc}>
                         <div className={`bn-may ${bai.coHinh ? 'is-video' : ''}`}>
                             {/* Video và audio dùng chung cách điều khiển (HTMLMediaElement), nên
                                 script chạy theo, nghe từng câu, tốc độ đều như nhau. */}
@@ -204,12 +236,31 @@ export default function BaiNgheScreen({ active }) {
                                     <i className={`fas ${anScript ? 'fa-eye' : 'fa-eye-slash'}`}></i> {anScript ? 'Hiện script' : 'Ẩn script'}
                                 </button>
                             </div>
+                            {/* Nghĩa của từ nằm cạnh khung phát: luôn trong tầm mắt, không phải
+                                cuộn script xuống cuối mới thấy. */}
+                            {tuChon && (
+                                <div className="bn-tu-chon" role="dialog" aria-label={`Từ: ${tuChon.tu}`}>
+                                    <strong>{tuChon.tu}</strong>
+                                    <span>{tuChon.dang ? 'Đang tra…' : (tuChon.nghia || 'Không tra được nghĩa.')}</span>
+                                    <div className="px-nut">
+                                        <button type="button" className="btn btn-primary" disabled={tuChon.dang} onClick={luuTu}>
+                                            <i className="fas fa-star"></i> Lưu vào Yêu thích
+                                        </button>
+                                        <button type="button" className="btn btn-secondary" onClick={() => setTuChon(null)}>Đóng</button>
+                                    </div>
+                                </div>
+                            )}
                         </div>
 
                         {anScript ? (
-                            <p className="px-goi-y">Script đang ẩn: nghe trước một lượt, đoán xem hiểu được bao nhiêu rồi mới bật script lên.</p>
+                            <p className="px-goi-y bn-script-an">Script đang ẩn: nghe trước một lượt, đoán xem hiểu được bao nhiêu rồi mới bật script lên.</p>
                         ) : (
-                            <ol className="bn-script" ref={khung}>
+                            <ol
+                                className="bn-script"
+                                ref={khung}
+                                onWheel={() => { tuCuonLuc.current = Date.now(); }}
+                                onTouchMove={() => { tuCuonLuc.current = Date.now(); }}
+                            >
                                 {bai.cau.map((c, i) => (
                                     <li key={`${i}-${c.batDau}`} data-cau={i} className={i === hien ? 'is-hien' : ''}>
                                         <button type="button" className="bn-moc" aria-label={`Nghe câu ${i + 1}`} onClick={() => ngheCau(i)}>
@@ -232,19 +283,7 @@ export default function BaiNgheScreen({ active }) {
                                 ))}
                             </ol>
                         )}
-
-                        {tuChon && (
-                            <div className="bn-tu-chon" role="dialog" aria-label={`Từ: ${tuChon.tu}`}>
-                                <strong>{tuChon.tu}</strong>
-                                <span>{tuChon.dang ? 'Đang tra…' : (tuChon.nghia || 'Không tra được nghĩa.')}</span>
-                                <div className="px-nut">
-                                    <button type="button" className="btn btn-primary" disabled={tuChon.dang} onClick={luuTu}>
-                                        <i className="fas fa-star"></i> Lưu vào Yêu thích
-                                    </button>
-                                    <button type="button" className="btn btn-secondary" onClick={() => setTuChon(null)}>Đóng</button>
-                                </div>
-                            </div>
-                        )}
+                      </div>
 
                         <p className="px-goi-y bn-nguon">
                             Nguồn: {bai.nguon} (nội dung thuộc phạm vi công cộng).
