@@ -79,8 +79,9 @@ describe('mục tiêu HSK', () => {
         });
         render(<HoSoHocScreen active />);
         fireEvent.click(await screen.findByRole('button', { name: /Bắt đầu test/ }));
-        fireEvent.click(await screen.findByRole('button', { name: '个' }));
-        expect(await screen.findByText('Wǒ míngtiān zài jiā xuéxí.')).toBeTruthy();
+        // Ba bước chờ nối tiếp: nới thời gian chờ để không báo hỏng oan khi cả bộ test chạy cùng lúc.
+        fireEvent.click(await screen.findByRole('button', { name: '个' }, { timeout: 3000 }));
+        expect(await screen.findByText('Wǒ míngtiān zài jiā xuéxí.', {}, { timeout: 3000 })).toBeTruthy();
         expect(screen.getByText(/Chưa nắm quy tắc/)).toBeTruthy();
         expect(screen.getByRole('button', { name: 'Luyện khung này' })).toBeTruthy();
     });

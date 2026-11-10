@@ -63,6 +63,9 @@ const MENU_GROUPS = [
             { label: 'Luyện đề test TOEIC', icon: 'fa-graduation-cap', screen: 'toeic-screen', hot: true, feature: 'feature:toeic' },
             // Tra cứu nhanh: kho lõi viết tay, AI chỉ chạy khi người học bấm. Không khoá Level.
             { label: 'Công thức ngữ pháp', icon: 'fa-spell-check', screen: 'ngu-phap-screen' },
+            // Thư viện bài nghe thật (VOA, phạm vi công cộng) kèm script chạy theo. Không gọi AI
+            // khi nghe nên không thuộc nhóm "với AI"; người học tìm đến khi muốn nghe một bài.
+            { label: 'Bài nghe có script', icon: 'fa-podcast', screen: 'bai-nghe-screen' },
             // MÀN HÌNH riêng, không phải popup: nó có 5 tab và người dùng ở lại lâu
             // (thêm từ · dán JSON · quản lý · chia sẻ · duyệt bộ được chia sẻ). Là nội dung
             // học nên nằm ở đây, không ở Kho đồ cạnh vật phẩm.

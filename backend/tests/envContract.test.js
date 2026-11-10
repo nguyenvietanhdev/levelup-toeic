@@ -35,6 +35,9 @@ const INDIRECT = {
     // để test chính sách CORS mà không phải nạp cả app. Kiểm: utils/corsPolicy.js
     // hàm `allowedFromEnv`.
     CORS_ORIGIN: 'utils/corsPolicy.js — đọc qua tham số env tiêm vào, không qua process.env trực tiếp',
+    // Đọc qua tham số `env` của `nhaChepLoi(env = process.env)` — để test chọn Groq/OpenAI
+    // mà không phải sửa process.env. Kiểm: services/baiNghe.js hàm `nhaChepLoi`.
+    GROQ_API_KEY: 'services/baiNghe.js — nhaChepLoi(env), đọc qua tham số env tiêm vào',
 };
 
 /** Biến chỉ dùng trong `scripts/` chạy tay, không thuộc hợp đồng deploy. */

@@ -278,6 +278,7 @@ app.use('/api/ho-so-nang-luc', require('./routes/hoSoNangLuc')); // Hồ sơ nă
 app.use('/api/ngu-phap', require('./routes/nguPhap')); // Công thức ngữ pháp: kho lõi + AI mở rộng
 app.use('/api/ho-so-hoc', require('./routes/hoSoHoc')); // Mục tiêu, trình độ theo kỹ năng, test đầu vào
 app.use('/api/phan-xa', require('./routes/phanXa')); // Phản xạ câu: nhìn câu Việt, nói/gõ câu Anh
+app.use('/api/bai-nghe', require('./routes/baiNghe')); // Bài nghe có script chạy theo (VOA Learning English)
 app.use('/api/on-loi', require('./routes/onLoi')); // Kiểm tra lại lỗi đã chữa: nhận ra, sửa, hiểu vì sao, áp dụng câu mới
 app.use('/api/tien-bo', require('./routes/tienBo')); // Tiến bộ của tôi: hồ sơ năng lực theo tuần, tính từ dữ liệu đã có
 app.use('/api/essay', require('./routes/essay')); // Luyện viết luận (chấm IELTS Task 2)
@@ -299,6 +300,7 @@ app.use('/api/admin', require('./routes/adminDefinitions')); // Achievement + Qu
 app.use('/api/categories', require('./routes/categories')); // Danh mục (public GET để dựng tab)
 app.use('/api/features', require('./routes/features'));     // Mốc mở khoá theo Level
 app.use('/api/admin/ngu-phap', require('./routes/adminNguPhap')); // Nội dung ngữ pháp do AI tạo: báo cáo sai, thư viện (admin)
+app.use('/api/admin/bai-nghe', require('./routes/adminBaiNghe')); // Thêm bài nghe từ file âm thanh, ẩn/hiện (admin)
 app.use('/api/admin/db', require('./routes/adminDb'));       // MongoDB collection manager (admin)
 app.use('/api/admin/cloudinary', require('./routes/adminCloudinary')); // Kho ảnh/audio trên Cloudinary (admin)
 app.use('/api/quests', require('./routes/quests'));          // Quest system (daily/weekly/monthly/special)

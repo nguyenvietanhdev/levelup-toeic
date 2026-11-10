@@ -1,0 +1,57 @@
+          <!-- ===== BÀI NGHE CÓ SCRIPT (VOA) TAB ===== -->
+          <div id="main-tab-bai-nghe" class="main-tab-content">
+            <div class="card">
+              <div class="card-header">
+                <h2><i class="fas fa-podcast"></i> Thêm bài nghe</h2>
+              </div>
+              <div style="padding:0 4px 12px;font-size:13px;color:var(--text-secondary)">
+                Tải file âm thanh lên (MP3, tối đa 25 MB) hoặc dán link file. Hệ thống lưu âm thanh lên Cloudinary và
+                dùng Whisper chép lời kèm mốc thời gian cho từng câu (mất khoảng nửa phút đến vài phút).
+                Chỉ dùng nội dung được phép dùng lại, như bài dạy học của <b>VOA Learning English</b> (phạm vi công cộng);
+                nên chọn loạt bài dạy học, không lấy bản tin.
+              </div>
+              <form id="bn-form" style="display:grid;gap:10px;padding:0 4px 12px;max-width:640px">
+                <label>Tiêu đề <input id="bn-tieu-de" class="form-control" maxlength="160" required placeholder="Let&#39;s Learn English — Lesson 1: Welcome!"></label>
+                <div style="display:flex;gap:10px;flex-wrap:wrap">
+                  <label>Ngôn ngữ
+                    <select id="bn-lang" class="form-control"><option value="en">Tiếng Anh</option><option value="zh">Tiếng Trung</option></select>
+                  </label>
+                  <label>Cấp độ
+                    <select id="bn-cap-do" class="form-control"><option value="de">Dễ</option><option value="vua" selected>Vừa</option><option value="kho">Khó</option></select>
+                  </label>
+                  <label style="flex:1;min-width:200px">Nguồn
+                    <input id="bn-nguon" class="form-control" maxlength="120" value="VOA Learning English">
+                  </label>
+                </div>
+                <label>Link bài gốc (để ghi công) <input id="bn-nguon-url" class="form-control" maxlength="500" placeholder="https://learningenglish.voanews.com/a/..."></label>
+                <label>File âm thanh <input id="bn-file" type="file" accept="audio/*" class="form-control"></label>
+                <label>hoặc link file âm thanh <input id="bn-url" class="form-control" maxlength="500" placeholder="https://.../lesson.mp3"></label>
+                <div><button type="submit" class="btn btn-primary" id="bn-gui"><i class="fas fa-plus"></i> Thêm bài</button>
+                  <span id="bn-trang-thai" style="margin-left:10px;font-size:13px"></span></div>
+              </form>
+            </div>
+
+            <div class="card" style="margin-top:20px">
+              <div class="card-header">
+                <h2><i class="fas fa-list"></i> Thư viện bài nghe</h2>
+                <div class="card-header-actions">
+                  <button class="btn btn-secondary btn-sm" id="btn-bn-reload"><i class="fas fa-rotate"></i> Tải lại</button>
+                </div>
+              </div>
+              <div class="table-container">
+                <table class="data-table">
+                  <thead><tr>
+                    <th>Tiêu đề</th>
+                    <th style="width:90px">Ngôn ngữ</th>
+                    <th style="width:80px">Cấp độ</th>
+                    <th style="width:110px">Thời lượng</th>
+                    <th style="width:120px">Trạng thái</th>
+                    <th style="width:120px">Thao tác</th>
+                  </tr></thead>
+                  <tbody id="bn-ds">
+                    <tr><td colspan="6" class="loading"><i class="fas fa-spinner fa-spin"></i> Đang tải...</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>

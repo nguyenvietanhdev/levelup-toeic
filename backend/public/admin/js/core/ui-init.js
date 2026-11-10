@@ -124,6 +124,8 @@ function initMainTabs() {
             window.loadFeatureUnlocks?.();
         } else if (tab === 'ngu-phap-ai') {
             window.loadNguPhapAi?.();
+        } else if (tab === 'bai-nghe') {
+            window.loadBaiNghe?.();
         } else if (tab === 'mode-schedules') {
             window.loadModeSchedules?.();
         } else if (tab === 'answer-keys') {
