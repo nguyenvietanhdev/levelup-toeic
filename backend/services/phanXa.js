@@ -125,12 +125,21 @@ async function aiCham(cau, traLoi, userId, lang = 'en') {
 }
 
 /**
- * Ngôn ngữ luyện, theo ngôn ngữ đang học từ vựng. Kho song ngữ (`bi`) học bằng tiếng Anh,
- * cùng quy ước với mọi chỗ khác (hồ sơ, tiến bộ, sổ tay lỗi).
+ * Ngôn ngữ luyện (thuần): theo ngôn ngữ đang học từ vựng. Kho song ngữ (`bi`) học bằng tiếng
+ * Anh như mọi chỗ khác, TRỪ khi mục tiêu là HSK — test HSK và lộ trình HSK giao khung tiếng
+ * Trung, nên Phản xạ câu phải mở đúng khung đó.
  */
+function chonLang(vocabLang, mucTieu) {
+    if (vocabLang === 'zh') return 'zh';
+    return vocabLang === 'bi' && mucTieu === 'hsk' ? 'zh' : 'en';
+}
+
 async function langCua(userId) {
     const p = await UserProfile.findOne({ userId }).select('settings').lean();
-    return p?.settings?.vocabLang === 'zh' ? 'zh' : 'en';
+    const vocabLang = p?.settings?.vocabLang;
+    if (vocabLang !== 'bi') return chonLang(vocabLang);
+    const hs = await HoSoHocVien.findOne({ userId }).select('mucTieu').lean().catch(() => null);
+    return chonLang(vocabLang, hs?.mucTieu);
 }
 
 /** Số câu mới / đến hạn / đã thuộc theo từng khung của ngôn ngữ đang học. */
@@ -250,5 +259,5 @@ async function traLoi(userId, buoiId, i, body = {}, now = new Date()) {
 }
 
 module.exports = {
-    tongQuan, taoBuoi, traLoi, chuanHoa, chuanHoaZh, khopKho, aiCham, capNhatLich, chonCau, quyTacChoLuot, SO_CAU, KHOANG,
+    tongQuan, taoBuoi, traLoi, chuanHoa, chuanHoaZh, khopKho, aiCham, capNhatLich, chonCau, quyTacChoLuot, chonLang, SO_CAU, KHOANG,
 };

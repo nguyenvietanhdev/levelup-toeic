@@ -241,7 +241,7 @@ exports.grade = async (req, res, next) => {
         // Đã nộp chấm → bài nháp hết việc.
         await xoaNhap(req.user.id, 'viet', lang);
         // Bài đã chấm góp một bằng chứng vào hồ sơ.
-        await ghiBangChung(req.user.id, lang, bangChungTuBai({ loi: r.errors, diemNguPhap: r.scores?.grammar }));
+        await ghiBangChung(req.user.id, lang, bangChungTuBai({ loi: r.errors, diemNguPhap: r.scores?.grammar, lang }));
 
         res.json({
             success: true,

@@ -63,7 +63,7 @@ describe('đọc hồ sơ', () => {
         expect(bc).toMatchObject({ mucTieu: 'toeic', trinhDo: '', yeu: [] });
         expect(S.chiThiCham(bc)).toBe('');
     });
-    test('lỗi đọc hồ sơ hoặc học tiếng Trung: trả rỗng, không ném lỗi', async () => {
+    test('lỗi đọc hồ sơ: trả rỗng, không ném lỗi; bài tiếng Trung không dùng hồ sơ Giao tiếp tiếng Anh', async () => {
         mockHoSo.doc = HOC_VIEN;
         expect(await S.layChiThiRaBai('u1', 'zh')).toBe('');
         mockHoSo.loi = true;
@@ -130,7 +130,7 @@ describe('bằng chứng từ bài làm', () => {
         expect(S.bangChungNghe(30)).toEqual([{ kyNang: 'nghe', dung: false }]);
         expect(S.bangChungNghe(60)).toEqual([]);
     });
-    test('ghi vào hồ sơ; học tiếng Trung thì không; lỗi ghi không ném ra ngoài', async () => {
+    test('ghi vào hồ sơ; bài tiếng Trung không ghi vào kỹ năng tiếng Anh; lỗi ghi không ném ra ngoài', async () => {
         await S.ghiBangChung('u1', 'zh', [{ kyNang: 'nghe', dung: true }]);
         expect(mockHoSo.ghi).toHaveLength(0);
         await S.ghiBangChung('u1', 'en', [{ kyNang: 'nghe', dung: true }]);
@@ -213,5 +213,44 @@ describe('nối dây tới prompt thật', () => {
         chatCompletion.mockClear();
         await generatePassage({ lang: 'en', chiThi: CHI_THI });
         expect(systemCua()).toContain(CHI_THI);
+    });
+});
+
+describe('tiếng Trung', () => {
+    const lap = (dung, n) => ({ d: dung ? n : 0, s: dung ? 0 : n, soLan: n });
+    test('bối cảnh bài tiếng Trung lấy từ nền tảng câu tiếng Trung, không lẫn khung tiếng Anh', () => {
+        const doc = { mucTieu: 'hsk', kyNang: { 'zh-luong-tu': lap(false, 5), 'qua-khu': lap(false, 5) } };
+        const zh = S.boiCanh(doc, 'zh');
+        expect(zh).toMatchObject({ lang: 'zh', mucTieu: 'hsk', yeu: ['zh-luong-tu'] });
+        const ct = S.chiThiRaBai(zh);
+        expect(ct).toMatch(/HSK exams/);
+        expect(ct).toMatch(/measure words/);
+        // Bài tiếng Anh của cùng người: không dùng mục tiêu HSK, chỉ khung tiếng Anh.
+        const en = S.boiCanh(doc, 'en');
+        expect(en).toMatchObject({ lang: 'en', mucTieu: '', yeu: ['qua-khu'] });
+        expect(S.chiThiRaBai(en)).not.toMatch(/HSK/);
+    });
+    test('đọc hồ sơ cho bài tiếng Trung (trước đây bỏ qua hẳn)', async () => {
+        mockHoSo.doc = { mucTieu: 'hsk', kyNang: { 'zh-da-lam': lap(false, 5) } };
+        expect(await S.layChiThiCham('u1', 'zh')).toMatch(/了, 过/);
+    });
+    test('bằng chứng từ bài tiếng Trung: nhóm lỗi tiếng Trung → khung tiếng Trung', () => {
+        const kq = S.bangChungTuBai({ lang: 'zh', diemNguPhap: 8, loi: [{ type: 'measure-word' }, { type: 'negation' }] });
+        expect(kq).toEqual([
+            { kyNang: 'zh-da-lam', dung: false },
+            { kyNang: 'zh-trat-tu', dung: true },
+            { kyNang: 'zh-luong-tu', dung: false },
+        ]);
+        expect(S.bangChungNoi({ criteria: [{ score: 8 }] }, 'zh')).toEqual([{ kyNang: 'zh-noi', dung: true }]);
+        expect(S.bangChungNghe(30, 'zh')).toEqual([{ kyNang: 'zh-nghe', dung: false }]);
+    });
+    test('ghi bằng chứng: bỏ phần lạc ngôn ngữ', async () => {
+        mockHoSo.doc = { kyNang: {} };
+        mockHoSo.ghi.length = 0;
+        await S.ghiBangChung('u1', 'zh', [{ kyNang: 'zh-nghe', dung: true }, { kyNang: 'nghe', dung: true }]);
+        expect(Object.keys(mockHoSo.ghi[0])).toEqual(['kyNang.zh-nghe']);
+        mockHoSo.ghi.length = 0;
+        await S.ghiBangChung('u1', 'en', [{ kyNang: 'zh-noi', dung: true }]);
+        expect(mockHoSo.ghi).toHaveLength(0);
     });
 });

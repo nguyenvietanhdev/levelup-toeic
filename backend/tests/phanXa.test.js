@@ -229,9 +229,19 @@ describe('một lượt', () => {
         expect(buoi.cau).toHaveLength(S.SO_CAU);
         for (const c of mockBuoi.doc.cau) expect(c.cauId.startsWith('zh-')).toBe(true);
     });
-    test('kho song ngữ (bi) luyện tiếng Anh', async () => {
+    test('kho song ngữ (bi) luyện tiếng Anh; mục tiêu HSK thì luyện tiếng Trung', async () => {
         mockLang = 'bi';
         expect((await S.tongQuan('u1')).lang).toBe('en');
+        mockHoSoDoc = { mucTieu: 'hsk' };
+        expect((await S.tongQuan('u1')).lang).toBe('zh');
+        mockHoSoDoc = null;
+    });
+    test('chọn ngôn ngữ luyện (thuần)', () => {
+        expect(S.chonLang('zh')).toBe('zh');
+        expect(S.chonLang('en', 'hsk')).toBe('en');
+        expect(S.chonLang('bi', 'hsk')).toBe('zh');
+        expect(S.chonLang('bi', 'giao-tiep')).toBe('en');
+        expect(S.chonLang(undefined)).toBe('en');
     });
 });
 

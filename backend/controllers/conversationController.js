@@ -389,8 +389,8 @@ exports.finish = async (req, res, next) => {
         if (feedback) {
             const diemNguPhap = (feedback.criteria || []).find((c) => c.key === 'ngu_phap')?.score;
             await ghiBangChung(req.user.id, convo.lang, [
-                ...bangChungTuBai({ loi: feedback.corrections, diemNguPhap }),
-                ...(convo.voice === true ? bangChungNoi(feedback) : []),
+                ...bangChungTuBai({ loi: feedback.corrections, diemNguPhap, lang: convo.lang }),
+                ...(convo.voice === true ? bangChungNoi(feedback, convo.lang) : []),
             ]);
         }
 

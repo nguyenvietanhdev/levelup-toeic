@@ -215,7 +215,7 @@ exports.grade = async (req, res, next) => {
             await Promise.all([profile.save(), stats.save()]);
         }
         // Chỉ lần chiếm được phiên mới tới đây nên mỗi bài chỉ tính một lần.
-        await ghiBangChung(userId, phien.lang === 'zh' ? 'zh' : 'en', bangChungNghe(ketQua.score));
+        await ghiBangChung(userId, phien.lang === 'zh' ? 'zh' : 'en', bangChungNghe(ketQua.score, phien.lang === 'zh' ? 'zh' : 'en'));
 
         res.json({
             success: true,
