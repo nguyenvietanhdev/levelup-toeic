@@ -21,6 +21,26 @@ const MUC = [
 ];
 
 /**
+ * Giọng đọc tiếng Anh theo vùng (khoá khớp `GIONG_VUNG` ở backend/services/listeningAi.js).
+ * Đề TOEIC thật trộn giọng Mỹ, Anh, Úc, Canada nên mặc định là trộn.
+ */
+const GIONG = [
+    { key: 'tron', label: 'Trộn', desc: 'Mỗi bài một giọng, như đề TOEIC' },
+    { key: 'us', label: 'Mỹ', desc: 'Giọng Mỹ' },
+    { key: 'uk', label: 'Anh', desc: 'Giọng Anh (UK)' },
+    { key: 'au', label: 'Úc', desc: 'Giọng Úc' },
+    { key: 'ca', label: 'Canada', desc: 'Giọng Canada' },
+];
+const KHOA_GIONG = 'levelup.nghe.giong';
+function giongDaChon() {
+    try {
+        const g = localStorage.getItem(KHOA_GIONG);
+        if (GIONG.some((x) => x.key === g)) return g;
+    } catch { /* không đọc được thì dùng mặc định */ }
+    return 'tron';
+}
+
+/**
  * Kho dạng nghe — chỉ dạng MỘT người nói (TTS đọc một giọng). Nghe không có kiểu
  * chấm nên `hop` để trống. Khoá khớp `NHOM_DANG_NGHE` ở
  * backend/services/listeningAi.js. "Ngẫu nhiên" giữ đoạn như trước.
@@ -83,6 +103,11 @@ export default function ListeningScreen({ active }) {
     const { showScreen, syncFromState } = useGame();
 
     const [level, setLevel] = useState('medium');
+    const [giong, setGiong] = useState(giongDaChon);
+    const chonGiong = (g) => {
+        setGiong(g);
+        try { localStorage.setItem(KHOA_GIONG, g); } catch { /* chỉ là nhớ lựa chọn */ }
+    };
     const [tab, setTab] = useState('luyen'); // 'luyen' | 'lichsu'
     const [dang, setDang] = useState('');     // '' = ngẫu nhiên
     const [tuChon, setTuChon] = useState(''); // dạng/chủ đề tự nhập, ưu tiên hơn `dang`
@@ -110,7 +135,7 @@ export default function ListeningScreen({ active }) {
     const batDau = async () => {
         setBusy(true);
         try {
-            const d = await ListeningAPI.start({ level, ...dangGui({ dang, tuChon, goiY }) });
+            const d = await ListeningAPI.start({ level, giong, ...dangGui({ dang, tuChon, goiY }) });
             setPhien(d);
             setTyped('');
             setKetQua(null);
@@ -246,6 +271,25 @@ export default function ListeningScreen({ active }) {
                                     </button>
                                 ))}
                             </div>
+                            {/* Tiếng Trung chỉ có giọng phổ thông: không hiện lựa chọn vùng. */}
+                            {!zh && (
+                                <>
+                                    <div className="ai-setup-title" style={{ marginTop: 12 }}>Giọng đọc</div>
+                                    <div className="ai-setup-list tr-levels" role="group" aria-label="Giọng đọc">
+                                        {GIONG.map((g) => (
+                                            <button
+                                                key={g.key}
+                                                className={`tr-level${giong === g.key ? ' is-on' : ''}`}
+                                                aria-pressed={giong === g.key}
+                                                onClick={() => chonGiong(g.key)}
+                                            >
+                                                <strong>{g.label}</strong>
+                                                <em>{g.desc}</em>
+                                            </button>
+                                        ))}
+                                    </div>
+                                </>
+                            )}
                         </div>
                     </div>
                     {/* Nút bắt đầu nổi cố định giữa đáy khung nhìn (portal vào body). */}
@@ -256,7 +300,7 @@ export default function ListeningScreen({ active }) {
             ) : (
                 <div className="listening-body">
                     <p className="tr-intro-note">
-                        {phien.dangVi ? `${phien.dangVi} · ` : ''}{phien.totalTargets} từ mục tiêu trong đoạn này.
+                        {phien.dangVi ? `${phien.dangVi} · ` : ''}{phien.tenGiong ? `Giọng ${phien.tenGiong} · ` : ''}{phien.totalTargets} từ mục tiêu trong đoạn này.
                     </p>
 
                     {/* Âm thanh tốc độ gốc; nút tốc độ chỉ đổi `playbackRate`. */}

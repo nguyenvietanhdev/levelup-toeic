@@ -160,3 +160,40 @@ describe('nghe tiếng Trung: chấm theo từng chữ Hán', () => {
         expect(src).toMatch(/GIONG_THEO_NGON_NGU\[phien\.lang\] \|\| GIONG_NGHE/);
     });
 });
+
+describe('giọng đọc theo vùng', () => {
+    const { chonGiong, GIONG_VUNG } = require('../services/listeningAi');
+    test('đủ bốn vùng như đề TOEIC, mỗi vùng có giọng nữ và nam đúng mã vùng', () => {
+        expect(Object.keys(GIONG_VUNG)).toEqual(['us', 'uk', 'au', 'ca']);
+        const ma = { us: 'en-US', uk: 'en-GB', au: 'en-AU', ca: 'en-CA' };
+        for (const [v, g] of Object.entries(GIONG_VUNG)) {
+            expect(g.ds).toHaveLength(2);
+            for (const ten of g.ds) expect(ten.startsWith(`${ma[v]}-`)).toBe(true);
+        }
+    });
+    test('chọn vùng cụ thể thì đúng vùng đó', () => {
+        expect(chonGiong('en', 'uk', () => 0)).toEqual({ giong: 'en-GB-SoniaNeural', vung: 'uk', tenVung: 'Anh' });
+        expect(chonGiong('en', 'au', () => 0.99).giong).toBe('en-AU-WilliamNeural');
+    });
+    test('trộn (hoặc giá trị lạ): mỗi lượt bốc một vùng, đủ cả bốn vùng', () => {
+        const gap = new Set([0, 0.3, 0.6, 0.9].map((x) => chonGiong('en', 'tron', () => x).vung));
+        expect(gap).toEqual(new Set(['us', 'uk', 'au', 'ca']));
+        expect(['us', 'uk', 'au', 'ca']).toContain(chonGiong('en', 'hack').vung);
+    });
+    test('tiếng Trung chỉ có giọng phổ thông, không có vùng', () => {
+        expect(chonGiong('zh', 'uk')).toEqual({ giong: 'zh-CN-XiaoxiaoNeural', vung: '', tenVung: '' });
+    });
+});
+
+describe('phiên nghe lưu giọng đã chọn', () => {
+    const fs = require('fs');
+    const path = require('path');
+    const ctl = fs.readFileSync(path.join(__dirname, '..', 'controllers', 'listeningController.js'), 'utf8');
+    test('mở phiên: chọn giọng theo lựa chọn (mặc định trộn) và lưu vào phiên', () => {
+        expect(ctl).toMatch(/chonGiong\(lang, typeof req\.body\.giong === 'string' \? req\.body\.giong : 'tron'\)/);
+        expect(ctl).toMatch(/giong: g\.giong, giongVung: g\.vung/);
+    });
+    test('phát âm thanh: dùng giọng của phiên, phiên cũ thì theo ngôn ngữ', () => {
+        expect(ctl).toMatch(/const giong = phien\.giong \|\| GIONG_THEO_NGON_NGU\[phien\.lang\] \|\| GIONG_NGHE;/);
+    });
+});

@@ -8,7 +8,7 @@ const UserProfile = require('../models/UserProfile');
 const UserStats = require('../models/UserStats');
 const ListeningSession = require('../models/ListeningSession');
 const { bangChungNghe, ghiBangChung } = require('../services/phanHoiTheoHoSo');
-const { sinhDoanNghe, chamNghe, NHOM_DANG_NGHE, GIONG_THEO_NGON_NGU } = require('../services/listeningAi');
+const { sinhDoanNghe, chamNghe, NHOM_DANG_NGHE, GIONG_THEO_NGON_NGU, chonGiong } = require('../services/listeningAi');
 const { chonDang } = require('../services/dangBai');
 const { tongHop } = require('../services/ttsEngine');
 const { chonTu } = require('../services/chonTu');
@@ -113,14 +113,19 @@ exports.start = async (req, res, next) => {
             });
         }
 
+        // Giọng theo vùng người học chọn; mặc định trộn như đề TOEIC.
+        const g = chonGiong(lang, typeof req.body.giong === 'string' ? req.body.giong : 'tron');
         const doc = await ListeningSession.create({
             userId, source, part, level, lang, targetWords, passage,
             dang: chon ? chon.key : '', dangVi: chon ? chon.vi : '',
+            giong: g.giong, giongVung: g.vung,
         });
         const de = {
             id: String(doc._id),
             level,
             lang,
+            giongVung: g.vung,
+            tenGiong: g.tenVung,
             dang: chon ? chon.key : '',
             dangVi: chon ? chon.vi : '',
             totalTargets: targetWords.length,
@@ -146,8 +151,8 @@ exports.audio = async (req, res, next) => {
         if (!phien) {
             return res.status(404).json({ success: false, message: 'Không tìm thấy lượt nghe này' });
         }
-        // Giọng theo ngôn ngữ của PHIÊN (phiên cũ không có `lang` → tiếng Anh).
-        const giong = GIONG_THEO_NGON_NGU[phien.lang] || GIONG_NGHE;
+        // Giọng đã chọn lúc mở phiên; phiên cũ chưa lưu giọng → theo ngôn ngữ (không có `lang` → tiếng Anh).
+        const giong = phien.giong || GIONG_THEO_NGON_NGU[phien.lang] || GIONG_NGHE;
         // `duPhong`: Edge hỏng thì dùng Google — năng lượng đã trừ, bài nghe phải phát được.
         const { buffer, nguon } = await tongHop(giong, phien.passage, kepTocDo(req.query.rate), { duPhong: true });
         res.setHeader('X-TTS-Nguon', nguon || '');

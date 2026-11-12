@@ -25,6 +25,31 @@ const HSK_NGHE = { easy: 'HSK 1–2', medium: 'HSK 3–4', hard: 'HSK 5–6' };
 const GIONG_THEO_NGON_NGU = { en: 'en-US-AriaNeural', zh: 'zh-CN-XiaoxiaoNeural' };
 
 /**
+ * Giọng tiếng Anh theo vùng — đề TOEIC thật dùng giọng Mỹ, Anh, Úc, Canada; chỉ nghe một giọng
+ * Mỹ thì vào phòng thi gặp giọng Anh/Úc là hụt. Mỗi vùng một giọng nữ, một giọng nam (Edge TTS).
+ * Khi Edge hỏng, giọng dự phòng Google chỉ có tiếng Anh chung (không nhận en-GB/en-AU).
+ */
+const GIONG_VUNG = {
+    us: { ten: 'Mỹ', ds: ['en-US-AriaNeural', 'en-US-GuyNeural'] },
+    uk: { ten: 'Anh', ds: ['en-GB-SoniaNeural', 'en-GB-RyanNeural'] },
+    au: { ten: 'Úc', ds: ['en-AU-NatashaNeural', 'en-AU-WilliamNeural'] },
+    ca: { ten: 'Canada', ds: ['en-CA-ClaraNeural', 'en-CA-LiamNeural'] },
+};
+const VUNG = Object.keys(GIONG_VUNG);
+
+/**
+ * Chọn giọng cho một lượt nghe (thuần, `ngauNhien` thay được trong test). `vung`: us | uk | au |
+ * ca; còn lại (kể cả 'tron') = trộn như TOEIC, mỗi lượt một vùng ngẫu nhiên. Tiếng Trung chỉ có
+ * giọng phổ thông.
+ */
+function chonGiong(lang, vung, ngauNhien = Math.random) {
+    if (lang === 'zh') return { giong: GIONG_THEO_NGON_NGU.zh, vung: '', tenVung: '' };
+    const v = VUNG.includes(vung) ? vung : VUNG[Math.floor(ngauNhien() * VUNG.length) % VUNG.length];
+    const ds = GIONG_VUNG[v].ds;
+    return { giong: ds[Math.floor(ngauNhien() * ds.length) % ds.length], vung: v, tenVung: GIONG_VUNG[v].ten };
+}
+
+/**
  * Chuẩn hoá về mảng đơn vị để so khớp: mỗi CHỮ HÁN là một đơn vị, chữ Latin/số
  * theo từ (chữ thường, giữ dấu nháy); dấu câu và khoảng trắng bị bỏ.
  * Một hàm cho cả hai thứ tiếng: đoạn tiếng Anh không có chữ Hán nên chấm y như cũ.
@@ -206,4 +231,6 @@ module.exports = {
     MAX_KY_TU_DOAN_ZH,
     NHOM_DANG_NGHE,
     GIONG_THEO_NGON_NGU,
+    GIONG_VUNG,
+    chonGiong,
 };

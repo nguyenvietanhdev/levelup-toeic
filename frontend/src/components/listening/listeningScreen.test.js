@@ -79,3 +79,22 @@ describe('lỗi server hiện đúng lý do', () => {
         expect(api).toMatch(/new Error\(res\.error \|\| res\.message \|\| /);
     });
 });
+
+describe('giọng đọc theo vùng', () => {
+    const be = readFileSync(join(__dirname, '..', '..', '..', '..', 'backend', 'services', 'listeningAi.js'), 'utf8');
+    test('lựa chọn khớp các vùng ở backend, mặc định trộn như TOEIC', () => {
+        const fe = [...screen.matchAll(/\{ key: '(tron|us|uk|au|ca)'/g)].map((m) => m[1]);
+        expect(fe).toEqual(['tron', 'us', 'uk', 'au', 'ca']);
+        for (const v of ['us', 'uk', 'au', 'ca']) expect(be).toMatch(new RegExp(`${v}: \{ ten: `));
+        expect(screen).toMatch(/return 'tron';/);
+    });
+    test('gửi giọng khi mở bài, nhớ lựa chọn, tiếng Trung không hiện lựa chọn vùng', () => {
+        expect(screen).toMatch(/ListeningAPI\.start\(\{ level, giong, /);
+        expect(api).toMatch(/\{ level, dang, tuChon, giong \}/);
+        expect(screen).toMatch(/localStorage\.setItem\(KHOA_GIONG, g\)/);
+        expect(screen).toMatch(/\{!zh && \(/);
+    });
+    test('đang nghe thì ghi rõ giọng của bài', () => {
+        expect(screen).toMatch(/phien\.tenGiong \? `Giọng \$\{phien\.tenGiong\} · ` : ''/);
+    });
+});

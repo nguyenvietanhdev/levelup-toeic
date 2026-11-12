@@ -12,6 +12,10 @@ const listeningSessionSchema = new mongoose.Schema(
         level: { type: String, enum: ['easy', 'medium', 'hard'], default: 'medium' },
         // Ngôn ngữ đoạn nghe: quyết định giọng đọc và cách chấm (zh chấm theo chữ Hán).
         lang: { type: String, enum: ['en', 'zh'], default: 'en' },
+        // Giọng đọc của lượt này (Edge TTS), chọn lúc mở để nghe lại vẫn đúng giọng đó.
+        // Phiên cũ không có → giọng mặc định theo ngôn ngữ.
+        giong: { type: String, default: '', maxlength: 40 },
+        giongVung: { type: String, default: '', maxlength: 4 },
         // Các từ mục tiêu đã đưa vào đoạn nghe.
         targetWords: { type: [String], default: [] },
         // Dạng nghe người học chọn ('' = ngẫu nhiên, 'custom' = tự nhập) và nhãn hiển thị.
