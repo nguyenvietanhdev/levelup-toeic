@@ -11225,6 +11225,7 @@ button.ai-history-row {
 
 .essay-band-num { font-size: 44px; font-weight: 800; line-height: 1; }
 .essay-band-label { font-size: 12px; opacity: .9; margin-top: 4px; }
+.essay-band-khoang { font-size: 12px; opacity: .85; margin-top: 2px; }
 
 /* Ghi rõ đây là ƯỚC LƯỢNG. Để người dùng tin band này là điểm thi thật thì họ
    vào phòng thi mới vỡ mộng — nói trước là tôn trọng họ. */

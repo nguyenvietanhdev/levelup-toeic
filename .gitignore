@@ -36,3 +36,6 @@ node_modules
 
 # Ghi chú riêng (bối cảnh, roadmap cá nhân) — không lên GitHub
 .claude/*.local.md
+
+# Kết quả đo bộ chấm AI (eval/): mỗi lần chạy một tệp, chỉ có ý nghĩa trên máy đã chạy.
+backend/eval/**/ket-qua/

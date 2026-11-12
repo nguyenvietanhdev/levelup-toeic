@@ -423,6 +423,14 @@ async function deTheoDang({ chon, zh, rb, level, topicHint, userId, nham = [], c
  * Khung chấm chung cho bộ không có sẵn chỉ dẫn riêng (Giao tiếp, TOEIC): liệt kê
  * đúng các tiêu chí của bộ đó và yêu cầu JSON với đúng các khoá ấy.
  */
+/**
+ * Số lỗi tối đa AI được liệt kê — khớp với số lỗi giữ lại khi đọc kết quả. Thiếu giới hạn này,
+ * bài YẾU (nhiều lỗi nhất, người học cần chấm nhất) làm câu trả lời dài vượt trần token, bị cắt
+ * giữa chừng thành JSON hỏng: bộ đo eval/chamViet thấy 3/3 lần chấm bài yếu thất bại.
+ */
+const TOI_DA_LOI = 12;
+const DONG_GIOI_HAN_LOI = `List at most ${TOI_DA_LOI} errors, the most important first; skip minor repeats of the same mistake.`;
+
 function khungChamChung(crit, zh, rb) {
     const ngonNguBai = zh ? 'CHINESE' : 'ENGLISH';
     const tenBo = rb === 'toeic' ? 'TOEIC Writing' : 'everyday communication';
@@ -443,6 +451,7 @@ function khungChamChung(crit, zh, rb) {
         'Write every comment, issue and strength in VIETNAMESE.',
         `Keep "quote", "fix" and "improved" in ${ngonNguBai} (they are the learner's text).`,
         'Be specific: quote the actual wording, never say "some grammar errors".',
+        DONG_GIOI_HAN_LOI,
         chiThiPhanLoai(zh ? 'zh' : 'en'),
         chiThiChuaBai('fix'),
     ].join('\n');
@@ -480,6 +489,7 @@ async function gradeEssay({ prompt = '', essay = '', userId = null, lang = 'en',
             'Write every comment, issue and strength in VIETNAMESE.',
             'Keep "quote", "fix" and "improved" in CHINESE (they are the composition text).',
             'Be specific: quote the actual wording, never say "some grammar errors".',
+            DONG_GIOI_HAN_LOI,
             chiThiPhanLoai(lang),
             chiThiChuaBai('fix'),
         ].join('\n')
@@ -502,6 +512,7 @@ async function gradeEssay({ prompt = '', essay = '', userId = null, lang = 'en',
             'Write every comment, issue and strength in VIETNAMESE.',
             'Keep "quote", "fix" and "improved" in English (they are the essay text).',
             'Be specific: quote the actual wording, never say "some grammar errors".',
+            DONG_GIOI_HAN_LOI,
             chiThiPhanLoai(lang),
             chiThiChuaBai('fix'),
         ].join('\n');
@@ -517,8 +528,9 @@ async function gradeEssay({ prompt = '', essay = '', userId = null, lang = 'en',
     ];
 
     const res = await chatCompletion(messages, {
-        // Đủ chỗ cho 4 nhận xét + danh sách lỗi + một đoạn viết lại.
-        maxTokens: 1400,
+        // Đủ chỗ cho 4 nhận xét + tối đa TOI_DA_LOI lỗi + một đoạn viết lại. 1400 từng cắt cụt
+        // câu trả lời của bài nhiều lỗi (đo thật: dùng đúng 1400/1400 token rồi dừng).
+        maxTokens: 3000,
         temperature: 0.2,
         feature: 'essay-grade',
         userId,
@@ -548,7 +560,7 @@ async function gradeEssay({ prompt = '', essay = '', userId = null, lang = 'en',
             comments: parsed.comments || {},
             // Chuẩn hoá nhãn NGAY tại đây: `Article`/`articles`/`ARTICLE` là ba
             // chuỗi khác nhau, để nguyên thì thống kê tách thành ba dòng.
-            errors: (Array.isArray(parsed.errors) ? parsed.errors.slice(0, 12) : [])
+            errors: (Array.isArray(parsed.errors) ? parsed.errors.slice(0, TOI_DA_LOI) : [])
                 // `muc`: 'loi' (sai) / 'nen' (nên sửa cho tự nhiên) — tô màu khi chữa bài.
                 .map((e) => ({ ...e, type: chuanHoaLoai(e?.type, lang), muc: chuanHoaMuc(e?.level) })),
             strengths: Array.isArray(parsed.strengths) ? parsed.strengths.slice(0, 5) : [],

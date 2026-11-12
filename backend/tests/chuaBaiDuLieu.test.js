@@ -57,3 +57,19 @@ describe('prompt: cụm sửa là chữ THAY THẾ, cùng ngôn ngữ với bài
         expect(p).toContain(chiThiChuaBai('fix'));
     });
 });
+
+describe('bài nhiều lỗi không làm câu trả lời bị cắt cụt', () => {
+    // Bộ đo eval/chamViet: chấm bài yếu dùng đúng 1400/1400 token rồi dừng giữa danh sách lỗi
+    // → JSON hỏng → "AI trả về kết quả chấm không đọc được", 3/3 lần.
+    test.each([
+        ['IELTS', { lang: 'en' }],
+        ['HSK', { lang: 'zh' }],
+        ['Giao tiếp', { lang: 'en', rubric: 'giaotiep' }],
+        ['TOEIC', { lang: 'en', rubric: 'toeic' }],
+    ])('%s: giới hạn số lỗi trong prompt, trần token đủ rộng', async (_ten, opt) => {
+        aiTraVe([]);
+        await gradeEssay({ prompt: 'p', essay: 'e', ...opt });
+        expect(heThong()).toMatch(/List at most 12 errors, the most important first/);
+        expect(chatCompletion.mock.calls.at(-1)[1].maxTokens).toBeGreaterThanOrEqual(3000);
+    });
+});

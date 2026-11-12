@@ -14,6 +14,7 @@ import XemLaiBai from '../chuaBai/XemLaiBai.jsx';
 import { useBaiNhap, TheBaiDo } from '../ai/BaiNhap.jsx';
 import { useNhamYeu, NutNhamYeu, NhanNham } from '../ai/NhamDiemYeu.jsx';
 import { useHoiKhiThoat } from '../ai/aiExitGuard.js';
+import { chuoiKhoang } from '@lib/khoangDiem.js';
 
 /**
  * Luyện VIẾT LUẬN — IELTS Task 2 (tiếng Anh) hoặc HSK 书写 (tiếng Trung).
@@ -402,6 +403,11 @@ export default function EssayScreen({ active }) {
                                     tiếng Trung là bịa ra một thang không tồn tại. */}
                                 <div className="essay-band-label">
                                     {resultLang === 'zh' ? 'Điểm tổng (thang 9)' : 'Band tổng'}
+                                </div>
+                                {/* Khoảng thay vì một con số: AI chấm lại cùng bài có thể lệch (đo ở
+                                    backend/eval/chamViet). */}
+                                <div className="essay-band-khoang" title="AI chấm lại cùng một bài có thể lệch khoảng nửa band">
+                                    khoảng {chuoiKhoang(result.overall)}
                                 </div>
                             </div>
 
