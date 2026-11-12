@@ -4,6 +4,11 @@ dns.setDefaultResultOrder('ipv4first');
 dns.setServers(['8.8.8.8', '8.8.4.4']);
 
 const logger = require('./utils/logger');
+// Giám sát lỗi (Sentry) bật TRƯỚC khi nạp express — tự tắt khi chưa có SENTRY_DSN.
+const giamSat = require('./utils/giamSat');
+giamSat.batGiamSat();
+// DSN cho frontend (DSN không phải bí mật — nó chỉ cho phép GỬI lỗi vào dự án).
+const SENTRY_DSN_FRONTEND = process.env.SENTRY_DSN_FRONTEND || process.env.SENTRY_DSN || '';
 
 // ===================================
 // VALIDATE REQUIRED ENV VARS
@@ -107,7 +112,11 @@ app.use(helmet({
             // `api.cloudinary.com`: trang admin tải file bài nghe (MP3/MP4) THẲNG lên Cloudinary
             // bằng chữ ký server cấp (routes/adminBaiNghe.js `/chu-ky`) — video không đi qua RAM
             // của server. Đúng một host upload, không wildcard.
-            connectSrc: ["'self'", "https://translate.googleapis.com", "https://accounts.google.com", "https://api.cloudinary.com"],
+            connectSrc: [
+                "'self'", "https://translate.googleapis.com", "https://accounts.google.com", "https://api.cloudinary.com",
+                // Frontend gửi lỗi về Sentry: chỉ mở đúng host nhận lỗi của DSN đang dùng.
+                ...[giamSat.originCuaDsn(SENTRY_DSN_FRONTEND)].filter(Boolean),
+            ],
         }
     },
     // COOP KHÔNG nằm trong CSP — khai CSP đủ cho Google vẫn không cứu được.
@@ -208,6 +217,12 @@ app.get('/api', (req, res) => {
 });
 
 // Health check endpoint for dashboard
+// Cấu hình giám sát lỗi cho frontend, đọc lúc chạy: đổi DSN chỉ cần sửa biến môi trường,
+// không phải build lại frontend. DSN rỗng = frontend không bật Sentry.
+app.get('/api/giam-sat/cau-hinh', (_, res) => {
+    res.json({ success: true, data: { dsn: SENTRY_DSN_FRONTEND, moiTruong: process.env.NODE_ENV || 'development' } });
+});
+
 app.get('/health', async (_, res) => {
     const { mongoose: mg } = require('./config/mongodb');
     const Vocabulary = require('./models/Vocabulary');
@@ -360,6 +375,8 @@ if (hasFrontendBuild) {
 // ===================================
 // ERROR HANDLER (Must be last middleware)
 // ===================================
+// Sentry nhận lỗi trước, rồi errorHandler của app trả phản hồi như cũ.
+giamSat.ganVaoExpress(app);
 app.use(errorHandler);
 
 // ===================================
@@ -458,13 +475,16 @@ let dangTat = false;
 process.on('SIGINT',  () => shutdown('SIGINT'));
 process.on('SIGTERM', () => shutdown('SIGTERM'));
 
-process.on('unhandledRejection', (reason) => {
+process.on('unhandledRejection', async (reason) => {
     logger.error('Unhandled Promise Rejection', { reason: String(reason) });
+    // Báo Sentry và chờ gửi xong trước khi tắt: tiến trình thoát rồi thì lỗi mất luôn.
+    await giamSat.baoLoiVaCho(reason instanceof Error ? reason : new Error(String(reason)));
     shutdown('unhandledRejection', 1);
 });
 
-process.on('uncaughtException', (err) => {
+process.on('uncaughtException', async (err) => {
     logger.error('Uncaught Exception', { error: err.message, stack: err.stack });
+    await giamSat.baoLoiVaCho(err);
     shutdown('uncaughtException', 1);
 });
 

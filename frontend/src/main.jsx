@@ -1,6 +1,7 @@
 import { createRoot } from 'react-dom/client'
 import App from './App.jsx'
 import { installBrokenImageHandler } from './lib/hideBrokenImages.js'
+import { khoiDongGiamSat } from './lib/giamSat.js'
 
 // Chart.js KHÔNG import ở đây nữa.
 //
@@ -14,5 +15,8 @@ import { installBrokenImageHandler } from './lib/hideBrokenImages.js'
 
 // Một listener duy nhất cho mọi ảnh hỏng — thay 8 chỗ inline onerror bị CSP chặn.
 installBrokenImageHandler()
+
+// Giám sát lỗi (Sentry): chạy nền, không chặn lúc mở app; tắt khi server chưa cấu hình DSN.
+khoiDongGiamSat()
 
 createRoot(document.getElementById('root')).render(<App />)

@@ -146,6 +146,13 @@ describe('SPA serving — origin phục vụ index.html phải phục vụ luôn
             // loader riêng được gọi, jsdelivr không bị chạm. Chuỗi vẫn nằm trong
             // bundle vì bundler không cắt được nhánh chết đó.
             'cdn.jsdelivr.net': 'URL mặc định của hanzi-writer, đã ghi đè bằng charDataLoader riêng → không có request thật',
+            // @sentry/react (chunk tải trễ, chỉ khi có DSN — lib/giamSat.js). Lỗi THẬT gửi tới host
+            // của DSN đang cấu hình; host đó được thêm vào connectSrc lúc chạy (giamSat.originCuaDsn).
+            'sentry.io': 'link "Powered by Sentry" trong widget góp ý (điều hướng) — app không dùng widget',
+            'browser.sentry-cdn.com': 'chỉ dùng khi gọi lazyLoadIntegration — app không gọi',
+            'docs.sentry.io': 'link trong thông báo lỗi console của Sentry',
+            'spotlightjs.com': 'link trong thông báo lỗi console (công cụ dev Spotlight)',
+            'o447951.ingest.sentry.io': 'endpoint của hàm chẩn đoán kết nối diagnoseSdkConnectivity — app không gọi',
         };
 
         const files = [];

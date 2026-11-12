@@ -39,3 +39,7 @@ node_modules
 
 # Kết quả đo bộ chấm AI (eval/): mỗi lần chạy một tệp, chỉ có ý nghĩa trên máy đã chạy.
 backend/eval/**/ket-qua/
+
+# Ảnh, trace của test E2E (Playwright) — chỉ dùng để xem khi test hỏng.
+e2e/ket-qua/
+playwright-report/

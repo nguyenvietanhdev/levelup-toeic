@@ -10,7 +10,8 @@
     "install:all": "npm install && npm install --prefix backend && npm install --prefix frontend",
     "build": "npm run build --prefix frontend",
     "start": "npm run start --prefix backend",
-    "build:deploy": "npm ci --prefix backend && npm ci --include=dev --prefix frontend && npm run build --prefix frontend"
+    "build:deploy": "npm ci --prefix backend && npm ci --include=dev --prefix frontend && npm run build --prefix frontend",
+    "test:e2e": "npm run build --prefix frontend && playwright test -c e2e/playwright.config.js"
   },
   "engines": {
     "node": ">=22.12.0"
@@ -19,6 +20,8 @@
   "author": "",
   "license": "ISC",
   "devDependencies": {
-    "concurrently": "^9.2.1"
+    "@playwright/test": "1.64.1",
+    "concurrently": "^9.2.1",
+    "mongodb-memory-server": "11.3.0"
   }
 }

@@ -128,6 +128,24 @@ Mở trình duyệt tại: `http://localhost:5000`
 
 ---
 
+## Kiểm thử & giám sát
+
+```bash
+npm test --prefix backend     # ~2.000 test Jest
+npm test --prefix frontend    # ~2.800 test Vitest
+npm run test:e2e              # E2E Playwright: build frontend rồi bấm thật trên máy tính và điện thoại
+node backend/eval/chamViet/chay.js   # đo chất lượng chấm Viết bằng AI thật (tốn phí, chạy tay)
+```
+
+- **E2E** chạy trên server thật với **MongoDB tạm trong RAM** và tài khoản thử tạo sẵn — không đụng
+  dữ liệu thật, mọi khoá AI/Cloudinary để trống nên không gọi dịch vụ ngoài. Lần đầu cần
+  `npx playwright install chromium`. CI chạy cả ba bộ test trên mỗi lần push.
+- **Đo chấm AI**: xem `backend/eval/README.md` (độ ổn định, thứ tự, bắt lỗi cài sẵn; kết quả gần nhất).
+- **Giám sát lỗi (Sentry)**: đặt `SENTRY_DSN` trên server là bật cho cả backend lẫn trình duyệt
+  (frontend đọc DSN lúc chạy). Không gửi thân request, cookie, header xác thực hay email.
+
+---
+
 ## Cấu trúc dự án
 
 ```

@@ -34,6 +34,7 @@ jobs:
           node-version: '22'
           cache: npm
           cache-dependency-path: |
+            package-lock.json
             backend/package-lock.json
             frontend/package-lock.json
 
@@ -59,3 +60,23 @@ jobs:
 
       - name: Test backend
         run: npm test --prefix backend
+
+      # E2E: trình duyệt thật bấm qua app trên server thật + MongoDB TẠM trong RAM (không đụng
+      # dữ liệu thật). Bắt loại lỗi test đơn vị không thấy: trang trắng sau build, CSP/route chặn
+      # request, nút không nối với API, bố cục điện thoại che nút. Chạy SAU build vì server
+      # phục vụ chính `frontend/dist`.
+      - name: Cài Playwright
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium
+
+      - name: Test E2E
+        run: npx playwright test -c e2e/playwright.config.js
+
+      - name: Lưu ảnh và trace khi E2E hỏng
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-ket-qua
+          path: e2e/ket-qua/
+          retention-days: 7

@@ -1,4 +1,5 @@
 import { Component } from 'react';
+import { baoLoi } from '@lib/giamSat.js';
 
 export default class ErrorBoundary extends Component {
     state = { hasError: false };
@@ -9,6 +10,8 @@ export default class ErrorBoundary extends Component {
 
     componentDidCatch(error, info) {
         console.error('[ErrorBoundary] Lỗi runtime không bắt được:', error, info?.componentStack);
+        // Lỗi làm trắng màn hình: báo về Sentry (nếu đang bật) kèm cây component để biết chỗ hỏng.
+        baoLoi(error, { contexts: { react: { componentStack: info?.componentStack } } });
     }
 
     render() {
