@@ -37,13 +37,17 @@ jest.mock('openai', () => ({
     OpenAI: jest.fn(() => ({ audio: { transcriptions: { create: async (o) => { mockMay.whisper.push(o); if (mockMay.whisperLoi) throw new Error('whisper down'); return mockMay.kqWhisper; } } } })),
     toFile: async (buf, ten) => ({ buf, ten }),
 }));
+const CAU_SUA = [{ batDau: 0, ketThuc: 2.5, text: 'Helo and welcome.' }, { batDau: 2.5, ketThuc: 5, text: 'I am Ana.' }];
 const mockMay = { cloudLoi: false, whisperLoi: false, whisper: [], kqWhisper: null, tao: [], hoi: [], taiTuLink: [], taiNguyen: {}, tai: [], phanTram: 10, usageLoi: false, soLanUsage: 0, explicit: [], explicitLoi: false, xoa: [], daXoaDoc: [] };
 jest.mock('../models/BaiNghe', () => ({
     create: jest.fn(async (d) => { mockMay.tao.push(d); return { _id: 'b1', ...d }; }),
     findOne: jest.fn((q) => ({ lean: async () => (mockMay.doc && (q.an === false ? !mockMay.doc.an : true) ? mockMay.doc : null) })),
     aggregate: jest.fn(async (p) => { mockMay.pipeline = p; return []; }),
-    updateOne: jest.fn(async () => ({ matchedCount: 1 })),
-    findById: jest.fn((id) => ({ select: () => ({ lean: async () => (id === 'b1' ? { cloudinaryId: 'bai-nghe/a' } : null) }) })),
+    updateOne: jest.fn(async (q, u) => { mockMay.capNhat.push(u.$set); return { matchedCount: 1 }; }),
+    findById: jest.fn((id) => {
+        const doc = id === 'b1' ? { _id: 'b1', tieuDe: 'Bài 1', cloudinaryId: 'bai-nghe/a', coHinh: true, cau: CAU_SUA } : null;
+        return { select: () => ({ lean: async () => doc }), lean: async () => doc };
+    }),
     deleteOne: jest.fn(async (q) => { mockMay.daXoaDoc.push(q); return { deletedCount: 1 }; }),
 }));
 
@@ -62,6 +66,7 @@ const DOAN = [
 beforeEach(() => {
     Object.assign(mockMay, { cloudLoi: false, whisperLoi: false, whisper: [], tao: [], hoi: [], taiTuLink: [], taiNguyen: {}, tai: [], doc: null, kqWhisper: { segments: DOAN, duration: 13 }, phanTram: 10, usageLoi: false, soLanUsage: 0, explicit: [], explicitLoi: false, xoa: [], daXoaDoc: [] });
     S._xoaCacheMucDung();
+    mockMay.capNhat = [];
     // MP3 tách từ Cloudinary: giả lập tải về.
     global.fetch = jest.fn(async (url) => {
         mockMay.tai.push(url);
@@ -223,6 +228,40 @@ describe('xoá hẳn', () => {
     test('không có bài → 404, không xoá gì', async () => {
         expect((await S.xoaBai('khong-co')).ma).toBe(404);
         expect(mockMay.xoa).toHaveLength(0);
+    });
+});
+
+describe('ảnh bìa', () => {
+    test('bài video: khung hình JPG cắt từ chính video; bài âm thanh thì không có ảnh', () => {
+        expect(S.anhBia({ coHinh: true, cloudinaryId: 'bai-nghe/a' })).toMatch(/bai-nghe\/a\.jpg$/);
+        expect(S.anhBia({ coHinh: false, cloudinaryId: 'bai-nghe/a' })).toBe('');
+        expect(S.anhBia({ coHinh: true, cloudinaryId: '' })).toBe('');
+    });
+});
+
+describe('sửa bài', () => {
+    test('sửa chữ từng câu: giữ nguyên mốc thời gian', async () => {
+        expect(await S.capNhat('b1', { cau: ['Hello and welcome.', 'I am Anna.'] })).toEqual({ ok: true });
+        expect(mockMay.capNhat[0].cau).toEqual([
+            { batDau: 0, ketThuc: 2.5, text: 'Hello and welcome.' },
+            { batDau: 2.5, ketThuc: 5, text: 'I am Anna.' },
+        ]);
+    });
+    test('thêm/bớt câu hoặc để trống câu → từ chối (mốc thời gian sẽ lệch)', async () => {
+        expect((await S.capNhat('b1', { cau: ['Một câu'] })).loi).toMatch(/giữ nguyên/);
+        expect((await S.capNhat('b1', { cau: ['a', '  '] })).loi).toMatch(/trống/);
+        expect(mockMay.capNhat).toHaveLength(0);
+    });
+    test('nguồn và link bài gốc: link sai bị từ chối, để trống thì xoá link', async () => {
+        expect((await S.capNhat('b1', { nguonUrl: 'javascript:alert(1)' })).ma).toBe(400);
+        await S.capNhat('b1', { nguon: 'VOA', nguonUrl: '' });
+        expect(mockMay.capNhat[0]).toEqual({ nguon: 'VOA', nguonUrl: '' });
+    });
+    test('admin lấy được đủ bài để sửa, kể cả script và ảnh bìa', async () => {
+        const b = await S.layBaiAdmin('b1');
+        expect(b).toMatchObject({ id: 'b1', tieuDe: 'Bài 1', cau: CAU_SUA });
+        expect(b.anhBia).toMatch(/\.jpg$/);
+        expect((await S.layBaiAdmin('khong-co')).ma).toBe(404);
     });
 });
 

@@ -48,6 +48,13 @@ router.post('/', async (req, res, next) => {
     } catch (err) { next(err); }
 });
 
+router.get('/:id', async (req, res, next) => {
+    try {
+        if (!mongoose.isValidObjectId(req.params.id)) return res.status(400).json({ success: false, message: 'Id không hợp lệ' });
+        traVe(res, await S.layBaiAdmin(req.params.id));
+    } catch (err) { next(err); }
+});
+
 router.delete('/:id', async (req, res, next) => {
     try {
         if (!mongoose.isValidObjectId(req.params.id)) return res.status(400).json({ success: false, message: 'Id không hợp lệ' });

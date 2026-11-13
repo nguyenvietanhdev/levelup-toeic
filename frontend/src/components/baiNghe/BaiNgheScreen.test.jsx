@@ -69,6 +69,24 @@ describe('hàm thuần', () => {
     });
 });
 
+describe('thư viện kiểu YouTube', () => {
+    test('bài video có ảnh bìa, bài âm thanh có ảnh nền thay thế; thời lượng ở góc ảnh', async () => {
+        api.danhSach.mockResolvedValue([
+            { id: 'v1', tieuDe: 'Video 1', capDo: 'de', thoiLuong: 62, soCau: 3, coHinh: true, anhBia: 'https://res.cloudinary.com/x/video/upload/so_2/bai-nghe/v1.jpg' },
+            { id: 'a1', tieuDe: 'Audio 1', capDo: 'vua', thoiLuong: 300, soCau: 40, coHinh: false, anhBia: '' },
+        ]);
+        render(<BaiNgheScreen active />);
+        const theVideo = await screen.findByRole('button', { name: /Video 1/ });
+        expect(theVideo.querySelector('img').getAttribute('src')).toMatch(/v1\.jpg$/);
+        expect(theVideo.querySelector('.bn-thoi-luong').textContent).toBe('1:02');
+        expect(theVideo.textContent).toMatch(/Video · Dễ · 3 câu/);
+        const theAudio = screen.getByRole('button', { name: /Audio 1/ });
+        expect(theAudio.querySelector('img')).toBeNull();
+        expect(theAudio.querySelector('.bn-anh-thay')).toBeTruthy();
+        expect(theAudio.querySelector('.bn-thoi-luong').textContent).toBe('5:00');
+    });
+});
+
 describe('màn nghe', () => {
     test('lọc theo cấp độ', async () => {
         render(<BaiNgheScreen active />);

@@ -320,9 +320,26 @@ async function tongQuanDungLuong() {
     return { cloudinary: m, baiNghe: { soBai: t.soBai, soVideo: t.soVideo, byte: t.byte } };
 }
 
+/**
+ * Ảnh bìa của bài video: một khung hình Cloudinary cắt từ chính video (giây thứ 2, 480×270 như
+ * thẻ YouTube). Ảnh tạo một lần rồi Cloudinary giữ lại, mỗi ảnh chỉ vài chục KB. Bài chỉ có âm
+ * thanh, hoặc chưa cấu hình Cloudinary, thì rỗng — giao diện tự vẽ ảnh nền thay thế.
+ */
+function anhBia(b) {
+    if (!b?.coHinh || !b?.cloudinaryId) return '';
+    try {
+        return cloud().url(b.cloudinaryId, {
+            resource_type: 'video', format: 'jpg', secure: true,
+            transformation: [{ start_offset: 2 }, { width: 480, height: 270, crop: 'fill' }],
+        });
+    } catch {
+        return '';
+    }
+}
+
 const tomTat = (b) => ({
     id: String(b._id), tieuDe: b.tieuDe, lang: b.lang, capDo: b.capDo, nguon: b.nguon,
-    thoiLuong: b.thoiLuong, soCau: b.soCau ?? (b.cau || []).length, coHinh: !!b.coHinh,
+    thoiLuong: b.thoiLuong, soCau: b.soCau ?? (b.cau || []).length, coHinh: !!b.coHinh, anhBia: anhBia(b),
 });
 
 /** Thư viện cho người học: bài đang hiện, của ngôn ngữ đang học. Không gửi script cho danh sách. */
@@ -331,7 +348,7 @@ async function danhSach(lang = 'en') {
         { $match: { an: false, lang: lang === 'zh' ? 'zh' : 'en' } },
         { $sort: { createdAt: -1 } },
         { $limit: 200 },
-        { $project: { tieuDe: 1, lang: 1, capDo: 1, nguon: 1, thoiLuong: 1, coHinh: 1, soCau: { $size: '$cau' } } },
+        { $project: { tieuDe: 1, lang: 1, capDo: 1, nguon: 1, thoiLuong: 1, coHinh: 1, cloudinaryId: 1, soCau: { $size: '$cau' } } },
     ]);
     return ds.map(tomTat);
 }
@@ -348,17 +365,45 @@ async function danhSachAdmin() {
     const ds = await BaiNghe.aggregate([
         { $sort: { createdAt: -1 } },
         { $limit: 500 },
-        { $project: { tieuDe: 1, lang: 1, capDo: 1, nguon: 1, thoiLuong: 1, coHinh: 1, an: 1, byte: 1, createdAt: 1, soCau: { $size: '$cau' } } },
+        { $project: { tieuDe: 1, lang: 1, capDo: 1, nguon: 1, thoiLuong: 1, coHinh: 1, cloudinaryId: 1, mediaUrl: 1, an: 1, byte: 1, createdAt: 1, soCau: { $size: '$cau' } } },
     ]);
-    return ds.map((b) => ({ ...tomTat(b), an: b.an, byte: b.byte || 0, taoLuc: b.createdAt }));
+    return ds.map((b) => ({ ...tomTat(b), mediaUrl: b.mediaUrl, an: b.an, byte: b.byte || 0, taoLuc: b.createdAt }));
+}
+
+/** Một bài cho admin sửa: gồm cả bài đang ẩn, đủ script. */
+async function layBaiAdmin(id) {
+    const b = await BaiNghe.findById(id).lean();
+    if (!b) return { loi: 'Không tìm thấy bài nghe.', ma: 404 };
+    return { ...tomTat(b), nguonUrl: b.nguonUrl, mediaUrl: b.mediaUrl, an: b.an, cau: b.cau };
 }
 
 /** Ẩn / hiện, đổi tiêu đề hoặc cấp độ. */
-async function capNhat(id, { an, tieuDe, capDo } = {}) {
+/**
+ * Sửa bài: ẩn/hiện, tiêu đề, cấp độ, nguồn, link bài gốc, và CHỮ của từng câu script (khi Whisper
+ * nghe nhầm). `cau` là mảng chữ đúng bằng số câu hiện có: chỉ thay chữ, giữ nguyên mốc thời gian —
+ * thêm/bớt câu sẽ làm lệch tô sáng với âm thanh.
+ */
+async function capNhat(id, { an, tieuDe, capDo, nguon, nguonUrl, cau } = {}) {
     const doi = {};
     if (typeof an === 'boolean') doi.an = an;
     if (tieuDe !== undefined && cat(tieuDe, 160)) doi.tieuDe = cat(tieuDe, 160);
     if (CAP_DO.includes(capDo)) doi.capDo = capDo;
+    if (nguon !== undefined && cat(nguon, 120)) doi.nguon = cat(nguon, 120);
+    if (nguonUrl !== undefined) {
+        const link = String(nguonUrl).trim();
+        if (link && !kiemUrl(link)) return { loi: 'Link bài gốc không hợp lệ.', ma: 400 };
+        doi.nguonUrl = link ? kiemUrl(link) : '';
+    }
+    if (cau !== undefined) {
+        const cu = await BaiNghe.findById(id).select('cau').lean();
+        if (!cu) return { loi: 'Không tìm thấy bài nghe.', ma: 404 };
+        if (!Array.isArray(cau) || cau.length !== cu.cau.length) {
+            return { loi: 'Số câu phải giữ nguyên (chỉ sửa chữ, không thêm hay bớt câu).', ma: 400 };
+        }
+        const moi = cau.map((t) => cat(t, 600));
+        if (moi.some((t) => !t)) return { loi: 'Câu không được để trống.', ma: 400 };
+        doi.cau = cu.cau.map((c, i) => ({ batDau: c.batDau, ketThuc: c.ketThuc, text: moi[i] }));
+    }
     if (!Object.keys(doi).length) return { loi: 'Không có gì để cập nhật.', ma: 400 };
     const r = await BaiNghe.updateOne({ _id: id }, { $set: doi });
     if (!r.matchedCount) return { loi: 'Không tìm thấy bài nghe.', ma: 404 };
@@ -366,7 +411,7 @@ async function capNhat(id, { an, tieuDe, capDo } = {}) {
 }
 
 module.exports = {
-    themBai, danhSach, layBai, danhSachAdmin, capNhat, chuKyTaiLen, xoaBai, tongQuanDungLuong, mucDung, docMucDung,
+    themBai, danhSach, layBai, danhSachAdmin, layBaiAdmin, capNhat, anhBia, chuKyTaiLen, xoaBai, tongQuanDungLuong, mucDung, docMucDung,
     _xoaCacheMucDung: () => { _mucDung = null; },
     kiemUrl, tachCau, taiAudio, chepLoi, nhaChepLoi, docTaiNguyen, TOI_DA_BYTE, TOI_DA_GOC,
 };

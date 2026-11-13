@@ -12908,10 +12908,19 @@ body.dang-phat-am .js-nut-am {
 .px-pinyin { margin: 2px 0 0; font-style: italic; color: var(--text-secondary); }
 
 /* ===== Bài nghe có script ===== */
-.bn-ds { display: flex; flex-direction: column; gap: 8px; }
-.bn-the { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; width: 100%; padding: 12px 14px; border-radius: 12px; border: 1px solid var(--border-color); background: var(--bg-secondary); color: inherit; font: inherit; text-align: left; cursor: pointer; }
-.bn-the:hover { border-color: var(--accent-color); }
-.bn-the span { font-size: 13px; color: var(--text-secondary); }
+/* Thư viện dạng lưới thẻ có ảnh bìa (giống YouTube): điện thoại 1 cột, rộng hơn thì tự chia cột. */
+.bn-ds { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 16px; }
+.bn-the { display: flex; flex-direction: column; align-items: stretch; gap: 6px; width: 100%; padding: 0 0 8px; border: none; background: none; color: inherit; font: inherit; text-align: left; cursor: pointer; }
+.bn-the strong { line-height: 1.35; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.bn-the-phu { font-size: 13px; color: var(--text-secondary); }
+.bn-anh { position: relative; display: block; aspect-ratio: 16 / 9; border-radius: 12px; overflow: hidden; background: #111; }
+.bn-anh img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform .2s; }
+.bn-anh-thay { display: flex; width: 100%; height: 100%; align-items: center; justify-content: center; font-size: 34px; color: rgba(255, 255, 255, .85); background: linear-gradient(135deg, var(--accent-color), #6366f1); }
+.bn-thoi-luong { position: absolute; right: 8px; bottom: 8px; padding: 2px 6px; border-radius: 4px; background: rgba(0, 0, 0, .8); color: #fff; font-size: 12px; font-weight: 600; }
+.bn-phat { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 26px; color: #fff; background: rgba(0, 0, 0, .25); opacity: 0; transition: opacity .2s; }
+.bn-the:hover .bn-phat, .bn-the:focus-visible .bn-phat { opacity: 1; }
+.bn-the:hover .bn-anh img { transform: scale(1.04); }
+.bn-the:disabled { cursor: wait; }
 /* Khung học: điện thoại xếp dọc (video trên, script dưới); máy tính hai cột. Chiều cao thanh
    điều hướng (--bn-nav) và khung phát (--bn-may) do JS đo, số dưới đây chỉ là dự phòng. */
 .bn-hoc { --bn-nav: 64px; --bn-may: 240px; display: grid; gap: 12px; }

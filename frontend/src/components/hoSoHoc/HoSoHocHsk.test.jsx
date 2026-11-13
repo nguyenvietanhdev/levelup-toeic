@@ -5,7 +5,11 @@
  * câu nghe đọc chữ Hán bằng giọng Anh, micro nghe tiếng Anh, hoặc kết quả không hiện pinyin.
  */
 import { describe, test, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, configure } from '@testing-library/react';
+
+// Màn này tải lazy và có nhiều bước chờ nối tiếp: khi cả bộ ~2.800 test chạy song song, mức chờ
+// mặc định 1 giây từng làm test này hỏng chập chờn (chạy riêng thì luôn qua).
+configure({ asyncUtilTimeout: 5000 });
 
 const api = vi.hoisted(() => ({ get: vi.fn(), datMucTieu: vi.fn(), moTest: vi.fn(), traLoi: vi.fn() }));
 const loa = vi.hoisted(() => ({ speakWord: vi.fn(), stopSpeaking: vi.fn() }));

@@ -51,31 +51,27 @@
   async function taiDs() {
     const tbody = document.getElementById('bn-ds');
     if (!tbody) return;
-    tbody.innerHTML = '<tr><td colspan="7" class="loading"><i class="fas fa-spinner fa-spin"></i> Đang tải...</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="8" class="loading"><i class="fas fa-spinner fa-spin"></i> Đang tải...</td></tr>';
     try {
       const ds = await goi();
       if (!ds.length) {
-        tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--text-secondary);padding:20px">Chưa có bài nghe nào.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--text-secondary);padding:20px">Chưa có bài nghe nào.</td></tr>';
         return;
       }
       tbody.innerHTML = ds.map((b) => `<tr>
+        <td>${anhNho(b)}</td>
         <td style="white-space:normal">${esc(b.tieuDe)}<br><small style="color:var(--text-secondary)">${esc(b.nguon)} · ${Number(b.soCau) || 0} câu</small></td>
         <td>${esc(TEN_LANG[b.lang] || b.lang)}</td>
         <td>${esc(TEN_CAP[b.capDo] || b.capDo)}</td>
         <td>${b.coHinh ? '<i class="fas fa-film" title="Có video"></i> ' : ''}${esc(gioPhut(b.thoiLuong))}</td>
         <td>${esc(mb(b.byte))}</td>
         <td>${b.an ? '<span style="color:var(--text-secondary)">Đang ẩn</span>' : '<span style="color:var(--success)">Đang hiện</span>'}</td>
-        <td><button class="btn btn-secondary btn-sm" data-doi="${esc(b.id)}" data-an="${b.an ? '0' : '1'}">${b.an ? 'Hiện' : 'Ẩn'}</button>
+        <td><button class="btn btn-primary btn-sm" data-sua="${esc(b.id)}"><i class="fas fa-pen"></i> Sửa</button>
+          <button class="btn btn-secondary btn-sm" data-doi="${esc(b.id)}" data-an="${b.an ? '0' : '1'}">${b.an ? 'Hiện' : 'Ẩn'}</button>
           <button class="btn btn-danger btn-sm" data-xoa="${esc(b.id)}" data-ten="${esc(b.tieuDe)}"><i class="fas fa-trash"></i> Xoá hẳn</button></td>
       </tr>`).join('');
-      tbody.querySelectorAll('[data-xoa]').forEach((n) => n.addEventListener('click', async () => {
-        if (!confirm(`Xoá hẳn bài "${n.dataset.ten}"? File trên Cloudinary và script sẽ bị xoá, không lấy lại được. Chỉ muốn người học không thấy thì bấm "Ẩn".`)) return;
-        try {
-          await goi(`/${encodeURIComponent(n.dataset.xoa)}`, { method: 'DELETE' });
-          taiDs();
-          taiDungLuong();
-        } catch (e) { alert(e.message); }
-      }));
+      tbody.querySelectorAll('[data-sua]').forEach((n) => n.addEventListener('click', () => moSua(n.dataset.sua)));
+      tbody.querySelectorAll('[data-xoa]').forEach((n) => n.addEventListener('click', () => xoaBai(n.dataset.xoa, n.dataset.ten)));
       tbody.querySelectorAll('[data-doi]').forEach((n) => n.addEventListener('click', async () => {
         try {
           await goi(`/${encodeURIComponent(n.dataset.doi)}`, { method: 'PATCH', json: { an: n.dataset.an === '1' } });
@@ -83,7 +79,106 @@
         } catch (e) { alert(e.message); }
       }));
     } catch (e) {
-      tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;color:var(--danger)">${esc(e.message)}</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;color:var(--danger)">${esc(e.message)}</td></tr>`;
+    }
+  }
+
+  /**
+   * Ảnh bìa nhỏ, bấm là mở file (video/âm thanh) ở tab mới để xem. Link do server trả (Cloudinary):
+   * chỉ nhận https, vẫn escape trước khi vào HTML.
+   */
+  function anhNho(b) {
+    const link = /^https:\/\//.test(b.mediaUrl || '') ? b.mediaUrl : '';
+    const hinh = /^https:\/\//.test(b.anhBia || '')
+      ? `<img src="${esc(b.anhBia)}" alt="" loading="lazy" style="width:112px;aspect-ratio:16/9;object-fit:cover;border-radius:6px;display:block">`
+      : '<span style="display:flex;width:112px;aspect-ratio:16/9;border-radius:6px;align-items:center;justify-content:center;background:linear-gradient(135deg,var(--primary),#6366f1);color:#fff"><i class="fas fa-headphones"></i></span>';
+    return link ? `<a href="${esc(link)}" target="_blank" rel="noopener noreferrer" title="Mở để xem/nghe">${hinh}</a>` : hinh;
+  }
+
+  /**
+   * Xoá hẳn một bài (file video/âm thanh trên Cloudinary + script). Hỏi lại trước vì không lấy lại
+   * được; chỉ muốn người học không thấy thì dùng "Ẩn". Trả true nếu đã xoá.
+   */
+  async function xoaBai(id, ten) {
+    if (!confirm(`Xoá hẳn bài "${ten}"? File trên Cloudinary và script sẽ bị xoá, không lấy lại được. Chỉ muốn người học không thấy thì bấm "Ẩn".`)) return false;
+    try {
+      await goi(`/${encodeURIComponent(id)}`, { method: 'DELETE' });
+      taiDs();
+      taiDungLuong();
+      return true;
+    } catch (e) {
+      alert(e.message);
+      return false;
+    }
+  }
+
+  // ── Sửa bài: thông tin, và chữ từng câu script (giữ nguyên mốc thời gian) ──
+  let dangSua = null;
+
+  async function moSua(id) {
+    const modal = document.getElementById('bn-sua-modal');
+    const tt = document.getElementById('bn-sua-trang-thai');
+    try {
+      const b = await goi(`/${encodeURIComponent(id)}`);
+      dangSua = b;
+      document.getElementById('bn-sua-tieu-de').value = b.tieuDe || '';
+      document.getElementById('bn-sua-cap-do').value = b.capDo || 'vua';
+      document.getElementById('bn-sua-nguon').value = b.nguon || '';
+      document.getElementById('bn-sua-nguon-url').value = b.nguonUrl || '';
+      const xem = document.getElementById('bn-sua-xem');
+      xem.innerHTML = /^https:\/\//.test(b.mediaUrl || '')
+        ? (b.coHinh
+          ? `<video src="${esc(b.mediaUrl)}" controls preload="metadata" style="width:100%;max-height:240px;border-radius:8px;background:#000"></video>`
+          : `<audio src="${esc(b.mediaUrl)}" controls preload="metadata" style="width:100%"></audio>`)
+        : '';
+      document.getElementById('bn-sua-script').innerHTML = (b.cau || []).map((c, i) => `
+        <div style="display:grid;grid-template-columns:56px 1fr;gap:8px;align-items:start;margin-bottom:6px">
+          <button type="button" class="btn btn-secondary btn-sm" data-nghe="${Number(c.batDau)}" title="Nghe từ câu này">${esc(gioPhut(c.batDau))}</button>
+          <textarea data-cau="${i}" rows="2" maxlength="600" style="width:100%;padding:6px 8px;border:1.5px solid var(--border-color);border-radius:6px;font:inherit;resize:vertical">${esc(c.text)}</textarea>
+        </div>`).join('');
+      document.querySelectorAll('#bn-sua-script [data-nghe]').forEach((n) => n.addEventListener('click', () => {
+        const m = document.querySelector('#bn-sua-xem video, #bn-sua-xem audio');
+        if (m) { m.currentTime = Number(n.dataset.nghe); m.play().catch(() => {}); }
+      }));
+      tt.textContent = '';
+      modal.style.display = 'flex';
+    } catch (e) {
+      alert(e.message);
+    }
+  }
+
+  function dongSua() {
+    document.querySelector('#bn-sua-xem video, #bn-sua-xem audio')?.pause();
+    document.getElementById('bn-sua-modal').style.display = 'none';
+    dangSua = null;
+  }
+
+  async function luuSua(ev) {
+    ev.preventDefault();
+    if (!dangSua) return;
+    const tt = document.getElementById('bn-sua-trang-thai');
+    const nut = document.getElementById('bn-sua-luu');
+    const cau = [...document.querySelectorAll('#bn-sua-script [data-cau]')]
+      .sort((a, b) => Number(a.dataset.cau) - Number(b.dataset.cau)).map((t) => t.value);
+    nut.disabled = true;
+    tt.textContent = 'Đang lưu…';
+    try {
+      await goi(`/${encodeURIComponent(dangSua.id)}`, {
+        method: 'PATCH',
+        json: {
+          tieuDe: document.getElementById('bn-sua-tieu-de').value,
+          capDo: document.getElementById('bn-sua-cap-do').value,
+          nguon: document.getElementById('bn-sua-nguon').value,
+          nguonUrl: document.getElementById('bn-sua-nguon-url').value,
+          cau,
+        },
+      });
+      dongSua();
+      taiDs();
+    } catch (e) {
+      tt.textContent = e.message;
+    } finally {
+      nut.disabled = false;
     }
   }
 
@@ -136,7 +231,7 @@
         thongTin.url = url;
       }
       tt.textContent = 'Đang chép lời và chia câu… (có thể mất vài phút, đừng đóng trang)';
-      const b = await goi('', { method: 'POST', json: thongTin });
+      const { bai: b } = await goi('', { method: 'POST', json: thongTin });
       tt.textContent = `Đã thêm "${b.tieuDe}"${b.coHinh ? ' (có video)' : ''}: ${b.soCau} câu, ${gioPhut(b.thoiLuong)}.`;
       document.getElementById('bn-form').reset();
       taiDs();
@@ -156,6 +251,12 @@
       daNoi = true;
       document.getElementById('bn-form')?.addEventListener('submit', them);
       document.getElementById('btn-bn-reload')?.addEventListener('click', () => { taiDs(); taiDungLuong(); });
+      document.getElementById('bn-sua-form')?.addEventListener('submit', luuSua);
+      document.getElementById('bn-sua-huy')?.addEventListener('click', dongSua);
+      document.getElementById('bn-sua-xoa')?.addEventListener('click', async () => {
+        if (dangSua && await xoaBai(dangSua.id, dangSua.tieuDe)) dongSua();
+      });
+      document.getElementById('bn-sua-modal')?.addEventListener('click', (e) => { if (e.target.id === 'bn-sua-modal') dongSua(); });
     }
     taiDs();
     taiDungLuong();

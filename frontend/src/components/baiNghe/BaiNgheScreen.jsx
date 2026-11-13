@@ -186,11 +186,18 @@ export default function BaiNgheScreen({ active }) {
                         <div className="bn-ds">
                             {loc.map((b) => (
                                 <button key={b.id} type="button" className="bn-the" disabled={!!dangMo} onClick={() => moBai(b.id)}>
+                                    {/* Ảnh bìa kiểu YouTube: khung hình của video, thời lượng ở góc. Bài
+                                        chỉ có âm thanh thì nền màu có biểu tượng. */}
+                                    <span className="bn-anh">
+                                        {b.anhBia
+                                            ? <img src={b.anhBia} alt="" loading="lazy" />
+                                            : <span className="bn-anh-thay"><i className="fas fa-headphones"></i></span>}
+                                        <span className="bn-phat"><i className={`fas ${dangMo === b.id ? 'fa-spinner fa-spin' : 'fa-play'}`}></i></span>
+                                        <span className="bn-thoi-luong">{gioPhut(b.thoiLuong)}</span>
+                                    </span>
                                     <strong>{b.tieuDe}</strong>
-                                    <span>
-                                        {b.coHinh && <><i className="fas fa-film" aria-label="Có video"></i> </>}
-                                        {TEN_CAP_DO[b.capDo]} · {gioPhut(b.thoiLuong)} · {b.soCau} câu
-                                        {dangMo === b.id && <> · <i className="fas fa-spinner fa-spin"></i></>}
+                                    <span className="bn-the-phu">
+                                        {b.coHinh ? 'Video' : 'Âm thanh'} · {TEN_CAP_DO[b.capDo]} · {b.soCau} câu
                                     </span>
                                 </button>
                             ))}
