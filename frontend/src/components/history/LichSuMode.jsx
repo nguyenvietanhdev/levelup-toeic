@@ -351,7 +351,48 @@ function ChiTietDoc({ bai }) {
     );
 }
 
-/** Xem lại một lượt nghe: điểm, từ bỏ sót / gõ thừa, đoạn gốc, bài đã gõ. */
+const TOC_DO_NGHE = [0.75, 0.9, 1];
+
+/**
+ * Nghe lại âm thanh của một lượt đã nộp. Server tạo lại từ đúng đoạn gốc và đúng giọng đã lưu
+ * trong phiên (Edge TTS, có cache), nên nghe lại không tốn năng lượng hay lượt AI. Tốc độ đổi
+ * bằng `playbackRate` (giữ cao độ giọng), không phải tải lại âm thanh.
+ */
+function NgheLai({ id }) {
+    const [tocDo, setTocDo] = useState(1);
+    const [loi, setLoi] = useState('');
+    return (
+        <div className="listening-player">
+            <audio
+                controls
+                preload="none"
+                src={ListeningAPI.audioUrl(id, 1)}
+                onLoadedMetadata={(e) => { e.currentTarget.playbackRate = tocDo; setLoi(''); }}
+                onRateChange={(e) => setTocDo(e.currentTarget.playbackRate)}
+                onError={() => setLoi('Không tải được âm thanh của bài này.')}
+            />
+            <div className="np-nhom" role="group" aria-label="Tốc độ nghe lại">
+                {TOC_DO_NGHE.map((t) => (
+                    <button
+                        key={t}
+                        type="button"
+                        className={tocDo === t ? 'is-chon' : ''}
+                        onClick={(e) => {
+                            setTocDo(t);
+                            const a = e.currentTarget.closest('.listening-player')?.querySelector('audio');
+                            if (a) a.playbackRate = t;
+                        }}
+                    >
+                        {t}×
+                    </button>
+                ))}
+            </div>
+            {loi && <p className="tr-intro-note listening-loi"><i className="fas fa-triangle-exclamation"></i> {loi}</p>}
+        </div>
+    );
+}
+
+/** Xem lại một lượt nghe: nghe lại âm thanh, điểm, từ bỏ sót / gõ thừa, đoạn gốc, bài đã gõ. */
 function ChiTietNghe({ bai }) {
     const kq = bai.ketQua || {};
     return (
@@ -367,6 +408,10 @@ function ChiTietNghe({ bai }) {
             </div>
             {kq.missing?.length > 0 && <p className="tr-intro-note"><strong>Bỏ sót:</strong> {kq.missing.join(', ')}</p>}
             {kq.extra?.length > 0 && <p className="tr-intro-note"><strong>Gõ thừa:</strong> {kq.extra.join(', ')}</p>}
+            <div className="essay-section">
+                <h4><i className="fas fa-volume-high"></i> Nghe lại</h4>
+                <NgheLai id={bai._id} />
+            </div>
             <div className="essay-section">
                 <h4><i className="fas fa-headphones"></i> Đoạn gốc</h4>
                 <p className="listening-passage">{bai.passage}</p>
