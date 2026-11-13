@@ -2,7 +2,8 @@ const mongoose = require('mongoose');
 
 // Cùng regex với User.email — hai bên phải nhận cùng một tập email, không thì
 // chủ mời được một địa chỉ mà hệ thống không bao giờ tạo được tài khoản cho nó.
-const EMAIL_RE = /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/;
+// Quy tắc dùng chung với User (utils/email.js).
+const { EMAIL_RE } = require('../utils/email');
 
 /**
  * Quyền xem một bộ "Từ vựng riêng" đã được chủ chia sẻ cho người khác.

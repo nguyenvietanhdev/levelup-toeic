@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const { EMAIL_RE } = require('../utils/email');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 
@@ -10,7 +11,8 @@ const UserSchema = new mongoose.Schema(
             unique: true,
             lowercase: true,
             trim: true,
-            match: [/^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/, 'Please provide a valid email'],
+            // Quy tắc dùng chung (utils/email.js): bản cũ chặn oan đuôi .info/.online và dấu `+`.
+            match: [EMAIL_RE, 'Please provide a valid email'],
         },
         password: {
             type: String,
