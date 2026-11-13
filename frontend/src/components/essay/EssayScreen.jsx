@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 import { useGame } from '@game/GameContext.jsx';
 import { GameState } from '@game/state.js';
 import { Energy } from '@game/energy.js';
