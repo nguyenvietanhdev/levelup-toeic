@@ -30,7 +30,10 @@ async function taoTaiKhoan(uri) {
     const mongoose = require(path.join(BACKEND, 'node_modules', 'mongoose'));
     await mongoose.connect(uri);
     const User = require(path.join(BACKEND, 'models', 'User'));
-    await User.create({ email: TAI_KHOAN.email, password: TAI_KHOAN.matKhau });
+    const UserProfile = require(path.join(BACKEND, 'models', 'UserProfile'));
+    const u = await User.create({ email: TAI_KHOAN.email, password: TAI_KHOAN.matKhau });
+    // Level cao để mọi màn đều mở khoá — test quét màn cần vào được tất cả.
+    await UserProfile.create({ userId: u._id, username: 'e2e', displayName: 'e2e', avatar: 'E', level: TAI_KHOAN.level });
     await mongoose.disconnect();
 }
 

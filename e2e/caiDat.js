@@ -2,5 +2,5 @@
 module.exports = {
     CONG: 5055,
     // Tài khoản chỉ tồn tại trong MongoDB tạm của E2E, mất khi chạy xong.
-    TAI_KHOAN: { email: 'e2e@example.com', matKhau: 'E2e-Mat-Khau-123' },
+    TAI_KHOAN: { email: 'e2e@example.com', matKhau: 'E2e-Mat-Khau-123', level: 60 },
 };
