@@ -65,6 +65,17 @@
               </div>
             </div>
 
+            <!-- Xem nhanh: popup nổi phát video/âm thanh của bài, không mở tab mới -->
+            <div id="bn-xem-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:1001;align-items:center;justify-content:center">
+              <div style="background:var(--bg-primary,white);border-radius:14px;padding:16px;max-width:900px;width:94%;box-shadow:0 12px 40px rgba(0,0,0,.4)">
+                <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+                  <strong id="bn-xem-ten" style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"></strong>
+                  <button type="button" id="bn-xem-dong" class="btn btn-secondary btn-sm" aria-label="Đóng"><i class="fas fa-xmark"></i></button>
+                </div>
+                <div id="bn-xem-noi-dung"></div>
+              </div>
+            </div>
+
             <!-- Sửa bài nghe: thông tin + chữ từng câu script (mốc thời gian giữ nguyên) -->
             <div id="bn-sua-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:1000;align-items:center;justify-content:center">
               <div style="background:var(--bg-primary,white);border-radius:14px;padding:24px;max-width:760px;width:94%;max-height:92vh;overflow-y:auto">

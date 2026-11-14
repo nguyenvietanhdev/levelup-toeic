@@ -71,6 +71,7 @@
           <button class="btn btn-danger btn-sm" data-xoa="${esc(b.id)}" data-ten="${esc(b.tieuDe)}"><i class="fas fa-trash"></i> Xoá hẳn</button></td>
       </tr>`).join('');
       tbody.querySelectorAll('[data-sua]').forEach((n) => n.addEventListener('click', () => moSua(n.dataset.sua)));
+      tbody.querySelectorAll('[data-xem]').forEach((n) => n.addEventListener('click', () => moXem(n.dataset.xem, n.dataset.hinh === '1', n.dataset.ten)));
       tbody.querySelectorAll('[data-xoa]').forEach((n) => n.addEventListener('click', () => xoaBai(n.dataset.xoa, n.dataset.ten)));
       tbody.querySelectorAll('[data-doi]').forEach((n) => n.addEventListener('click', async () => {
         try {
@@ -84,15 +85,37 @@
   }
 
   /**
-   * Ảnh bìa nhỏ, bấm là mở file (video/âm thanh) ở tab mới để xem. Link do server trả (Cloudinary):
-   * chỉ nhận https, vẫn escape trước khi vào HTML.
+   * Ảnh bìa nhỏ, bấm là mở POPUP nổi phát video/âm thanh ngay trên trang (không mở tab mới). Link do
+   * server trả (Cloudinary): chỉ nhận https, vẫn escape trước khi vào HTML.
    */
   function anhNho(b) {
     const link = /^https:\/\//.test(b.mediaUrl || '') ? b.mediaUrl : '';
     const hinh = /^https:\/\//.test(b.anhBia || '')
       ? `<img src="${esc(b.anhBia)}" alt="" loading="lazy" style="width:112px;aspect-ratio:16/9;object-fit:cover;border-radius:6px;display:block">`
       : '<span style="display:flex;width:112px;aspect-ratio:16/9;border-radius:6px;align-items:center;justify-content:center;background:linear-gradient(135deg,var(--primary),#6366f1);color:#fff"><i class="fas fa-headphones"></i></span>';
-    return link ? `<a href="${esc(link)}" target="_blank" rel="noopener noreferrer" title="Mở để xem/nghe">${hinh}</a>` : hinh;
+    if (!link) return hinh;
+    return `<button type="button" data-xem="${esc(link)}" data-hinh="${b.coHinh ? '1' : '0'}" data-ten="${esc(b.tieuDe)}"
+      title="Xem / nghe" style="position:relative;padding:0;border:0;background:none;cursor:pointer;display:block">${hinh}
+      <span style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#fff;font-size:20px;text-shadow:0 1px 4px rgba(0,0,0,.6)"><i class="fas fa-circle-play"></i></span></button>`;
+  }
+
+  /** Popup nổi phát file của một bài. Đóng bằng nút X, bấm nền tối hoặc phím Esc; đóng là dừng phát. */
+  function moXem(link, coHinh, ten) {
+    const modal = document.getElementById('bn-xem-modal');
+    if (!modal || !/^https:\/\//.test(link)) return;
+    document.getElementById('bn-xem-ten').textContent = ten || '';
+    document.getElementById('bn-xem-noi-dung').innerHTML = coHinh
+      ? `<video src="${esc(link)}" controls autoplay playsinline style="width:100%;max-height:70vh;border-radius:10px;background:#000;display:block"></video>`
+      : `<audio src="${esc(link)}" controls autoplay style="width:100%"></audio>`;
+    modal.style.display = 'flex';
+  }
+
+  function dongXem() {
+    const modal = document.getElementById('bn-xem-modal');
+    if (!modal || modal.style.display === 'none') return;
+    modal.querySelector('video, audio')?.pause();
+    document.getElementById('bn-xem-noi-dung').innerHTML = '';
+    modal.style.display = 'none';
   }
 
   /**
@@ -257,6 +280,9 @@
         if (dangSua && await xoaBai(dangSua.id, dangSua.tieuDe)) dongSua();
       });
       document.getElementById('bn-sua-modal')?.addEventListener('click', (e) => { if (e.target.id === 'bn-sua-modal') dongSua(); });
+      document.getElementById('bn-xem-modal')?.addEventListener('click', (e) => { if (e.target.id === 'bn-xem-modal') dongXem(); });
+      document.getElementById('bn-xem-dong')?.addEventListener('click', dongXem);
+      document.addEventListener('keydown', (e) => { if (e.key === 'Escape') dongXem(); });
     }
     taiDs();
     taiDungLuong();
