@@ -1,22 +1,18 @@
 import { useEffect, useRef, useState } from 'react';
-import { GameLogic } from '@game/gameLogic.js';
 import { NguPhapAPI } from '@api/nguPhap.js';
+import NutMauCau, { phatCau } from './NutMauCau.jsx';
 
 const tenDang = (zh) => ({ chon: 'Chọn đáp án đúng', sua: 'Sửa câu sai', dich: zh ? 'Dịch sang tiếng Trung' : 'Dịch sang tiếng Anh' });
-
-const phat = (text, zh) => {
-    if (!text) return;
-    try {
-        GameLogic.stopSpeaking?.();
-        GameLogic.speakWord(text, zh ? 'zh-CN' : 'en-US');
-    } catch { /* không đọc được thì thôi */ }
-};
 
 /**
  * Luyện một công thức, 5 câu từ nhận ra đến tự dùng được: chọn → sửa → dịch. Đáp án chỉ về sau
  * khi chấm từng câu. `children` là nội dung công thức, để xem lại ngay khi làm sai.
+ *
+ * `muc.tongHop`: kiểm tra tổng hợp, câu trộn từ mọi chủ điểm đã có câu lưu sẵn (không tốn AI).
+ * Tên chủ điểm chỉ hiện SAU khi trả lời, để tên không gợi ý đáp án; tổng kết chỉ ra chủ điểm
+ * yếu, bấm để luyện riêng (`onLuyenMuc`).
  */
-export default function LuyenNguPhap({ muc, onThoat, onXong, children }) {
+export default function LuyenNguPhap({ muc, onThoat, onXong, onLuyenMuc, children }) {
     const [buoi, setBuoi] = useState(null);
     const [i, setI] = useState(0);
     const [nhap, setNhap] = useState('');
@@ -28,8 +24,11 @@ export default function LuyenNguPhap({ muc, onThoat, onXong, children }) {
     const [xemCongThuc, setXemCongThuc] = useState(false);
     const [lanMo, setLanMo] = useState(0);
     const [baoSai, setBaoSai] = useState(''); // '' | 'dang' | 'xong' | câu báo lỗi
+    const [moRong, setMoRong] = useState(''); // '' | 'dang' | thông báo
     const oNhap = useRef(null);
     const zh = muc.lang === 'zh';
+    const lang = zh ? 'zh' : 'en';
+    const tongHop = !!muc.tongHop;
     const TEN_DANG = tenDang(zh);
 
     useEffect(() => {
@@ -42,11 +41,12 @@ export default function LuyenNguPhap({ muc, onThoat, onXong, children }) {
         setTongKet(null);
         setLoi('');
         setXemCongThuc(false);
-        NguPhapAPI.moLuyen(muc.id)
+        setMoRong('');
+        (tongHop ? NguPhapAPI.moTongHop(lang) : NguPhapAPI.moLuyen(muc.id))
             .then((b) => { if (!huy) setBuoi(b); })
             .catch((e) => { if (!huy) setLoi(e.message); });
         return () => { huy = true; };
-    }, [muc.id, lanMo]);
+    }, [muc.id, lanMo, tongHop, lang]);
 
     const cau = buoi?.cau?.[i];
     const canGo = cau && cau.loai !== 'chon';
@@ -81,7 +81,8 @@ export default function LuyenNguPhap({ muc, onThoat, onXong, children }) {
             setLichSu((d) => [...d, { dung: r.dung, khongChac: r.khongChac }]);
             setXemCongThuc(false);
             if (r.tongKet) onXong?.();
-            phat(r.dapAn, zh);
+            // Đọc cả câu, không chỉ mỗi từ đáp án của câu chọn.
+            phatCau(r.cauDu || r.dapAn, lang);
         } catch (e) {
             // Server có thể đã giữ chỗ câu này nên không gửi lại được: cho sang câu tiếp, không tính.
             setKetQua({ dung: false, khongChac: true, dapAn: '', giaiThich: '', ghiChu: e.message, cuaBan: traLoi });
@@ -111,6 +112,18 @@ export default function LuyenNguPhap({ muc, onThoat, onXong, children }) {
 
     const ngayOn = tongKet?.denHan ? new Date(tongKet.denHan).toLocaleDateString('vi-VN') : '';
 
+    /** AI soạn thêm câu cho mục này, để lượt sau gặp câu mới. Tốn một lượt AI. */
+    const themCauMoi = async () => {
+        if (moRong === 'dang') return;
+        setMoRong('dang');
+        try {
+            const r = await NguPhapAPI.moRong(lang, muc.id);
+            setMoRong(`Đã thêm ${r.them} câu mới cho mục này. Còn ${r.conLuot} lượt AI hôm nay.`);
+        } catch (e) {
+            setMoRong(e.message);
+        }
+    };
+
     return (
         <section className="np-luyen" aria-label={`Luyện ${muc.ten}`}>
             <div className="np-luyen-dau">
@@ -128,7 +141,9 @@ export default function LuyenNguPhap({ muc, onThoat, onXong, children }) {
                     </div>
                 </>
             )}
-            {!loi && !buoi && <p className="px-mo-ta"><i className="fas fa-spinner fa-spin"></i> Đang chuẩn bị câu luyện… Lần đầu của mỗi mục có thể mất vài giây.</p>}
+            {!loi && !buoi && (
+                <p className="px-mo-ta"><i className="fas fa-spinner fa-spin"></i> {tongHop ? 'Đang trộn câu từ các chủ điểm…' : 'Đang chuẩn bị câu luyện… Lần đầu của mỗi mục có thể mất vài giây.'}</p>
+            )}
 
             {cau && !tongKet && (
                 <>
@@ -178,18 +193,18 @@ export default function LuyenNguPhap({ muc, onThoat, onXong, children }) {
                                         : ketQua.dung ? <><i className="fas fa-check"></i> Đúng rồi</>
                                             : <><i className="fas fa-xmark"></i> Chưa đúng</>}
                                 </div>
-                                {ketQua.dapAn && <p className="px-cau-dung">{ketQua.dapAn}</p>}
+                                {tongHop && ketQua.tenMuc && <p className="px-goi-y np-chu-diem"><i className="fas fa-spell-check"></i> Chủ điểm: {ketQua.tenMuc}</p>}
+                                {ketQua.dapAn && <p className="px-cau-dung">{ketQua.cauDu || ketQua.dapAn}</p>}
+                                {ketQua.cauDu && cau.loai === 'chon' && <p className="px-ghi-chu">Đáp án: <strong>{ketQua.dapAn}</strong></p>}
                                 {ketQua.cuaBan && !ketQua.dung && <p className="px-cua-ban">Bạn: {ketQua.cuaBan}</p>}
                                 {ketQua.giaiThich && <p className="px-ghi-chu">{ketQua.giaiThich}</p>}
                                 {ketQua.ghiChu && <p className="px-ghi-chu">{ketQua.ghiChu}</p>}
                             </div>
                             <div className="px-nut">
                                 {ketQua.dapAn && (
-                                    <button type="button" className="btn btn-secondary" onClick={() => phat(ketQua.dapAn, zh)}>
-                                        <i className="fas fa-volume-high"></i> Nghe
-                                    </button>
+                                    <NutMauCau cau={ketQua.cauDu || ketQua.dapAn} nghia={ketQua.nghia} lang={lang} tenMuc={ketQua.tenMuc || muc.ten} />
                                 )}
-                                {!ketQua.dung && (
+                                {!ketQua.dung && children && (
                                     <button type="button" className="btn btn-secondary" onClick={() => setXemCongThuc((x) => !x)}>
                                         <i className="fas fa-spell-check"></i> {xemCongThuc ? 'Ẩn công thức' : 'Xem công thức'}
                                     </button>
@@ -217,7 +232,37 @@ export default function LuyenNguPhap({ muc, onThoat, onXong, children }) {
                 </>
             )}
 
-            {tongKet && (
+            {tongKet && tongHop && (
+                <>
+                    <div className="px-so">
+                        <div><strong>{tongKet.soDung}/{tongKet.tong}</strong><span>Câu đúng</span></div>
+                        <div><strong>{tongKet.dat ? 'Đạt' : 'Chưa đạt'}</strong><span>Cần đúng từ 80%</span></div>
+                        <div><strong>{tongKet.theoMuc?.length || '—'}</strong><span>Chủ điểm đã gặp</span></div>
+                    </div>
+                    {tongKet.theoMuc?.length > 0 && (
+                        <>
+                            <p className="px-mo-ta">Kết quả theo chủ điểm, chủ điểm cần luyện nhất ở trên:</p>
+                            <ul className="np-theo-muc">
+                                {tongKet.theoMuc.map((t) => (
+                                    <li key={t.mucId} className={t.dung < t.tong ? 'is-yeu' : ''}>
+                                        <span>{t.ten || t.mucId}</span>
+                                        <strong>{t.dung}/{t.tong}</strong>
+                                        {t.dung < t.tong && onLuyenMuc && (
+                                            <button type="button" className="btn btn-secondary btn-sm" onClick={() => onLuyenMuc(t.mucId)}>Luyện</button>
+                                        )}
+                                    </li>
+                                ))}
+                            </ul>
+                        </>
+                    )}
+                    <div className="px-nut">
+                        <button type="button" className="btn btn-primary" onClick={() => setLanMo((n) => n + 1)}>Kiểm tra lượt nữa</button>
+                        <button type="button" className="btn btn-secondary" onClick={onThoat}>Về danh sách</button>
+                    </div>
+                </>
+            )}
+
+            {tongKet && !tongHop && (
                 <>
                     <div className="px-so">
                         <div><strong>{tongKet.soDung}/{tongKet.tong}</strong><span>Câu đúng</span></div>
@@ -230,8 +275,13 @@ export default function LuyenNguPhap({ muc, onThoat, onXong, children }) {
                     {!tongKet.dat && <div className="np-luyen-cong-thuc">{children}</div>}
                     <div className="px-nut">
                         <button type="button" className="btn btn-primary" onClick={() => setLanMo((n) => n + 1)}>Luyện lượt nữa</button>
+                        <button type="button" className="btn btn-secondary" disabled={moRong === 'dang'} onClick={themCauMoi}
+                            title="AI soạn thêm câu cho mục này (tốn 1 lượt AI)">
+                            <i className="fas fa-wand-magic-sparkles"></i> {moRong === 'dang' ? 'Đang soạn…' : 'Thêm câu mới'}
+                        </button>
                         <button type="button" className="btn btn-secondary" onClick={onThoat}>Về danh sách</button>
                     </div>
+                    {moRong && moRong !== 'dang' && <p className="px-goi-y" role="status">{moRong}</p>}
                 </>
             )}
 

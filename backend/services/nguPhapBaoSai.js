@@ -41,12 +41,14 @@ async function baoSaiCau(userId, buoiId, i, now = new Date()) {
     if (!muc.daTra) return { loi: 'Hãy trả lời câu này trước khi báo.', ma: 400 };
     if (await quaTran(userId, now)) return HET_LUOT;
 
-    const bo = await NguPhapBaiTap.findOne({ mucId: buoi.mucId }).lean();
+    // Kiểm tra tổng hợp: mỗi câu thuộc chủ điểm riêng của nó.
+    const mucId = muc.mucId || buoi.mucId;
+    const bo = await NguPhapBaiTap.findOne({ mucId }).lean();
     const cau = bo?.cau?.[muc.so];
     if (!cau) return { loi: 'Không tìm thấy câu này.', ma: 404 };
 
-    await ghiBaoCao(userId, 'cau', buoi.mucId, muc.so, cau);
-    await NguPhapBaiTap.updateOne({ mucId: buoi.mucId }, { $set: { [`cau.${muc.so}.an`]: true } });
+    await ghiBaoCao(userId, 'cau', mucId, muc.so, cau);
+    await NguPhapBaiTap.updateOne({ mucId }, { $set: { [`cau.${muc.so}.an`]: true } });
     await BuoiNguPhap.updateOne({ _id: buoiId, userId }, { $set: { [`cau.${i}.khongChac`]: true } });
     return { daBao: true };
 }

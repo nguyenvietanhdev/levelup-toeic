@@ -7,7 +7,9 @@
 import { describe, test, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 
-const api = vi.hoisted(() => ({ tim: vi.fn(), hoi: vi.fn() }));
+const api = vi.hoisted(() => ({
+    tim: vi.fn(), hoi: vi.fn(), thongKeTongHop: vi.fn(), moRong: vi.fn(), moTongHop: vi.fn(), lichSu: vi.fn(),
+}));
 const loa = vi.hoisted(() => ({ speakWord: vi.fn(), stopSpeaking: vi.fn() }));
 vi.mock('@api/nguPhap.js', () => ({ NguPhapAPI: api }));
 vi.mock('@api/vocabulary.js', () => ({ getVocabLang: () => 'zh' }));
@@ -39,6 +41,7 @@ beforeEach(() => {
     Element.prototype.scrollIntoView = vi.fn(); // jsdom không có
     api.tim.mockReset().mockImplementation(async (q, lang) => traVe(lang));
     api.hoi.mockReset().mockResolvedValue({ ketQua: 'khong-phai', conLuot: 9 });
+    api.thongKeTongHop.mockReset().mockResolvedValue({ soCau: 0, soChuDiem: 0, tongChuDiem: 30, duMo: false });
     loa.speakWord.mockClear();
 });
 
@@ -75,5 +78,30 @@ describe('ngôn ngữ', () => {
     test('mở tới một mục tiếng Anh từ chỗ khác thì chuyển về tiếng Anh', async () => {
         render(<NguPhapTra active dich={{ lan: 1, id: 'bi-dong' }} />);
         await waitFor(() => expect(api.tim).toHaveBeenLastCalledWith('', 'en'));
+    });
+});
+
+describe('kiểm tra tổng hợp trên màn chính', () => {
+    test('chưa đủ câu: chưa cho bắt đầu; Mở rộng nhờ AI soạn thêm rồi cho bắt đầu, đúng ngôn ngữ', async () => {
+        api.moRong.mockResolvedValue({ mucId: 'zh-le', tenMuc: 'Trợ từ 了', them: 10, conLuot: 9, nganHang: { soCau: 10, soChuDiem: 1, tongChuDiem: 30, duMo: true } });
+        api.moTongHop.mockResolvedValue({ id: 'b1', cau: [{ loai: 'dich', vi: 'Tôi đã ăn.' }] });
+        render(<NguPhapTra active />);
+        expect(await screen.findByText(/Ngân hàng: 0 câu · 0\/30 chủ điểm/)).toBeTruthy();
+        expect(screen.getByRole('button', { name: /Bắt đầu kiểm tra/ })).toBeDisabled();
+        await waitFor(() => expect(screen.getByRole('button', { name: /Mở rộng ngân hàng câu/ })).not.toBeDisabled());
+        fireEvent.click(screen.getByRole('button', { name: /Mở rộng ngân hàng câu/ }));
+        expect(await screen.findByText(/Đã thêm 10 câu cho chủ điểm "Trợ từ 了"/)).toBeTruthy();
+        expect(api.moRong).toHaveBeenCalledWith('zh');
+        fireEvent.click(screen.getByRole('button', { name: /Bắt đầu kiểm tra/ }));
+        expect(await screen.findByText('Tôi đã ăn.')).toBeTruthy();
+        expect(api.moTongHop).toHaveBeenCalledWith('zh');
+    });
+
+    test('nút Lịch sử mở danh sách câu đã làm của ngôn ngữ đang chọn', async () => {
+        api.lichSu.mockResolvedValue({ ds: [], conNua: false });
+        render(<NguPhapTra active />);
+        fireEvent.click(await screen.findByRole('button', { name: /Lịch sử/ }));
+        expect(await screen.findByText(/Chưa có câu nào/)).toBeTruthy();
+        expect(api.lichSu).toHaveBeenCalledWith('zh', { truoc: '', chiSai: false });
     });
 });

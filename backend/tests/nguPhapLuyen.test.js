@@ -55,6 +55,7 @@ jest.mock('../models/NguPhapMuc', () => ({
     findOne: () => ({ lean: async () => null }),
 }));
 jest.mock('../models/NguPhapNhap', () => ({}));
+jest.mock('../models/NguPhapLichSu', () => ({ create: jest.fn(async (d) => d) }));
 jest.mock('../models/NguPhapLuot', () => ({
     findOne: () => ({ select: () => ({ lean: async () => ({ so: mockDb.luot }) }) }),
     findOneAndUpdate: jest.fn(async () => {

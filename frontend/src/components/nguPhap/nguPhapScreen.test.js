@@ -116,7 +116,8 @@ describe('luyện từng công thức', () => {
     test('đủ ba dạng câu; câu sửa điền sẵn câu sai; làm sai xem lại được công thức', () => {
         expect(luyen).toMatch(/chon: 'Chọn đáp án đúng', sua: 'Sửa câu sai', dich: zh \? 'Dịch sang tiếng Trung' : 'Dịch sang tiếng Anh'/);
         expect(luyen).toMatch(/setNhap\(cau\.loai === 'sua' \? cau\.sai : ''\)/);
-        expect(luyen).toMatch(/!ketQua\.dung && \(/);
+        // Kiểm tra tổng hợp không có một công thức để xem, nên nút chỉ hiện khi có nội dung công thức.
+        expect(luyen).toMatch(/!ketQua\.dung && children && \(/);
         expect(luyen).toMatch(/xemCongThuc && <div className="np-luyen-cong-thuc">\{children\}/);
     });
     test('lỗi mạng không làm kẹt lượt; nói rõ câu do AI soạn', () => {

@@ -13005,6 +13005,25 @@ button.hs-muc:not(:disabled):hover { border-color: var(--accent-color); }
 .np-luyen-nghia { font-size: 16px; font-weight: 500; }
 .np-luyen-cong-thuc { margin-top: 12px; padding: 12px 14px; border-radius: 12px; border: 1px solid var(--border-color); background: var(--bg-secondary); }
 .np-luyen-cong-thuc > h4:first-of-type { margin-top: 14px; }
+
+/* Kiểm tra tổng hợp, kết quả theo chủ điểm, lịch sử câu đã làm */
+.np-tong-hop { margin: 12px 0; padding: 12px 14px; border-radius: 12px; border: 1px solid var(--border-color); background: var(--bg-secondary); }
+.np-tong-hop > strong { display: block; margin-bottom: 4px; }
+.np-tong-hop .px-nut { flex-wrap: wrap; }
+.np-chu-diem { margin: 0 0 6px; font-weight: 600; }
+.np-theo-muc { list-style: none; padding: 0; margin: 8px 0 12px; display: grid; gap: 6px; }
+.np-theo-muc li { display: flex; align-items: center; gap: 10px; padding: 8px 12px; border-radius: 10px; border: 1px solid var(--border-color); }
+.np-theo-muc li > span { flex: 1; min-width: 0; }
+.np-theo-muc li.is-yeu { border-color: #f59e0b; }
+.np-ls-ds { list-style: none; padding: 0; margin: 8px 0; display: grid; gap: 10px; }
+.np-ls-ds > li { padding: 10px 12px; border-radius: 12px; border: 1px solid var(--border-color); border-left-width: 4px; }
+.np-ls-ds > li.is-dung { border-left-color: #22c55e; }
+.np-ls-ds > li.is-sai { border-left-color: #ef4444; }
+.np-ls-ds .px-nut { flex-wrap: wrap; margin-top: 6px; }
+.np-ls-dau { display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: center; font-size: 12px; color: var(--text-secondary); }
+.np-ls-dau time { margin-left: auto; }
+.np-ls-nhan { font-weight: 600; color: var(--text-primary); }
+.np-ls-de { margin: 6px 0 2px; }
 .np-nhan-on, .np-nhan-thuoc { flex-shrink: 0; padding: 2px 8px; border-radius: 999px; font-size: 11px; }
 .np-nhan-on { color: #ea580c; border: 1px solid rgba(234, 88, 12, 0.5); }
 .np-nhan-thuoc { color: #16a34a; border: 1px solid rgba(22, 163, 74, 0.5); }

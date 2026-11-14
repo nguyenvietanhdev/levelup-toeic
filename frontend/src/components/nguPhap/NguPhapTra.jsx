@@ -5,6 +5,7 @@ import { Notification } from '@ui/Toaster.jsx';
 import { NguPhapAPI } from '@api/nguPhap.js';
 import { getVocabLang } from '@api/vocabulary.js';
 import LuyenNguPhap from './LuyenNguPhap.jsx';
+import LichSuNguPhap from './LichSuNguPhap.jsx';
 
 const CHO_GO_MS = 250;
 const KHOA_LANG = 'levelup.nguPhap.lang';
@@ -144,6 +145,10 @@ export default function NguPhapTra({ active, dich = null }) {
     const [nhap, setNhap] = useState(null);
     const [luyen, setLuyen] = useState(null);
     const [lanTai, setLanTai] = useState(0);
+    const [nganHang, setNganHang] = useState(null);
+    const [dangMoRong, setDangMoRong] = useState(false);
+    const [baoMoRong, setBaoMoRong] = useState('');
+    const [xemLichSu, setXemLichSu] = useState(false);
     const lanTra = useRef(0);
     const khung = useRef(null);
     const oTim = useRef(null);
@@ -175,6 +180,17 @@ export default function NguPhapTra({ active, dich = null }) {
         }, CHO_GO_MS);
         return () => clearTimeout(t);
     }, [active, isLoggedIn, q, lanTai, lang]);
+
+    // Ngân hàng câu của kiểm tra tổng hợp: đọc lại khi đổi ngôn ngữ hoặc vừa luyện xong.
+    useEffect(() => {
+        if (!active || !isLoggedIn) return undefined;
+        let huy = false;
+        setBaoMoRong('');
+        NguPhapAPI.thongKeTongHop(lang)
+            .then((d) => { if (!huy) setNganHang(d); })
+            .catch(() => { if (!huy) setNganHang(null); });
+        return () => { huy = true; };
+    }, [active, isLoggedIn, lang, lanTai]);
 
     // Đổi câu tra hay ngôn ngữ: thông báo và bản nháp của câu cũ không còn liên quan.
     useEffect(() => { setBao(''); setNhap(null); }, [q, lang]);
@@ -286,6 +302,36 @@ export default function NguPhapTra({ active, dich = null }) {
         }
     };
 
+    const moKiemTra = () => setLuyen({ id: `tong-hop:${lang}`, ten: 'Kiểm tra ngữ pháp tổng hợp', lang, tongHop: true });
+
+    /** Từ tổng kết kiểm tra: mở luyện riêng chủ điểm còn yếu. */
+    const luyenMuc = (id) => {
+        const m = tatCa.find((x) => x.id === id);
+        if (m) { setLuyen(m); return; }
+        setLuyen(null);
+        setQ('');
+        setNhomChon('');
+        setMo(id);
+        cuonDen.current = id;
+    };
+
+    /** AI soạn thêm câu cho chủ điểm đang ít câu nhất. Tốn một lượt AI. */
+    const moRongNganHang = async () => {
+        if (dangMoRong) return;
+        setDangMoRong(true);
+        setBaoMoRong('');
+        try {
+            const r = await NguPhapAPI.moRong(lang);
+            setNganHang(r.nganHang);
+            setData((d) => (d ? { ...d, conLuot: r.conLuot } : d));
+            setBaoMoRong(`Đã thêm ${r.them} câu cho chủ điểm "${r.tenMuc}".`);
+        } catch (e) {
+            setBaoMoRong(e.message);
+        } finally {
+            setDangMoRong(false);
+        }
+    };
+
     const themViDu = async (m) => {
         if (dangThem) return;
         setDangThem(m.id);
@@ -309,12 +355,14 @@ export default function NguPhapTra({ active, dich = null }) {
                 {!isLoggedIn && <p className="px-mo-ta">Đăng nhập để tra cứu công thức ngữ pháp.</p>}
 
                 {isLoggedIn && luyen && (
-                    <LuyenNguPhap muc={luyen} onThoat={() => setLuyen(null)} onXong={() => setLanTai((n) => n + 1)}>
-                        <NoiDungMuc m={luyen} />
+                    <LuyenNguPhap muc={luyen} onThoat={() => setLuyen(null)} onXong={() => setLanTai((n) => n + 1)} onLuyenMuc={luyenMuc}>
+                        {!luyen.tongHop && <NoiDungMuc m={luyen} />}
                     </LuyenNguPhap>
                 )}
 
-                {isLoggedIn && !luyen && (
+                {isLoggedIn && !luyen && xemLichSu && <LichSuNguPhap lang={lang} onThoat={() => setXemLichSu(false)} />}
+
+                {isLoggedIn && !luyen && !xemLichSu && (
                     <>
                         <div className="np-lang" role="group" aria-label="Ngôn ngữ">
                             {Object.entries(NGON_NGU).map(([k, n]) => (
@@ -354,6 +402,31 @@ export default function NguPhapTra({ active, dich = null }) {
                                 </button>
                             ))}
                         </div>
+
+                        {!cauTra && (
+                            <section className="np-tong-hop" aria-label="Kiểm tra ngữ pháp tổng hợp">
+                                <strong><i className="fas fa-list-check"></i> Kiểm tra tổng hợp</strong>
+                                <p className="px-goi-y">
+                                    {nganHang
+                                        ? `Trộn câu từ mọi chủ điểm, không tốn lượt AI. Ngân hàng: ${nganHang.soCau} câu · ${nganHang.soChuDiem}/${nganHang.tongChuDiem} chủ điểm.`
+                                        : 'Trộn câu từ mọi chủ điểm, không tốn lượt AI.'}
+                                </p>
+                                <div className="px-nut">
+                                    <button type="button" className="btn btn-primary" disabled={!nganHang?.duMo} onClick={moKiemTra}>
+                                        <i className="fas fa-play"></i> Bắt đầu kiểm tra
+                                    </button>
+                                    <button type="button" className="btn btn-secondary" disabled={dangMoRong || conLuot <= 0} onClick={moRongNganHang}
+                                        title="AI soạn thêm câu cho chủ điểm đang ít câu nhất (tốn 1 lượt AI)">
+                                        <i className="fas fa-wand-magic-sparkles"></i> {dangMoRong ? 'AI đang soạn…' : 'Mở rộng ngân hàng câu'}
+                                    </button>
+                                    <button type="button" className="btn btn-secondary" onClick={() => setXemLichSu(true)}>
+                                        <i className="fas fa-clock-rotate-left"></i> Lịch sử
+                                    </button>
+                                </div>
+                                {nganHang && !nganHang.duMo && <p className="px-goi-y">Cần ít nhất vài câu trong ngân hàng: luyện vài công thức hoặc bấm Mở rộng.</p>}
+                                {baoMoRong && <p className="px-goi-y" role="status">{baoMoRong}</p>}
+                            </section>
+                        )}
 
                         {!data && <p className="px-mo-ta"><i className="fas fa-spinner fa-spin"></i> Đang tải…</p>}
                         {bao && <p className="np-bao" role="status">{bao}</p>}

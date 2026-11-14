@@ -50,6 +50,29 @@ export const NguPhapAPI = {
         return unwrap(await Http.post(`/ngu-phap/${encodeURIComponent(id)}/bao-sai`, {}));
     },
 
+    /** Ngân hàng câu kiểm tra tổng hợp: `{ soChuDiem, tongChuDiem, soCau, duMo }`. Không gọi AI. */
+    async thongKeTongHop(lang = 'en') {
+        return unwrap(await Http.get(`/ngu-phap/tong-hop?lang=${encodeURIComponent(lang)}`));
+    },
+
+    /** Mở lượt kiểm tra tổng hợp: `{ id, cau, conLuot, nganHang }`. Không gọi AI. */
+    async moTongHop(lang = 'en') {
+        return unwrap(await Http.post('/ngu-phap/tong-hop', { lang }));
+    },
+
+    /** AI soạn thêm câu cho một chủ điểm (để trống = mục ít câu nhất): `{ mucId, tenMuc, them, conLuot, nganHang }`. */
+    async moRong(lang = 'en', mucId = '') {
+        return unwrap(await Http.post('/ngu-phap/tong-hop/mo-rong', { lang, mucId }));
+    },
+
+    /** Lịch sử câu đã làm: `{ ds, conNua }`. `truoc`: mốc thời gian để lấy trang sau. */
+    async lichSu(lang = 'en', { truoc = '', chiSai = false } = {}) {
+        const q = new URLSearchParams({ lang });
+        if (truoc) q.set('truoc', truoc);
+        if (chiSai) q.set('chiSai', '1');
+        return unwrap(await Http.get(`/ngu-phap/lich-su?${q}`));
+    },
+
     /** `{ viDuThem, daDu?, conLuot }`. */
     async themViDu(id) {
         return unwrap(await Http.post(`/ngu-phap/${encodeURIComponent(id)}/vi-du`, {}));

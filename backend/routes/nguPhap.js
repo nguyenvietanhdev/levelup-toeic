@@ -7,7 +7,7 @@ const mongoose = require('mongoose');
 const router = express.Router();
 const { protect } = require('../middleware/auth');
 const { tim, hoi, themVaoThuVien, themViDu } = require('../services/nguPhap');
-const { moLuot, traLoi, ganTienDo } = require('../services/nguPhapLuyen');
+const { moLuot, traLoi, ganTienDo, moTongHop, thongKeNganHang, moRongNganHang, lichSu } = require('../services/nguPhapLuyen');
 const { baoSaiCau, baoSaiMuc } = require('../services/nguPhapBaoSai');
 
 router.use(protect);
@@ -36,6 +36,42 @@ router.post('/nhap/:id/them', async (req, res, next) => {
         const r = await themVaoThuVien(req.user.id, req.params.id);
         if (r.loi) return res.status(r.ma || 400).json({ success: false, message: r.loi });
         res.json({ success: true, data: r });
+    } catch (err) { next(err); }
+});
+
+const langCua = (v) => (v === 'zh' ? 'zh' : 'en');
+
+/** Ngân hàng câu của kiểm tra tổng hợp: bao nhiêu câu, phủ bao nhiêu chủ điểm. Không gọi AI. */
+router.get('/tong-hop', async (req, res, next) => {
+    try {
+        res.json({ success: true, data: await thongKeNganHang(langCua(req.query.lang)) });
+    } catch (err) { next(err); }
+});
+
+/** Mở một lượt kiểm tra tổng hợp từ câu đã lưu. Không gọi AI. */
+router.post('/tong-hop', async (req, res, next) => {
+    try {
+        const r = await moTongHop(req.user.id, langCua(req.body?.lang));
+        if (r.loi) return res.status(r.ma || 400).json({ success: false, message: r.loi });
+        res.json({ success: true, data: r });
+    } catch (err) { next(err); }
+});
+
+/** AI soạn thêm câu cho ngân hàng (một chủ điểm). Tốn một lượt AI. */
+router.post('/tong-hop/mo-rong', async (req, res, next) => {
+    try {
+        const mucId = typeof req.body?.mucId === 'string' ? req.body.mucId : '';
+        const r = await moRongNganHang(req.user.id, langCua(req.body?.lang), mucId);
+        if (r.loi) return res.status(r.ma || 400).json({ success: false, message: r.loi });
+        res.json({ success: true, data: r });
+    } catch (err) { next(err); }
+});
+
+/** Lịch sử câu đã làm, từng trang. */
+router.get('/lich-su', async (req, res, next) => {
+    try {
+        const truoc = typeof req.query.truoc === 'string' ? req.query.truoc.slice(0, 40) : '';
+        res.json({ success: true, data: await lichSu(req.user.id, { lang: langCua(req.query.lang), truoc, chiSai: req.query.chiSai === '1' }) });
     } catch (err) { next(err); }
 });
 
