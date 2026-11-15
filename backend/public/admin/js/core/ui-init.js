@@ -58,14 +58,18 @@ function initMainTabs() {
         'upload-management': 'Nội dung người dùng',
         'token-management':  'Chi phí AI',
         'db-manager':        'Quản lý Database',
+        'noi-dung-ai':       'Nội dung AI đã lưu',
+        'ngu-phap-ai':       'Báo cáo nội dung AI sai',
         cloudinary:          'Kho ảnh/audio trên Cloudinary',
     };
 
     const sidebarLinks = document.querySelectorAll('.sidebar-link[data-main-tab]');
 
-    function activateTab(tab) {
+    // `link`: mục vừa bấm. Nhiều mục cùng mở một tab (Nội dung AI: mỗi loại một mục) thì tô đúng
+    // mục được bấm, không phải mục đầu tiên trùng tab.
+    function activateTab(tab, link) {
         sidebarLinks.forEach(l => l.classList.remove('active'));
-        const activeLink = document.querySelector(`.sidebar-link[data-main-tab="${tab}"]`);
+        const activeLink = link || document.querySelector(`.sidebar-link[data-main-tab="${tab}"]`);
         if (activeLink) activeLink.classList.add('active');
 
         document.querySelectorAll('.main-tab-content').forEach(t => t.classList.remove('active'));
@@ -122,6 +126,8 @@ function initMainTabs() {
             window.loadGameConfig?.();
         } else if (tab === 'feature-unlocks') {
             window.loadFeatureUnlocks?.();
+        } else if (tab === 'noi-dung-ai') {
+            window.loadNoiDungAi?.(link?.dataset.aiLoai);
         } else if (tab === 'ngu-phap-ai') {
             window.loadNguPhapAi?.();
         } else if (tab === 'bai-nghe') {
@@ -157,7 +163,7 @@ function initMainTabs() {
     sidebarLinks.forEach(link => {
         link.addEventListener('click', (e) => {
             e.preventDefault();
-            activateTab(link.dataset.mainTab);
+            activateTab(link.dataset.mainTab, link);
         });
     });
 

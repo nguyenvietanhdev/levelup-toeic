@@ -13,7 +13,7 @@ const path = require('path');
 const fs = require('fs');
 const { spawn } = require('child_process');
 const { MongoMemoryServer } = require('mongodb-memory-server');
-const { TAI_KHOAN, CONG } = require('./caiDat');
+const { TAI_KHOAN, TAI_KHOAN_ADMIN, CONG } = require('./caiDat');
 
 const GOC = path.join(__dirname, '..');
 const BACKEND = path.join(GOC, 'backend');
@@ -34,6 +34,15 @@ async function taoTaiKhoan(uri) {
     const u = await User.create({ email: TAI_KHOAN.email, password: TAI_KHOAN.matKhau });
     // Level cao để mọi màn đều mở khoá — test quét màn cần vào được tất cả.
     await UserProfile.create({ userId: u._id, username: 'e2e', displayName: 'e2e', avatar: 'E', level: TAI_KHOAN.level });
+    const ad = await User.create({ email: TAI_KHOAN_ADMIN.email, password: TAI_KHOAN_ADMIN.matKhau, role: 'admin' });
+    await UserProfile.create({ userId: ad._id, username: 'admin-e2e', displayName: 'admin-e2e', avatar: 'A', level: 1 });
+
+    // Vài nội dung AI mẫu cho test trang admin "Nội dung AI" (kho câu thật do AI soạn thì DB tạm không có).
+    const NguPhapBaiTap = require(path.join(BACKEND, 'models', 'NguPhapBaiTap'));
+    await NguPhapBaiTap.create({
+        mucId: 'qua-khu-don',
+        cau: [{ loai: 'dich', vi: 'Hôm qua tôi đã về nhà.', dung: 'I went home yesterday.', giaiThich: 'Quá khứ đơn: V2.' }],
+    });
     await mongoose.disconnect();
 }
 

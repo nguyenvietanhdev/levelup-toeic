@@ -69,6 +69,47 @@
             </div>
           </div>
 
+          <!-- Group: Nội dung AI — mọi thứ AI soạn rồi lưu lại để dùng chung (khỏi tốn token lần
+               sau). Mỗi mục mở cùng một tab, chọn sẵn loại; trong tab cũng có dropdown đổi loại. -->
+          <div class="nav-group">
+            <div class="nav-group-toggle" data-group="ai">
+              <i class="fas fa-wand-magic-sparkles"></i><span>Nội dung AI</span>
+              <i class="fas fa-chevron-down nav-arrow"></i>
+            </div>
+            <div class="nav-group-items" id="nav-group-ai">
+              <a href="#" class="sidebar-link" data-main-tab="noi-dung-ai" data-ai-loai="muc-ngu-phap">
+                <i class="fas fa-spell-check"></i><span>Chủ điểm ngữ pháp</span>
+              </a>
+              <a href="#" class="sidebar-link" data-main-tab="noi-dung-ai" data-ai-loai="cau-ngu-phap">
+                <i class="fas fa-list-check"></i><span>Câu luyện ngữ pháp</span>
+              </a>
+              <a href="#" class="sidebar-link" data-main-tab="noi-dung-ai" data-ai-loai="vi-du-ngu-phap">
+                <i class="fas fa-quote-left"></i><span>Ví dụ ngữ pháp</span>
+              </a>
+              <a href="#" class="sidebar-link" data-main-tab="noi-dung-ai" data-ai-loai="cach-goi">
+                <i class="fas fa-signs-post"></i><span>Cách gọi chủ điểm</span>
+              </a>
+              <a href="#" class="sidebar-link" data-main-tab="noi-dung-ai" data-ai-loai="nhap-ngu-phap">
+                <i class="fas fa-file-pen"></i><span>Bản nháp chủ điểm</span>
+              </a>
+              <a href="#" class="sidebar-link" data-main-tab="noi-dung-ai" data-ai-loai="cau-on-loi">
+                <i class="fas fa-rotate"></i><span>Câu ôn lỗi</span>
+              </a>
+              <a href="#" class="sidebar-link" data-main-tab="noi-dung-ai" data-ai-loai="vai-ai">
+                <i class="fas fa-masks-theater"></i><span>Vai AI hội thoại</span>
+              </a>
+              <a href="#" class="sidebar-link" data-main-tab="noi-dung-ai" data-ai-loai="dang-goi-y">
+                <i class="fas fa-shapes"></i><span>Gợi ý dạng bài</span>
+              </a>
+              <a href="#" class="sidebar-link" data-main-tab="noi-dung-ai" data-ai-loai="tong-ket-tuan">
+                <i class="fas fa-calendar-week"></i><span>Tổng kết tuần</span>
+              </a>
+              <a href="#" class="sidebar-link" data-main-tab="ngu-phap-ai">
+                <i class="fas fa-flag"></i><span>Báo cáo AI sai</span>
+              </a>
+            </div>
+          </div>
+
           <!-- Group: Người dùng -->
           <div class="nav-group">
             <div class="nav-group-toggle" data-group="users">
@@ -84,9 +125,6 @@
               </a>
               <a href="#" class="sidebar-link" data-main-tab="upload-management">
                 <i class="fas fa-cloud-upload-alt"></i><span>Nội dung người dùng</span>
-              </a>
-              <a href="#" class="sidebar-link" data-main-tab="ngu-phap-ai">
-                <i class="fas fa-wand-magic-sparkles"></i><span>Nội dung AI</span>
               </a>
               <a href="#" class="sidebar-link" data-main-tab="bai-nghe">
                 <i class="fas fa-podcast"></i><span>Bài nghe</span>

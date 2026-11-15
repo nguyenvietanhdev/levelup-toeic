@@ -318,6 +318,7 @@ app.use('/api/admin', require('./routes/adminDefinitions')); // Achievement + Qu
 app.use('/api/categories', require('./routes/categories')); // Danh mục (public GET để dựng tab)
 app.use('/api/features', require('./routes/features'));     // Mốc mở khoá theo Level
 app.use('/api/admin/ngu-phap', require('./routes/adminNguPhap')); // Nội dung ngữ pháp do AI tạo: báo cáo sai, thư viện (admin)
+app.use('/api/admin/noi-dung-ai', require('./routes/adminNoiDungAi')); // Quản lý mọi nội dung AI đã lưu: xem, thêm, sửa, xoá (admin)
 app.use('/api/admin/bai-nghe', require('./routes/adminBaiNghe')); // Thêm bài nghe từ file âm thanh, ẩn/hiện (admin)
 app.use('/api/admin/db', require('./routes/adminDb'));       // MongoDB collection manager (admin)
 app.use('/api/admin/cloudinary', require('./routes/adminCloudinary')); // Kho ảnh/audio trên Cloudinary (admin)

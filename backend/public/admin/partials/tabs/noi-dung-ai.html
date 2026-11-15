@@ -1,0 +1,51 @@
+          <!-- ===== NỘI DUNG AI ĐÃ LƯU TAB ===== -->
+          <div id="main-tab-noi-dung-ai" class="main-tab-content">
+            <div class="card">
+              <div class="card-header">
+                <h2><i class="fas fa-wand-magic-sparkles"></i> Nội dung AI đã lưu</h2>
+                <div class="card-header-actions">
+                  <button class="btn btn-secondary btn-sm" id="btn-nda-reload"><i class="fas fa-rotate"></i> Tải lại</button>
+                  <button class="btn btn-primary btn-sm" id="btn-nda-them"><i class="fas fa-plus"></i> Thêm</button>
+                </div>
+              </div>
+              <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;padding:0 4px 10px">
+                <label style="flex:1;min-width:220px;display:grid;gap:4px">Loại nội dung
+                  <select id="nda-loai" class="form-control"></select>
+                </label>
+                <label id="nda-lang-nhan" style="display:grid;gap:4px">Ngôn ngữ
+                  <select id="nda-lang" class="form-control">
+                    <option value="">Tất cả</option><option value="en">Tiếng Anh</option><option value="zh">Tiếng Trung</option>
+                  </select>
+                </label>
+                <label style="flex:1;min-width:200px;display:grid;gap:4px">Tìm
+                  <input id="nda-q" class="form-control" maxlength="80" placeholder="Gõ để lọc…" autocomplete="off">
+                </label>
+              </div>
+              <div id="nda-mo-ta" style="padding:0 4px 10px;font-size:13px;color:var(--text-secondary)"></div>
+              <div id="nda-tong" style="padding:0 4px 6px;font-size:13px"></div>
+              <div class="table-container">
+                <table class="data-table">
+                  <thead><tr id="nda-dau"></tr></thead>
+                  <tbody id="nda-ds">
+                    <tr><td class="loading"><i class="fas fa-spinner fa-spin"></i> Đang tải...</td></tr>
+                  </tbody>
+                </table>
+              </div>
+              <div id="nda-trang" style="padding:8px 4px"></div>
+            </div>
+
+            <!-- Thêm / sửa / xem một mục: ô nhập dựng theo loại đang chọn -->
+            <div id="nda-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:1000;align-items:center;justify-content:center">
+              <div style="background:var(--bg-primary,white);border-radius:14px;padding:24px;max-width:760px;width:94%;max-height:92vh;overflow-y:auto">
+                <h3 id="nda-modal-tieu-de" style="margin-bottom:16px;color:var(--primary)"></h3>
+                <form id="nda-form" style="display:grid;gap:10px">
+                  <div id="nda-truong" style="display:grid;gap:10px"></div>
+                  <div style="display:flex;gap:10px;align-items:center;justify-content:flex-end">
+                    <span id="nda-trang-thai" style="font-size:13px;margin-right:auto"></span>
+                    <button type="button" class="btn btn-secondary" id="nda-huy">Đóng</button>
+                    <button type="submit" class="btn btn-primary" id="nda-luu"><i class="fas fa-floppy-disk"></i> Lưu</button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </div>
