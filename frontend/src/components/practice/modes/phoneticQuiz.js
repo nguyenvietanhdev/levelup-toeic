@@ -1,4 +1,4 @@
-import { GameLogic } from '@game/gameLogic.js';
+import { GameLogic, ttsLang } from '@game/gameLogic.js';
 import { nhanCapHoc } from '../nhanNgonNgu.js';
 import { GameState } from '@game/state.js';
 import { Config } from '@game/config.js';
@@ -101,11 +101,17 @@ export const PhoneticQuiz = {
         const question = this.questions[this.currentIndex];
         PracticeManager.updateProgress(this.currentIndex + 1, this.questions.length);
         PracticeManager.setCurrentWord(question.word);
-        PracticeManager.setCurrentWord(question.word);
         this.render(question);
 
-        if (question.mode === 'meaning') {
-            setTimeout(() => this.playAudio(question.word.en), 600);
+        // Tự đọc từ ngay khi sang câu mới, ở CẢ HAI dạng: nhìn phiên âm mà nghe luôn cách đọc
+        // mới nối được ký hiệu IPA với âm thật (trước chỉ dạng nghe-chọn-nghĩa mới tự đọc).
+        // Tắt âm thanh trong Cài đặt thì thôi. Người học bấm sang câu khác trước khi kịp đọc thì
+        // không đọc từ của câu cũ nữa.
+        if (GameState.state?.settings?.soundEnabled) {
+            const idx = this.currentIndex;
+            setTimeout(() => {
+                if (this.currentIndex === idx && this.questions[idx] === question) this.playAudio(question.word);
+            }, question.mode === 'meaning' ? 600 : 400);
         }
 
         // Đếm ngược cho RIÊNG câu này; hết giờ → tính sai + chuyển/khoá.
@@ -190,7 +196,7 @@ export const PhoneticQuiz = {
     attachListeners(question) {
         const playBtn = document.getElementById('pq-play-btn');
         playBtn?.addEventListener('click', () => {
-            this.playAudio(question.word.en);
+            this.playAudio(question.word);
         });
 
         document.querySelectorAll('#pq-choices .choice-btn').forEach((btn, i) => {
@@ -198,8 +204,9 @@ export const PhoneticQuiz = {
         });
     },
 
-    playAudio(text) {
-        GameLogic.speakWord(text);
+    /** Đọc một từ, giọng theo chính từ đó (kho song ngữ có cả chữ Hán lẫn chữ Latin). */
+    playAudio(word) {
+        GameLogic.speakWord(word.en, ttsLang(word));
         const btn = document.getElementById('pq-play-btn');
         if (btn) {
             btn.classList.add('playing');
@@ -222,7 +229,7 @@ export const PhoneticQuiz = {
             Utils.playSound(isCorrect ? Config.sounds.correct : Config.sounds.wrong, 0.5);
         }
 
-        setTimeout(() => this.playAudio(question.word.en), 400);
+        setTimeout(() => this.playAudio(question.word), 400);
 
         this.showResult(question, isCorrect);
 
