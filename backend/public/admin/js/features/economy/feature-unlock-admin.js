@@ -187,9 +187,72 @@
     });
   }
 
+  // ===== Học qua bài hát: tài khoản được dùng =====
+  async function loadBaiHatQuyen() {
+    const tbody = document.getElementById('bh-quyen-tbody');
+    if (!tbody) return;
+    tbody.innerHTML = '<tr><td colspan="4" class="loading"><i class="fas fa-spinner fa-spin"></i> Đang tải...</td></tr>';
+    try {
+      const r = await fetch(`${API_URL}/admin/bai-hat-quyen`, { headers: { Authorization: `Bearer ${getToken()}` } });
+      const j = await r.json();
+      if (!j.success) throw new Error(j.message || 'Không tải được');
+      const list = j.data || [];
+      if (!list.length) {
+        tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:var(--text-secondary);padding:20px">Chưa cho tài khoản nào dùng</td></tr>';
+        return;
+      }
+      tbody.innerHTML = list.map((u) => {
+        const nguon = [
+          u.quaAdmin ? '<span class="badge success">Thêm ở đây</span>' : '',
+          u.quaBien ? '<span class="badge neutral">Biến môi trường</span>' : '',
+          u.chuaCoTaiKhoan ? '<small style="color:var(--text-secondary)">chưa có tài khoản</small>' : '',
+        ].filter(Boolean).join(' ');
+        const nut = u.quaAdmin
+          ? `<button class="btn btn-sm bh-quyen-go" data-id="${esc(u._id)}" data-email="${esc(u.email)}"
+                style="background:#fee2e2;color:#dc2626;border:1px solid #fca5a5"><i class="fas fa-user-minus"></i> Gỡ</button>`
+          : '<small style="color:var(--text-secondary)">Gỡ trên Render</small>';
+        return `<tr>
+          <td><strong>${esc(u.email)}</strong></td>
+          <td>${esc(u.username) || '<small style="color:var(--text-secondary)">—</small>'}</td>
+          <td>${nguon}</td>
+          <td style="white-space:nowrap">${nut}</td>
+        </tr>`;
+      }).join('');
+      tbody.querySelectorAll('.bh-quyen-go').forEach((b) => b.addEventListener('click', async () => {
+        if (!confirm(`Gỡ quyền dùng Học qua bài hát của "${b.dataset.email}"?`)) return;
+        const r2 = await fetch(`${API_URL}/admin/bai-hat-quyen/${encodeURIComponent(b.dataset.id)}`, {
+          method: 'DELETE', headers: { Authorization: `Bearer ${getToken()}` },
+        });
+        const j2 = await r2.json();
+        showToast(j2.message || 'Đã gỡ', j2.success ? 'success' : 'error');
+        if (j2.success) loadBaiHatQuyen();
+      }));
+    } catch (e) {
+      tbody.innerHTML = `<tr><td colspan="4" style="text-align:center;color:var(--danger)">${esc(e.message)}</td></tr>`;
+    }
+  }
+
+  function initBaiHatQuyen() {
+    document.getElementById('bh-quyen-form')?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const o = document.getElementById('bh-quyen-email');
+      const email = o.value.trim();
+      if (!email) return;
+      const r = await fetch(`${API_URL}/admin/bai-hat-quyen`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${getToken()}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      });
+      const j = await r.json();
+      showToast(j.message || 'Đã thêm', j.success ? 'success' : 'error');
+      if (j.success) { o.value = ''; loadBaiHatQuyen(); }
+    });
+  }
+
   window.loadFeatureUnlocks = function () {
-    if (!inited) { inited = true; initModal(); initExceptionModal(); }
+    if (!inited) { inited = true; initModal(); initExceptionModal(); initBaiHatQuyen(); }
     load();
     loadExceptions();
+    loadBaiHatQuyen();
   };
 })();

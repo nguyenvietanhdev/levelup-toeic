@@ -18,11 +18,19 @@ const TOI_DA_KQ_TIM = 10;
 const RE_HAN = /[一-鿿]/;
 const RE_YT_ID = /^[A-Za-z0-9_-]{11}$/;
 
-/** Email được dùng tính năng (thuần theo biến môi trường). Không đặt biến thì không ai dùng được. */
+/** Danh sách email trong biến môi trường BAI_HAT_EMAILS (thuần). */
+const emailTuBien = (env = process.env.BAI_HAT_EMAILS) => String(env || '').split(',').map((x) => x.trim().toLowerCase()).filter(Boolean);
+
+/** Email có trong biến môi trường không (thuần). Không đặt biến thì không ai qua đường này. */
 function duocDung(email, env = process.env.BAI_HAT_EMAILS) {
-    const ds = String(env || '').split(',').map((x) => x.trim().toLowerCase()).filter(Boolean);
-    return !!email && ds.includes(String(email).trim().toLowerCase());
+    return !!email && emailTuBien(env).includes(String(email).trim().toLowerCase());
 }
+
+/**
+ * Tài khoản có được dùng không: admin bật cờ `duocDungBaiHat` trên tài khoản (tab "Mở khoá theo
+ * Level", có hiệu lực ngay), hoặc email nằm trong BAI_HAT_EMAILS (dự phòng, phải triển khai lại).
+ */
+const coQuyen = (user, env = process.env.BAI_HAT_EMAILS) => user?.duocDungBaiHat === true || duocDung(user?.email, env);
 
 /** Id video từ mọi dạng link YouTube hay gặp, hoặc chính id (thuần). Không nhận ra thì ''. */
 function tachYoutubeId(link) {
@@ -224,6 +232,6 @@ async function xoaBai(userId, id) {
 }
 
 module.exports = {
-    duocDung, tachYoutubeId, docLrc, tachLoiThuong, apMoc, timLoi, themBai, danhSach, layBai, capNhat, xoaBai,
+    duocDung, coQuyen, emailTuBien, tachYoutubeId, docLrc, tachLoiThuong, apMoc, timLoi, themBai, danhSach, layBai, capNhat, xoaBai,
     TOI_DA_BAI, TOI_DA_DONG,
 };

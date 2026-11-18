@@ -43,4 +43,4 @@ async function moMuc(page, nhom, muc) {
     await nut.click();
 }
 
-module.exports = { dangNhap, moMuc };
+module.exports = { dangNhap, moMuc, trongKhungNhin };

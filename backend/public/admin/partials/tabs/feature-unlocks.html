@@ -47,4 +47,29 @@
                 </table>
               </div>
             </div>
+
+            <div class="card">
+              <div class="card-header">
+                <h2><i class="fas fa-music"></i> Học qua bài hát — tài khoản được dùng</h2>
+              </div>
+              <div style="padding:0 4px 12px;font-size:13px;color:var(--text-secondary)">
+                Tính năng dùng lời bài hát có bản quyền nên chỉ mở cho tài khoản trong danh sách này (dự án dùng riêng).
+                Thêm hay gỡ ở đây có hiệu lực ngay; người được thêm tải lại trang là thấy mục <b>Học qua bài hát</b>.
+                Email trong biến môi trường <code>BAI_HAT_EMAILS</code> trên Render cũng được dùng, chỉ gỡ được ở Render.
+              </div>
+              <form id="bh-quyen-form" style="display:flex;gap:8px;flex-wrap:wrap;padding:0 4px 12px">
+                <input id="bh-quyen-email" type="email" class="form-control" style="flex:1;min-width:220px" placeholder="Email tài khoản học" required>
+                <button type="submit" class="btn btn-success btn-sm"><i class="fas fa-plus"></i> Cho dùng</button>
+              </form>
+              <div class="table-container">
+                <table class="data-table">
+                  <thead><tr>
+                    <th>Email</th><th>Tên hiển thị</th><th style="width:200px">Nguồn</th><th style="width:110px">Thao tác</th>
+                  </tr></thead>
+                  <tbody id="bh-quyen-tbody">
+                    <tr><td colspan="4" class="loading"><i class="fas fa-spinner fa-spin"></i> Đang tải...</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
           </div>

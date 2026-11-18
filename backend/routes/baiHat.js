@@ -15,10 +15,10 @@ const traVe = (res, r) => (r?.loi
     : res.json({ success: true, data: r }));
 
 /** Menu hỏi để biết có hiện mục "Học qua bài hát" không. Không lộ danh sách email. */
-router.get('/quyen', (req, res) => res.json({ success: true, data: { duocDung: S.duocDung(req.user.email) } }));
+router.get('/quyen', (req, res) => res.json({ success: true, data: { duocDung: S.coQuyen(req.user) } }));
 
 // Mọi route còn lại: ngoài danh sách thì như không tồn tại.
-router.use((req, res, next) => (S.duocDung(req.user.email)
+router.use((req, res, next) => (S.coQuyen(req.user)
     ? next()
     : res.status(404).json({ success: false, message: 'Không tìm thấy' })));
 

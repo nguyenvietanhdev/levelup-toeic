@@ -51,6 +51,9 @@ const UserSchema = new mongoose.Schema(
         // Ngoại lệ mở khoá theo Level: bỏ qua mọi mốc FeatureUnlock, dùng full
         // tính năng bất kể Level (tài khoản demo/test, admin tự thêm ở dashboard).
         bypassFeatureLock: { type: Boolean, default: false },
+        // Được dùng Học qua bài hát (dự án dùng riêng, lời bài hát có bản quyền). Admin bật/tắt ở
+        // tab "Mở khoá theo Level"; biến môi trường BAI_HAT_EMAILS vẫn là đường dự phòng.
+        duocDungBaiHat: { type: Boolean, default: false },
         loginAttempts: { type: Number, default: 0 },
         lockUntil: { type: Date, default: null },
         lastLoginAt: { type: Date, default: Date.now },

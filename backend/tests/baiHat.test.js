@@ -41,6 +41,20 @@ describe('quyền dùng', () => {
         expect(S.duocDung('toi@example.com', '')).toBe(false);
         expect(S.duocDung('', 'toi@example.com')).toBe(false);
     });
+
+    test('cờ admin bật trên tài khoản HOẶC email trong biến môi trường', () => {
+        expect(S.coQuyen({ email: 'a@x.com', duocDungBaiHat: true }, '')).toBe(true);
+        expect(S.coQuyen({ email: 'a@x.com', duocDungBaiHat: false }, 'a@x.com')).toBe(true);
+        expect(S.coQuyen({ email: 'a@x.com', duocDungBaiHat: false }, 'b@x.com')).toBe(false);
+        expect(S.coQuyen(undefined, 'a@x.com')).toBe(false);
+    });
+
+    test('middleware xác thực mang sẵn cờ (không tốn thêm truy vấn mỗi request)', () => {
+        const fs = require('fs');
+        const path = require('path');
+        const auth = fs.readFileSync(path.join(__dirname, '..', 'middleware', 'auth.js'), 'utf8');
+        expect(auth).toMatch(/duocDungBaiHat: user\.duocDungBaiHat === true/);
+    });
 });
 
 describe('link YouTube', () => {
@@ -150,7 +164,7 @@ describe('route', () => {
 
     test('ngoài danh sách thì mọi route trừ /quyen trả 404', () => {
         const iQuyen = route.indexOf("router.get('/quyen'");
-        const iChan = route.search(/router\.use\(\(req, res, next\) => \(S\.duocDung\(req\.user\.email\)\s*\? next\(\)/);
+        const iChan = route.search(/router\.use\(\(req, res, next\) => \(S\.coQuyen\(req\.user\)\s*\? next\(\)/);
         expect(iQuyen).toBeGreaterThan(-1);
         expect(iChan).toBeGreaterThan(iQuyen);
         expect(route.indexOf("router.get('/tim-loi'")).toBeGreaterThan(iChan);
@@ -162,5 +176,30 @@ describe('route', () => {
         expect(server).toMatch(/scriptSrcElem: \[[^\]]*https:\/\/www\.youtube\.com/);
         // Không có referrer thì YouTube nhúng báo "Video này không hoạt động" cho mọi video.
         expect(server).toContain("referrerPolicy: { policy: 'strict-origin-when-cross-origin' }");
+    });
+});
+
+describe('admin: quản lý tài khoản được dùng', () => {
+    const fs = require('fs');
+    const path = require('path');
+    const route = fs.readFileSync(path.join(__dirname, '..', 'routes', 'adminDefinitions.js'), 'utf8');
+    const html = fs.readFileSync(path.join(__dirname, '..', 'public', 'admin', 'partials', 'tabs', 'feature-unlocks.html'), 'utf8');
+    const js = fs.readFileSync(path.join(__dirname, '..', 'public', 'admin', 'js', 'features', 'economy', 'feature-unlock-admin.js'), 'utf8');
+
+    test('route xem / thêm / gỡ, chỉ admin', () => {
+        expect(route).toMatch(/router\.get\('\/bai-hat-quyen', admin,/);
+        expect(route).toMatch(/router\.post\('\/bai-hat-quyen', admin,/);
+        expect(route).toMatch(/router\.delete\('\/bai-hat-quyen\/:userId', admin,/);
+        // Thêm chỉ nhận tài khoản có thật; gỡ chỉ tắt cờ, báo rõ nếu email còn trong biến môi trường.
+        expect(route).toMatch(/Không tìm thấy tài khoản/);
+        expect(route).toMatch(/còn trong BAI_HAT_EMAILS/);
+    });
+
+    test('khối giao diện trong tab Mở khoá theo Level: email qua esc(), gỡ luôn hỏi lại', () => {
+        for (const id of ['bh-quyen-form', 'bh-quyen-email', 'bh-quyen-tbody']) expect(html).toContain(`id="${id}"`);
+        expect(js).toMatch(/<td><strong>\$\{esc\(u\.email\)\}<\/strong><\/td>/);
+        expect(js).toMatch(/if \(!confirm\(`Gỡ quyền dùng Học qua bài hát/);
+        expect(js).toMatch(/initBaiHatQuyen\(\)/);
+        expect(js).toMatch(/loadBaiHatQuyen\(\);\n  \};/);
     });
 });

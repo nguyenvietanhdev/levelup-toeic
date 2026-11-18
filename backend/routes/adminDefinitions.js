@@ -861,4 +861,61 @@ router.delete('/feature-unlock-exceptions/:userId', admin, async (req, res) => {
     } catch (err) { res.status(400).json({ success: false, message: err.message }); }
 });
 
+// ===== Học qua bài hát: tài khoản được dùng =====
+// Cờ nằm trên User.duocDungBaiHat (middleware auth đọc sẵn). Email trong biến môi trường
+// BAI_HAT_EMAILS cũng được dùng; hiện ra để admin thấy đủ, nhưng chỉ gỡ được trên Render.
+const mongoose = require('mongoose');
+const { emailTuBien } = require('../services/baiHat');
+
+router.get('/bai-hat-quyen', admin, async (req, res) => {
+    try {
+        const tuBien = emailTuBien();
+        const users = await User.find({ $or: [{ duocDungBaiHat: true }, { email: { $in: tuBien } }] })
+            .select('email duocDungBaiHat createdAt').sort({ createdAt: -1 }).lean();
+        const profiles = await UserProfile.find({ userId: { $in: users.map(u => u._id) } })
+            .select('userId username displayName').lean();
+        const byUser = new Map(profiles.map(p => [String(p.userId), p]));
+        const data = users.map(u => ({
+            _id: u._id,
+            email: u.email,
+            username: byUser.get(String(u._id))?.displayName || byUser.get(String(u._id))?.username || '',
+            quaAdmin: u.duocDungBaiHat === true,
+            quaBien: tuBien.includes(String(u.email).toLowerCase()),
+        }));
+        // Email trong biến mà chưa có tài khoản: vẫn hiện để biết là đang chờ.
+        for (const e of tuBien) {
+            if (!data.some(d => String(d.email).toLowerCase() === e)) data.push({ _id: null, email: e, username: '', quaAdmin: false, quaBien: true, chuaCoTaiKhoan: true });
+        }
+        res.json({ success: true, data });
+    } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+});
+
+router.post('/bai-hat-quyen', admin, async (req, res) => {
+    try {
+        const email = String(req.body.email || '').trim().toLowerCase();
+        if (!email) return res.status(400).json({ success: false, message: 'Thiếu email' });
+        const user = await User.findOne({ email }).select('email duocDungBaiHat');
+        if (!user) return res.status(404).json({ success: false, message: `Không tìm thấy tài khoản: ${email}` });
+        if (user.duocDungBaiHat) return res.status(409).json({ success: false, message: `${email} đã được dùng rồi` });
+        user.duocDungBaiHat = true;
+        await user.save();
+        res.status(201).json({ success: true, message: `Đã cho ${email} dùng Học qua bài hát (có hiệu lực ngay, người đó tải lại trang là thấy)` });
+    } catch (err) { res.status(400).json({ success: false, message: err.message }); }
+});
+
+router.delete('/bai-hat-quyen/:userId', admin, async (req, res) => {
+    try {
+        if (!mongoose.isValidObjectId(req.params.userId)) return res.status(400).json({ success: false, message: 'Id không hợp lệ' });
+        const user = await User.findByIdAndUpdate(req.params.userId, { $set: { duocDungBaiHat: false } }, { new: true }).select('email');
+        if (!user) return res.status(404).json({ success: false, message: 'Not found' });
+        const conBien = emailTuBien().includes(String(user.email).toLowerCase());
+        res.json({
+            success: true,
+            message: conBien
+                ? `Đã gỡ cờ của ${user.email}, nhưng email này còn trong BAI_HAT_EMAILS trên Render nên vẫn dùng được. Gỡ ở đó nữa nếu muốn chặn hẳn.`
+                : `Đã gỡ quyền dùng Học qua bài hát của ${user.email}`,
+        });
+    } catch (err) { res.status(400).json({ success: false, message: err.message }); }
+});
+
 module.exports = router;

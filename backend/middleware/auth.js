@@ -82,6 +82,7 @@ const protect = async (req, res, next) => {
             email: user.email,
             role: user.role,
             bypassFeatureLock: user.bypassFeatureLock === true,
+            duocDungBaiHat: user.duocDungBaiHat === true,
         };
 
         next();
