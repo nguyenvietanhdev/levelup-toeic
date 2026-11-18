@@ -9,17 +9,23 @@ import { UploadVocabAPI } from '@api/uploadVocab.js';
 export const khoMauCau = (lang) => (lang === 'zh' ? 'mau-cau-zh' : 'mau-cau-en');
 
 export async function luuMauCau({ cau, nghia = '', lang = 'en', tenMuc = '' }) {
-    const text = String(cau || '').trim();
-    if (!text) throw new Error('Không có câu để lưu');
+    return luuVaoTuRieng({ en: cau, vn: nghia, lang, source: khoMauCau(lang), part: tenMuc || 'Mẫu câu' });
+}
+
+/** Lưu một mục bất kỳ vào Từ vựng riêng (kho `source`, phần `part`, câu ví dụ tuỳ chọn). */
+export async function luuVaoTuRieng({ en, vn = '', lang = 'en', source, part, example = '' }) {
+    const text = String(en || '').trim();
+    if (!text) throw new Error('Không có nội dung để lưu');
     let res;
     try {
         res = await UploadVocabAPI.create({
             en: text,
-            vn: String(nghia || '').trim(),
+            vn: String(vn || '').trim(),
             lang: lang === 'zh' ? 'zh' : 'en',
-            source: khoMauCau(lang),
-            part: (String(tenMuc || '').trim() || 'Mẫu câu').slice(0, 60),
+            source,
+            part: (String(part || '').trim() || 'Chung').slice(0, 60),
             type: '',
+            example: String(example || '').slice(0, 300),
             retentionDays: 30,
         });
     } catch {

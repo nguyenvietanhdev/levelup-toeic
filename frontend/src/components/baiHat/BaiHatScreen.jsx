@@ -1,0 +1,549 @@
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useGame } from '@game/GameContext.jsx';
+import { useAuth } from '@components/auth/AuthContext.jsx';
+import { Notification } from '@ui/Toaster.jsx';
+import { BaiHatAPI } from '@api/baiHat.js';
+import { dichSangViet } from '@lib/dichNhanh.js';
+import { luuVaoTuRieng } from '@lib/luuMauCau.js';
+import { gioPhut, cauTai } from '@lib/baiNghe.js';
+import { mauCoGio, tienDo, chonOTrong, khopTu } from '@lib/baiHat.js';
+import { useYoutube } from './useYoutube.js';
+
+const TOC_DO = [0.75, 1];
+const MUC_DO = { de: 'Dễ', vua: 'Vừa', kho: 'Khó' };
+const BUOC_LECH = 0.5;
+/** Dừng chờ điền khi còn chừng này giây là hết dòng. */
+const SAT_CUOI_DONG = 0.15;
+
+const anhBia = (id) => `https://i.ytimg.com/vi/${encodeURIComponent(id)}/mqdefault.jpg`;
+
+/**
+ * HỌC QUA BÀI HÁT — dán link YouTube, hệ thống tự tìm lời (LRCLIB), rồi học:
+ *   · Xem lời: màu chạy qua từng chữ đang hát (karaoke), bấm chữ để tra và lưu vào Từ vựng riêng.
+ *   · Điền từ: lời có ô trống, tới cuối dòng còn ô trống thì nhạc dừng chờ điền.
+ *   · Bấm theo nhịp: lời chưa có mốc thời gian thì bấm phím cách mỗi khi một dòng bắt đầu.
+ */
+export default function BaiHatScreen({ active }) {
+    const { showScreen } = useGame();
+    const { isLoggedIn } = useAuth();
+
+    const [view, setView] = useState('ds'); // ds | them | hoc
+    const [ds, setDs] = useState(null);
+    const [bai, setBai] = useState(null);
+    const [cheDo, setCheDo] = useState('xem'); // xem | dien | nhip
+    const [hien, setHien] = useState(-1);
+    const [lech, setLech] = useState(0);
+    const [tocDo, setTocDo] = useState(1);
+    const [dich, setDich] = useState({});
+    const [tuChon, setTuChon] = useState(null);
+
+    // Điền từ
+    const [mucDo, setMucDo] = useState('vua');
+    const [daDien, setDaDien] = useState({}); // "dòng-mẩu" → 'dung' | 'lo'
+    const [giaTri, setGiaTri] = useState({});
+    const [choDong, setChoDong] = useState(-1);
+
+    // Bấm theo nhịp
+    const [moc, setMoc] = useState([]);
+
+    const khungYt = useRef(null);
+    const khungLoi = useRef(null);
+    const yt = useYoutube(khungYt, view === 'hoc' ? bai?.youtubeId : null);
+    const lang = bai?.lang === 'zh' ? 'zh' : 'en';
+
+    const mau = useMemo(() => (bai?.coMoc ? bai.cau.map((c) => mauCoGio(c, lang)) : []), [bai, lang]);
+    const oTrong = useMemo(() => (bai ? chonOTrong(bai.cau, lang, mucDo, (bai.id || '').length * 31 + bai.cau.length) : []), [bai, lang, mucDo]);
+    const conTrong = useCallback((i) => (oTrong[i] || []).some((k) => !daDien[`${i}-${k}`]), [oTrong, daDien]);
+
+    // Ref cho vòng lặp vẽ: không tạo lại vòng lặp mỗi lần state đổi.
+    const r = useRef({});
+    r.current = { bai, mau, lech, cheDo, conTrong, choDong, hien, dangPhat: yt.dangPhat };
+
+    useEffect(() => {
+        if (!active || !isLoggedIn || ds) return;
+        BaiHatAPI.danhSach().then(setDs).catch((e) => { setDs([]); Notification.error(e.message); });
+    }, [active, isLoggedIn, ds]);
+
+    useEffect(() => { if (!active) yt.dung(); }, [active]); // eslint-disable-line react-hooks/exhaustive-deps
+    useEffect(() => { if (yt.san) yt.tocDo(tocDo); }, [tocDo, yt.san]); // eslint-disable-line react-hooks/exhaustive-deps
+
+    /**
+     * Vòng lặp theo khung hình: dòng đang hát, màu chạy qua từng chữ (đặt thẳng biến CSS lên
+     * thẻ chữ, không vẽ lại React mỗi khung hình), và dừng chờ điền ở chế độ Điền từ.
+     */
+    useEffect(() => {
+        if (view !== 'hoc' || !yt.san || !bai?.coMoc) return undefined;
+        let id;
+        const buoc = () => {
+            const s = r.current;
+            const t = yt.gio() - s.lech;
+            const i = cauTai(s.bai.cau, t);
+            if (i !== s.hien) setHien(i);
+            const dong = i >= 0 ? khungLoi.current?.querySelector(`[data-dong="${i}"]`) : null;
+            if (dong && s.mau[i]) {
+                dong.querySelectorAll('[data-k]').forEach((el) => {
+                    el.style.setProperty('--tien', tienDo(s.mau[i][Number(el.dataset.k)], t).toFixed(3));
+                });
+            }
+            if (s.cheDo === 'dien' && i >= 0 && s.choDong !== i && s.dangPhat) {
+                const c = s.bai.cau[i];
+                if (t >= c.ketThuc - SAT_CUOI_DONG && s.conTrong(i)) {
+                    yt.dung();
+                    setChoDong(i);
+                }
+            }
+            id = requestAnimationFrame(buoc);
+        };
+        id = requestAnimationFrame(buoc);
+        return () => cancelAnimationFrame(id);
+    }, [view, yt.san, bai]); // eslint-disable-line react-hooks/exhaustive-deps
+
+    // Dòng đang hát giữ ở khoảng 1/3 khung lời. Chữ ngoài dòng đang hát bỏ màu đặt tay để lớp
+    // CSS quyết (dòng đã qua tô kín, dòng chưa tới để trống) — tua lùi thì dòng sau hết bị tô sẵn.
+    useEffect(() => {
+        khungLoi.current?.querySelectorAll('[data-k]').forEach((el) => {
+            if (!el.closest(`[data-dong="${hien}"]`)) el.style.removeProperty('--tien');
+        });
+        const k = khungLoi.current;
+        const el = hien >= 0 ? k?.querySelector(`[data-dong="${hien}"]`) : null;
+        if (el && k) k.scrollTo?.({ top: Math.max(0, el.offsetTop - k.clientHeight / 3), behavior: 'smooth' });
+    }, [hien]);
+
+    // Đang chờ điền: đưa con trỏ vào ô trống đầu tiên của dòng đó.
+    useEffect(() => {
+        if (choDong < 0) return;
+        khungLoi.current?.querySelector(`[data-dong="${choDong}"] input:not([disabled])`)?.focus();
+    }, [choDong]);
+
+    // Lưu độ lệch sau khi người học ngừng bấm.
+    useEffect(() => {
+        if (!bai || lech === (bai.lech || 0)) return undefined;
+        const t = setTimeout(() => {
+            BaiHatAPI.capNhat(bai.id, { lech }).then((x) => setBai((b) => (b ? { ...b, lech: x.bai.lech } : b))).catch(() => {});
+        }, 800);
+        return () => clearTimeout(t);
+    }, [lech, bai]);
+
+    const moBai = async (id) => {
+        try {
+            const b = await BaiHatAPI.lay(id);
+            batDauHoc(b);
+        } catch (e) {
+            Notification.error(e.message);
+        }
+    };
+
+    const batDauHoc = (b) => {
+        setBai(b);
+        setLech(b.lech || 0);
+        setCheDo(b.coMoc ? 'xem' : 'nhip');
+        setHien(-1);
+        setDich({});
+        setTuChon(null);
+        setDaDien({});
+        setGiaTri({});
+        setChoDong(-1);
+        setMoc([]);
+        setView('hoc');
+    };
+
+    const veDanhSach = () => {
+        yt.dung();
+        setView('ds');
+        setBai(null);
+        setDs(null);
+    };
+
+    const xoaBai = async (b) => {
+        if (!window.confirm(`Xoá bài "${b.tieuDe}"?`)) return;
+        try {
+            await BaiHatAPI.xoa(b.id);
+            setDs((d) => d.filter((x) => x.id !== b.id));
+        } catch (e) {
+            Notification.error(e.message);
+        }
+    };
+
+    const ngheDong = (i) => {
+        const c = bai?.cau?.[i];
+        if (!c || c.batDau == null) return;
+        setChoDong(-1);
+        yt.tua(c.batDau + lech - 0.2);
+        yt.phat();
+    };
+
+    const dichDong = async (i) => {
+        if (dich[i]) { setDich((d) => ({ ...d, [i]: undefined })); return; }
+        try {
+            const vi = await dichSangViet(bai.cau[i].text);
+            setDich((d) => ({ ...d, [i]: vi || '(không dịch được)' }));
+        } catch {
+            Notification.error('Không dịch được dòng này.');
+        }
+    };
+
+    const chonTu = async (tu, dong) => {
+        if (!tu) return;
+        setTuChon({ tu, dong, nghia: '', dang: true, luu: '' });
+        try {
+            const nghia = await dichSangViet(tu);
+            setTuChon((x) => (x?.tu === tu ? { ...x, nghia, dang: false } : x));
+        } catch {
+            setTuChon((x) => (x?.tu === tu ? { ...x, dang: false } : x));
+        }
+    };
+
+    const luuTu = async () => {
+        if (!tuChon || tuChon.luu === 'dang') return;
+        setTuChon((x) => ({ ...x, luu: 'dang' }));
+        try {
+            await luuVaoTuRieng({
+                en: lang === 'en' ? tuChon.tu.toLowerCase() : tuChon.tu,
+                vn: tuChon.nghia,
+                lang,
+                source: lang === 'zh' ? 'bai-hat-zh' : 'bai-hat-en',
+                part: bai.tieuDe,
+                example: tuChon.dong,
+            });
+            setTuChon((x) => ({ ...x, luu: 'xong' }));
+        } catch (e) {
+            setTuChon((x) => ({ ...x, luu: e.message }));
+        }
+    };
+
+    // ---------- Điền từ ----------
+    const kiemO = (i, k, dapAn) => {
+        const khoa = `${i}-${k}`;
+        if (!khopTu(giaTri[khoa], dapAn)) return false;
+        const moi = { ...daDien, [khoa]: 'dung' };
+        setDaDien(moi);
+        // Điền xong cả dòng đang chờ thì hát tiếp.
+        if (choDong === i && !(oTrong[i] || []).some((x) => !moi[`${i}-${x}`])) {
+            setChoDong(-1);
+            yt.phat();
+        }
+        return true;
+    };
+
+    const boQuaDong = (i) => {
+        const moi = { ...daDien };
+        (oTrong[i] || []).forEach((k) => { if (!moi[`${i}-${k}`]) moi[`${i}-${k}`] = 'lo'; });
+        setDaDien(moi);
+        if (choDong === i) { setChoDong(-1); yt.phat(); }
+    };
+
+    const tongO = oTrong.reduce((n, d) => n + d.length, 0);
+    const soDung = Object.values(daDien).filter((v) => v === 'dung').length;
+
+    // ---------- Bấm theo nhịp ----------
+    const batDauNhip = () => {
+        setMoc([]);
+        yt.tua(0);
+        yt.phat();
+    };
+    const bamNhip = useCallback(() => {
+        setMoc((m) => (bai && m.length < bai.cau.length ? [...m, Math.round(yt.gio() * 100) / 100] : m));
+    }, [bai, yt]);
+    const lui = () => {
+        setMoc((m) => {
+            const con = m.slice(0, -1);
+            yt.tua(Math.max(0, (con[con.length - 1] ?? 0) - 0.5));
+            return con;
+        });
+    };
+    const luuNhip = async () => {
+        try {
+            const x = await BaiHatAPI.capNhat(bai.id, { moc });
+            batDauHoc(x.bai);
+            Notification.success('Đã lưu nhịp. Lời sẽ chạy theo nhạc.');
+        } catch (e) {
+            Notification.error(e.message);
+        }
+    };
+
+    // Phím cách = bấm nhịp (không cướp phím khi đang gõ chữ).
+    useEffect(() => {
+        if (!active || view !== 'hoc' || cheDo !== 'nhip') return undefined;
+        const phim = (e) => {
+            if (e.code !== 'Space' || /^(INPUT|TEXTAREA|SELECT|BUTTON)$/.test(e.target?.tagName || '')) return;
+            e.preventDefault();
+            bamNhip();
+        };
+        window.addEventListener('keydown', phim);
+        return () => window.removeEventListener('keydown', phim);
+    }, [active, view, cheDo, bamNhip]);
+
+    // ---------- Vẽ một dòng lời ----------
+    const veDong = (c, i) => {
+        const dsMau = mau[i] || mauCoGio(c, lang);
+        const trong = new Set(cheDo === 'dien' ? oTrong[i] || [] : []);
+        return dsMau.map((m, k) => {
+            if (!m.tu) return <span key={k}>{m.hien}</span>;
+            const khoa = `${i}-${k}`;
+            if (trong.has(k) && !daDien[khoa]) {
+                const duoi = m.hien.slice(m.hien.indexOf(m.tu) + m.tu.length);
+                return (
+                    <span key={k}>
+                        <input
+                            className="bh-o"
+                            aria-label={`Ô trống dòng ${i + 1}`}
+                            value={giaTri[khoa] || ''}
+                            size={Math.max(2, m.tu.length)}
+                            autoComplete="off"
+                            spellCheck={false}
+                            onChange={(e) => setGiaTri((g) => ({ ...g, [khoa]: e.target.value }))}
+                            onKeyDown={(e) => {
+                                if (e.key !== 'Enter') return;
+                                if (!kiemO(i, k, m.tu)) e.currentTarget.classList.add('is-sai');
+                            }}
+                        />
+                        {duoi}
+                    </span>
+                );
+            }
+            const lop = `bh-chu${daDien[khoa] === 'dung' ? ' is-dung' : daDien[khoa] === 'lo' ? ' is-lo' : ''}`;
+            return (
+                <button key={k} type="button" data-k={k} className={lop} onClick={() => chonTu(m.tu, c.text)}>{m.hien}</button>
+            );
+        });
+    };
+
+    const daNhipXong = bai && moc.length === bai.cau.length;
+
+    return (
+        <div id="bai-hat-screen" className={`screen ${active ? 'active' : ''}`}>
+            <div className="screen-header">
+                <button className="back-btn-screen icon-btn" onClick={() => (view === 'ds' ? showScreen('home-screen') : veDanhSach())}>
+                    <i className="fas fa-arrow-left"></i>
+                </button>
+                <h2><i className="fas fa-music"></i> {view === 'hoc' && bai ? bai.tieuDe : 'Học qua bài hát'}</h2>
+            </div>
+
+            <div className={`px-wrap ${view === 'hoc' ? 'bn-wrap-rong' : ''}`}>
+                {!isLoggedIn && <p className="px-mo-ta">Đăng nhập để dùng.</p>}
+
+                {isLoggedIn && view === 'ds' && (
+                    <>
+                        <p className="px-mo-ta">Thêm bài hát bạn thích bằng link YouTube. Hệ thống tự tìm lời, rồi bạn xem lời chạy theo nhạc, điền từ còn thiếu, bấm vào từ để tra và lưu lại.</p>
+                        <div className="px-nut">
+                            <button type="button" className="btn btn-primary" onClick={() => setView('them')}><i className="fas fa-plus"></i> Thêm bài hát</button>
+                        </div>
+                        {!ds && <p className="px-mo-ta"><i className="fas fa-spinner fa-spin"></i> Đang tải…</p>}
+                        {ds && !ds.length && <p className="px-mo-ta">Chưa có bài nào.</p>}
+                        <div className="bn-ds">
+                            {(ds || []).map((b) => (
+                                <div key={b.id} className="bh-the-vo">
+                                    <button type="button" className="bn-the" onClick={() => moBai(b.id)}>
+                                        <span className="bn-anh">
+                                            <img src={anhBia(b.youtubeId)} alt="" loading="lazy" />
+                                            <span className="bn-phat"><i className="fas fa-play"></i></span>
+                                            {b.thoiLuong > 0 && <span className="bn-thoi-luong">{gioPhut(b.thoiLuong)}</span>}
+                                        </span>
+                                        <strong>{b.tieuDe}</strong>
+                                        <span className="bn-the-phu">{b.ngheSi || '—'} · {b.soDong} dòng{b.coMoc ? '' : ' · chưa có nhịp'}</span>
+                                    </button>
+                                    <button type="button" className="lt-ke-hoach-link bh-xoa" aria-label={`Xoá ${b.tieuDe}`} onClick={() => xoaBai(b)}>
+                                        <i className="fas fa-trash"></i>
+                                    </button>
+                                </div>
+                            ))}
+                        </div>
+                    </>
+                )}
+
+                {isLoggedIn && view === 'them' && <ThemBai onXong={(b) => batDauHoc(b)} onHuy={() => setView('ds')} />}
+
+                {isLoggedIn && view === 'hoc' && bai && (
+                    <>
+                        <div className="np-nhom" role="tablist" aria-label="Chế độ">
+                            <button type="button" className={cheDo === 'xem' ? 'is-chon' : ''} disabled={!bai.coMoc} onClick={() => setCheDo('xem')}>Xem lời</button>
+                            <button type="button" className={cheDo === 'dien' ? 'is-chon' : ''} disabled={!bai.coMoc} onClick={() => { setCheDo('dien'); setChoDong(-1); }}>Điền từ</button>
+                            <button type="button" className={cheDo === 'nhip' ? 'is-chon' : ''} onClick={() => { setCheDo('nhip'); setMoc([]); }}>
+                                {bai.coMoc ? 'Bấm lại nhịp' : 'Bấm theo nhịp'}
+                            </button>
+                        </div>
+
+                        <div className="bn-hoc co-hinh bh-hoc">
+                            <div className="bn-may is-video">
+                                <div className="bh-video" ref={khungYt} />
+                                {yt.loi && <p className="px-goi-y" role="alert">{yt.loi}</p>}
+                                <div className="bn-dieu-khien">
+                                    <div className="np-nhom bn-toc-do" role="group" aria-label="Tốc độ">
+                                        {TOC_DO.map((t) => (
+                                            <button key={t} type="button" className={tocDo === t ? 'is-chon' : ''} onClick={() => setTocDo(t)}>{t}×</button>
+                                        ))}
+                                    </div>
+                                    {cheDo !== 'nhip' && (
+                                        <div className="bh-lech" role="group" aria-label="Chỉnh lời khớp nhạc">
+                                            <button type="button" className="btn btn-secondary btn-sm" onClick={() => setLech((x) => Math.max(-30, Math.round((x - BUOC_LECH) * 10) / 10))} title="Lời đang chậm hơn nhạc">Lời sớm hơn</button>
+                                            <span>{lech > 0 ? '+' : ''}{lech.toFixed(1)}s</span>
+                                            <button type="button" className="btn btn-secondary btn-sm" onClick={() => setLech((x) => Math.min(30, Math.round((x + BUOC_LECH) * 10) / 10))} title="Lời đang nhanh hơn nhạc">Lời muộn hơn</button>
+                                        </div>
+                                    )}
+                                </div>
+
+                                {cheDo === 'dien' && (
+                                    <div className="bh-dien-dau">
+                                        <div className="np-nhom" role="group" aria-label="Mức độ">
+                                            {Object.entries(MUC_DO).map(([k, t]) => (
+                                                <button key={k} type="button" className={mucDo === k ? 'is-chon' : ''} onClick={() => { setMucDo(k); setDaDien({}); setGiaTri({}); setChoDong(-1); }}>{t}</button>
+                                            ))}
+                                        </div>
+                                        <span className="px-goi-y">Đúng {soDung}/{tongO} ô</span>
+                                        {choDong >= 0 && (
+                                            <div className="px-nut">
+                                                <span className="px-goi-y" role="status">Điền ô trống rồi nhấn Enter để hát tiếp.</span>
+                                                <button type="button" className="btn btn-secondary btn-sm" onClick={() => ngheDong(choDong)}><i className="fas fa-rotate-left"></i> Nghe lại dòng</button>
+                                                <button type="button" className="btn btn-secondary btn-sm" onClick={() => boQuaDong(choDong)}>Bỏ qua</button>
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+
+                                {cheDo === 'nhip' && (
+                                    <div className="bh-nhip">
+                                        <p className="px-goi-y">Bấm <b>Bắt đầu</b>, rồi mỗi khi một dòng lời bắt đầu được hát thì bấm <b>Dòng tiếp</b> (hoặc phím cách). Bấm sai thì <b>Lùi</b>.</p>
+                                        <div className="px-nut">
+                                            <button type="button" className="btn btn-secondary" disabled={!yt.san} onClick={batDauNhip}><i className="fas fa-play"></i> Bắt đầu</button>
+                                            <button type="button" className="btn btn-primary" disabled={!yt.san || daNhipXong} onClick={bamNhip}>Dòng tiếp ({moc.length}/{bai.cau.length})</button>
+                                            <button type="button" className="btn btn-secondary" disabled={!moc.length} onClick={lui}>Lùi</button>
+                                            {daNhipXong && <button type="button" className="btn btn-primary" onClick={luuNhip}><i className="fas fa-floppy-disk"></i> Lưu nhịp</button>}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {tuChon && (
+                                    <div className="bn-tu-chon" role="dialog" aria-label={`Từ: ${tuChon.tu}`}>
+                                        <strong>{tuChon.tu}</strong>
+                                        <span>{tuChon.dang ? 'Đang tra…' : (tuChon.nghia || 'Không tra được nghĩa.')}</span>
+                                        <div className="px-nut">
+                                            <button type="button" className="btn btn-primary" disabled={tuChon.dang || tuChon.luu === 'dang' || tuChon.luu === 'xong'} onClick={luuTu}>
+                                                <i className={`fas ${tuChon.luu === 'xong' ? 'fa-check' : 'fa-bookmark'}`}></i> {tuChon.luu === 'xong' ? 'Đã lưu' : 'Lưu vào Từ vựng riêng'}
+                                            </button>
+                                            <button type="button" className="btn btn-secondary" onClick={() => setTuChon(null)}>Đóng</button>
+                                        </div>
+                                        {tuChon.luu && !['dang', 'xong'].includes(tuChon.luu) && <span className="px-goi-y" role="alert">{tuChon.luu}</span>}
+                                    </div>
+                                )}
+                            </div>
+
+                            <ol className="bn-script bh-loi" ref={khungLoi}>
+                                {bai.cau.map((c, i) => {
+                                    const lop = cheDo === 'nhip'
+                                        ? (i === moc.length ? 'is-hien' : i < moc.length ? 'is-qua' : '')
+                                        : (i === hien ? 'is-hien' : i < hien ? 'is-qua' : '');
+                                    return (
+                                        <li key={`${i}-${c.batDau}`} data-dong={i} className={`${lop}${choDong === i ? ' is-cho' : ''}`}>
+                                            <button type="button" className="bn-moc" aria-label={`Nghe dòng ${i + 1}`} disabled={!bai.coMoc || cheDo === 'nhip'} onClick={() => ngheDong(i)}>
+                                                <i className="fas fa-play"></i> {cheDo === 'nhip' ? (moc[i] != null ? gioPhut(moc[i]) : '—') : (c.batDau != null ? gioPhut(c.batDau + lech) : '—')}
+                                            </button>
+                                            <div className="bn-cau">
+                                                <p>{veDong(c, i)}</p>
+                                                {dich[i] && <small className="bn-dich">{dich[i]}</small>}
+                                            </div>
+                                            {cheDo !== 'nhip' && (
+                                                <button type="button" className="lt-ke-hoach-link bn-nut-dich" onClick={() => dichDong(i)}>{dich[i] ? 'Ẩn dịch' : 'Dịch'}</button>
+                                            )}
+                                        </li>
+                                    );
+                                })}
+                            </ol>
+                        </div>
+                        <p className="px-goi-y bn-nguon">
+                            {bai.nguonLoi === 'lrclib' ? 'Lời: LRCLIB (kho lời cộng đồng).' : 'Lời do bạn dán.'} Chỉ dùng để tự học.
+                            {bai.coMoc && !bai.cau.some((c) => c.tu) && ' Màu chạy từng chữ là ước lượng theo âm tiết.'}
+                        </p>
+                    </>
+                )}
+            </div>
+        </div>
+    );
+}
+
+/** Thêm bài: link YouTube → tìm lời trên LRCLIB và chọn bản đúng, hoặc tự dán lời. */
+function ThemBai({ onXong, onHuy }) {
+    const [youtube, setYoutube] = useState('');
+    const [tenBai, setTenBai] = useState('');
+    const [ngheSi, setNgheSi] = useState('');
+    const [ketQua, setKetQua] = useState(null);
+    const [dang, setDang] = useState('');
+    const [tuDan, setTuDan] = useState(false);
+    const [loiDan, setLoiDan] = useState('');
+    const [bao, setBao] = useState('');
+
+    const tim = async (e) => {
+        e?.preventDefault();
+        if (!tenBai.trim() || dang) return;
+        setDang('tim');
+        setBao('');
+        try {
+            const r = await BaiHatAPI.timLoi(tenBai.trim(), ngheSi.trim());
+            setKetQua(r.ketQua);
+            if (!r.ketQua.length) setBao('Không tìm thấy lời. Thử bỏ tên ca sĩ, viết lại tên bài, hoặc tự dán lời.');
+        } catch (er) {
+            setBao(er.message);
+        } finally {
+            setDang('');
+        }
+    };
+
+    const them = async (body) => {
+        if (!youtube.trim()) { setBao('Dán link YouTube của bài trước đã.'); return; }
+        setDang('them');
+        setBao('');
+        try {
+            const r = await BaiHatAPI.them({ youtube: youtube.trim(), ...body });
+            onXong(r.bai);
+        } catch (er) {
+            setBao(er.message);
+        } finally {
+            setDang('');
+        }
+    };
+
+    return (
+        <section className="bh-them" aria-label="Thêm bài hát">
+            <label>Link YouTube
+                <input className="bh-input" value={youtube} onChange={(e) => setYoutube(e.target.value)} placeholder="https://www.youtube.com/watch?v=…" />
+            </label>
+            <form className="bh-tim" onSubmit={tim}>
+                <label>Tên bài <input className="bh-input" value={tenBai} onChange={(e) => setTenBai(e.target.value)} placeholder="Let It Be" /></label>
+                <label>Ca sĩ (không bắt buộc) <input className="bh-input" value={ngheSi} onChange={(e) => setNgheSi(e.target.value)} placeholder="The Beatles" /></label>
+                <button type="submit" className="btn btn-primary" disabled={!tenBai.trim() || !!dang}>
+                    <i className={`fas ${dang === 'tim' ? 'fa-spinner fa-spin' : 'fa-magnifying-glass'}`}></i> Tìm lời
+                </button>
+            </form>
+            {bao && <p className="px-goi-y" role="alert">{bao}</p>}
+
+            {ketQua?.length > 0 && (
+                <ul className="bh-ket-qua">
+                    {ketQua.map((x) => (
+                        <li key={x.id}>
+                            <span>
+                                <strong>{x.tenBai}</strong> — {x.ngheSi}
+                                <small>{x.album ? `${x.album} · ` : ''}{gioPhut(x.thoiLuong)} · {x.coMoc ? 'Có nhịp sẵn' : 'Chỉ có lời (sẽ bấm theo nhịp)'}</small>
+                            </span>
+                            <button type="button" className="btn btn-secondary btn-sm" disabled={!!dang} onClick={() => them({ lrclibId: x.id })}>Chọn</button>
+                        </li>
+                    ))}
+                </ul>
+            )}
+            <p className="px-goi-y">Chọn bản có thời lượng gần với video nhất để lời khớp nhạc. Lệch một chút thì chỉnh được khi học.</p>
+
+            <button type="button" className="lt-ke-hoach-link" onClick={() => setTuDan((x) => !x)}>
+                {tuDan ? 'Ẩn phần tự dán lời' : 'Không tìm thấy? Tự dán lời'}
+            </button>
+            {tuDan && (
+                <div className="bh-tu-dan">
+                    <textarea className="bh-input" rows={8} value={loiDan} onChange={(e) => setLoiDan(e.target.value)} placeholder="Mỗi dòng lời một dòng…" />
+                    <button type="button" className="btn btn-primary" disabled={!loiDan.trim() || !tenBai.trim() || !!dang} onClick={() => them({ tieuDe: tenBai.trim(), ngheSi: ngheSi.trim(), loiDan })}>
+                        Thêm với lời đã dán
+                    </button>
+                </div>
+            )}
+            <div className="px-nut">
+                <button type="button" className="btn btn-secondary" onClick={onHuy}>Huỷ</button>
+            </div>
+        </section>
+    );
+}

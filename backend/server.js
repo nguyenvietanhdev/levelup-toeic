@@ -70,8 +70,10 @@ app.use(helmet({
             // về — jsdelivr phục vụ mọi gói npm/GitHub theo URL nên không phải một
             // khoản cấp hẹp. Nó nằm ngay dưới lớp vừa dựng: 211 chỗ innerHTML đã
             // escape + adminEscaping.test.js.
-            scriptSrc: ["'self'", "https://accounts.google.com"],
-            scriptSrcElem: ["'self'", "https://accounts.google.com"],
+            // `www.youtube.com`: Học qua bài hát phát nhạc bằng trình phát YouTube nhúng, điều khiển qua
+            // IFrame API (`/iframe_api` nạp tiếp `www-widgetapi.js` cùng host) để lời chạy theo nhạc.
+            scriptSrc: ["'self'", "https://accounts.google.com", "https://www.youtube.com"],
+            scriptSrcElem: ["'self'", "https://accounts.google.com", "https://www.youtube.com"],
             styleSrc: ["'self'", "'unsafe-inline'", "https://accounts.google.com"],
             // GSI nạp stylesheet riêng `accounts.google.com/gsi/style` bằng thẻ
             // <link>. `styleSrc` KHÔNG phủ được nó khi trình duyệt hỗ trợ
@@ -83,9 +85,11 @@ app.use(helmet({
             // FontAwesome nhúng woff2 dạng `data:font/woff2;base64,...` thẳng trong
             // CSS đã build. Thiếu `data:` là mọi icon biến thành ô vuông trống.
             fontSrc: ["'self'", "data:"],
-            imgSrc: ["'self'", "data:", "https:"],
+            // `i.ytimg.com`: ảnh bìa video của Học qua bài hát (đã nằm trong `https:`, ghi rõ để biết ai dùng).
+            imgSrc: ["'self'", "data:", "https:", "https://i.ytimg.com"],
             // Nút "Đăng nhập bằng Google" render trong iframe của GSI.
-            frameSrc: ["'self'", "https://accounts.google.com"],
+            // Trình phát YouTube của Học qua bài hát: bản nocookie (không đặt cookie theo dõi khi chưa phát).
+            frameSrc: ["'self'", "https://accounts.google.com", "https://www.youtube-nocookie.com", "https://www.youtube.com"],
             // Audio đề TOEIC nằm trên Cloudinary (699 URL trong `toeic_question_sets`).
             // KHÔNG có directive này thì media rơi về `defaultSrc: 'self'` và trình
             // duyệt CHẶN THẲNG mọi file audio ngoài origin — không request, không log,
@@ -131,6 +135,11 @@ app.use(helmet({
     // 'same-origin-allow-popups' chỉ nới đúng phần popup do chính trang mở ra trả
     // kết quả về; vẫn chặn tab-nabbing (trang khác mở mình thì không với tới được).
     crossOriginOpenerPolicy: { policy: 'same-origin-allow-popups' },
+    // Mặc định của helmet là 'no-referrer'. Trình phát YouTube nhúng (Học qua bài hát) giờ BẮT
+    // BUỘC có referrer: không có thì hiện "Video này không hoạt động" cho mọi video, không lỗi nào
+    // phía app. 'strict-origin-when-cross-origin' (mặc định của trình duyệt) chỉ gửi tên miền khi
+    // sang trang khác, không gửi đường dẫn hay tham số.
+    referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
 }));
 app.use(compression({
     level: 6,           // Compression level (0-9, 6 is good balance)
@@ -318,6 +327,7 @@ app.use('/api/admin', require('./routes/adminDefinitions')); // Achievement + Qu
 app.use('/api/categories', require('./routes/categories')); // Danh mục (public GET để dựng tab)
 app.use('/api/features', require('./routes/features'));     // Mốc mở khoá theo Level
 app.use('/api/admin/ngu-phap', require('./routes/adminNguPhap')); // Nội dung ngữ pháp do AI tạo: báo cáo sai, thư viện (admin)
+app.use('/api/bai-hat', require('./routes/baiHat')); // Học qua bài hát (riêng tư, chỉ email trong BAI_HAT_EMAILS)
 app.use('/api/admin/noi-dung-ai', require('./routes/adminNoiDungAi')); // Quản lý mọi nội dung AI đã lưu: xem, thêm, sửa, xoá (admin)
 app.use('/api/admin/bai-nghe', require('./routes/adminBaiNghe')); // Thêm bài nghe từ file âm thanh, ẩn/hiện (admin)
 app.use('/api/admin/db', require('./routes/adminDb'));       // MongoDB collection manager (admin)

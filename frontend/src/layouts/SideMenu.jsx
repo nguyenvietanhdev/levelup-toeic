@@ -9,6 +9,7 @@ import { Notification } from '@ui/Toaster.jsx';
 import { EventBus, GameEvents } from '@game/eventBus.js';
 import { moSoTayPhimTat } from '@lib/phimTat.js';
 import { moNguPhap } from '@lib/nguPhapLienKet.js';
+import { BaiHatAPI } from '@api/baiHat.js';
 
 // `feature` = key trong FeatureUnlock → khoá theo Level (Hồ sơ/Cài đặt luôn mở).
 //
@@ -66,6 +67,8 @@ const MENU_GROUPS = [
             // Thư viện bài nghe thật (VOA, phạm vi công cộng) kèm script chạy theo. Không gọi AI
             // khi nghe nên không thuộc nhóm "với AI"; người học tìm đến khi muốn nghe một bài.
             { label: 'Bài nghe có script', icon: 'fa-podcast', screen: 'bai-nghe-screen' },
+            // Dự án dùng riêng: chỉ hiện với tài khoản được cho phép (server hỏi BAI_HAT_EMAILS).
+            { label: 'Học qua bài hát', icon: 'fa-music', screen: 'bai-hat-screen', chiKhi: 'baiHat' },
             // MÀN HÌNH riêng, không phải popup: nó có 5 tab và người dùng ở lại lâu
             // (thêm từ · dán JSON · quản lý · chia sẻ · duyệt bộ được chia sẻ). Là nội dung
             // học nên nằm ở đây, không ở Kho đồ cạnh vật phẩm.
@@ -135,6 +138,14 @@ export default function SideMenu() {
     const { isLoggedIn, setAuthModal, logout } = useAuth();
     const { badges, refresh } = useMenuBadges(isLoggedIn);
     const [nhomMo, setNhomMo] = useState(docNhomMo);
+    // Mục chỉ hiện với tài khoản được cho phép (`chiKhi`). Hỏi server một lần mỗi phiên.
+    const [quyen, setQuyen] = useState({});
+    useEffect(() => {
+        if (!isLoggedIn) { BaiHatAPI.quenQuyen(); setQuyen({}); return undefined; }
+        let huy = false;
+        BaiHatAPI.quyen().then((baiHat) => { if (!huy) setQuyen({ baiHat }); });
+        return () => { huy = true; };
+    }, [isLoggedIn]);
 
     /**
      * Nhóm có đang mở không. Người dùng đã bấm đóng/mở thì theo đó; chưa bấm thì
@@ -270,7 +281,7 @@ export default function SideMenu() {
                             </button>
                             {mo && (
                             <div className="menu-group-items">
-                            {group.items.map(item => {
+                            {group.items.filter((it) => !it.chiKhi || quyen[it.chiKhi]).map(item => {
                                 const n = item.badgeKey ? badges[item.badgeKey] : 0;
                                 const guestLocked = !isLoggedIn && !item.guestOk;
                                 // Khoá theo Level (chỉ xét khi đã đăng nhập).

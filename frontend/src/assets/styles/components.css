@@ -13058,3 +13058,44 @@ button.hs-muc:not(:disabled):hover { border-color: var(--accent-color); }
   .nl-nhan-xet { grid-template-columns: minmax(0, 1fr); }
   .nl-ky-nang, .nl-thanh-tich { grid-template-columns: repeat(2, 1fr); }
 }
+
+/* ===== Học qua bài hát ===== */
+.bh-hoc { --bn-nav: 64px; --bn-may: 0px; }
+.bh-video { width: 100%; aspect-ratio: 16 / 9; background: #000; border-radius: 10px; overflow: hidden; }
+.bh-video iframe, .bh-video > div { width: 100%; height: 100%; display: block; border: 0; }
+.bh-lech { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; font-size: 13px; }
+.bh-dien-dau { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin-top: 8px; }
+.bh-dien-dau .px-nut { flex-wrap: wrap; margin: 0; }
+.bh-nhip { margin-top: 8px; }
+.bh-nhip .px-nut { flex-wrap: wrap; }
+/* Karaoke: không tô cả dòng; màu chạy qua từng chữ theo biến --tien (0..1) do vòng lặp đặt. */
+.bh-loi li.is-hien { background: transparent; border-color: transparent; }
+.bh-loi li.is-cho { border-color: #f59e0b; }
+.bh-loi .bn-cau p { font-size: 1.08rem; line-height: 1.7; }
+.bh-chu {
+    --tien: 0;
+    border: 0; padding: 0; margin: 0; font: inherit; cursor: pointer; white-space: pre-wrap;
+    background-color: transparent;
+    background-image: linear-gradient(90deg, var(--accent-color) calc(var(--tien) * 100%), var(--text-secondary) calc(var(--tien) * 100%));
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+}
+.bh-loi li.is-qua .bh-chu { --tien: 1; }
+.bh-loi li.is-qua .bh-chu, .bh-loi li:not(.is-hien) .bh-chu { opacity: .85; }
+.bh-loi li.is-hien .bh-chu { opacity: 1; }
+.bh-chu.is-dung { background: none; color: #16a34a; -webkit-background-clip: border-box; background-clip: border-box; font-weight: 600; }
+.bh-chu.is-lo { background: none; color: #d97706; -webkit-background-clip: border-box; background-clip: border-box; font-weight: 600; }
+.bh-o { font: inherit; padding: 0 4px; margin: 0 1px; border: 0; border-bottom: 2px solid var(--accent-color); background: var(--bg-secondary); color: inherit; border-radius: 4px 4px 0 0; text-align: center; }
+.bh-o.is-sai { border-bottom-color: #ef4444; animation: bh-lac .25s; }
+@keyframes bh-lac { 25% { transform: translateX(-3px); } 75% { transform: translateX(3px); } }
+.bh-the-vo { position: relative; }
+.bh-xoa { position: absolute; top: 6px; right: 6px; background: rgba(0,0,0,.55); color: #fff; border-radius: 8px; padding: 4px 8px; }
+.bh-them { display: grid; gap: 10px; max-width: 720px; }
+.bh-them label { display: grid; gap: 4px; font-weight: 500; }
+.bh-tim { display: grid; grid-template-columns: 1fr 1fr auto; gap: 10px; align-items: end; }
+@media (max-width: 640px) { .bh-tim { grid-template-columns: 1fr; } }
+.bh-input { width: 100%; padding: 8px 10px; border-radius: 10px; border: 1px solid var(--border-color); background: var(--bg-secondary); color: inherit; font: inherit; }
+.bh-ket-qua { list-style: none; padding: 0; margin: 0; display: grid; gap: 6px; }
+.bh-ket-qua li { display: flex; gap: 10px; align-items: center; padding: 8px 12px; border-radius: 10px; border: 1px solid var(--border-color); }
+.bh-ket-qua li > span { flex: 1; min-width: 0; }
+.bh-ket-qua small { display: block; color: var(--text-secondary); }
+.bh-tu-dan { display: grid; gap: 8px; }

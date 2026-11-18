@@ -74,7 +74,8 @@ describe('menu chia nhóm', () => {
     });
 
     test('nhóm thu chỉ ẩn mục; vẫn hiện tổng badge; nhóm chứa màn đang mở tự mở', () => {
-        expect(menu).toMatch(/\{mo && \(\s*<div className="menu-group-items">\s*\{group\.items\.map\(item =>/);
+        // Mục `chiKhi` (chỉ tài khoản được cho phép mới thấy) lọc ra trước khi vẽ.
+        expect(menu).toMatch(/\{mo && \(\s*<div className="menu-group-items">\s*\{group\.items\.filter\(\(it\) => !it\.chiKhi \|\| quyen\[it\.chiKhi\]\)\.map\(item =>/);
         expect(menu).toMatch(/const tong = mo \? 0 : tongBadge\(group\);/);
         expect(menu).toMatch(/return group\.items\.some\(\(it\) => it\.screen && it\.screen === currentScreen\);/);
         // Đã bấm đóng/mở thì theo người dùng, không tự mở lại.
