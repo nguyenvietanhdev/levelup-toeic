@@ -6,10 +6,10 @@
  * lần vẽ lại; điền "dont" cho "don't" bị chấm sai.
  */
 import { describe, test, expect } from 'vitest';
-import { soAmTiet, tachMau, mauCoGio, tienDo, chonOTrong, khopTu, GIAY_MOI_AM } from './baiHat.js';
+import { soAmTiet, tachMau, mauCoGio, tienDo, chonOTrong, khopTu, GIAY_MOI_AM, tocDoBai, lechCua, apLech, chonDongKhop, datLechTu } from './baiHat.js';
 
 describe('âm tiết', () => {
-    test.each([['be', 1], ['trouble', 2], ['wisdom', 2], ['whisper', 2], ['time', 1], ['beautiful', 3], ['', 0]])('%s → %i', (tu, n) => {
+    test.each([['be', 1], ['one', 1], ['are', 1], ['the', 1], ['trouble', 2], ['wisdom', 2], ['whisper', 2], ['time', 1], ['beautiful', 3], ['', 0]])('%s → %i', (tu, n) => {
         expect(soAmTiet(tu)).toBe(n);
     });
 });
@@ -35,9 +35,39 @@ describe('thời điểm từng chữ', () => {
         expect(m[2].batDau).toBeCloseTo(m[1].ketThuc, 5);
     });
 
-    test('dòng ngắn trước đoạn dạo nhạc dài: không kéo chữ hết khoảng lặng', () => {
+    test('dòng ngắn trước đoạn dạo nhạc dài: chữ cuối được ngân thêm vài âm tiết, không kéo hết khoảng lặng', () => {
         const m = mauCoGio({ batDau: 0, ketThuc: 30, text: 'Let it be' }).filter((x) => x.tu);
-        expect(m[2].ketThuc).toBeCloseTo(3 * GIAY_MOI_AM + 0.3, 5);
+        expect(m[1].ketThuc).toBeCloseTo(2 * GIAY_MOI_AM, 5);
+        expect(m[2].batDau).toBeCloseTo(2 * GIAY_MOI_AM, 5);
+        expect(m[2].ketThuc).toBeCloseTo(3 * GIAY_MOI_AM + 3 * GIAY_MOI_AM, 5);
+    });
+
+    test('dòng vừa khít: chữ cuối ngân tới sát dòng sau', () => {
+        const m = mauCoGio({ batDau: 0, ketThuc: 1.5, text: 'Let it be' }, 'en', 0.4).filter((x) => x.tu);
+        expect(m[2].ketThuc).toBeCloseTo(1.5, 5);
+    });
+
+    test('sau dấu phẩy có một nhịp ngắt: chữ sau dấu phẩy bắt đầu muộn hơn chữ trước kết thúc', () => {
+        const m = mauCoGio({ batDau: 0, ketThuc: 20, text: 'Oh yeah, let it be' }, 'en', 0.4).filter((x) => x.tu);
+        expect(m[2].batDau - m[1].ketThuc).toBeCloseTo(0.2, 5);
+        expect(m[1].batDau - m[0].ketThuc).toBeCloseTo(0, 5);
+    });
+
+    test('tốc độ riêng của bài: bài nhanh tô nhanh, bài chậm tô chậm', () => {
+        const dong = (batDau, giayMoiAm) => ({ batDau, ketThuc: batDau + 6 * giayMoiAm, text: 'la la la la la la' });
+        const nhanh = [0, 2, 4, 6].map((t) => dong(t, 0.2));
+        const cham = [0, 5, 10, 15].map((t) => dong(t, 0.7));
+        expect(tocDoBai(nhanh)).toBeCloseTo(0.2, 5);
+        expect(tocDoBai(cham)).toBeCloseTo(0.7, 5);
+        // Ít dòng quá thì dùng tốc độ mặc định; kẹp trong khoảng hợp lý.
+        expect(tocDoBai(nhanh.slice(0, 2))).toBe(GIAY_MOI_AM);
+        expect(tocDoBai([0, 1, 2, 3].map((t) => ({ batDau: t, ketThuc: t + 0.1, text: 'one two three four' })))).toBe(0.15);
+    });
+
+    test('đoạn dạo nhạc chen giữa vài dòng không làm chậm cả bài (lấy mức thấp, không lấy trung bình)', () => {
+        const ds = [0, 3, 6, 9, 12].map((t) => ({ batDau: t, ketThuc: t + 1.2, text: 'la la la' }));
+        ds.push({ batDau: 20, ketThuc: 60, text: 'la la la' });
+        expect(tocDoBai(ds)).toBeCloseTo(0.4, 5);
     });
 
     test('dòng hát dồn: không vượt quá mốc dòng sau', () => {
@@ -56,6 +86,41 @@ describe('thời điểm từng chữ', () => {
         expect(tienDo(mau, 11)).toBe(0.5);
         expect(tienDo(mau, 13)).toBe(1);
         expect(tienDo({ batDau: null }, 5)).toBe(0);
+    });
+});
+
+describe('độ lệch từng đoạn (Khớp dòng này)', () => {
+    const cau = [0, 10, 20, 30].map((t) => ({ batDau: t, ketThuc: t + 10, text: `dòng ${t}` }));
+
+    test('độ lệch của một dòng: mốc gần nhất phía trước, không có thì độ lệch chung', () => {
+        const lechTu = [{ dong: 2, lech: 3 }];
+        expect(lechCua(0, 1, lechTu)).toBe(1);
+        expect(lechCua(2, 1, lechTu)).toBe(3);
+        expect(lechCua(3, 1, lechTu)).toBe(3);
+    });
+
+    test('áp lệch: dòng dời theo đoạn của nó, không dòng nào kéo dài đè lên dòng sau', () => {
+        const h = apLech(cau, 0, [{ dong: 2, lech: -4 }]);
+        expect(h.map((c) => c.batDau)).toEqual([0, 10, 16, 26]);
+        expect(h[1].ketThuc).toBe(16); // vốn 20, cắt ở mốc dòng 2 mới
+        expect(h[3].ketThuc).toBe(36);
+    });
+
+    test('áp lệch dời cả mốc từng chữ', () => {
+        const [c] = apLech([{ batDau: 5, ketThuc: 8, text: 'a b', tu: [{ batDau: 5, text: 'a ' }, { batDau: 6, text: 'b' }] }], 2, []);
+        expect(c.tu.map((x) => x.batDau)).toEqual([7, 8]);
+    });
+
+    test('bấm khớp: chọn dòng đang hiện hay dòng kế, cái nào có mốc gần lúc bấm hơn', () => {
+        // Lời đang muộn: dòng 1 chưa hiện (vẫn ở dòng 0) mà người học nghe thấy dòng 1 bắt đầu ở 8s.
+        expect(chonDongKhop(cau, 8, 0)).toBe(1);
+        // Lời đang sớm: dòng 1 đã hiện từ 10s, người học nghe thấy nó bắt đầu thật ở 12s.
+        expect(chonDongKhop(cau, 12, 1)).toBe(1);
+        expect(chonDongKhop(cau, 1, -1)).toBe(0);
+    });
+
+    test('đặt mốc: thay mốc cũ cùng dòng, giữ thứ tự', () => {
+        expect(datLechTu([{ dong: 3, lech: 1 }, { dong: 1, lech: 2 }], 3, 2.456)).toEqual([{ dong: 1, lech: 2 }, { dong: 3, lech: 2.46 }]);
     });
 });
 

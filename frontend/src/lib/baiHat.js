@@ -16,7 +16,7 @@ export const GIAY_MOI_AM = 0.42;
 export function soAmTiet(tu) {
     const t = String(tu || '').toLowerCase().replace(/[^a-z]/g, '');
     if (!t) return 0;
-    const bot = t.length > 3 ? t.replace(/(?:[^laeiouy]es|[^laeiouy]e)$/, '').replace(/^y/, '') : t;
+    const bot = t.length > 2 ? t.replace(/(?:[^laeiouy]es|[^laeiouy]e)$/, '').replace(/^y/, '') : t;
     return Math.max(1, (bot.match(/[aeiouy]+/g) || []).length);
 }
 
@@ -36,11 +36,42 @@ export function tachMau(text, lang = 'en') {
     });
 }
 
+const tongAm = (text, lang) => tachMau(text, lang).reduce((n, m) => n + m.nang, 0);
+
+/**
+ * Tốc độ hát RIÊNG của một bài: số giây cho mỗi âm tiết (thuần). Con số cố định cho mọi bài làm
+ * bài nhanh (rap) bị tô chậm, bài chậm (ballad) bị tô vụt qua rồi đứng chờ.
+ *
+ * Lấy từ chính các dòng của bài: thời lượng dòng / số âm tiết. Dòng có đoạn dạo nhạc chen giữa thì
+ * tỉ số bị đội lên, nên lấy mức thấp (phân vị 35%) thay vì trung bình. Ít dòng quá thì dùng mặc định.
+ */
+export function tocDoBai(dsCau, lang = 'en') {
+    const tiSo = (dsCau || [])
+        .filter((c) => c.batDau != null && c.ketThuc != null)
+        .map((c) => ({ n: tongAm(c.text, lang), d: c.ketThuc - c.batDau }))
+        .filter((x) => x.n >= 3 && x.d > 0)
+        .map((x) => x.d / x.n)
+        .sort((a, b) => a - b);
+    if (tiSo.length < 3) return GIAY_MOI_AM;
+    const v = tiSo[Math.floor((tiSo.length - 1) * 0.35)];
+    return Math.min(0.9, Math.max(0.15, v));
+}
+
+/** Dấu ngắt hơi giữa dòng: sau dấu này người hát thường dừng một nhịp ngắn. */
+const RE_NGAT = /[,;:—–，、；：]\s*$/;
+/** Khoảng ngắt sau dấu phẩy, tính bằng số âm tiết. */
+const AM_NGAT = 0.5;
+
 /**
  * Mẩu kèm thời điểm bắt đầu/kết thúc hát (thuần). `cau`: { batDau, ketThuc, text, tu? }.
- * Có mốc từng chữ thì mỗi mẩu là một mốc; không thì ước lượng theo âm tiết.
+ * Có mốc từng chữ thì mỗi mẩu là một mốc; không thì ước lượng:
+ *   · mỗi âm tiết `giayMoiAm` giây (tốc độ riêng của bài, xem tocDoBai);
+ *   · sau dấu phẩy dừng nửa âm tiết;
+ *   · dòng hát dồn hơn thời gian có thì nén lại cho vừa;
+ *   · còn dư thời gian trước dòng sau thì chữ CUỐI dòng được ngân dài thêm (tối đa vài âm tiết),
+ *     đúng cách người ta hát, thay vì tô xong rồi đứng im.
  */
-export function mauCoGio(cau, lang = 'en') {
+export function mauCoGio(cau, lang = 'en', giayMoiAm = GIAY_MOI_AM) {
     if (!cau || cau.batDau == null) return tachMau(cau?.text, lang).map((m) => ({ ...m, batDau: null, ketThuc: null }));
     const het = cau.ketThuc ?? cau.batDau + 5;
     if (Array.isArray(cau.tu) && cau.tu.length) {
@@ -51,15 +82,71 @@ export function mauCoGio(cau, lang = 'en') {
         });
     }
     const mau = tachMau(cau.text, lang);
-    const tong = mau.reduce((n, m) => n + m.nang, 0) || 1;
-    const thoiGianHat = Math.min(het - cau.batDau, tong * GIAY_MOI_AM + 0.3);
-    const giayMoiAm = thoiGianHat / tong;
+    const iCuoi = mau.reduce((k, m, i) => (m.nang ? i : k), -1);
+    const ngat = mau.map((m, i) => (m.nang && i !== iCuoi && RE_NGAT.test(m.hien) ? AM_NGAT : 0));
+    const tong = mau.reduce((n, m, i) => n + m.nang + ngat[i], 0) || 1;
+    const co = het - cau.batDau;
+    const can = tong * giayMoiAm;
+    const giay = can > co ? co / tong : giayMoiAm;
+    const ngan = can < co ? Math.min(co - can, Math.max(0.5, 3 * giayMoiAm)) : 0;
     let t = cau.batDau;
-    return mau.map((m) => {
+    return mau.map((m, i) => {
         const batDau = t;
-        t += m.nang * giayMoiAm;
-        return { ...m, batDau, ketThuc: m.nang ? t : batDau };
+        t += m.nang * giay;
+        const ketThuc = m.nang ? t + (i === iCuoi ? ngan : 0) : batDau;
+        t += ngat[i] * giay;
+        return { ...m, batDau, ketThuc };
     });
+}
+
+// ---------- Độ lệch theo từng đoạn ("Chạm để khớp lại") ----------
+
+/**
+ * Độ lệch áp cho dòng `i` (thuần): mốc chỉnh gần nhất ở dòng ≤ i, không có thì độ lệch chung.
+ * `lechTu`: [{ dong, lech }] — từ dòng `dong` trở đi cộng `lech` giây. Nhờ vậy bài lệch TĂNG DẦN
+ * (bản thu khác bản video) vẫn khớp được, điều một con số cho cả bài không làm được.
+ */
+export function lechCua(i, lech = 0, lechTu = []) {
+    let v = lech || 0;
+    for (const m of lechTu || []) if (m.dong <= i) v = m.lech;
+    return v;
+}
+
+/** Lời sau khi cộng độ lệch từng đoạn (thuần); dòng không được kéo dài đè lên dòng sau. */
+export function apLech(dsCau, lech = 0, lechTu = []) {
+    const lechSap = [...(lechTu || [])].sort((a, b) => a.dong - b.dong);
+    const doi = (dsCau || []).map((c, i) => {
+        if (c.batDau == null) return c;
+        const v = lechCua(i, lech, lechSap);
+        return {
+            ...c,
+            batDau: c.batDau + v,
+            ketThuc: c.ketThuc == null ? c.ketThuc : c.ketThuc + v,
+            ...(Array.isArray(c.tu) ? { tu: c.tu.map((x) => ({ ...x, batDau: x.batDau + v })) } : {}),
+        };
+    });
+    return doi.map((c, i) => {
+        const sau = doi[i + 1];
+        if (c.ketThuc == null || sau?.batDau == null || c.ketThuc <= sau.batDau) return c;
+        return { ...c, ketThuc: Math.max(c.batDau + 0.1, sau.batDau) };
+    });
+}
+
+/**
+ * Người học vừa bấm "khớp" lúc nghe một dòng bắt đầu: đó là dòng nào (thuần)? Dòng đang hiện hoặc
+ * dòng kế tiếp — chọn dòng có mốc gần thời điểm bấm hơn (lời đang sớm thì dòng kế đã hiện sẵn,
+ * lời đang muộn thì dòng kế chưa hiện).
+ */
+export function chonDongKhop(cauHieu, t, hien) {
+    const ung = [hien, hien + 1].filter((i) => i >= 0 && cauHieu[i]?.batDau != null);
+    if (!ung.length) return cauHieu[0]?.batDau != null ? 0 : -1;
+    return ung.reduce((a, b) => (Math.abs(cauHieu[b].batDau - t) < Math.abs(cauHieu[a].batDau - t) ? b : a));
+}
+
+/** Đặt mốc chỉnh cho dòng `dong` (thuần): thay mốc cũ cùng dòng, giữ thứ tự tăng dần. */
+export function datLechTu(lechTu, dong, lech) {
+    const v = Math.round(lech * 100) / 100;
+    return [...(lechTu || []).filter((m) => m.dong !== dong), { dong, lech: v }].sort((a, b) => a.dong - b.dong);
 }
 
 /** Tô được bao nhiêu phần của một mẩu tại thời điểm `t`, 0..1 (thuần). */

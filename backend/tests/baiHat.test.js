@@ -117,9 +117,24 @@ describe('Bấm theo nhịp', () => {
         await S.capNhat('u1', 'x', { moc: [0, 1, 2] });
         expect(BaiHat.updateOne).toHaveBeenCalledWith({ _id: 'x', userId: 'u1' }, { $set: expect.objectContaining({ coMoc: true, lech: 0 }) });
     });
-    test('độ lệch ngoài ±30 giây bị từ chối', async () => {
+    test('độ lệch ngoài ±120 giây bị từ chối (đoạn dạo đầu của bản video có thể dài hơn cả phút)', async () => {
         mockDb.bai = [{ _id: 'x', userId: 'u1', cau }];
-        expect(await S.capNhat('u1', 'x', { lech: 45 })).toMatchObject({ ma: 400 });
+        expect(await S.capNhat('u1', 'x', { lech: 150 })).toMatchObject({ ma: 400 });
+        expect(await S.capNhat('u1', 'x', { lech: 45 })).toHaveProperty('bai');
+    });
+    test('mốc chỉnh từng đoạn: dòng có thật, mỗi dòng một mốc, sắp tăng dần', () => {
+        expect(S.chuanHoaLechTu([{ dong: 2, lech: 1.234 }, { dong: 0, lech: -0.5 }, { dong: 2, lech: 1.5 }], 3))
+            .toEqual([{ dong: 0, lech: -0.5 }, { dong: 2, lech: 1.5 }]);
+        expect(S.chuanHoaLechTu([{ dong: 3, lech: 1 }], 3)).toMatch(/dòng không có/);
+        expect(S.chuanHoaLechTu([{ dong: 0, lech: 500 }], 3)).toMatch(/±120/);
+        expect(S.chuanHoaLechTu('x', 3)).toMatch(/không hợp lệ/);
+    });
+    test('lưu mốc chỉnh; bấm lại nhịp thì xoá hết mốc chỉnh cũ', async () => {
+        mockDb.bai = [{ _id: 'x', userId: 'u1', cau, thoiLuong: 10 }];
+        await S.capNhat('u1', 'x', { lechTu: [{ dong: 1, lech: 2 }] });
+        expect(BaiHat.updateOne).toHaveBeenLastCalledWith({ _id: 'x', userId: 'u1' }, { $set: { lechTu: [{ dong: 1, lech: 2 }] } });
+        await S.capNhat('u1', 'x', { moc: [0, 1, 2] });
+        expect(BaiHat.updateOne).toHaveBeenLastCalledWith({ _id: 'x', userId: 'u1' }, { $set: expect.objectContaining({ lechTu: [], lech: 0 }) });
     });
 });
 

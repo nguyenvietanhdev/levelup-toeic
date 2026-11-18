@@ -7,7 +7,7 @@ const mongoose = require('mongoose');
  * Nhạc phát bằng trình phát YouTube nhúng (`youtubeId`), không tải âm thanh về. Lời lấy từ LRCLIB
  * (kho lời mở, nhiều bài có mốc thời gian từng dòng) hoặc người học tự dán.
  * `coMoc` = false: chưa có mốc thời gian, người học dùng chế độ "Bấm theo nhịp" để tạo.
- * `lech`: số giây cộng vào mọi mốc, vì bản lời có thể khớp bản thu khác bản video (đoạn dạo đầu dài hơn).
+ * `lech`: số giây cộng vào mọi mốc (`lechTu` ghi đè từ một dòng trở đi), vì bản lời có thể khớp bản thu khác bản video (đoạn dạo đầu dài hơn).
  */
 const baiHatSchema = new mongoose.Schema(
     {
@@ -20,7 +20,12 @@ const baiHatSchema = new mongoose.Schema(
         nguonLoi: { type: String, enum: ['lrclib', 'tu-dan'], required: true },
         lrclibId: { type: Number, default: null },
         coMoc: { type: Boolean, default: false },
-        lech: { type: Number, default: 0, min: -30, max: 30 },
+        lech: { type: Number, default: 0, min: -120, max: 120 },
+        // "Chạm để khớp lại": từ dòng `dong` trở đi dùng độ lệch `lech` (bài lệch tăng dần).
+        lechTu: {
+            type: [{ dong: { type: Number, required: true }, lech: { type: Number, required: true }, _id: false }],
+            default: [],
+        },
         cau: {
             type: [{
                 batDau: { type: Number, default: null },

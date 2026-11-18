@@ -141,7 +141,7 @@ async function timLoi({ tenBai, ngheSi } = {}) {
 
 const congKhai = (d, day = false) => ({
     id: String(d._id), youtubeId: d.youtubeId, tieuDe: d.tieuDe, ngheSi: d.ngheSi, lang: d.lang,
-    thoiLuong: d.thoiLuong, nguonLoi: d.nguonLoi, coMoc: d.coMoc, lech: d.lech || 0, soDong: d.cau?.length || 0,
+    thoiLuong: d.thoiLuong, nguonLoi: d.nguonLoi, coMoc: d.coMoc, lech: d.lech || 0, lechTu: d.lechTu || [], soDong: d.cau?.length || 0,
     ...(day ? { cau: d.cau } : {}),
 });
 
@@ -206,20 +206,47 @@ function apMoc(cau, moc, thoiLuong = 0) {
     }));
 }
 
-/** Sửa: độ lệch lời so với video (`lech`) và/hoặc mốc từ "Bấm theo nhịp" (`moc`). */
+const LECH_TOI_DA = 120;
+const TOI_DA_MOC_CHINH = 100;
+
+/**
+ * Mốc chỉnh từng đoạn (thuần): mỗi mốc là dòng có thật, độ lệch trong ±120 giây, mỗi dòng một mốc,
+ * tăng dần theo dòng. Trả mảng đã chuẩn hoá hoặc chuỗi lỗi.
+ */
+function chuanHoaLechTu(ds, soDong) {
+    if (!Array.isArray(ds)) return 'Mốc chỉnh không hợp lệ.';
+    if (ds.length > TOI_DA_MOC_CHINH) return `Tối đa ${TOI_DA_MOC_CHINH} mốc chỉnh.`;
+    const theoDong = new Map();
+    for (const m of ds) {
+        const dong = Number(m?.dong);
+        const lech = Number(m?.lech);
+        if (!Number.isInteger(dong) || dong < 0 || dong >= soDong) return 'Mốc chỉnh trỏ tới dòng không có.';
+        if (!Number.isFinite(lech) || Math.abs(lech) > LECH_TOI_DA) return `Độ lệch chỉ trong khoảng ±${LECH_TOI_DA} giây.`;
+        theoDong.set(dong, Math.round(lech * 100) / 100);
+    }
+    return [...theoDong].map(([dong, lech]) => ({ dong, lech })).sort((a, b) => a.dong - b.dong);
+}
+
+/** Sửa: độ lệch chung (`lech`), mốc chỉnh từng đoạn (`lechTu`), mốc "Bấm theo nhịp" (`moc`). */
 async function capNhat(userId, id, body = {}) {
     const d = await BaiHat.findOne({ _id: id, userId }).lean();
     if (!d) return { loi: 'Không tìm thấy bài hát.', ma: 404 };
     const $set = {};
     if (body.lech !== undefined) {
         const lech = Number(body.lech);
-        if (!Number.isFinite(lech) || Math.abs(lech) > 30) return { loi: 'Độ lệch chỉ trong khoảng ±30 giây.', ma: 400 };
-        $set.lech = Math.round(lech * 10) / 10;
+        if (!Number.isFinite(lech) || Math.abs(lech) > LECH_TOI_DA) return { loi: `Độ lệch chỉ trong khoảng ±${LECH_TOI_DA} giây.`, ma: 400 };
+        $set.lech = Math.round(lech * 100) / 100;
+    }
+    if (body.lechTu !== undefined) {
+        const lechTu = chuanHoaLechTu(body.lechTu, d.cau.length);
+        if (typeof lechTu === 'string') return { loi: lechTu, ma: 400 };
+        $set.lechTu = lechTu;
     }
     if (body.moc !== undefined) {
         const cau = apMoc(d.cau, body.moc, d.thoiLuong);
         if (typeof cau === 'string') return { loi: cau, ma: 400 };
-        Object.assign($set, { cau, coMoc: true, lech: 0 });
+        // Nhịp mới bấm tay đã khớp video: bỏ mọi độ lệch cũ.
+        Object.assign($set, { cau, coMoc: true, lech: 0, lechTu: [] });
     }
     if (!Object.keys($set).length) return { loi: 'Không có gì để sửa.', ma: 400 };
     await BaiHat.updateOne({ _id: id, userId }, { $set });
@@ -232,6 +259,6 @@ async function xoaBai(userId, id) {
 }
 
 module.exports = {
-    duocDung, coQuyen, emailTuBien, tachYoutubeId, docLrc, tachLoiThuong, apMoc, timLoi, themBai, danhSach, layBai, capNhat, xoaBai,
+    duocDung, coQuyen, emailTuBien, chuanHoaLechTu, tachYoutubeId, docLrc, tachLoiThuong, apMoc, timLoi, themBai, danhSach, layBai, capNhat, xoaBai,
     TOI_DA_BAI, TOI_DA_DONG,
 };

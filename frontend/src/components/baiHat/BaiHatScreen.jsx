@@ -6,7 +6,7 @@ import { BaiHatAPI } from '@api/baiHat.js';
 import { dichSangViet } from '@lib/dichNhanh.js';
 import { luuVaoTuRieng } from '@lib/luuMauCau.js';
 import { gioPhut, cauTai } from '@lib/baiNghe.js';
-import { mauCoGio, tienDo, chonOTrong, khopTu } from '@lib/baiHat.js';
+import { mauCoGio, tienDo, chonOTrong, khopTu, tocDoBai, apLech, lechCua, chonDongKhop, datLechTu } from '@lib/baiHat.js';
 import { useYoutube } from './useYoutube.js';
 
 const TOC_DO = [0.75, 1];
@@ -22,6 +22,8 @@ const anhBia = (id) => `https://i.ytimg.com/vi/${encodeURIComponent(id)}/mqdefau
  *   · Xem lời: màu chạy qua từng chữ đang hát (karaoke), bấm chữ để tra và lưu vào Từ vựng riêng.
  *   · Điền từ: lời có ô trống, tới cuối dòng còn ô trống thì nhạc dừng chờ điền.
  *   · Bấm theo nhịp: lời chưa có mốc thời gian thì bấm phím cách mỗi khi một dòng bắt đầu.
+ *   · Khớp dòng này (phím K): nghe thấy một dòng bắt đầu mà lời lệch thì bấm, độ lệch được sửa
+ *     từ dòng đó trở đi (bài lệch tăng dần vẫn khớp được sau vài lần chạm).
  */
 export default function BaiHatScreen({ active }) {
     const { showScreen } = useGame();
@@ -33,6 +35,8 @@ export default function BaiHatScreen({ active }) {
     const [cheDo, setCheDo] = useState('xem'); // xem | dien | nhip
     const [hien, setHien] = useState(-1);
     const [lech, setLech] = useState(0);
+    const [lechTu, setLechTu] = useState([]);
+    const [baoKhop, setBaoKhop] = useState('');
     const [tocDo, setTocDo] = useState(1);
     const [dich, setDich] = useState({});
     const [tuChon, setTuChon] = useState(null);
@@ -51,13 +55,17 @@ export default function BaiHatScreen({ active }) {
     const yt = useYoutube(khungYt, view === 'hoc' ? bai?.youtubeId : null);
     const lang = bai?.lang === 'zh' ? 'zh' : 'en';
 
-    const mau = useMemo(() => (bai?.coMoc ? bai.cau.map((c) => mauCoGio(c, lang)) : []), [bai, lang]);
+    // Lời sau khi cộng độ lệch chung và độ lệch từng đoạn: mọi chỗ so thời gian đều dùng bản này.
+    const cauHieu = useMemo(() => (bai ? apLech(bai.cau, lech, lechTu) : []), [bai, lech, lechTu]);
+    // Tốc độ hát riêng của bài, tính trên mốc gốc (cộng lệch không đổi thời lượng dòng).
+    const giayMoiAm = useMemo(() => (bai?.coMoc ? tocDoBai(bai.cau, lang) : 0), [bai, lang]);
+    const mau = useMemo(() => (bai?.coMoc ? cauHieu.map((c) => mauCoGio(c, lang, giayMoiAm)) : []), [bai, cauHieu, lang, giayMoiAm]);
     const oTrong = useMemo(() => (bai ? chonOTrong(bai.cau, lang, mucDo, (bai.id || '').length * 31 + bai.cau.length) : []), [bai, lang, mucDo]);
     const conTrong = useCallback((i) => (oTrong[i] || []).some((k) => !daDien[`${i}-${k}`]), [oTrong, daDien]);
 
     // Ref cho vòng lặp vẽ: không tạo lại vòng lặp mỗi lần state đổi.
     const r = useRef({});
-    r.current = { bai, mau, lech, cheDo, conTrong, choDong, hien, dangPhat: yt.dangPhat };
+    r.current = { cauHieu, mau, cheDo, conTrong, choDong, hien, dangPhat: yt.dangPhat };
 
     useEffect(() => {
         if (!active || !isLoggedIn || ds) return;
@@ -76,8 +84,8 @@ export default function BaiHatScreen({ active }) {
         let id;
         const buoc = () => {
             const s = r.current;
-            const t = yt.gio() - s.lech;
-            const i = cauTai(s.bai.cau, t);
+            const t = yt.gio();
+            const i = cauTai(s.cauHieu, t);
             if (i !== s.hien) setHien(i);
             const dong = i >= 0 ? khungLoi.current?.querySelector(`[data-dong="${i}"]`) : null;
             if (dong && s.mau[i]) {
@@ -86,7 +94,7 @@ export default function BaiHatScreen({ active }) {
                 });
             }
             if (s.cheDo === 'dien' && i >= 0 && s.choDong !== i && s.dangPhat) {
-                const c = s.bai.cau[i];
+                const c = s.cauHieu[i];
                 if (t >= c.ketThuc - SAT_CUOI_DONG && s.conTrong(i)) {
                     yt.dung();
                     setChoDong(i);
@@ -115,14 +123,57 @@ export default function BaiHatScreen({ active }) {
         khungLoi.current?.querySelector(`[data-dong="${choDong}"] input:not([disabled])`)?.focus();
     }, [choDong]);
 
-    // Lưu độ lệch sau khi người học ngừng bấm.
+    // Lưu độ lệch (chung và từng đoạn) sau khi người học ngừng chỉnh.
     useEffect(() => {
-        if (!bai || lech === (bai.lech || 0)) return undefined;
+        if (!bai) return undefined;
+        const doiChung = lech !== (bai.lech || 0);
+        const doiDoan = JSON.stringify(lechTu) !== JSON.stringify(bai.lechTu || []);
+        if (!doiChung && !doiDoan) return undefined;
         const t = setTimeout(() => {
-            BaiHatAPI.capNhat(bai.id, { lech }).then((x) => setBai((b) => (b ? { ...b, lech: x.bai.lech } : b))).catch(() => {});
+            BaiHatAPI.capNhat(bai.id, { ...(doiChung ? { lech } : {}), ...(doiDoan ? { lechTu } : {}) })
+                .then((x) => setBai((b) => (b ? { ...b, lech: x.bai.lech, lechTu: x.bai.lechTu || [] } : b)))
+                .catch(() => {});
         }, 800);
         return () => clearTimeout(t);
-    }, [lech, bai]);
+    }, [lech, lechTu, bai]);
+
+    /** Nghe thấy một dòng bắt đầu mà lời lệch: sửa độ lệch từ dòng đó trở đi. */
+    const khopLai = useCallback(() => {
+        if (!bai?.coMoc || !yt.san) return;
+        const t = yt.gio();
+        const j = chonDongKhop(cauHieu, t, hien);
+        if (j < 0) return;
+        setLechTu((ds) => datLechTu(ds, j, t - bai.cau[j].batDau));
+        setBaoKhop(`Đã khớp từ dòng ${j + 1} trở đi.`);
+    }, [bai, yt, cauHieu, hien]);
+
+    /** Lời sớm/muộn hơn: chỉnh đoạn đang nghe (mốc khớp gần nhất phía trước, không có thì cả bài). */
+    const dieuChinh = (delta) => {
+        const i = Math.max(0, hien);
+        const moc = [...lechTu].reverse().find((m) => m.dong <= i);
+        const kep = (v) => Math.max(-120, Math.min(120, Math.round(v * 100) / 100));
+        if (moc) setLechTu((ds) => datLechTu(ds, moc.dong, kep(moc.lech + delta)));
+        else setLech((x) => kep(x + delta));
+    };
+    const lechHienTai = lechCua(Math.max(0, hien), lech, lechTu);
+
+    // Phím K = khớp dòng này (không cướp phím khi đang gõ).
+    useEffect(() => {
+        if (!active || view !== 'hoc' || cheDo === 'nhip' || !bai?.coMoc) return undefined;
+        const phim = (e) => {
+            if (e.key?.toLowerCase() !== 'k' || /^(INPUT|TEXTAREA|SELECT)$/.test(e.target?.tagName || '')) return;
+            e.preventDefault();
+            khopLai();
+        };
+        window.addEventListener('keydown', phim);
+        return () => window.removeEventListener('keydown', phim);
+    }, [active, view, cheDo, bai, khopLai]);
+
+    useEffect(() => {
+        if (!baoKhop) return undefined;
+        const t = setTimeout(() => setBaoKhop(''), 2500);
+        return () => clearTimeout(t);
+    }, [baoKhop]);
 
     const moBai = async (id) => {
         try {
@@ -136,6 +187,8 @@ export default function BaiHatScreen({ active }) {
     const batDauHoc = (b) => {
         setBai(b);
         setLech(b.lech || 0);
+        setLechTu(b.lechTu || []);
+        setBaoKhop('');
         setCheDo(b.coMoc ? 'xem' : 'nhip');
         setHien(-1);
         setDich({});
@@ -165,10 +218,10 @@ export default function BaiHatScreen({ active }) {
     };
 
     const ngheDong = (i) => {
-        const c = bai?.cau?.[i];
+        const c = cauHieu[i];
         if (!c || c.batDau == null) return;
         setChoDong(-1);
-        yt.tua(c.batDau + lech - 0.2);
+        yt.tua(c.batDau - 0.2);
         yt.phat();
     };
 
@@ -375,9 +428,19 @@ export default function BaiHatScreen({ active }) {
                                     </div>
                                     {cheDo !== 'nhip' && (
                                         <div className="bh-lech" role="group" aria-label="Chỉnh lời khớp nhạc">
-                                            <button type="button" className="btn btn-secondary btn-sm" onClick={() => setLech((x) => Math.max(-30, Math.round((x - BUOC_LECH) * 10) / 10))} title="Lời đang chậm hơn nhạc">Lời sớm hơn</button>
-                                            <span>{lech > 0 ? '+' : ''}{lech.toFixed(1)}s</span>
-                                            <button type="button" className="btn btn-secondary btn-sm" onClick={() => setLech((x) => Math.min(30, Math.round((x + BUOC_LECH) * 10) / 10))} title="Lời đang nhanh hơn nhạc">Lời muộn hơn</button>
+                                            <button type="button" className="btn btn-primary btn-sm" disabled={!yt.san} onClick={khopLai}
+                                                title="Bấm đúng lúc nghe thấy một dòng bắt đầu: lời khớp lại từ dòng đó trở đi">
+                                                <i className="fas fa-crosshairs"></i> Khớp dòng này (K)
+                                            </button>
+                                            <button type="button" className="btn btn-secondary btn-sm" onClick={() => dieuChinh(-BUOC_LECH)} title="Lời đang chậm hơn nhạc">Lời sớm hơn</button>
+                                            <span>{lechHienTai > 0 ? '+' : ''}{lechHienTai.toFixed(1)}s</span>
+                                            <button type="button" className="btn btn-secondary btn-sm" onClick={() => dieuChinh(BUOC_LECH)} title="Lời đang nhanh hơn nhạc">Lời muộn hơn</button>
+                                            {lechTu.length > 0 && (
+                                                <button type="button" className="lt-ke-hoach-link" onClick={() => { setLechTu([]); setBaoKhop('Đã bỏ các chỗ khớp.'); }}>
+                                                    Bỏ {lechTu.length} chỗ khớp
+                                                </button>
+                                            )}
+                                            {baoKhop && <span className="px-goi-y" role="status">{baoKhop}</span>}
                                         </div>
                                     )}
                                 </div>
@@ -435,7 +498,7 @@ export default function BaiHatScreen({ active }) {
                                     return (
                                         <li key={`${i}-${c.batDau}`} data-dong={i} className={`${lop}${choDong === i ? ' is-cho' : ''}`}>
                                             <button type="button" className="bn-moc" aria-label={`Nghe dòng ${i + 1}`} disabled={!bai.coMoc || cheDo === 'nhip'} onClick={() => ngheDong(i)}>
-                                                <i className="fas fa-play"></i> {cheDo === 'nhip' ? (moc[i] != null ? gioPhut(moc[i]) : '—') : (c.batDau != null ? gioPhut(c.batDau + lech) : '—')}
+                                                <i className="fas fa-play"></i> {cheDo === 'nhip' ? (moc[i] != null ? gioPhut(moc[i]) : '—') : (cauHieu[i]?.batDau != null ? gioPhut(cauHieu[i].batDau) : '—')}
                                             </button>
                                             <div className="bn-cau">
                                                 <p>{veDong(c, i)}</p>
@@ -451,7 +514,7 @@ export default function BaiHatScreen({ active }) {
                         </div>
                         <p className="px-goi-y bn-nguon">
                             {bai.nguonLoi === 'lrclib' ? 'Lời: LRCLIB (kho lời cộng đồng).' : 'Lời do bạn dán.'} Chỉ dùng để tự học.
-                            {bai.coMoc && !bai.cau.some((c) => c.tu) && ' Màu chạy từng chữ là ước lượng theo âm tiết.'}
+                            {bai.coMoc && !bai.cau.some((c) => c.tu) && ' Màu chạy từng chữ là ước lượng theo âm tiết và tốc độ hát của bài; lệch thì bấm Khớp dòng này (phím K) đúng lúc một dòng bắt đầu.'}
                         </p>
                     </>
                 )}

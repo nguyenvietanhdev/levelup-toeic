@@ -95,6 +95,33 @@ describe('xem lời kiểu karaoke', () => {
         expect(api.capNhat).toHaveBeenCalledWith('b1', { lech: 1 });
     });
 
+    test('Khớp dòng này (phím K): lời đang muộn 2 giây, bấm lúc nghe dòng 2 bắt đầu thì từ dòng 2 khớp, lưu mốc', async () => {
+        await moBai();
+        await toiGiay(14.5); // đang ở dòng 1 (10–16s); thật ra dòng 2 bắt đầu ở 14s
+        fireEvent.keyDown(window, { key: 'k' });
+        expect(screen.getByText('Đã khớp từ dòng 2 trở đi.')).toBeTruthy();
+        await toiGiay(14.6);
+        expect(document.querySelector('[data-dong="1"]').className).toContain('is-hien');
+        expect(screen.getByRole('button', { name: 'Nghe dòng 2' }).textContent).toContain('0:15');
+        await act(async () => { vi.advanceTimersByTime(900); });
+        expect(api.capNhat).toHaveBeenCalledWith('b1', { lechTu: [{ dong: 1, lech: -1.5 }] });
+        // Gõ chữ trong ô nhập thì phím K không bị cướp.
+        const o = document.createElement('input');
+        document.body.appendChild(o);
+        fireEvent.keyDown(o, { key: 'k' });
+        expect(api.capNhat).toHaveBeenCalledTimes(1);
+    });
+
+    test('Lời sớm/muộn hơn chỉnh đúng đoạn đang nghe khi đã có chỗ khớp', async () => {
+        await moBai({ ...BAI, lechTu: [{ dong: 1, lech: 2 }] });
+        await toiGiay(19); // dòng 1 (đã dời 2s: 18–22s)
+        expect(screen.getByText('+2.0s')).toBeTruthy();
+        fireEvent.click(screen.getByRole('button', { name: 'Lời muộn hơn' }));
+        expect(screen.getByText('+2.5s')).toBeTruthy();
+        fireEvent.click(screen.getByRole('button', { name: /Bỏ 1 chỗ khớp/ }));
+        expect(screen.getByText('Đã bỏ các chỗ khớp.')).toBeTruthy();
+    });
+
     test('bấm chữ: tra nghĩa, lưu vào Từ vựng riêng kho bài hát kèm dòng làm ví dụ', async () => {
         await moBai();
         fireEvent.click(screen.getByRole('button', { name: 'trouble' }));
