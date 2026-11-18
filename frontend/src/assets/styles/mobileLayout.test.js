@@ -786,14 +786,19 @@ describe('các màn AI trên điện thoại', () => {
         const r = comp.slice(i, comp.indexOf('}', i));
         expect(r).toMatch(/position:\s*fixed/);
         expect(r).not.toMatch(/sticky/);
-        expect(r).toMatch(/left:\s*50%/);
-        expect(r).toMatch(/translateX\(-50%\)/);
+        // Căn giữa không dùng transform: luật hover/active của .btn trên điện thoại ghi đè transform
+        // và làm nút lệch sang phải (đã xảy ra thật ở nút "Lấy đoạn văn").
+        expect(r).toMatch(/left:\s*0;\s*right:\s*0;/);
+        expect(r).toMatch(/margin:\s*0 auto/);
+        expect(r).toMatch(/width:\s*fit-content/);
+        expect(r).not.toMatch(/translateX/);
         // Hai class để thắng `.essay-intro--wide { padding }` khai báo sau trong file.
         expect(comp).toMatch(/\.convo-intro,\s*\.essay-intro\.essay-intro--wide\s*\{\s*padding-bottom:\s*88px/);
     });
 
-    test('bấm nút không làm nút nhảy lệch (giữ translateX khi :active)', () => {
-        expect(comp).toMatch(/\.btn\.ai-start-float:active\s*\{\s*transform:\s*translateX\(-50%\) scale\(0\.98\)/);
+    test('hover/bấm không làm nút lệch: không còn chỗ nào căn nút bằng translateX', () => {
+        expect(comp).toMatch(/\.btn\.ai-start-float:active\s*\{\s*transform:\s*scale\(0\.98\)/);
+        expect(`${comp}\n${css}`).not.toMatch(/ai-start-float[^{]*\{[^}]*translateX/);
     });
 
     test('cả 5 màn AI dùng NutBatDau: vẽ vào body (portal), chỉ khi màn đang mở', () => {

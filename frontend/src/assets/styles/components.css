@@ -9626,20 +9626,25 @@ mark {
 
    Khung giới thiệu chừa `padding-bottom` bằng chiều cao nút + lề để hàng chip
    cuối cùng không nằm khuất dưới nút. */
+/* Căn giữa bằng `left: 0; right: 0; margin: auto`, KHÔNG bằng `transform: translateX(-50%)`:
+   trên điện thoại `.btn:hover { transform: none }` và `.btn:active { transform: scale(…) }`
+   (responsive.css, nạp sau) xoá mất phép dịch. Chạm một lần là hover "dính" lại, nút lệch sang
+   phải đúng nửa bề rộng và đứng luôn ở đó. Không dùng transform để căn thì luật nào cũng không
+   làm lệch được. */
 .ai-start-float {
     position: fixed;
-    left: 50%;
+    left: 0;
+    right: 0;
     bottom: 20px;
-    transform: translateX(-50%);
+    width: fit-content;
+    max-width: calc(100% - 24px);
+    margin: 0 auto;
     z-index: 50;
-    margin: 0;
     white-space: nowrap;
     box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35);
 }
-/* `.btn:active { transform: scale(0.98) }` ghi đè MẤT `translateX(-50%)` → nút
-   nhảy lệch sang phải lúc bấm. Gộp cả hai vào một transform. */
 .btn.ai-start-float:active {
-    transform: translateX(-50%) scale(0.98);
+    transform: scale(0.98);
 }
 /* Hai class (`.essay-intro.essay-intro--wide`) để thắng `.essay-intro--wide
    { padding: … }` khai báo SAU trong file — cùng độ đặc hiệu thì cái sau thắng. */
