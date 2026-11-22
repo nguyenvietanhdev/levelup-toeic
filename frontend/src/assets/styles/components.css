@@ -13118,3 +13118,38 @@ button.hs-muc:not(:disabled):hover { border-color: var(--accent-color); }
 .bh-ket-qua li > span { flex: 1; min-width: 0; }
 .bh-ket-qua small { display: block; color: var(--text-secondary); }
 .bh-tu-dan { display: grid; gap: 8px; }
+
+/* ===== Popup nhắc từ vựng riêng sắp hết hạn (ExpiryNotice) ===== */
+.het-han {
+    position: fixed; right: 16px; bottom: 16px; z-index: 9000;
+    width: 360px; max-width: calc(100vw - 32px);
+    background: var(--bg-primary, #fff); color: var(--text-primary);
+    border: 1px solid var(--border-color); border-radius: 16px; overflow: hidden;
+    box-shadow: 0 12px 36px rgba(0, 0, 0, .28);
+    animation: het-han-vao .25s ease-out;
+}
+@keyframes het-han-vao { from { transform: translateY(12px); opacity: 0; } to { transform: none; opacity: 1; } }
+.het-han-dau { display: flex; align-items: center; gap: 10px; padding: 12px 12px 10px 14px; background: linear-gradient(135deg, rgba(245, 158, 11, .16), rgba(239, 68, 68, .10)); }
+.het-han-bieu-tuong { width: 34px; height: 34px; flex: none; display: grid; place-items: center; border-radius: 10px; background: #f59e0b; color: #fff; }
+.het-han-tieu-de { flex: 1; min-width: 0; display: grid; gap: 1px; }
+.het-han-tieu-de strong { font-size: 14px; }
+.het-han-tieu-de span { font-size: 12px; color: var(--text-secondary); }
+.het-han-dong { border: 0; background: none; color: var(--text-secondary); cursor: pointer; padding: 4px 6px; border-radius: 8px; font-size: 15px; }
+.het-han-dong:hover { background: var(--bg-secondary); }
+.het-han-ds { list-style: none; margin: 0; padding: 10px; display: grid; gap: 8px; max-height: 300px; overflow-y: auto; }
+.het-han-ds > li { border: 1px solid var(--border-color); border-left: 4px solid #f59e0b; border-radius: 12px; background: var(--bg-secondary); overflow: hidden; }
+.het-han-ds > li.is-gap { border-left-color: #ef4444; }
+.het-han-the { width: 100%; display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-rows: auto auto; column-gap: 8px; align-items: center; padding: 10px 12px 6px; border: 0; background: none; color: inherit; font: inherit; text-align: left; cursor: pointer; }
+.het-han-the:hover .het-han-ten, .het-han-the:focus-visible .het-han-ten { color: var(--accent-color); text-decoration: underline; }
+.het-han-ten { font-weight: 600; font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.het-han-phu { grid-row: 2; font-size: 12px; color: var(--text-secondary); }
+.het-han-ds > li.is-gap .het-han-phu b { color: #ef4444; }
+.het-han-the > i { grid-row: 1 / span 2; grid-column: 2; color: var(--text-secondary); }
+.het-han-nut { display: flex; flex-wrap: wrap; gap: 6px; padding: 0 12px 10px; }
+.het-han-mo { width: 100%; border: 0; border-top: 1px solid var(--border-color); background: none; color: var(--accent-color); font: inherit; font-weight: 600; font-size: 13px; padding: 10px; cursor: pointer; }
+.het-han-mo:hover { background: var(--bg-secondary); }
+/* Điện thoại: nằm trên thanh điều hướng đáy (56px). */
+@media (max-width: 768px) { .het-han { right: 12px; left: 12px; width: auto; max-width: none; bottom: calc(56px + 12px); } }
+/* Bộ vừa được mở từ popup: tô sáng một lúc để mắt tìm thấy ngay. */
+.topic-row.topic-row--focus { outline: 3px solid var(--accent-color); outline-offset: 2px; animation: none; }
+

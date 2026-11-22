@@ -14,9 +14,11 @@ const otpLimiter = rateLimit({
     legacyHeaders: false,
 });
 
+// `LOGIN_RATE_MAX`: chỉ môi trường E2E (e2e/khoiDong.js) đặt cao hơn — cả bộ test đăng nhập từ
+// cùng một máy, quá 10 lần là các bài sau hỏng oan. Bản chạy thật không đặt, giữ mặc định 10.
 const loginLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
-    max: 10,
+    max: Number(process.env.LOGIN_RATE_MAX) > 0 ? Number(process.env.LOGIN_RATE_MAX) : 10,
     message: { success: false, message: 'Quá nhiều lần thử đăng nhập. Vui lòng thử lại sau 15 phút.' },
     standardHeaders: true,
     legacyHeaders: false,

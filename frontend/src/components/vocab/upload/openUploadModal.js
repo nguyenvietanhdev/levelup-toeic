@@ -25,8 +25,12 @@ const SOURCE_LABELS = {
     // Tên cũ trước khi tách theo ngôn ngữ. Giữ lại phòng còn bản ghi sót — mất
     // nhãn thì nó hiện ra dưới dạng chuỗi kỹ thuật chứ không phải biến mất.
     'dich-nhanh': 'Dịch nhanh (cũ)',
+    'mau-cau-en': 'Mẫu câu ngữ pháp · Tiếng Anh',
+    'mau-cau-zh': 'Mẫu câu ngữ pháp · Tiếng Trung',
+    'bai-hat-en': 'Từ trong bài hát · Tiếng Anh',
+    'bai-hat-zh': 'Từ trong bài hát · Tiếng Trung',
 };
-function sourceLabel(source) {
+export function sourceLabel(source) {
     return SOURCE_LABELS[source] || source;
 }
 
@@ -53,7 +57,9 @@ const DEFAULT_RETENTION = 30;
  *   lần dựng này. Không gỡ thì lần dựng sau có hai listener cùng chạy, cái cũ
  *   trỏ vào DOM đã bị vứt.
  */
-export function buildUploadContent({ tab } = {}) {
+export function buildUploadContent({ tab, moNguon = '' } = {}) {
+        // Bộ cần mở sẵn ở tab Quản lý (vd bấm từ popup nhắc sắp hết hạn). Chỉ mở MỘT lần.
+        let _moNguon = moNguon;
         const TYPE1 = ['noun','verb','adjective','adverb','pronoun','preposition','conjunction','interjection','article','determiner','auxiliary'];
         const TYPE2 = ['noun phrase','verb phrase','adjective phrase','adverb phrase','prepositional phrase','participle phrase','gerund phrase','infinitive phrase'];
         const opts1 = ['<option value="">— Loại từ —</option>', ...TYPE1.map(t => `<option value="${t}">${t}</option>`)].join('');
@@ -581,6 +587,17 @@ Danh sách từ vựng cần chuyển:
                     row.querySelector('.topic-export-excel')?.addEventListener('click', () => exportSource(row.dataset.source, 'csv'));
                     row.querySelector('.topic-delete-all-btn')?.addEventListener('click', () => deleteSource(row.dataset.source, row.dataset.count));
                 });
+                // Được mở tới một bộ cụ thể: mở danh sách từ của bộ đó, cuộn tới và tô sáng một lúc.
+                if (_moNguon) {
+                    const row = [...container.querySelectorAll('.topic-row')].find((r) => r.dataset.source === _moNguon);
+                    _moNguon = '';
+                    if (row) {
+                        if (row.closest('.topic-item')?.querySelector('.topic-words')?.dataset.open !== '1') toggleWords(row);
+                        row.classList.add('topic-row--focus');
+                        row.scrollIntoView?.({ block: 'center', behavior: 'smooth' });
+                        setTimeout(() => row.classList.remove('topic-row--focus'), 2600);
+                    }
+                }
             } catch (err) { container.innerHTML = `<p style="color:#dc2626;font-size:13px">Lỗi: ${err.message}</p>`; }
         };
 

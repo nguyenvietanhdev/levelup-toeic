@@ -55,7 +55,8 @@ async function taoTaiKhoan(uri) {
     const uri = mongo.getUri('levelup_e2e');
     await taoTaiKhoan(uri);
 
-    const env = { ...process.env, MONGODB_URI: uri, JWT_SECRET: 'e2e-khoa-bi-mat', PORT: String(CONG), NODE_ENV: 'production' };
+    // LOGIN_RATE_MAX: cả bộ test đăng nhập từ cùng một máy, vượt giới hạn 10 lần/15 phút của bản thật.
+    const env = { ...process.env, MONGODB_URI: uri, JWT_SECRET: 'e2e-khoa-bi-mat', PORT: String(CONG), NODE_ENV: 'production', LOGIN_RATE_MAX: '500' };
     for (const k of KHOA_RONG) env[k] = '';
     const server = spawn(process.execPath, ['server.js'], { cwd: BACKEND, env, stdio: 'inherit' });
 

@@ -1,4 +1,5 @@
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { xemYeuCauTuVungRieng, layYeuCauTuVungRieng, ngheYeuCauTuVungRieng } from '@lib/moTuVungRieng.js';
 import { useGame } from '@game/GameContext.jsx';
 import { buildUploadContent } from './openUploadModal.js';
 
@@ -22,9 +23,18 @@ export default function VocabScreen({ active }) {
     // `useMemo` theo `active` là đủ — `active` chuyển false→true mỗi lần vào
     // màn, memo tính lại đúng lúc đó. Không cần biến đếm + `setState` trong
     // effect: cái đó thêm một lượt render thừa và eslint bắt (cascading renders).
+    // Được mở tới một bộ cụ thể (popup nhắc sắp hết hạn): vào thẳng tab Quản lý, mở sẵn bộ đó.
+    // Lấy yêu cầu đang chờ lúc gắn (màn tải trễ), và nghe yêu cầu mới khi đang mở sẵn.
+    const [yeuCau, setYeuCau] = useState(xemYeuCauTuVungRieng);
+    useEffect(() => {
+        layYeuCauTuVungRieng(); // đã nhận lúc khởi tạo: xoá để lần vào sau không mở lại
+        return ngheYeuCauTuVungRieng((y) => { layYeuCauTuVungRieng(); setYeuCau(y); });
+    }, []);
+    useEffect(() => { if (!active) setYeuCau(null); }, [active]);
+
     const built = useMemo(
-        () => (active ? buildUploadContent({}) : null),
-        [active],
+        () => (active ? buildUploadContent(yeuCau ? { tab: 'manage', moNguon: yeuCau.nguon } : {}) : null),
+        [active, yeuCau],
     );
 
     // `dispose` gỡ listener uỷ quyền ở document. Bỏ qua là mỗi lần vào màn lại
