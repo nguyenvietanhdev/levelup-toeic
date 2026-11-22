@@ -37,9 +37,10 @@ describe('lấy CẢ HAI phiên âm', () => {
         // `dt=t` chỉ trả bản dịch; thiếu `dt=rm` là không có phiên âm nào.
         // Khớp trên DÒNG dựng URL, không phải cả file: chữ `dt=rm` còn nằm
         // trong chú thích, nên khớp cả file thì gỡ khỏi URL vẫn xanh.
-        const url = modal.split('\n').find((l) => l.includes('translate_a/single'));
-        expect(url).toBeTruthy();
-        expect(url).toContain('dt=rm');
+        // URL giờ dựng trong lib/dichMay.js (Google → MyMemory); popup chỉ khai các phần cần lấy.
+        const goi = modal.split('\n').find((l) => l.includes('dichMay(inputText'));
+        expect(goi).toBeTruthy();
+        expect(goi).toMatch(/dt: \[[^\]]*'rm'/);
     });
 });
 

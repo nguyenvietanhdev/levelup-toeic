@@ -9,6 +9,7 @@ import { openUploadModal } from '@components/vocab/upload/openUploadModal.js';
 import { Notification } from '@ui/Toaster.jsx';
 import { TtsAPI } from '@api/tts.js';
 import { giongVietTrinhDuyet, laTiengViet } from '@lib/giongViet.js';
+import { dichMay } from '@lib/dichMay.js';
 
 // Ngôn ngữ học của hệ thống (en/zh) → mã đích ưu tiên khi dịch.
 const studyTargetLang = () => (getVocabLang() === 'zh' ? 'zh-CN' : 'en');
@@ -330,13 +331,12 @@ export default function TranslateModal({ text, onClose, editWord = null, onSaved
         setSavedVocab(false);
         (async () => {
             try {
-                const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=${srcLang}&tl=${targetLang}&dt=t&dt=bd&dt=rm&q=${encodeURIComponent(inputText)}`;
-                const res = await fetch(url);
-                if (!res.ok) throw new Error('Không dịch được');
-                const data = await res.json();
+                // Google trước (có phiên âm, từ điển); Google đang chặn thì MyMemory (chỉ bản dịch).
+                const kq = await dichMay(inputText, { sl: srcLang, tl: targetLang, dt: ['t', 'bd', 'rm'] });
                 if (cancelled) return;
+                const data = kq.google || [[], [], kq.sourceLang];
 
-                const sourceLang = data[2] || 'auto';
+                const sourceLang = kq.sourceLang || data[2] || 'auto';
 
                 // Không dịch sang cùng ngôn ngữ với nguồn → tự đổi đích.
                 if (sourceLang !== 'auto' && baseLang(sourceLang) === baseLang(targetLang)) {
@@ -346,7 +346,7 @@ export default function TranslateModal({ text, onClose, editWord = null, onSaved
                     return;
                 }
 
-                const translated = (data[0] || []).map(seg => seg[0]).filter(Boolean).join('');
+                const translated = kq.translated;
                 // Google trả HAI phiên âm ở hai vị trí khác nhau trong mỗi đoạn:
                 //   seg[3] = phiên âm câu GỐC   (dịch 你好 → vi cho "Nǐ hǎo")
                 //   seg[2] = phiên âm BẢN DỊCH  (dịch hello → zh cho "Nǐ hǎo")
@@ -358,9 +358,9 @@ export default function TranslateModal({ text, onClose, editWord = null, onSaved
                 const part = dict[0]?.[0] || '';
                 const synonyms = dict.flatMap(d => d[1] || []).slice(0, 6).join(', ');
 
-                setResult({ translated, sourceLang, part, synonyms, phonetic, phoneticOut });
+                setResult({ translated, sourceLang, part, synonyms, phonetic, phoneticOut, nguon: kq.nguon });
             } catch {
-                if (!cancelled) setError('Không kết nối được dịch vụ dịch. Hãy mở Google Dịch đầy đủ.');
+                if (!cancelled) setError('Không kết nối được dịch vụ dịch (Google đang tạm chặn và dịch vụ dự phòng cũng không trả lời). Hãy mở Google Dịch đầy đủ.');
             } finally {
                 if (!cancelled) setLoading(false);
             }
@@ -750,6 +750,11 @@ export default function TranslateModal({ text, onClose, editWord = null, onSaved
                         )}
                         {!loading && result?.synonyms && (
                             <div className="translate-syn">Nghĩa khác: {result.synonyms}</div>
+                        )}
+                        {/* Google tạm chặn (giới hạn theo IP) thì dịch qua MyMemory: chỉ có bản dịch,
+                            không có phiên âm và nghĩa khác — nói rõ để người học khỏi tưởng thiếu sót. */}
+                        {!loading && result?.nguon === 'mymemory' && (
+                            <div className="translate-syn">Google Dịch đang tạm chặn, bản dịch này lấy từ MyMemory (không có phiên âm, nghĩa khác).</div>
                         )}
                     </div>
 

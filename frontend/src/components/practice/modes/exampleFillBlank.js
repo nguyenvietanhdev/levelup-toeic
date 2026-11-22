@@ -9,27 +9,18 @@ import { PartSelector } from '@components/vocab/part/partSelector.js';
 import { afterAnswer } from '@components/practice/practiceNav.js';
 import { startQuestionTimer } from '@components/practice/questionTimer.js';
 import { timeoutQuestion } from '@components/practice/questionTimeout.js';
+import { dichMay } from '@lib/dichMay.js';
 
-// Dịch cả câu sang tiếng Việt qua Google Translate (gtx) — cùng API popup Dịch nhanh,
-// không cần backend/API key.
+// Dịch cả câu sang tiếng Việt — cùng đường dịch với popup Dịch nhanh (Google, tạm chặn thì
+// MyMemory), không cần backend/API key.
 const _trCache = new Map(); // cache dịch trong phiên → khỏi gọi lại gtx cho câu đã dịch
 async function translateToVi(text) {
     if (_trCache.has(text)) return _trCache.get(text);
-    const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=vi&dt=t&q=${encodeURIComponent(text)}`;
-    // Hủy request nếu quá 4s → tránh fetch treo tích luỹ khi gtx bị rate-limit.
-    const ctrl = new AbortController();
-    const to = setTimeout(() => ctrl.abort(), 4000);
-    try {
-        const res = await fetch(url, { signal: ctrl.signal });
-        if (!res.ok) throw new Error('translate failed');
-        const data = await res.json();
-        const out = (data[0] || []).map(seg => seg[0]).filter(Boolean).join('');
-        if (_trCache.size > 300) _trCache.clear(); // chặn cache phình
-        _trCache.set(text, out);
-        return out;
-    } finally {
-        clearTimeout(to);
-    }
+    // Hủy request nếu quá 4s → tránh fetch treo tích luỹ khi dịch vụ bị giới hạn.
+    const { translated: out } = await dichMay(text, { sl: 'auto', tl: 'vi', timeout: 4000 });
+    if (_trCache.size > 300) _trCache.clear(); // chặn cache phình
+    _trCache.set(text, out);
+    return out;
 }
 
 export const ExampleFillBlank = {

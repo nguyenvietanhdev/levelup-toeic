@@ -117,7 +117,8 @@ app.use(helmet({
             // bằng chữ ký server cấp (routes/adminBaiNghe.js `/chu-ky`) — video không đi qua RAM
             // của server. Đúng một host upload, không wildcard.
             connectSrc: [
-                "'self'", "https://translate.googleapis.com", "https://accounts.google.com", "https://api.cloudinary.com",
+                // `api.mymemory.translated.net`: đường dịch dự phòng khi Google (gtx) tạm chặn theo IP (lib/dichMay.js).
+                "'self'", "https://translate.googleapis.com", "https://api.mymemory.translated.net", "https://accounts.google.com", "https://api.cloudinary.com",
                 // Frontend gửi lỗi về Sentry: chỉ mở đúng host nhận lỗi của DSN đang dùng.
                 ...[giamSat.originCuaDsn(SENTRY_DSN_FRONTEND)].filter(Boolean),
             ],
