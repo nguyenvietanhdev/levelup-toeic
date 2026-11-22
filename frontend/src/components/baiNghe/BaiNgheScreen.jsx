@@ -169,7 +169,7 @@ export default function BaiNgheScreen({ active }) {
             </div>
 
             {/* Bài có video: khung nội dung rộng hơn để hai cột video và script đều dễ nhìn. */}
-            <div className={`px-wrap ${bai?.coHinh ? 'bn-wrap-rong' : ''}`}>
+            <div className={`px-wrap ${bai?.coHinh ? 'bn-wrap-rong' : ''} ${!bai ? 'bn-wrap-ds' : ''}`}>
                 {!isLoggedIn && <p className="px-mo-ta">Đăng nhập để nghe bài.</p>}
 
                 {isLoggedIn && !bai && (

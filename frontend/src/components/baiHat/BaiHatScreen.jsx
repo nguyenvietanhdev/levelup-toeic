@@ -372,7 +372,7 @@ export default function BaiHatScreen({ active }) {
                 <h2><i className="fas fa-music"></i> {view === 'hoc' && bai ? bai.tieuDe : 'Học qua bài hát'}</h2>
             </div>
 
-            <div className={`px-wrap ${view === 'hoc' ? 'bn-wrap-rong' : ''}`}>
+            <div className={`px-wrap ${view === 'hoc' ? 'bn-wrap-rong' : ''} ${view === 'ds' ? 'bn-wrap-ds' : ''}`}>
                 {!isLoggedIn && <p className="px-mo-ta">Đăng nhập để dùng.</p>}
 
                 {isLoggedIn && view === 'ds' && (
