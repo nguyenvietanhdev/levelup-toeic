@@ -1,5 +1,17 @@
 /** Hàm thuần cho màn Bài nghe có script. */
 
+/** Bỏ dấu tiếng Việt, chữ thường, gom khoảng trắng: gõ "hoc tieng anh" vẫn ra "Học tiếng Anh". */
+const boDau = (s) => String(s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[đĐ]/g, 'd')
+    .toLowerCase().replace(/\s+/g, ' ').trim();
+
+/** Mọi từ gõ vào đều có mặt trong một trong các trường (thuần). Ô trống thì khớp hết. */
+export function khopTim(q, ...truong) {
+    const tu = boDau(q).split(' ').filter(Boolean);
+    if (!tu.length) return true;
+    const chu = boDau(truong.join(' '));
+    return tu.every((t) => chu.includes(t));
+}
+
 /** Giây → "m:ss". */
 export const gioPhut = (giay) => {
     const s = Math.max(0, Math.round(Number(giay) || 0));

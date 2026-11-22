@@ -5,7 +5,8 @@ import { Notification } from '@ui/Toaster.jsx';
 import { BaiHatAPI } from '@api/baiHat.js';
 import { dichSangViet } from '@lib/dichNhanh.js';
 import { luuVaoTuRieng } from '@lib/luuMauCau.js';
-import { gioPhut, cauTai } from '@lib/baiNghe.js';
+import { gioPhut, cauTai, khopTim } from '@lib/baiNghe.js';
+import OTimBai from '@components/baiNghe/OTimBai.jsx';
 import { mauCoGio, tienDo, chonOTrong, khopTu, tocDoBai, apLech, lechCua, chonDongKhop, datLechTu } from '@lib/baiHat.js';
 import { useYoutube } from './useYoutube.js';
 
@@ -31,6 +32,7 @@ export default function BaiHatScreen({ active }) {
 
     const [view, setView] = useState('ds'); // ds | them | hoc
     const [ds, setDs] = useState(null);
+    const [tim, setTim] = useState('');
     const [bai, setBai] = useState(null);
     const [cheDo, setCheDo] = useState('xem'); // xem | dien | nhip
     const [hien, setHien] = useState(-1);
@@ -285,6 +287,7 @@ export default function BaiHatScreen({ active }) {
         if (choDong === i) { setChoDong(-1); yt.phat(); }
     };
 
+    const locDs = (ds || []).filter((b) => khopTim(tim, b.tieuDe, b.ngheSi));
     const tongO = oTrong.reduce((n, d) => n + d.length, 0);
     const soDung = Object.values(daDien).filter((v) => v === 'dung').length;
 
@@ -370,6 +373,7 @@ export default function BaiHatScreen({ active }) {
                     <i className="fas fa-arrow-left"></i>
                 </button>
                 <h2><i className="fas fa-music"></i> {view === 'hoc' && bai ? bai.tieuDe : 'Học qua bài hát'}</h2>
+                {isLoggedIn && view === 'ds' && <OTimBai value={tim} onChange={setTim} placeholder="Tìm bài hát, ca sĩ…" />}
             </div>
 
             <div className={`px-wrap ${view === 'hoc' ? 'bn-wrap-rong' : ''} ${view === 'ds' ? 'bn-wrap-ds' : ''}`}>
@@ -383,8 +387,9 @@ export default function BaiHatScreen({ active }) {
                         </div>
                         {!ds && <p className="px-mo-ta"><i className="fas fa-spinner fa-spin"></i> Đang tải…</p>}
                         {ds && !ds.length && <p className="px-mo-ta">Chưa có bài nào.</p>}
+                        {ds?.length > 0 && !locDs.length && <p className="px-mo-ta">Không có bài nào khớp "{tim.trim()}".</p>}
                         <div className="bn-ds">
-                            {(ds || []).map((b) => (
+                            {locDs.map((b) => (
                                 <div key={b.id} className="bh-the-vo">
                                     <button type="button" className="bn-the" onClick={() => moBai(b.id)}>
                                         <span className="bn-anh">

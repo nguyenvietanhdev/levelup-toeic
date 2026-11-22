@@ -205,6 +205,22 @@ describe('bấm theo nhịp', () => {
     });
 });
 
+describe('tìm bài hát', () => {
+    test('tìm theo tên bài hoặc ca sĩ, không phân biệt dấu', async () => {
+        api.danhSach.mockResolvedValue([
+            { ...BAI, cau: undefined },
+            { ...BAI, id: 'b2', tieuDe: 'Shape of You', ngheSi: 'Ed Sheeran', cau: undefined },
+        ]);
+        render(<BaiHatScreen active />);
+        await screen.findByRole('button', { name: /Shape of You.*Ed Sheeran/ });
+        fireEvent.change(screen.getByRole('searchbox', { name: 'Tìm bài' }), { target: { value: 'sheeran' } });
+        expect(screen.queryByRole('button', { name: /Let It Be.*The Beatles/ })).toBeNull();
+        expect(screen.getByRole('button', { name: /Shape of You.*Ed Sheeran/ })).toBeTruthy();
+        fireEvent.change(screen.getByRole('searchbox', { name: 'Tìm bài' }), { target: { value: 'xyz' } });
+        expect(screen.getByText('Không có bài nào khớp "xyz".')).toBeTruthy();
+    });
+});
+
 describe('thêm bài', () => {
     test('tìm lời, chọn bản có nhịp thì mở học ngay', async () => {
         api.danhSach.mockResolvedValue([]);

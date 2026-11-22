@@ -6,7 +6,7 @@
  */
 import { describe, test, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import { gioPhut, cauTai, tachTu, viTriCuon } from '@lib/baiNghe.js';
+import { gioPhut, cauTai, tachTu, viTriCuon, khopTim } from '@lib/baiNghe.js';
 
 const api = vi.hoisted(() => ({ danhSach: vi.fn(), lay: vi.fn() }));
 const fav = vi.hoisted(() => ({ add: vi.fn() }));
@@ -62,6 +62,13 @@ describe('hàm thuần', () => {
     test('vị trí cuộn: câu đang nói ở 1/3 từ trên xuống của khung script', () => {
         expect(viTriCuon(900, 600)).toBe(700);
     });
+    test('tìm bài: không phân biệt dấu, hoa thường; mọi từ gõ đều phải có', () => {
+        expect(khopTim('hoc tieng', 'Học tiếng Anh qua VOA')).toBe(true);
+        expect(khopTim('LESSON 1', 'Lesson 1: Welcome')).toBe(true);
+        expect(khopTim('lesson voa', 'Lesson 1', 'VOA Learning English')).toBe(true);
+        expect(khopTim('lesson 9', 'Lesson 1')).toBe(false);
+        expect(khopTim('  ', 'bất kỳ')).toBe(true);
+    });
     test('tách từ bấm được, giữ dấu câu để hiển thị', () => {
         const p = tachTu("Today, Anna's bank.");
         expect(p.map((x) => x.hien).join('')).toBe("Today, Anna's bank.");
@@ -88,6 +95,21 @@ describe('thư viện kiểu YouTube', () => {
 });
 
 describe('màn nghe', () => {
+    test('ô tìm trên thanh tiêu đề lọc thư viện; không khớp thì báo; vào bài thì ô tìm ẩn', async () => {
+        render(<BaiNgheScreen active />);
+        await screen.findByRole('button', { name: /Lesson 9/ });
+        const o = screen.getByRole('searchbox', { name: 'Tìm bài' });
+        fireEvent.change(o, { target: { value: 'lesson 9' } });
+        expect(screen.queryByRole('button', { name: /Lesson 1/ })).toBeNull();
+        expect(screen.getByRole('button', { name: /Lesson 9/ })).toBeTruthy();
+        fireEvent.change(o, { target: { value: 'khong co' } });
+        expect(screen.getByText(/Không có bài nào khớp "khong co"/)).toBeTruthy();
+        fireEvent.click(screen.getByRole('button', { name: 'Xoá nội dung tìm' }));
+        fireEvent.click(await screen.findByRole('button', { name: /Lesson 1/ }));
+        await screen.findByRole('button', { name: 'Nghe câu 1' });
+        expect(screen.queryByRole('searchbox', { name: 'Tìm bài' })).toBeNull();
+    });
+
     test('lọc theo cấp độ', async () => {
         render(<BaiNgheScreen active />);
         await screen.findByRole('button', { name: /Lesson 9/ });

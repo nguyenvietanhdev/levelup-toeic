@@ -6,7 +6,8 @@ import { BaiNgheAPI } from '@api/baiNghe.js';
 import { FavoritesAPI } from '@api/favorites.js';
 import { getVocabLang } from '@api/vocabulary.js';
 import { dichSangViet } from '@lib/dichNhanh.js';
-import { gioPhut, cauTai, tachTu, viTriCuon } from '@lib/baiNghe.js';
+import { gioPhut, cauTai, tachTu, viTriCuon, khopTim } from '@lib/baiNghe.js';
+import OTimBai from './OTimBai.jsx';
 
 const TEN_CAP_DO = { de: 'Dễ', vua: 'Vừa', kho: 'Khó' };
 const TOC_DO = [0.75, 1, 1.25];
@@ -25,6 +26,7 @@ export default function BaiNgheScreen({ active }) {
 
     const [ds, setDs] = useState(null);
     const [capDo, setCapDo] = useState('');
+    const [tim, setTim] = useState('');
     const [bai, setBai] = useState(null);
     const [dangMo, setDangMo] = useState('');
     const [hien, setHien] = useState(-1);
@@ -157,7 +159,7 @@ export default function BaiNgheScreen({ active }) {
         }
     };
 
-    const loc = (ds || []).filter((b) => !capDo || b.capDo === capDo);
+    const loc = (ds || []).filter((b) => (!capDo || b.capDo === capDo) && khopTim(tim, b.tieuDe, b.nguon));
 
     return (
         <div id="bai-nghe-screen" className={`screen ${active ? 'active' : ''}`}>
@@ -166,6 +168,7 @@ export default function BaiNgheScreen({ active }) {
                     <i className="fas fa-arrow-left"></i>
                 </button>
                 <h2><i className="fas fa-podcast"></i> {bai ? bai.tieuDe : 'Bài nghe có script'}</h2>
+                {isLoggedIn && !bai && <OTimBai value={tim} onChange={setTim} placeholder="Tìm bài nghe…" />}
             </div>
 
             {/* Bài có video: khung nội dung rộng hơn để hai cột video và script đều dễ nhìn. */}
@@ -182,7 +185,7 @@ export default function BaiNgheScreen({ active }) {
                             ))}
                         </div>
                         {!ds && <p className="px-mo-ta"><i className="fas fa-spinner fa-spin"></i> Đang tải…</p>}
-                        {ds && !loc.length && <p className="px-mo-ta">Chưa có bài nghe nào{capDo ? ' ở mức này' : ''}.</p>}
+                        {ds && !loc.length && <p className="px-mo-ta">{tim.trim() ? `Không có bài nào khớp "${tim.trim()}".` : `Chưa có bài nghe nào${capDo ? ' ở mức này' : ''}.`}</p>}
                         <div className="bn-ds">
                             {loc.map((b) => (
                                 <button key={b.id} type="button" className="bn-the" disabled={!!dangMo} onClick={() => moBai(b.id)}>
