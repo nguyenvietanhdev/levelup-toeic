@@ -71,7 +71,7 @@ async function laySoTay(userId, now = new Date()) {
 
     const [viet, dich, noi] = await Promise.all([
         Essay.find({ userId, createdAt: { $gte: tu }, ...theoLang }).select('issues createdAt').lean(),
-        Translation.find({ userId, createdAt: { $gte: tu }, ...theoLang }).select('notes createdAt').lean(),
+        Translation.find({ userId, createdAt: { $gte: tu }, chieu: { $ne: 'ngoai-vi' }, ...theoLang }).select('notes createdAt').lean(),
         // Chỉ phiên đã chấm có phần chữa từng câu.
         Conversation.find({
             userId, status: 'done', updatedAt: { $gte: tu }, ...theoLang, 'feedback.corrections.0': { $exists: true },

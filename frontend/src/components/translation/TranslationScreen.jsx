@@ -14,6 +14,8 @@ import XemLaiBai from '../chuaBai/XemLaiBai.jsx';
 import { useBaiNhap, TheBaiDo } from '../ai/BaiNhap.jsx';
 import { useNhamYeu, NutNhamYeu, NhanNham } from '../ai/NhamDiemYeu.jsx';
 import { useHoiKhiThoat } from '../ai/aiExitGuard.js';
+import { GameLogic } from '@game/gameLogic.js';
+import { luuVaoTuRieng } from '@lib/luuMauCau.js';
 
 /**
  * Luyện DỊCH — đọc một đoạn tiếng Việt, viết lại bằng tiếng Anh (hoặc Trung).
@@ -35,10 +37,27 @@ const CRITERIA = [
     { key: 'naturalness', vi: 'Tự nhiên như người bản ngữ', icon: 'fa-comment-dots' },
 ];
 
-/** Dịch chỉ có một kiểu chấm: đủ ý, ngữ pháp, mức tự nhiên (khớp server). */
+/**
+ * Chiều ngược (Anh/Trung → Việt) đo ĐỌC HIỂU: người học viết tiếng mẹ đẻ nên chấm có hiểu đúng
+ * không. Trùng `CRITERIA_NGUOC` ở server (hiểu đúng x2, đủ ý x1, diễn đạt x0.5).
+ */
+const CRITERIA_NGUOC = [
+    { key: 'comprehension', vi: 'Hiểu đúng nghĩa', icon: 'fa-lightbulb' },
+    { key: 'completeness', vi: 'Đủ ý, không bỏ sót', icon: 'fa-list-check' },
+    { key: 'expression', vi: 'Diễn đạt tiếng Việt', icon: 'fa-feather' },
+];
+
+/** Mỗi chiều một kiểu chấm (khớp server). */
 const KIEU_CHAM_DICH = [
     { key: 'dich', label: 'Dịch', desc: 'Đủ ý, ngữ pháp, mức tự nhiên' },
 ];
+const KIEU_CHAM_NGUOC = [
+    { key: 'dich', label: 'Đọc hiểu', desc: 'Hiểu đúng (chính), đủ ý, diễn đạt' },
+];
+
+/** Nhớ chiều dịch người học chọn lần trước. */
+const KHOA_CHIEU = 'levelup.dich.chieu';
+const docChieu = () => { try { return localStorage.getItem(KHOA_CHIEU) === 'ngoai-vi' ? 'ngoai-vi' : 'vi-ngoai'; } catch { return 'vi-ngoai'; } };
 
 const MUC_KHO = [
     { key: 'easy', label: 'Dễ', desc: '3 câu' },
@@ -49,6 +68,7 @@ const MUC_KHO = [
 /** Ngưỡng mặc định khi CHƯA có đề (server gửi số thật kèm đoạn văn). */
 const MIN_EN = 15;
 const MIN_ZH = 20;
+const MIN_VI = 15; // chiều ngược: bản dịch tiếng Việt, đếm theo từ
 
 /**
  * Đếm theo đơn vị ĐÚNG với ngôn ngữ.
@@ -131,6 +151,13 @@ export default function TranslationScreen({ active }) {
     // xem mình hay sai gì rồi làm bài ngay là một mạch, tách ra thì phải nhớ
     // đường quay lại.
     const [tab, setTab] = useState('lam');
+    // Chiều dịch đang chọn ở màn giới thiệu; khi đã có đề thì theo chiều của đề.
+    const [chieuChon, setChieuChon] = useState(docChieu);
+    const [daLuu, setDaLuu] = useState({}); // cụm hiểu sai đã lưu: cụm → 'dang' | 'xong' | lỗi
+    const doiChieu = (c) => {
+        setChieuChon(c);
+        try { localStorage.setItem(KHOA_CHIEU, c); } catch { /* chỉ là nhớ lựa chọn */ }
+    };
 
     // `onBought` của popup nạp năng lượng gọi lại chính `handleGrade` — không
     // đưa được `handleGrade` vào deps của chính nó.
@@ -141,11 +168,17 @@ export default function TranslationScreen({ active }) {
     const langLocal = GameState.state?.settings?.vocabLang === 'zh' ? 'zh' : 'en';
     const lang = de ? (de.lang === 'zh' ? 'zh' : 'en') : langLocal;
     const [nhamYeu, doiNhamYeu] = useNhamYeu();
-    const minUnits = Number(de?.minUnits) || (lang === 'zh' ? MIN_ZH : MIN_EN);
-    const unit = lang === 'zh' ? 'chữ' : 'từ';
+    const chieu = de ? (de.chieu === 'ngoai-vi' ? 'ngoai-vi' : 'vi-ngoai') : chieuChon;
+    const nguoc = chieu === 'ngoai-vi';
     const tenNgonNgu = lang === 'zh' ? 'tiếng Trung' : 'tiếng Anh';
+    const tenNgan = lang === 'zh' ? 'Trung' : 'Anh';
+    // Chiều ngược bản dịch là tiếng Việt: đếm theo từ.
+    const langBanDich = nguoc ? 'vi' : lang;
+    const minUnits = Number(de?.minUnits) || (nguoc ? MIN_VI : (lang === 'zh' ? MIN_ZH : MIN_EN));
+    const unit = langBanDich === 'zh' ? 'chữ' : 'từ';
+    const tieuChi = nguoc ? CRITERIA_NGUOC : CRITERIA;
 
-    const soDonVi = countUnits(banDich, lang);
+    const soDonVi = countUnits(banDich, langBanDich);
     const enough = soDonVi >= minUnits;
 
     const handleDeMoi = useCallback(async () => {
@@ -153,19 +186,20 @@ export default function TranslationScreen({ active }) {
         setLoadingDe(true);
         try {
             // Không gửi từ: server tự chọn từ bộ đang học (đúng mặt chữ, lọc mức, ưu tiên từ sai).
-            const d = await TranslationAPI.passage({ level, ...dangGui({ dang, tuChon, goiY }), nhamYeu });
+            const d = await TranslationAPI.passage({ level, ...dangGui({ dang, tuChon, goiY }), nhamYeu, chieu });
             if (!d?.passage) throw new Error('Server trả về đoạn văn không hợp lệ');
             setDe(d);
             // Đề mới thì bỏ bài cũ — giữ lại là người dùng nộp nhầm bản dịch của
             // đoạn trước, và AI chấm "đủ ý" rất thấp mà họ không hiểu vì sao.
             setBanDich('');
             setResult(null);
+            setDaLuu({});
         } catch (err) {
             Notification.error(String(err?.message || 'Không lấy được đoạn văn'));
         } finally {
             setLoadingDe(false);
         }
-    }, [loadingDe, level, dang, tuChon, goiY, nhamYeu]);
+    }, [loadingDe, level, dang, tuChon, goiY, nhamYeu, chieu]);
 
     const handleGrade = useCallback(async () => {
         if (grading || !de) return;
@@ -185,6 +219,7 @@ export default function TranslationScreen({ active }) {
                 topic: de.topic || '',
                 words: de.words || [],
                 level: de.level || 'medium',
+                chieu,
             });
             if (!d?.scores) throw new Error('Server trả về kết quả không hợp lệ');
             setResult(d);
@@ -211,7 +246,30 @@ export default function TranslationScreen({ active }) {
         } finally {
             setGrading(false);
         }
-    }, [grading, de, banDich, enough, soDonVi, minUnits, unit, syncFromState]);
+    }, [grading, de, banDich, enough, soDonVi, minUnits, unit, syncFromState, chieu]);
+
+    /** Lưu một (hoặc mọi) cụm hiểu sai vào Từ vựng riêng, kho "Cụm hiểu sai khi dịch". */
+    const luuCum = async (ds) => {
+        for (const x of ds) {
+            if (daLuu[x.cum] === 'xong' || daLuu[x.cum] === 'dang') continue;
+            setDaLuu((m) => ({ ...m, [x.cum]: 'dang' }));
+            try {
+                await luuVaoTuRieng({
+                    en: x.cum, vn: x.nghia, lang, source: `dich-nguoc-${lang}`,
+                    part: de?.dangVi || de?.topic || 'Dịch ngược', example: x.cau,
+                });
+                setDaLuu((m) => ({ ...m, [x.cum]: 'xong' }));
+            } catch (e) {
+                setDaLuu((m) => ({ ...m, [x.cum]: e.message }));
+                Notification.error(e.message);
+                return;
+            }
+        }
+    };
+
+    const ngheDoan = () => {
+        try { GameLogic.stopSpeaking?.(); GameLogic.speakWord(de.passage, lang === 'zh' ? 'zh-CN' : 'en-US'); } catch { /* không đọc được thì thôi */ }
+    };
 
     gradeRef.current = handleGrade;
 
@@ -231,6 +289,7 @@ export default function TranslationScreen({ active }) {
         setDe(n.de);
         setBanDich(n.noiDung || '');
         setResult(null);
+        setDaLuu({});
         baiNhap.daDung();
     };
 
@@ -269,16 +328,34 @@ export default function TranslationScreen({ active }) {
             {!de ? (
                 <div className="essay-intro essay-intro--wide">
                     <TheBaiDo nhap={baiNhap.nhap} deBai={baiNhap.nhap?.de?.passage} onLamTiep={lamTiep} onBo={baiNhap.boQua} />
-                    <p>
-                        Đọc một đoạn <strong>tiếng Việt</strong> rồi viết lại bằng{' '}
-                        <strong>{tenNgonNgu}</strong>. Bài được chấm theo{' '}
-                        <strong>3 tiêu chí</strong>: đủ ý, ngữ pháp, và mức tự nhiên — kèm một
-                        bản dịch tham khảo để bạn đối chiếu.
-                    </p>
+                    {/* Chiều dịch: Việt → ngoại ngữ luyện VIẾT; ngoại ngữ → Việt luyện ĐỌC HIỂU. */}
+                    <div className="np-lang tr-chieu" role="group" aria-label="Chiều dịch">
+                        <button type="button" className={!nguoc ? 'is-chon' : ''} aria-pressed={!nguoc} onClick={() => doiChieu('vi-ngoai')}>
+                            Việt → {tenNgan}
+                        </button>
+                        <button type="button" className={nguoc ? 'is-chon' : ''} aria-pressed={nguoc} onClick={() => doiChieu('ngoai-vi')}>
+                            {tenNgan} → Việt
+                        </button>
+                    </div>
+                    {nguoc ? (
+                        <p>
+                            Đọc một đoạn <strong>{tenNgonNgu}</strong> rồi dịch sang <strong>tiếng Việt</strong> để kiểm tra
+                            bạn hiểu đúng tới đâu. Chấm theo <strong>3 tiêu chí</strong>: <strong>hiểu đúng nghĩa</strong> (quan
+                            trọng nhất), đủ ý, và diễn đạt tiếng Việt (chấm nhẹ). Cụm nào hiểu sai được chỉ ra để lưu lại ôn.
+                        </p>
+                    ) : (
+                        <p>
+                            Đọc một đoạn <strong>tiếng Việt</strong> rồi viết lại bằng{' '}
+                            <strong>{tenNgonNgu}</strong>. Bài được chấm theo{' '}
+                            <strong>3 tiêu chí</strong>: đủ ý, ngữ pháp, và mức tự nhiên — kèm một
+                            bản dịch tham khảo để bạn đối chiếu.
+                        </p>
+                    )}
                     <p className="tr-intro-note">
                         <i className="fas fa-circle-info"></i>{' '}
-                        Đoạn văn bám theo bộ từ bạn đang học, nên dịch xong là ôn lại luôn
-                        vốn từ vừa luyện.
+                        {nguoc
+                            ? 'Đoạn văn dùng đúng những từ trong bộ bạn đang học: đọc ra được là nhớ được từ.'
+                            : 'Đoạn văn bám theo bộ từ bạn đang học, nên dịch xong là ôn lại luôn vốn từ vừa luyện.'}
                     </p>
 
                     {/* Hai cột như Đọc hiểu và Viết: TRÁI là dạng văn bản cần dịch,
@@ -300,7 +377,7 @@ export default function TranslationScreen({ active }) {
                                 Dịch chỉ có một bộ chấm (đủ ý, ngữ pháp, mức tự nhiên), nên
                                 kiểu chấm là một mục đang chọn. Độ khó tính theo số câu. */}
                             <KieuChamDoKho
-                                kieuList={KIEU_CHAM_DICH}
+                                kieuList={nguoc ? KIEU_CHAM_NGUOC : KIEU_CHAM_DICH}
                                 kieuDangChon="dich"
                                 onKieu={() => {}}
                                 doKhoList={MUC_KHO}
@@ -311,7 +388,7 @@ export default function TranslationScreen({ active }) {
                     </div>
 
                     {/* AI cài chỗ luyện đúng lỗi hay mắc (từ hồ sơ Tiến bộ) — chỉ tiếng Anh. */}
-                    {lang !== 'zh' && <NutNhamYeu bat={nhamYeu} onDoi={doiNhamYeu} />}
+                    {lang !== 'zh' && !nguoc && <NutNhamYeu bat={nhamYeu} onDoi={doiNhamYeu} />}
 
                     {/* Nút bắt đầu nổi cố định giữa đáy khung nhìn (portal vào body). */}
                     <NutBatDau active={active} onClick={handleDeMoi} disabled={loadingDe}>
@@ -324,7 +401,15 @@ export default function TranslationScreen({ active }) {
                 <div className="essay-body">
                     <div className="essay-prompt">
                         <div className="essay-prompt-head">
-                            <span>Đoạn văn cần dịch{de.dangVi || de.topic ? ` · ${de.dangVi || de.topic}` : ''}<NhanNham ds={de.nhamLoi} /></span>
+                            <span>
+                                {nguoc ? `Dịch sang tiếng Việt · ${tenNgan} → Việt` : 'Đoạn văn cần dịch'}
+                                {de.dangVi || de.topic ? ` · ${de.dangVi || de.topic}` : ''}<NhanNham ds={de.nhamLoi} />
+                            </span>
+                            {nguoc && (
+                                <button className="icon-btn" title="Nghe đoạn văn" aria-label="Nghe đoạn văn" onClick={ngheDoan}>
+                                    <i className="fas fa-volume-high"></i>
+                                </button>
+                            )}
                             <button
                                 className="icon-btn"
                                 title="Đổi đoạn khác"
@@ -343,9 +428,10 @@ export default function TranslationScreen({ active }) {
                                 className="essay-input"
                                 value={banDich}
                                 onChange={e => setBanDich(e.target.value)}
-                                placeholder={`Viết bản dịch ${tenNgonNgu} của bạn ở đây…`}
+                                placeholder={nguoc ? 'Viết bản dịch tiếng Việt của bạn ở đây…' : `Viết bản dịch ${tenNgonNgu} của bạn ở đây…`}
                                 disabled={grading}
                                 spellCheck={false}
+                                aria-label="Bản dịch của bạn"
                             />
                             <div className="essay-actions">
                                 <span className={`essay-count${enough ? ' is-ok' : ''}`}>
@@ -380,7 +466,7 @@ export default function TranslationScreen({ active }) {
                             </p>
 
                             <div className="essay-criteria">
-                                {CRITERIA.map(c => (
+                                {tieuChi.map(c => (
                                     <div key={c.key} className="essay-criterion">
                                         <div className="essay-criterion-head">
                                             <strong>{result.scores[c.key]}</strong>
@@ -395,9 +481,39 @@ export default function TranslationScreen({ active }) {
                             )}
 
                             {/* Chữa NGAY TRÊN bản dịch (bút đỏ) thay cho danh sách rời. */}
-                            <ChuaBai text={banDich} loi={result.notes} tieuDe="Chữa bản dịch" />
-                            {result.id && (
+                            <ChuaBai text={banDich} loi={result.notes} tieuDe={nguoc ? 'Chỗ hiểu chưa đúng' : 'Chữa bản dịch'} baiTiengViet={nguoc} />
+                            {/* Nộp lại bản sửa để AI xem lại là việc của lỗi VIẾT: chiều ngược không có. */}
+                            {result.id && !nguoc && (
                                 <XemLaiBai goc={banDich} loi={result.notes} gui={(t) => TranslationAPI.xemLai(result.id, t)} />
+                            )}
+
+                            {/* Chiều ngược: cụm ngoại ngữ đã hiểu sai — lưu vào Từ vựng riêng để ôn. */}
+                            {nguoc && result.hieuSai?.length > 0 && (
+                                <div className="essay-section tr-hieu-sai">
+                                    <h4><i className="fas fa-triangle-exclamation"></i> Cụm bạn hiểu sai</h4>
+                                    <ul>
+                                        {result.hieuSai.map((x) => (
+                                            <li key={x.cum}>
+                                                <div>
+                                                    <strong>{x.cum}</strong> — {x.nghia}
+                                                    {x.cau && <small>{x.cau}</small>}
+                                                </div>
+                                                <button type="button" className="btn btn-secondary btn-sm"
+                                                    disabled={daLuu[x.cum] === 'dang' || daLuu[x.cum] === 'xong'}
+                                                    onClick={() => luuCum([x])}>
+                                                    <i className={`fas ${daLuu[x.cum] === 'xong' ? 'fa-check' : 'fa-bookmark'}`}></i> {daLuu[x.cum] === 'xong' ? 'Đã lưu' : 'Lưu'}
+                                                </button>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                    {result.hieuSai.length > 1 && (
+                                        <button type="button" className="btn btn-primary btn-sm"
+                                            disabled={result.hieuSai.every((x) => daLuu[x.cum] === 'xong')}
+                                            onClick={() => luuCum(result.hieuSai)}>
+                                            <i className="fas fa-bookmark"></i> Lưu tất cả vào Từ vựng riêng
+                                        </button>
+                                    )}
+                                </div>
                             )}
 
                             {/* Bản dịch tham khảo đặt CUỐI, sau phần lỗi: đọc đáp án

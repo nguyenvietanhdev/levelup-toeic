@@ -290,7 +290,7 @@ async function layTienBo(userId, now = new Date()) {
         Essay.find({ userId, createdAt: { $gte: tu }, ...theoLang })
             .select('overall issues createdAt').lean(),
         Translation.find({ userId, createdAt: { $gte: tu }, ...theoLang })
-            .select('overall notes createdAt').lean(),
+            .select('overall notes chieu createdAt').lean(),
         WrongWord.countDocuments({ userId, status: 'active', ...WrongWord.langFilter(lang) }),
         WrongWord.countDocuments({
             userId, status: 'active', nextReviewDate: { $lte: now }, ...WrongWord.langFilter(lang),
@@ -304,12 +304,16 @@ async function layTienBo(userId, now = new Date()) {
     return { ...dungTienBo({
         luyenTu: luyen.map((p) => ({ at: p.completedAt, tu: p.correctAnswers || 0, mau: p.questionsCount || 0 })),
         nghe: nghe.map((p) => ({ at: p.updatedAt, tu: p.score || 0, mau: 100 })),
-        doc: doc.map((p) => ({ at: p.createdAt, tu: p.correct || 0, mau: p.total || 0 })),
+        // Dịch Anh/Trung → Việt đo đọc hiểu: góp vào chuỗi Đọc (điểm thang 9 quy ra tỉ lệ).
+        doc: [
+            ...doc.map((p) => ({ at: p.createdAt, tu: p.correct || 0, mau: p.total || 0 })),
+            ...dich.filter((b) => b.chieu === 'ngoai-vi').map((b) => ({ at: b.createdAt, tu: b.overall || 0, mau: 9 })),
+        ],
         noi: noi
             .filter((p) => Number.isFinite(p.feedback?.overall))
             .map((p) => ({ at: p.updatedAt, overall: p.feedback.overall, criteria: p.feedback.criteria })),
         viet: viet.map((b) => ({ at: b.createdAt, overall: b.overall, loi: b.issues || [] })),
-        dich: dich.map((b) => ({ at: b.createdAt, overall: b.overall, loi: b.notes || [] })),
+        dich: dich.filter((b) => b.chieu !== 'ngoai-vi').map((b) => ({ at: b.createdAt, overall: b.overall, loi: b.notes || [] })),
         tuDangOn, tuDenHan, tuDaThuoc, tuMoiThuoc,
     }, { soNgay, lang }), lang };
 }

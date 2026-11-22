@@ -33,8 +33,14 @@ const translationSchema = new mongoose.Schema(
         // Với `lang: 'zh'` đây là số CHỮ HÁN, không phải số từ.
         unitCount: { type: Number, default: 0 },
 
-        /** Ngôn ngữ ĐÍCH của bản dịch: 'en' hoặc 'zh'. Nguồn luôn là tiếng Việt. */
+        /** Ngoại ngữ của cặp dịch: 'en' hoặc 'zh' (bên kia luôn là tiếng Việt). */
         lang: { type: String, enum: ['en', 'zh'], default: 'en', index: true },
+        /**
+         * Chiều dịch. 'vi-ngoai' (mặc định, bài cũ): Việt → Anh/Trung, đo VIẾT. 'ngoai-vi':
+         * Anh/Trung → Việt, đo ĐỌC HIỂU — ba trục điểm khác, và ghi chú là lỗi HIỂU chứ không phải
+         * lỗi viết, nên Sổ tay lỗi / Ôn lỗi / hồ sơ ngữ pháp bỏ qua loại bài này.
+         */
+        chieu: { type: String, enum: ['vi-ngoai', 'ngoai-vi'], default: 'vi-ngoai' },
 
         /**
          * Ba trục điểm + điểm tổng.
@@ -47,6 +53,15 @@ const translationSchema = new mongoose.Schema(
             accuracy: { type: Number, default: 0 },
             grammar: { type: Number, default: 0 },
             naturalness: { type: Number, default: 0 },
+            // Chiều ngược (đọc hiểu).
+            comprehension: { type: Number },
+            completeness: { type: Number },
+            expression: { type: Number },
+        },
+        /** Chiều ngược: cụm ngoại ngữ người học hiểu sai, kèm nghĩa đúng và câu gốc (để lưu ôn). */
+        hieuSai: {
+            type: [{ cum: String, nghia: String, cau: String, _id: false }],
+            default: [],
         },
         overall: { type: Number, default: 0, index: true },
 
@@ -62,6 +77,8 @@ const translationSchema = new mongoose.Schema(
                 quote: { type: String, default: '' },
                 issue: { type: String, default: '' },
                 better: { type: String, default: '' },
+                // Chiều ngược: cụm ngoại ngữ trong bản gốc mà ghi chú nói tới.
+                nguon: { type: String, default: '' },
                 // Nhóm lỗi, để thống kê được "hay sai gì nhất". Mongoose ở chế
                 // độ `strict` XOÁ ÂM THẦM trường chưa khai — thiếu dòng này thì
                 // nhãn AI gán bị mất sạch mà không lỗi nào báo.

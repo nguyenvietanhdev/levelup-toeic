@@ -29,6 +29,8 @@ const SOURCE_LABELS = {
     'mau-cau-zh': 'Mẫu câu ngữ pháp · Tiếng Trung',
     'bai-hat-en': 'Từ trong bài hát · Tiếng Anh',
     'bai-hat-zh': 'Từ trong bài hát · Tiếng Trung',
+    'dich-nguoc-en': 'Cụm hiểu sai khi dịch · Tiếng Anh',
+    'dich-nguoc-zh': 'Cụm hiểu sai khi dịch · Tiếng Trung',
 };
 export function sourceLabel(source) {
     return SOURCE_LABELS[source] || source;

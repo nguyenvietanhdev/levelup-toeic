@@ -141,7 +141,10 @@ describe('controller', () => {
     test('cả ba chế độ: tắt được bằng nhamYeu:false, trả nhamLoi cho client', () => {
         for (const f of ['conversationController.js', 'essayController.js', 'translationController.js']) {
             const src = doc(f);
-            expect(src).toMatch(/req\.body\.nhamYeu === false \? \[\] : await layNham\(req\.user\.id, lang\)/);
+            // Dịch: chiều ngược (Anh/Trung → Việt) luôn tắt — tatNham = nguoc || nhamYeu === false.
+            expect(src).toMatch(f === 'translationController.js'
+                ? /const tatNham = nguoc \|\| req\.body\.nhamYeu === false;[\s\S]*?tatNham \? \[\] : await layNham\(req\.user\.id, lang\)/
+                : /req\.body\.nhamYeu === false \? \[\] : await layNham\(req\.user\.id, lang\)/);
             expect(src).toMatch(/nhamLoi: nham,/);
         }
     });

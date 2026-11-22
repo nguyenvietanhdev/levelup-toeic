@@ -13153,3 +13153,10 @@ button.hs-muc:not(:disabled):hover { border-color: var(--accent-color); }
 /* Bộ vừa được mở từ popup: tô sáng một lúc để mắt tìm thấy ngay. */
 .topic-row.topic-row--focus { outline: 3px solid var(--accent-color); outline-offset: 2px; animation: none; }
 
+/* ===== Dịch đoạn văn: chọn chiều, cụm hiểu sai (chiều ngoại ngữ → Việt) ===== */
+.tr-chieu { margin-bottom: 12px; }
+.tr-hieu-sai ul { list-style: none; padding: 0; margin: 0 0 10px; display: grid; gap: 8px; }
+.tr-hieu-sai li { display: flex; align-items: center; gap: 10px; padding: 8px 12px; border-radius: 10px; border: 1px solid var(--border-color); border-left: 4px solid #f59e0b; background: var(--bg-secondary); }
+.tr-hieu-sai li > div { flex: 1; min-width: 0; }
+.tr-hieu-sai small { display: block; color: var(--text-secondary); margin-top: 2px; font-style: italic; }
+

@@ -30,7 +30,17 @@ export const LOAI_LOI = {
     other: 'Khác',
 };
 
-export const nhanLoai = (k) => LOAI_LOI[k] || LOAI_LOI.other;
+/**
+ * Nhãn lỗi HIỂU của bài dịch ngược (Anh/Trung → Việt). Bảng riêng, không trộn vào `LOAI_LOI`:
+ * bảng kia là phân loại lỗi VIẾT dùng chung với server (Sổ tay lỗi, Ôn lỗi, hồ sơ).
+ */
+export const LOAI_HIEU = {
+    'hieu-sai': 'Hiểu sai nghĩa',
+    'bo-sot': 'Bỏ sót / thêm ý',
+    'dien-dat': 'Diễn đạt chưa tự nhiên',
+};
+
+export const nhanLoai = (k) => LOAI_LOI[k] || LOAI_HIEU[k] || LOAI_LOI.other;
 
 /** Bỏ dấu tiếng Việt? Có ký tự riêng của tiếng Việt → chuỗi là tiếng Việt. */
 const RE_VIET = /[àáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđ]/i;
@@ -43,7 +53,7 @@ export const coTiengViet = (s) => RE_VIET.test(String(s || ''));
  * tiếng Việt (lời giải thích) — ghép vào bài tiếng Anh là ra câu lai, nên với bài
  * không phải tiếng Việt mà cụm sửa có dấu tiếng Việt thì chỉ hiện như lời ghi chú.
  */
-export function chuanHoaLoi(raw, i) {
+export function chuanHoaLoi(raw, i, { baiTiengViet = false } = {}) {
     const sua = String(raw?.fix ?? raw?.better ?? '').trim();
     const loai = raw?.loai ?? raw?.type ?? 'other';
     return {
@@ -51,9 +61,10 @@ export function chuanHoaLoi(raw, i) {
         quote: String(raw?.quote || '').trim(),
         issue: String(raw?.issue || ''),
         sua,
-        loai: LOAI_LOI[loai] ? loai : 'other',
+        loai: LOAI_LOI[loai] || LOAI_HIEU[loai] ? loai : 'other',
         muc: raw?.muc === 'nen' || raw?.level === 'style' ? 'nen' : 'loi',
-        suaDuoc: !!sua && !coTiengViet(sua),
+        // Bài viết bằng tiếng Việt (dịch ngược) thì cụm sửa tiếng Việt chính là chữ thay thế.
+        suaDuoc: !!sua && (baiTiengViet || !coTiengViet(sua)),
     };
 }
 

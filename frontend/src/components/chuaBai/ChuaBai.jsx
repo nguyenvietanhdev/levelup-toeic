@@ -22,8 +22,8 @@ function laDangGo(el) {
     return !!el?.closest?.('input, textarea, select, [contenteditable="true"]');
 }
 
-export default function ChuaBai({ text, loi, tieuDe = 'Chữa bài' }) {
-    const ds = useMemo(() => (Array.isArray(loi) ? loi : []).map(chuanHoaLoi), [loi]);
+export default function ChuaBai({ text, loi, tieuDe = 'Chữa bài', baiTiengViet = false }) {
+    const ds = useMemo(() => (Array.isArray(loi) ? loi : []).map((l, i) => chuanHoaLoi(l, i, { baiTiengViet })), [loi, baiTiengViet]);
     const { doan, khongThay } = useMemo(() => dinhViLoi(text, ds), [text, ds]);
     const [che, setChe] = useState('ban');
     const [xemHet, setXemHet] = useState(false);

@@ -33,7 +33,8 @@ describe('component', () => {
 
 describe.each(Object.entries(MAN))('%s', (ten, src) => {
     test('công tắc chỉ hiện với tiếng Anh, đặt ngay trên nút bắt đầu', () => {
-        expect(src).toMatch(/\{lang !== 'zh' && <NutNhamYeu bat=\{nhamYeu\} onDoi=\{doiNhamYeu\} \/>\}\s*\n\s*\{\/\* Nút bắt đầu nổi/);
+        // Dịch: ẩn cả ở chiều ngược (Anh/Trung → Việt) — người học viết tiếng Việt, không luyện được cấu trúc.
+        expect(src).toMatch(/\{lang !== 'zh' && (!nguoc && )?<NutNhamYeu bat=\{nhamYeu\} onDoi=\{doiNhamYeu\} \/>\}\s*\n\s*\{\/\* Nút bắt đầu nổi/);
     });
 
     test('nhãn "Bài này có cài chỗ luyện" lấy từ phản hồi server', () => {
@@ -43,7 +44,7 @@ describe.each(Object.entries(MAN))('%s', (ten, src) => {
 
 test('Viết / Dịch: nhamYeu nằm trong deps (tắt là lần sau không nhắm)', () => {
     expect(MAN['Viết']).toMatch(/\}, \[loadingPrompt,[^\]]*nhamYeu\]\);/);
-    expect(MAN['Dịch']).toMatch(/\}, \[loadingDe,[^\]]*nhamYeu\]\);/);
+    expect(MAN['Dịch']).toMatch(/\}, \[loadingDe,[^\]]*nhamYeu(, chieu)?\]\);/);
 });
 
 test('Hội thoại: không nhắm với tiếng Trung, nhamYeu trong deps của handleStart', () => {

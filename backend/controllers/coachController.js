@@ -22,7 +22,7 @@ async function loiHayMacNhat(userId, lang = 'en') {
     // Chỉ bài của ngôn ngữ đang học: học tiếng Trung mà được khuyên "hay sai mạo từ" là vô nghĩa.
     const theoLang = lang === 'zh' ? { lang: 'zh' } : { lang: { $ne: 'zh' } };
     const [dich, luan] = await Promise.all([
-        Translation.find({ userId, createdAt: { $gte: tu }, ...theoLang }).select('notes').lean(),
+        Translation.find({ userId, createdAt: { $gte: tu }, chieu: { $ne: 'ngoai-vi' }, ...theoLang }).select('notes').lean(),
         Essay.find({ userId, createdAt: { $gte: tu }, ...theoLang }).select('issues').lean(),
     ]);
     const all = [

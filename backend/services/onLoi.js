@@ -242,7 +242,8 @@ async function dongBo(userId, lang, now = new Date()) {
     const theoLang = lang === 'zh' ? { lang: 'zh' } : { lang: { $ne: 'zh' } };
     const [viet, dich, noi] = await Promise.all([
         Essay.find({ userId, createdAt: { $gte: tu }, ...theoLang }).select('essay issues').lean(),
-        Translation.find({ userId, createdAt: { $gte: tu }, ...theoLang }).select('translation notes').lean(),
+        // Bài dịch ngược (Anh/Trung → Việt) ghi lỗi HIỂU, không có câu ngoại ngữ người học viết sai.
+        Translation.find({ userId, createdAt: { $gte: tu }, chieu: { $ne: 'ngoai-vi' }, ...theoLang }).select('translation notes').lean(),
         Conversation.find({
             userId, status: 'done', updatedAt: { $gte: tu }, ...theoLang, 'feedback.corrections.0': { $exists: true },
         }).select('turns feedback.corrections').lean(),

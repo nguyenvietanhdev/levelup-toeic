@@ -75,7 +75,9 @@ describe('Viết, Dịch: trả kèm nhãn tiêu chí để hiện điểm từn
     test('Viết dùng criteriaFor theo ngôn ngữ và kiểu chấm của bài', () => {
         expect(than(doc('controllers', 'essayController.js'), 'detail')).toMatch(/criteriaFor\(doc\.lang, doc\.rubric\)/);
     });
-    test('Dịch dùng CRITERIA của bộ chấm dịch', () => {
-        expect(than(doc('controllers', 'translationController.js'), 'detail')).toMatch(/translationGrader'\)\.CRITERIA/);
+    test('Dịch dùng tiêu chí của bộ chấm dịch, theo đúng chiều của bài', () => {
+        const c = doc('controllers', 'translationController.js');
+        expect(than(c, 'detail')).toMatch(/criteria: tieuChiCua\(doc\.chieu\)/);
+        expect(c).toMatch(/const \{[^}]*tieuChiCua[^}]*\} =\s*require\('\.\.\/services\/translationGrader'\)/);
     });
 });

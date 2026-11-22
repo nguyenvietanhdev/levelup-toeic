@@ -6,7 +6,7 @@ const { layChiThiRaBai, layChiThiCham, vietLaiGiaiThich, bangChungTuBai, ghiBang
 const { luuDe, xoaNhap } = require('../services/baiNhap');
 const { chonTu } = require('../services/chonTu');
 const { taoXemLai } = require('./xemLaiController');
-const { generatePassage, gradeTranslation, limitsFor, countUnits, mucKho } =
+const { generatePassage, gradeTranslation, gradeTranslationNguoc, chuanChieu, tieuChiCua, limitsFor, countUnits, mucKho } =
     require('../services/translationGrader');
 const { awardXp } = require('../utils/userStateHelper');
 const { isVipActive } = require('../utils/energyCosts');
@@ -73,14 +73,18 @@ exports.passage = async (req, res, next) => {
             lang, soLuong: 6, tiLeYeu: 0.5,
         });
         const level = mucKho(req.body.level);
+        const chieu = chuanChieu(req.body.chieu);
+        const nguoc = chieu === 'ngoai-vi';
 
         // Lỗi ngữ pháp lặp lại trong hồ sơ: cài câu cần đúng cấu trúc đó (tắt bằng `nhamYeu: false`).
-        const nham = req.body.nhamYeu === false ? [] : await layNham(req.user.id, lang);
+        // Chỉ chiều Việt → ngoại ngữ: chiều ngược người học viết tiếng Việt, không luyện được cấu trúc.
+        const tatNham = nguoc || req.body.nhamYeu === false;
+        const nham = tatNham ? [] : await layNham(req.user.id, lang);
         const ai = await generatePassage({
-            tuVung: words, userId: req.user.id, lang, level,
+            tuVung: words, userId: req.user.id, lang, level, chieu,
             dang: req.body.dang, tuChon: req.body.tuChon,
             nham: nham.map((n) => n.key),
-            chiThi: req.body.nhamYeu === false ? '' : await layChiThiRaBai(req.user.id, lang),
+            chiThi: tatNham ? '' : await layChiThiRaBai(req.user.id, lang),
         });
         if (!ai.success) {
             logger.error('Translation passage: AI failed', ai.error);
@@ -90,8 +94,9 @@ exports.passage = async (req, res, next) => {
             });
         }
 
-        const { min } = limitsFor(lang);
+        const { min } = limitsFor(lang, chieu);
         const data = {
+            chieu,
             passage: ai.passage,
             topic: ai.topic,
             words: ai.words,
@@ -132,12 +137,15 @@ exports.grade = async (req, res, next) => {
         const settingsOnly = await UserProfile.findOne({ userId: req.user.id })
             .select('settings').lean();
         const lang = settingsOnly?.settings?.vocabLang === 'zh' ? 'zh' : 'en';
+        const chieu = chuanChieu(req.body.chieu);
+        const nguoc = chieu === 'ngoai-vi';
 
         // Tiếng Trung đếm CHỮ HÁN: không có khoảng trắng giữa các từ nên đếm
         // theo từ thì cả bài ra đúng 1 và người học không bao giờ nộp được.
-        const { min } = limitsFor(lang);
-        const unit = lang === 'zh' ? 'chữ' : 'từ';
-        const unitCount = countUnits(translation, lang);
+        // Chiều ngược bản dịch là tiếng Việt: đếm theo từ.
+        const { min } = limitsFor(lang, chieu);
+        const unit = !nguoc && lang === 'zh' ? 'chữ' : 'từ';
+        const unitCount = countUnits(translation, nguoc ? 'vi' : lang);
 
         if (unitCount < min) {
             // Chặn TRƯỚC khi trừ năng lượng và gọi AI: bản dịch mấy chữ thì
@@ -165,7 +173,7 @@ exports.grade = async (req, res, next) => {
             });
         }
 
-        const ai = await gradeTranslation({ passage, translation, userId: req.user.id, lang });
+        const ai = await (nguoc ? gradeTranslationNguoc : gradeTranslation)({ passage, translation, userId: req.user.id, lang });
         if (!ai.success) {
             // HOÀN năng lượng: dịch xong cả đoạn mà không được chấm, lại còn
             // mất năng lượng, là lỗi tệ nhất có thể xảy ra ở đây.
@@ -197,8 +205,8 @@ exports.grade = async (req, res, next) => {
         const lvl = awardXp(profile, stats, xp);
         stats.coins += coins;
 
-        // Điểm đã chốt. Hồ sơ chỉ đổi cách giải thích, sau khi chấm.
-        ai.notes = await vietLaiGiaiThich(ai.notes, await layChiThiCham(req.user.id, lang), req.user.id);
+        // Điểm đã chốt. Hồ sơ chỉ đổi cách giải thích, sau khi chấm (hồ sơ là lỗi viết: bỏ qua chiều ngược).
+        if (!nguoc) ai.notes = await vietLaiGiaiThich(ai.notes, await layChiThiCham(req.user.id, lang), req.user.id);
 
         const doc = await Translation.create({
             userId: req.user.id,
@@ -211,6 +219,8 @@ exports.grade = async (req, res, next) => {
             translation,
             unitCount,
             lang,
+            chieu,
+            hieuSai: ai.hieuSai || [],
             scores: ai.scores,
             overall: ai.overall,
             reference: ai.reference,
@@ -222,14 +232,17 @@ exports.grade = async (req, res, next) => {
         await Promise.all([profile.save(), stats.save()]);
         // Đã nộp chấm → bài nháp hết việc.
         await xoaNhap(req.user.id, 'dich', lang);
-        // Bài đã chấm góp một bằng chứng vào hồ sơ.
-        await ghiBangChung(req.user.id, lang, bangChungTuBai({ loi: ai.notes, diemNguPhap: ai.scores?.grammar, lang }));
+        // Bài đã chấm góp một bằng chứng vào hồ sơ (lỗi viết). Chiều ngược đo đọc hiểu: tính vào
+        // chuỗi Đọc của màn Tiến bộ (services/tienBo.js), không vào hồ sơ ngữ pháp.
+        if (!nguoc) await ghiBangChung(req.user.id, lang, bangChungTuBai({ loi: ai.notes, diemNguPhap: ai.scores?.grammar, lang }));
 
         res.json({
             success: true,
             data: {
                 id: doc._id,
+                chieu,
                 unitCount,
+                hieuSai: ai.hieuSai || [],
                 scores: ai.scores,
                 overall: ai.overall,
                 reference: ai.reference,
@@ -258,7 +271,7 @@ exports.history = async (req, res, next) => {
             .limit(limit)
             // KHÔNG trả `translation`/`reference`/`notes`: danh sách chỉ cần
             // điểm và đoạn đề. Trả cả bài là mỗi lần mở màn tải về hàng chục KB.
-            .select('passage topic overall scores unitCount level createdAt')
+            .select('passage topic overall scores unitCount level chieu createdAt')
             .lean();
         res.json({ success: true, data: rows });
     } catch (error) {
@@ -289,7 +302,8 @@ exports.mistakes = async (req, res, next) => {
         const tu = new Date(Date.now() - days * 86400000);
 
         const [dich, luan] = await Promise.all([
-            Translation.find({ userId, createdAt: { $gte: tu } })
+            // Bài dịch ngược ghi lỗi HIỂU, không phải lỗi viết: không tính vào thống kê lỗi.
+            Translation.find({ userId, createdAt: { $gte: tu }, chieu: { $ne: 'ngoai-vi' } })
                 .select('notes createdAt').lean(),
             Essay.find({ userId, createdAt: { $gte: tu } })
                 .select('issues createdAt').lean(),
@@ -346,7 +360,7 @@ exports.detail = async (req, res, next) => {
         if (!doc) {
             return res.status(404).json({ success: false, message: 'Không tìm thấy bài này' });
         }
-        res.json({ success: true, data: { ...doc, criteria: require('../services/translationGrader').CRITERIA } });
+        res.json({ success: true, data: { ...doc, criteria: tieuChiCua(doc.chieu) } });
     } catch (error) {
         next(error);
     }

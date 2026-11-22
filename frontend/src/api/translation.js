@@ -41,14 +41,15 @@ export const TranslationAPI = {
      * gửi `w.en` — kho tiếng Trung để trống trường đó nên đoạn dịch tiếng Trung
      * không bám bộ từ nào. Ngôn ngữ đích cũng không gửi — server đọc từ hồ sơ.
      */
-    async passage({ level = 'medium', dang = '', tuChon = '', nhamYeu = true } = {}) {
-        return unwrap(await Http.post('/translation/passage', { level, dang, tuChon, nhamYeu: nhamYeu !== false }));
+    /** `chieu`: 'vi-ngoai' (Việt → Anh/Trung) | 'ngoai-vi' (Anh/Trung → Việt, luyện đọc hiểu). */
+    async passage({ level = 'medium', dang = '', tuChon = '', nhamYeu = true, chieu = 'vi-ngoai' } = {}) {
+        return unwrap(await Http.post('/translation/passage', { level, dang, tuChon, nhamYeu: nhamYeu !== false, chieu }));
     },
 
     /** Nộp bản dịch và chấm. */
-    async grade({ passage, translation, topic = '', words = [], level = 'medium' }) {
+    async grade({ passage, translation, topic = '', words = [], level = 'medium', chieu = 'vi-ngoai' }) {
         return unwrap(await Http.post('/translation/grade', {
-            passage, translation, topic, words, level,
+            passage, translation, topic, words, level, chieu,
         }));
     },
 

@@ -61,7 +61,7 @@ const CHE_DO = {
         dong: (r) => ({
             id: r._id,
             tieuDe: r.topic || String(r.passage || '').slice(0, 80) || 'Bài dịch',
-            phu: [MUC[r.level], r.unitCount ? `${r.unitCount} từ` : ''].filter(Boolean).join(' · '),
+            phu: [r.chieu === 'ngoai-vi' ? 'Ngoại ngữ → Việt' : '', MUC[r.level], r.unitCount ? `${r.unitCount} từ` : ''].filter(Boolean).join(' · '),
             diem: r.overall != null ? `${r.overall}/9` : null,
         }),
         ChiTiet: ({ bai }) => <ChiTietDich bai={bai} />,
@@ -296,8 +296,16 @@ function ChiTietDich({ bai }) {
             </div>
             <DiemTieuChi criteria={bai.criteria} scores={bai.scores} />
             {bai.summary && <p className="tr-summary">{bai.summary}</p>}
-            <ChuaBai text={bai.translation} loi={bai.notes} tieuDe="Chữa bản dịch" />
-            <XemLaiBai goc={bai.translation} loi={bai.notes} daXem={bai.xemLai} gui={(t) => TranslationAPI.xemLai(bai._id, t)} />
+            <ChuaBai text={bai.translation} loi={bai.notes} tieuDe={bai.chieu === 'ngoai-vi' ? 'Chỗ hiểu chưa đúng' : 'Chữa bản dịch'} baiTiengViet={bai.chieu === 'ngoai-vi'} />
+            {bai.chieu !== 'ngoai-vi' && (
+                <XemLaiBai goc={bai.translation} loi={bai.notes} daXem={bai.xemLai} gui={(t) => TranslationAPI.xemLai(bai._id, t)} />
+            )}
+            {bai.chieu === 'ngoai-vi' && bai.hieuSai?.length > 0 && (
+                <div className="essay-section tr-hieu-sai">
+                    <h4><i className="fas fa-triangle-exclamation"></i> Cụm đã hiểu sai</h4>
+                    <ul>{bai.hieuSai.map((x) => <li key={x.cum}><div><strong>{x.cum}</strong> — {x.nghia}{x.cau && <small>{x.cau}</small>}</div></li>)}</ul>
+                </div>
+            )}
             {bai.reference && (
                 <div className="essay-section">
                     <h4><i className="fas fa-book"></i> Bản dịch tham khảo</h4>
