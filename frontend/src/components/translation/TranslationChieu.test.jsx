@@ -18,7 +18,14 @@ vi.mock('@game/energy.js', () => ({ Energy: { showRefillModal: vi.fn() } }));
 vi.mock('@game/gameLogic.js', () => ({ GameLogic: { speakWord: vi.fn(), stopSpeaking: vi.fn() } }));
 vi.mock('@ui/Toaster.jsx', () => ({ Notification: { error: vi.fn(), warning: vi.fn(), success: vi.fn() } }));
 vi.mock('./MistakeLog.jsx', () => ({ default: () => null }));
-vi.mock('../history/LichSuMode.jsx', () => ({ default: () => null }));
+vi.mock('../history/LichSuMode.jsx', () => ({
+    // Giả lập một bài trong Lịch sử: bấm "Đổi chiều" là gọi đúng hàm màn Dịch truyền xuống.
+    default: ({ luyenLai }) => (
+        <button type="button" onClick={() => luyenLai.chon({ chieu: 'ngoai-vi', passage: 'We ran out of milk this morning. My brother had to go to the shop.', topic: 'Hết sữa', lang: 'en', level: 'easy', words: [], minUnits: 15, luyenLai: 'doi-chieu' })}>
+            Đổi chiều bài cũ
+        </button>
+    ),
+}));
 vi.mock('../ai/ChonDangBai.jsx', () => ({ default: () => null, useGoiYDang: () => null, dangGui: () => ({}) }));
 vi.mock('../ai/KieuChamDoKho.jsx', () => ({ default: ({ kieuList }) => <div>Kiểu chấm: {kieuList[0].label}</div> }));
 vi.mock('../ai/NutBatDau.jsx', () => ({ default: ({ onClick, children }) => <button type="button" onClick={onClick}>{children}</button> }));
@@ -100,5 +107,20 @@ describe('làm bài chiều Anh → Việt', () => {
             en: 'ran out of', vn: 'hết, dùng hết', lang: 'en', source: 'dich-nguoc-en', part: 'Hết sữa', example: 'We ran out of milk this morning.',
         }));
         expect(await screen.findByRole('button', { name: /Đã lưu/ })).toBeTruthy();
+    });
+});
+
+describe('luyện lại từ Lịch sử', () => {
+    test('đổi chiều một bài cũ: về tab Làm bài với đề có sẵn (không xin đề mới), chấm theo chiều mới', async () => {
+        render(<TranslationScreen active />);
+        fireEvent.click(screen.getByRole('button', { name: 'Lịch sử' }));
+        fireEvent.click(screen.getByRole('button', { name: 'Đổi chiều bài cũ' }));
+        expect(await screen.findByText(DOAN)).toBeTruthy();
+        expect(screen.getByText(/Đổi chiều ·/)).toBeTruthy();
+        expect(api.passage).not.toHaveBeenCalled();
+        fireEvent.change(screen.getByRole('textbox', { name: 'Bản dịch của bạn' }), { target: { value: BAN_DICH } });
+        fireEvent.click(screen.getByRole('button', { name: /Chấm bản dịch/ }));
+        await screen.findByText('Hiểu đúng nghĩa');
+        expect(api.grade).toHaveBeenCalledWith(expect.objectContaining({ chieu: 'ngoai-vi', passage: DOAN, level: 'easy' }));
     });
 });

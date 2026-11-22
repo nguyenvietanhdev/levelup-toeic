@@ -267,6 +267,17 @@ export default function TranslationScreen({ active }) {
         }
     };
 
+    /** Từ Lịch sử: luyện lại / đổi chiều một bài đã làm (đề có sẵn, không gọi AI sinh đề). */
+    const luyenLaiTu = useCallback((d) => {
+        if (!d?.passage) return;
+        setDe(d);
+        setBanDich('');
+        setResult(null);
+        setDaLuu({});
+        setTab('lam');
+        window.scrollTo?.({ top: 0, behavior: 'smooth' });
+    }, []);
+
     const ngheDoan = () => {
         try { GameLogic.stopSpeaking?.(); GameLogic.speakWord(de.passage, lang === 'zh' ? 'zh-CN' : 'en-US'); } catch { /* không đọc được thì thôi */ }
     };
@@ -323,7 +334,7 @@ export default function TranslationScreen({ active }) {
                 </div>
             </div>
 
-            {tab === 'loi' ? <MistakeLog /> : tab === 'lichsu' ? <LichSuMode mode="dich" /> : (
+            {tab === 'loi' ? <MistakeLog /> : tab === 'lichsu' ? <LichSuMode mode="dich" luyenLai={{ lang: langLocal, chon: luyenLaiTu }} /> : (
             <>
             {!de ? (
                 <div className="essay-intro essay-intro--wide">
@@ -402,6 +413,7 @@ export default function TranslationScreen({ active }) {
                     <div className="essay-prompt">
                         <div className="essay-prompt-head">
                             <span>
+                                {de.luyenLai === 'doi-chieu' ? 'Đổi chiều · ' : de.luyenLai === 'lai' ? 'Luyện lại · ' : ''}
                                 {nguoc ? `Dịch sang tiếng Việt · ${tenNgan} → Việt` : 'Đoạn văn cần dịch'}
                                 {de.dangVi || de.topic ? ` · ${de.dangVi || de.topic}` : ''}<NhanNham ds={de.nhamLoi} />
                             </span>

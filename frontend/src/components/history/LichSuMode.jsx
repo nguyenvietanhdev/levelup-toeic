@@ -6,6 +6,7 @@ import { ConversationAPI } from '@api/conversation.js';
 import { EssayAPI } from '@api/essay.js';
 import { TranslationAPI } from '@api/translation.js';
 import { ReadingAPI } from '@api/reading.js';
+import { deLuyenLai, nhanChieu, doiChieu } from '../translation/luyenLai.js';
 import { ListeningAPI } from '@api/listening.js';
 
 /**
@@ -64,7 +65,7 @@ const CHE_DO = {
             phu: [r.chieu === 'ngoai-vi' ? 'Ngoại ngữ → Việt' : '', MUC[r.level], r.unitCount ? `${r.unitCount} từ` : ''].filter(Boolean).join(' · '),
             diem: r.overall != null ? `${r.overall}/9` : null,
         }),
-        ChiTiet: ({ bai }) => <ChiTietDich bai={bai} />,
+        ChiTiet: ({ bai, luyenLai }) => <ChiTietDich bai={bai} luyenLai={luyenLai} />,
     },
     doc: {
         tai: () => ReadingAPI.history(),
@@ -90,7 +91,10 @@ const CHE_DO = {
     },
 };
 
-export default function LichSuMode({ mode }) {
+/**
+ * `luyenLai` (tuỳ chọn, chỉ màn Dịch): `{ lang, chon(de) }` — luyện lại / đổi chiều một bài đã làm.
+ */
+export default function LichSuMode({ mode, luyenLai = null }) {
     const cd = CHE_DO[mode];
     const [rows, setRows] = useState(null);       // null = đang tải
     const [chiTiet, setChiTiet] = useState(null); // bài đang xem lại
@@ -131,7 +135,7 @@ export default function LichSuMode({ mode }) {
                 <button className="btn btn-secondary" onClick={() => setChiTiet(null)} style={{ margin: '8px 0' }}>
                     <i className="fas fa-arrow-left"></i> Quay lại danh sách
                 </button>
-                <ChiTiet bai={chiTiet} />
+                <ChiTiet bai={chiTiet} luyenLai={luyenLai} />
             </>
         );
     }
@@ -276,12 +280,45 @@ function ChiTietViet({ bai }) {
 }
 
 /** Xem lại một bài dịch: đoạn gốc, bản dịch, điểm, lỗi, bản dịch tham khảo. */
-function ChiTietDich({ bai }) {
+/**
+ * Nút luyện lại một bài dịch: cùng chiều (đoạn gốc) hoặc đổi chiều (bản tham khảo làm đề).
+ * Server chấm theo ngôn ngữ đang học, nên bài khác ngôn ngữ thì nhắc đổi ngôn ngữ trước.
+ */
+function NutLuyenLai({ bai, luyenLai }) {
+    if (!luyenLai?.chon) return null;
+    const lang = bai.lang === 'zh' ? 'zh' : 'en';
+    if (luyenLai.lang && luyenLai.lang !== lang) {
+        return (
+            <p className="tr-intro-note">
+                <i className="fas fa-circle-info"></i> Bài này là {lang === 'zh' ? 'tiếng Trung' : 'tiếng Anh'}: đổi ngôn ngữ học sang{' '}
+                {lang === 'zh' ? 'tiếng Trung' : 'tiếng Anh'} để luyện lại.
+            </p>
+        );
+    }
+    const chieu = bai.chieu === 'ngoai-vi' ? 'ngoai-vi' : 'vi-ngoai';
+    const deLai = deLuyenLai(bai, false);
+    const deDoi = deLuyenLai(bai, true);
+    return (
+        <div className="px-nut tr-luyen-lai">
+            <button type="button" className="btn btn-primary" disabled={!deLai} onClick={() => luyenLai.chon(deLai)}>
+                <i className="fas fa-rotate-right"></i> Luyện lại bài này ({nhanChieu(chieu, lang)})
+            </button>
+            <button type="button" className="btn btn-secondary" disabled={!deDoi} onClick={() => luyenLai.chon(deDoi)}
+                title={deDoi ? 'Dùng bản dịch tham khảo làm đề, dịch theo chiều ngược lại' : 'Bài này không có bản dịch tham khảo'}>
+                <i className="fas fa-right-left"></i> Đổi chiều: {nhanChieu(doiChieu(chieu), lang)}
+            </button>
+        </div>
+    );
+}
+
+function ChiTietDich({ bai, luyenLai }) {
     return (
         <div className="ai-history-detail ai-history-doc">
             <p className="tr-intro-note">
                 {KHUNG_NGAY(bai.createdAt)}{bai.level ? ` · ${MUC[bai.level] || bai.level}` : ''}
+                {` · ${nhanChieu(bai.chieu, bai.lang)}`}
             </p>
+            <NutLuyenLai bai={bai} luyenLai={luyenLai} />
             <div className="essay-section">
                 <h4><i className="fas fa-file-lines"></i> Đoạn văn cần dịch</h4>
                 <p className="ai-history-text">{bai.passage}</p>
