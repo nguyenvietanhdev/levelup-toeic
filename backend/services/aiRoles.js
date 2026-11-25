@@ -21,6 +21,7 @@ const UserUpload = require('../models/UserUpload');
 const { textCompletion } = require('./aiClient');
 const logger = require('../utils/logger');
 
+const { khoTuVung, truongDauMuc } = require('./khoTuVung');
 const DO_DAI_TOI_THIEU = 10;
 const DO_DAI_TOI_DA = 400;
 const TIEU_DE_TOI_THIEU = 2;
@@ -103,7 +104,7 @@ function chuanHoaKhoa({ source, part, lang }) {
  * người dùng. Dùng để quyết định có dọn vai hay không.
  */
 async function partConTonTai({ source, part, lang, email }) {
-    const Shared = lang === 'zh' ? VocabularyZh : Vocabulary;
+    const Shared = khoTuVung(lang);
     const [shared, mine] = await Promise.all([
         Shared.exists({ source, part }),
         email ? UserUpload.exists({ source, part, lang, ownerEmail: email }) : null,
@@ -146,9 +147,9 @@ async function deXuatVaiAI({ userId, email, source, part, lang }) {
         throw loiNhap('Part này không còn trong kho.');
     }
 
-    const SharedModel = khoa.lang === 'zh' ? VocabularyZh : Vocabulary;
+    const SharedModel = khoTuVung(khoa.lang);
     const mau = await SharedModel.find({ source: khoa.source, part: khoa.part })
-        .select(khoa.lang === 'zh' ? 'zh' : 'en')
+        .select(truongDauMuc(khoa.lang))
         .limit(8)
         .lean();
     const tu = mau.map((w) => (khoa.lang === 'zh' ? w.zh : w.en)).filter(Boolean);

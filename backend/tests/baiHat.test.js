@@ -163,6 +163,20 @@ describe('tìm và thêm bài', () => {
         expect((await S.themBai('u1', { youtube: 'QDYfEBY9NM4', lrclibId: 3 })).bai.lang).toBe('zh');
     });
 
+    test('lời tiếng Nhật / Hàn (ngôn ngữ chưa mở): báo chưa hỗ trợ, không gán nhầm sang tiếng Trung', async () => {
+        // Kanji nằm cùng dải chữ Hán: trước đây lời tiếng Nhật bị nhận là tiếng Trung, pinyin sai.
+        const nhat = await S.themBai('u1', { youtube: 'QDYfEBY9NM4', tieuDe: 'x', loiDan: '君の名前を教えて
+夜空に星が光る' });
+        expect(nhat).toMatchObject({ ma: 400 });
+        expect(nhat.loi).toMatch(/tiếng nhật/);
+        const han = await S.themBai('u1', { youtube: 'QDYfEBY9NM4', tieuDe: 'x', loiDan: '사랑해요
+보고 싶어' });
+        expect(han.loi).toMatch(/tiếng hàn/);
+        expect(BaiHat.create).not.toHaveBeenCalled();
+        // Tiếng Trung vẫn nhận như cũ.
+        expect((await S.themBai('u1', { youtube: 'QDYfEBY9NM4', tieuDe: 'x', loiDan: '月亮代表我的心' })).bai.lang).toBe('zh');
+    });
+
     test('tự dán lời: chưa có mốc; link sai và lời rỗng bị từ chối', async () => {
         const r = await S.themBai('u1', { youtube: 'QDYfEBY9NM4', tieuDe: 'Bài của tôi', loiDan: 'Dòng một\nDòng hai' });
         expect(r.bai).toMatchObject({ coMoc: false, nguonLoi: 'tu-dan', soDong: 2 });

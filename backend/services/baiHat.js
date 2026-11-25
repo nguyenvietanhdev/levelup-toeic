@@ -11,6 +11,7 @@
 const BaiHat = require('../models/BaiHat');
 const logger = require('../utils/logger');
 
+const { nhanDienChuViet, NGON_NGU_HOAT_DONG, layNgonNgu } = require('../config/ngonNgu');
 const LRCLIB = 'https://lrclib.net/api';
 const TOI_DA_BAI = 100;
 const TOI_DA_DONG = 300;
@@ -101,7 +102,11 @@ function tachLoiThuong(text) {
         .slice(0, TOI_DA_DONG).map((t) => ({ batDau: null, ketThuc: null, text: t }));
 }
 
-const doanLang = (cau) => (cau.some((c) => RE_HAN.test(c.text)) ? 'zh' : 'en');
+/**
+ * Ngôn ngữ của lời bài hát theo chữ viết (sổ ngôn ngữ): Kana → Nhật, Hangul → Hàn, chữ Hán → Trung,
+ * còn lại → Anh. Kana kiểm trước Hán: lời tiếng Nhật có Kanji không bị nhận là tiếng Trung.
+ */
+const doanLang = (cau) => nhanDienChuViet(cau.map((c) => c.text).join('\n')) || 'en';
 
 async function goiLrclib(duongDan) {
     const r = await fetch(`${LRCLIB}${duongDan}`, {
@@ -171,11 +176,14 @@ async function themBai(userId, body = {}) {
         cau = tachLoiThuong(body.loiDan);
     }
     if (!cau.length) return { loi: 'Chưa có lời bài hát.', ma: 400 };
+    // Ngôn ngữ chưa mở (vd lời tiếng Nhật/Hàn): báo rõ, không gán nhầm sang tiếng Trung (pinyin sai).
+    const lang = doanLang(cau);
+    if (!NGON_NGU_HOAT_DONG.includes(lang)) return { loi: `Lời bài hát này là ${layNgonNgu(lang).tenViet.toLowerCase()} — ngôn ngữ này chưa được hỗ trợ.`, ma: 400 };
     if (!tieuDe) return { loi: 'Nhập tên bài hát.', ma: 400 };
 
     const d = await BaiHat.create({
         userId, youtubeId, tieuDe, ngheSi, thoiLuong, ...nguon,
-        lang: doanLang(cau), coMoc: cau.every((c) => c.batDau != null), cau,
+        lang, coMoc: cau.every((c) => c.batDau != null), cau,
     });
     return { bai: congKhai(d, true) };
 }

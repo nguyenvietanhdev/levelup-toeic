@@ -17,6 +17,7 @@ const { chuanHoaKhoa } = require('./aiRoles');
 const { phang } = require('./dangBai');
 const logger = require('../utils/logger');
 
+const { khoTuVung, truongDauMuc } = require('./khoTuVung');
 /** Kho dạng bài của từng chế độ — nạp lười để tránh vòng require. */
 const KHO = {
     reading: () => require('./readingGrader').NHOM_DANG,
@@ -52,9 +53,8 @@ function tachKhoa(raw, nhom) {
 
 /** Từ mẫu của Part: kho chung trước, rồi bộ từ riêng của người dùng. */
 async function layTuMau({ source, part, lang, email }) {
-    const zh = lang === 'zh';
-    const Shared = zh ? VocabularyZh : Vocabulary;
-    const truong = zh ? 'zh' : 'en';
+    const Shared = khoTuVung(lang);
+    const truong = truongDauMuc(lang);
     const [shared, mine] = await Promise.all([
         Shared.find({ source, part }).select(truong).limit(SO_TU_MAU).lean(),
         email ? UserUpload.find({ source, part, ownerEmail: email }).select('en').limit(SO_TU_MAU).lean() : [],

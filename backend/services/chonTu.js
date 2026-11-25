@@ -16,6 +16,7 @@ const VocabularyZh = require('../models/VocabularyZh');
 const UserUpload = require('../models/UserUpload');
 const WrongWord = require('../models/WrongWord');
 
+const { khoTuVung } = require('./khoTuVung');
 /**
  * Mặt từ dùng để so khớp và đưa vào prompt.
  *
@@ -37,7 +38,7 @@ async function fetchWords({ email, source, part, lang }) {
     const filter = { source };
     if (part) filter.part = part;
 
-    const SharedModel = lang === 'zh' ? VocabularyZh : Vocabulary;
+    const SharedModel = khoTuVung(lang);
     const [shared, mine] = await Promise.all([
         // `zh` phải nằm trong `select`: kho tiếng Trung lưu chữ Hán ở `zh`.
         SharedModel.find(filter).select('en zh vn level').lean(),

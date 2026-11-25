@@ -9,6 +9,7 @@ const VocabularyZh = require('../models/VocabularyZh');
 const VocabularyBi = require('../models/VocabularyBi');
 const { doiHinh } = require('../services/vocabBiMapper');
 
+const { khoTuVung } = require('../services/khoTuVung');
 const escapeRegex = (str) => str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 /**
@@ -30,9 +31,8 @@ const MAX_BULK_IMPORT = 2000;
  * client cũ không gửi `lang` bao giờ.
  */
 function getVocabModel(req) {
-    if (req.query.lang === 'zh') return VocabularyZh;
-    if (req.query.lang === 'bi') return VocabularyBi;
-    return Vocabulary;
+    // Tên kho lấy từ sổ ngôn ngữ (services/khoTuVung.js).
+    return khoTuVung(req.query.lang, { coBi: true });
 }
 
 function isZhRequest(req) {

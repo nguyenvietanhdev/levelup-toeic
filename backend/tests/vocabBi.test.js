@@ -203,15 +203,22 @@ describe('admin: tab thứ ba `lang=bi`', () => {
     }
 
     test('`lang=bi` chọn đúng kho song ngữ', () => {
+        // Chọn kho qua sổ ngôn ngữ (services/khoTuVung.js), có nhận 'bi'.
         const t = than(ctrl, 'function getVocabModel');
-        expect(t).toMatch(/lang === 'bi'/);
-        expect(t).toMatch(/return VocabularyBi/);
+        expect(t).toMatch(/return khoTuVung\(req\.query\.lang, \{ coBi: true \}\);/);
+        const { khoTuVung } = require('../services/khoTuVung');
+        expect(khoTuVung('bi', { coBi: true })).toBe(require('../models/VocabularyBi'));
+        expect(khoTuVung('zh', { coBi: true })).toBe(require('../models/VocabularyZh'));
     });
 
     test('giá trị lạ vẫn rơi về tiếng Anh, không vỡ', () => {
         // Client cũ không gửi `lang` bao giờ.
-        const t = than(ctrl, 'function getVocabModel');
-        expect(t).toMatch(/return Vocabulary;/);
+        const { khoTuVung } = require('../services/khoTuVung');
+        const Vocabulary = require('../models/Vocabulary');
+        expect(khoTuVung(undefined, { coBi: true })).toBe(Vocabulary);
+        expect(khoTuVung('xx', { coBi: true })).toBe(Vocabulary);
+        // Không bật coBi thì 'bi' cũng về kho tiếng Anh như các chỗ cũ chỉ phân biệt Anh/Trung.
+        expect(khoTuVung('bi')).toBe(Vocabulary);
     });
 
     test('khoá chính của kho song ngữ là `zh`', () => {
@@ -397,8 +404,8 @@ describe('bộ đề: chọn đúng bảng cho kho song ngữ', () => {
         // dùng tưởng bộ đề hỏng.
         const i = topicCtrl.indexOf('function getVocabularyModelByLang');
         const t = topicCtrl.slice(i, topicCtrl.indexOf('\n}', i));
-        expect(t).toMatch(/lang === "bi"/);
-        expect(t).toMatch(/VocabularyBi/);
+        // Qua sổ ngôn ngữ, có nhận kho song ngữ.
+        expect(t).toMatch(/return khoTuVung\(lang, \{ coBi: true \}\);/);
     });
 
     test('bộ lọc ngôn ngữ có lựa chọn thứ ba', () => {

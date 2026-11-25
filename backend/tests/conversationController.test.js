@@ -195,7 +195,7 @@ describe('lấy từ vựng', () => {
     });
 
     test('chọn đúng model theo ngôn ngữ', () => {
-        expect(svc).toMatch(/lang === 'zh' \? VocabularyZh : Vocabulary/);
+        expect(svc).toMatch(/const SharedModel = khoTuVung\(lang\);/); // kho theo sổ ngôn ngữ
     });
 
     test('ưu tiên từ ĐÃ SAI', () => {

@@ -4,6 +4,7 @@ const VocabularyZh = require("../models/VocabularyZh");
 const VocabularyBi = require("../models/VocabularyBi");
 const { groupLevelRows, sumStatsFor } = require("../utils/levelStats");
 
+const { khoTuVung } = require('../services/khoTuVung');
 // Parse sourceKeys từ string hoặc array, lowercase + dedupe
 function parseSourceKeys(raw) {
   if (!raw) return [];
@@ -15,9 +16,8 @@ function parseSourceKeys(raw) {
 function getVocabularyModelByLang(lang = "en") {
   // Ba kho tách biệt. Đếm nhầm bảng thì đề song ngữ báo "0 từ" dù có dữ liệu,
   // và người dùng tưởng bộ đề hỏng.
-  if (lang === "zh") return VocabularyZh;
-  if (lang === "bi") return VocabularyBi;
-  return Vocabulary;
+  // Tên kho lấy từ sổ ngôn ngữ (services/khoTuVung.js).
+  return khoTuVung(lang, { coBi: true });
 }
 
 async function countWords(sourceKeys, lang = "en") {

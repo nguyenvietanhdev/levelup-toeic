@@ -15,6 +15,7 @@ const { levelSumStage, LEVEL_STATS_PROJECT } = require('../utils/levelStats');
 const { normalizeWordType } = require('../utils/wordType');
 const activityLogger = require('../utils/activityLogger');
 
+const { chuanMa } = require('../config/ngonNgu');
 // Private uploads: user picks retention at upload time.
 const ALLOWED_RETENTION_DAYS = [3, 7, 14, 30];
 const DEFAULT_RETENTION_DAYS = 30;
@@ -53,7 +54,7 @@ const resolveLang = (lang, word) => {
     // lẫn vào danh sách của kho tiếng Trung.
     if (lang === 'bi') return 'bi';
     if (hasHan(word)) return 'zh';
-    return lang === 'zh' ? 'zh' : 'en';
+    return chuanMa(lang); // sổ ngôn ngữ: mã chưa mở / lạ → mặc định, như trước
 };
 const upper = (s) => (s == null ? '' : String(s).trim().toUpperCase());
 const capFirst = (s) => {
