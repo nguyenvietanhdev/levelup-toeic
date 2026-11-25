@@ -165,12 +165,10 @@ describe('tìm và thêm bài', () => {
 
     test('lời tiếng Nhật / Hàn (ngôn ngữ chưa mở): báo chưa hỗ trợ, không gán nhầm sang tiếng Trung', async () => {
         // Kanji nằm cùng dải chữ Hán: trước đây lời tiếng Nhật bị nhận là tiếng Trung, pinyin sai.
-        const nhat = await S.themBai('u1', { youtube: 'QDYfEBY9NM4', tieuDe: 'x', loiDan: '君の名前を教えて
-夜空に星が光る' });
+        const nhat = await S.themBai('u1', { youtube: 'QDYfEBY9NM4', tieuDe: 'x', loiDan: '君の名前を教えて\n夜空に星が光る' });
         expect(nhat).toMatchObject({ ma: 400 });
         expect(nhat.loi).toMatch(/tiếng nhật/);
-        const han = await S.themBai('u1', { youtube: 'QDYfEBY9NM4', tieuDe: 'x', loiDan: '사랑해요
-보고 싶어' });
+        const han = await S.themBai('u1', { youtube: 'QDYfEBY9NM4', tieuDe: 'x', loiDan: '사랑해요\n보고 싶어' });
         expect(han.loi).toMatch(/tiếng hàn/);
         expect(BaiHat.create).not.toHaveBeenCalled();
         // Tiếng Trung vẫn nhận như cũ.
