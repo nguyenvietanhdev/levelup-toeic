@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const { MA_NGON_NGU } = require('../config/ngonNgu');
 
 /**
  * Một lượt Nghe với AI (TTS). Đoạn gốc được lưu ở server và KHÔNG trả về client
@@ -11,7 +12,7 @@ const listeningSessionSchema = new mongoose.Schema(
         part: { type: String, default: '', trim: true },
         level: { type: String, enum: ['easy', 'medium', 'hard'], default: 'medium' },
         // Ngôn ngữ đoạn nghe: quyết định giọng đọc và cách chấm (zh chấm theo chữ Hán).
-        lang: { type: String, enum: ['en', 'zh'], default: 'en' },
+        lang: { type: String, enum: MA_NGON_NGU, default: 'en' },
         // Giọng đọc của lượt này (Edge TTS), chọn lúc mở để nghe lại vẫn đúng giọng đó.
         // Phiên cũ không có → giọng mặc định theo ngôn ngữ.
         giong: { type: String, default: '', maxlength: 40 },

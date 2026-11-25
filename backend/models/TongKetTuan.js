@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const { MA_NGON_NGU } = require('../config/ngonNgu');
 
 /**
  * Bản TỔNG KẾT TUẦN do AI viết từ hồ sơ "Tiến bộ của tôi" (tầng 3).
@@ -13,7 +14,7 @@ const tongKetTuanSchema = new mongoose.Schema(
     {
         userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
         tuan: { type: String, required: true, match: /^\d{4}-\d{2}-\d{2}$/ },
-        lang: { type: String, enum: ['en', 'zh'], default: 'en' },
+        lang: { type: String, enum: MA_NGON_NGU, default: 'en' },
         tomTat: { type: String, default: '', maxlength: 600 },
         tienBo: { type: [String], default: [] },
         canLuyen: { type: [String], default: [] },

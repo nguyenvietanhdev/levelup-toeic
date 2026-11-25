@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const { MA_NGON_NGU } = require('../config/ngonNgu');
 
 /**
  * BÀI LÀM DỞ của Viết / Dịch / Đọc / Nghe — đề đã lấy (AI sinh) và phần đã làm.
@@ -15,7 +16,7 @@ const baiNhapSchema = new mongoose.Schema(
     {
         userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
         mode: { type: String, enum: ['viet', 'dich', 'doc', 'nghe'], required: true },
-        lang: { type: String, enum: ['en', 'zh'], default: 'en' },
+        lang: { type: String, enum: MA_NGON_NGU, default: 'en' },
         // Nguyên phản hồi lấy đề (đề, dạng bài, mức, kiểu chấm…) để dựng lại màn làm bài.
         de: { type: mongoose.Schema.Types.Mixed, required: true },
         // Phần đã làm. Viết/Dịch/Nghe: chữ đã gõ. Đọc: mảng đáp án đã chọn dạng JSON.

@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const { MA_NGON_NGU } = require('../config/ngonNgu');
 
 /**
  * Lịch sử từng câu ngữ pháp người học đã làm (luyện một mục hoặc kiểm tra tổng hợp), để xem lại,
@@ -8,7 +9,7 @@ const mongoose = require('mongoose');
 const nguPhapLichSuSchema = new mongoose.Schema(
     {
         userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-        lang: { type: String, enum: ['en', 'zh'], default: 'en' },
+        lang: { type: String, enum: MA_NGON_NGU, default: 'en' },
         mucId: { type: String, maxlength: 60, default: '' },
         tenMuc: { type: String, maxlength: 160, default: '' },
         tongHop: { type: Boolean, default: false },

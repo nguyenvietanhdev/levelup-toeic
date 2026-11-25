@@ -1,4 +1,5 @@
 const UserProfile = require('../models/UserProfile');
+const { locThietLap } = require('../config/ngonNgu');
 const UserStats = require('../models/UserStats');
 const UserAchievement = require('../models/UserAchievement');
 const UserDailyQuest = require('../models/UserDailyQuest');
@@ -191,6 +192,8 @@ exports.saveState = async (req, res, next) => {
         // "conversations" (tên một collection Mongo), không phải mã đề nào cả.
         // Rồi chế độ Hội thoại đọc trường đó và đi tìm bộ từ không tồn tại.
         if (state.settings && typeof state.settings === 'object') {
+            // Ngôn ngữ chưa mở (enum DB đã nhận ja/ko) không được tự đặt: sổ ngôn ngữ lọc.
+            state.settings = locThietLap(state.settings);
             // Lấy danh sách khoá từ MODEL, không từ instance: instance có thể
             // chưa khởi tạo `settings` (hồ sơ cũ), lúc đó danh sách rỗng và
             // KHÔNG khoá nào được ghi — mất sạch cài đặt mà không lỗi nào báo.

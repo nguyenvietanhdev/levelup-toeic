@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const { MA_NGON_NGU } = require('../config/ngonNgu');
 
 /**
  * Bài viết luận đã chấm.
@@ -34,7 +35,7 @@ const essaySchema = new mongoose.Schema(
          * cũ mà không biết nó chấm theo chuẩn nào thì không biết `scores` có
          * `lexical` hay `characters` — và hiển thị sẽ ra ô trống.
          */
-        lang: { type: String, enum: ['en', 'zh'], default: 'en', index: true },
+        lang: { type: String, enum: MA_NGON_NGU, default: 'en', index: true },
 
         /**
          * Bốn band tiêu chí + band tổng.

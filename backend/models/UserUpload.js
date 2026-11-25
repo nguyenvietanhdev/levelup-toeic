@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const { MA_NGON_NGU_BI } = require('../config/ngonNgu');
 
 /**
  * UserUpload Model — từ vựng riêng do người dùng tự tải lên.
@@ -21,7 +22,7 @@ const userUploadSchema = new mongoose.Schema(
         // (xem detectLang ở frontend), không cần backfill.
         // `bi` = bộ song ngữ. Thiếu ở enum thì Mongoose từ chối lúc lưu và
         // bộ từ riêng song ngữ không nhập được.
-        lang: { type: String, enum: ['en', 'zh', 'bi'], default: 'en' },
+        lang: { type: String, enum: MA_NGON_NGU_BI, default: 'en' },
         en: { type: String, required: true, trim: true },
         vn: { type: String, trim: true, default: '' },
         // Nghĩa tiếng Anh — chỉ bộ `lang: 'bi'` dùng tới.

@@ -697,8 +697,11 @@ describe('chọn kho song ngữ phải GIỮ được', () => {
         // Thiếu ở enum thì Mongoose TỪ CHỐI lưu và người dùng chọn xong tải
         // lại trang là thấy nhảy về `en` — không lỗi nào hiện ra, vì `save()`
         // thất bại lặng lẽ ở nền.
+        // Danh sách sinh từ sổ ngôn ngữ (config/ngonNgu.js) + 'bi'.
         expect(UserProfile.schema.path('settings').schema.path('vocabLang').enumValues)
-            .toEqual(['en', 'zh', 'bi']);
+            .toEqual(expect.arrayContaining(['en', 'zh', 'bi']));
+        expect(UserProfile.schema.path('settings').schema.path('vocabLang').enumValues)
+            .toEqual(require('../config/ngonNgu').MA_NGON_NGU_BI);
     });
 
     test('giá trị lạ vẫn bị chặn', () => {

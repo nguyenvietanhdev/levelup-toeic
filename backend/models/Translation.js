@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const { MA_NGON_NGU } = require('../config/ngonNgu');
 
 /**
  * Một bài dịch Việt → Anh/Trung đã chấm.
@@ -34,7 +35,7 @@ const translationSchema = new mongoose.Schema(
         unitCount: { type: Number, default: 0 },
 
         /** Ngoại ngữ của cặp dịch: 'en' hoặc 'zh' (bên kia luôn là tiếng Việt). */
-        lang: { type: String, enum: ['en', 'zh'], default: 'en', index: true },
+        lang: { type: String, enum: MA_NGON_NGU, default: 'en', index: true },
         /**
          * Chiều dịch. 'vi-ngoai' (mặc định, bài cũ): Việt → Anh/Trung, đo VIẾT. 'ngoai-vi':
          * Anh/Trung → Việt, đo ĐỌC HIỂU — ba trục điểm khác, và ghi chú là lỗi HIỂU chứ không phải

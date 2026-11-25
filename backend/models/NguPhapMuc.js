@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const { MA_NGON_NGU } = require('../config/ngonNgu');
 
 /**
  * Phần do AI mở rộng cho Công thức ngữ pháp, dùng chung cho mọi người để mỗi nội dung chỉ
@@ -11,7 +12,7 @@ const nguPhapMucSchema = new mongoose.Schema(
     {
         khoa: { type: String, required: true, unique: true, maxlength: 120 },
         // Ngôn ngữ của chủ điểm. Bản ghi cũ không có trường này là tiếng Anh.
-        lang: { type: String, enum: ['en', 'zh'], default: 'en' },
+        lang: { type: String, enum: MA_NGON_NGU, default: 'en' },
         noiDung: { type: mongoose.Schema.Types.Mixed, default: null },
         troDen: { type: String, default: null },
         tenChuan: { type: String, default: '' },

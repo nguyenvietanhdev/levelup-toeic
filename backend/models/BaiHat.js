@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const { MA_NGON_NGU } = require('../config/ngonNgu');
 
 /**
  * Bài hát người học thêm để học qua lời. RIÊNG TƯ: mỗi bản ghi chỉ của một người, không có kho
@@ -15,7 +16,7 @@ const baiHatSchema = new mongoose.Schema(
         youtubeId: { type: String, required: true, match: /^[A-Za-z0-9_-]{11}$/ },
         tieuDe: { type: String, required: true, maxlength: 160 },
         ngheSi: { type: String, default: '', maxlength: 120 },
-        lang: { type: String, enum: ['en', 'zh'], default: 'en' },
+        lang: { type: String, enum: MA_NGON_NGU, default: 'en' },
         thoiLuong: { type: Number, default: 0 },
         nguonLoi: { type: String, enum: ['lrclib', 'tu-dan'], required: true },
         lrclibId: { type: Number, default: null },

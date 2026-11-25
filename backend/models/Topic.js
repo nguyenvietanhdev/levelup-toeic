@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const { MA_NGON_NGU_BI } = require('../config/ngonNgu');
 
 const topicSchema = new mongoose.Schema(
     {
@@ -44,7 +45,7 @@ const topicSchema = new mongoose.Schema(
             type: String,
             // `bi` = kho song ngữ (Trung ↔ Anh). Thiếu nó ở enum thì Mongoose
             // từ chối lúc lưu và đề của kho đó không tạo được.
-            enum: ['en', 'zh', 'bi'],
+            enum: MA_NGON_NGU_BI,
             default: 'en',
         },
     },

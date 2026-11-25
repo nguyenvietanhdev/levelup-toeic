@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const { MA_NGON_NGU_BI } = require('../config/ngonNgu');
 
 // Tự xoá từ sai "để yên" quá lâu không tái phạm (đỡ phình DB).
 // recordWrong() đẩy expiresAt = now + ngần này ngày mỗi lần sai lại.
@@ -68,7 +69,7 @@ const WrongWordSchema = new mongoose.Schema({
         // RIÊNG chứ không mượn 'zh': `langFilter` phân loại bản ghi cũ bằng
         // regex chữ Hán, nên từ song ngữ mặt Hán sẽ lẫn vào danh sách ôn của
         // kho tiếng Trung — mở ra thấy từ của bộ khác hẳn.
-        enum: ['en', 'zh', 'bi'],
+        enum: MA_NGON_NGU_BI,
         default: 'en',
         index: true
     },

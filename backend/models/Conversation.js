@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const { MA_NGON_NGU, MA_NGON_NGU_BI } = require('../config/ngonNgu');
 
 // Phiên bỏ dở tự dọn sau 7 ngày. Người học mở hội thoại rồi đóng tab là chuyện
 // thường; không có TTL thì DB đầy phiên `active` không bao giờ xong.
@@ -37,7 +38,7 @@ const conversationSchema = new mongoose.Schema(
         // Bộ từ đang luyện — cùng cặp (source, part) với popup Chọn Part.
         source: { type: String, required: true, trim: true },
         part: { type: String, default: '', trim: true },
-        lang: { type: String, enum: ['en', 'zh'], default: 'en' },
+        lang: { type: String, enum: MA_NGON_NGU, default: 'en' },
 
         // Chủ đề hội thoại, do AI đặt lúc mở phiên (vd "đi chợ", "hỏi đường").
         topic: { type: String, default: '' },
@@ -61,7 +62,7 @@ const conversationSchema = new mongoose.Schema(
         strictGrammar: { type: Boolean, default: false },
         // Kho của phiên: en / zh / bi (song ngữ). `lang` chỉ là ngôn ngữ đối thoại
         // với AI, còn `track` quyết định được chọn bộ tiêu chí nào.
-        track: { type: String, enum: ['en', 'zh', 'bi'], default: 'en' },
+        track: { type: String, enum: MA_NGON_NGU_BI, default: 'en' },
         // Kết quả chấm cuối phiên (null nếu chưa chấm hoặc chấm lỗi).
         feedback: { type: mongoose.Schema.Types.Mixed, default: null },
         /**

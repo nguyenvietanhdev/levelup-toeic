@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const { MA_NGON_NGU_BI } = require('../config/ngonNgu');
 
 /**
  * Vai của AI trong hội thoại, gắn với MỘT Part cụ thể (source + part + lang).
@@ -16,7 +17,7 @@ const aiRoleSchema = new mongoose.Schema(
     {
         source: { type: String, required: true, trim: true, lowercase: true, maxlength: 100 },
         part: { type: String, required: true, trim: true, maxlength: 200 },
-        lang: { type: String, enum: ['en', 'zh', 'bi'], default: 'en' },
+        lang: { type: String, enum: MA_NGON_NGU_BI, default: 'en' },
         origin: { type: String, enum: ['ai', 'user'], required: true },
         // null với vai AI (dùng chung); userId với vai người dùng tự viết.
         ownerId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },

@@ -165,7 +165,9 @@ describe('model — trường lang', () => {
         // sẽ lẫn vào danh sách ôn của kho tiếng Trung.
         const path = WrongWord.schema.path('lang');
         expect(path).toBeDefined();
-        expect(path.options.enum).toEqual(['en', 'zh', 'bi']);
+        // Danh sách sinh từ sổ ngôn ngữ (config/ngonNgu.js) + 'bi'.
+        expect(path.options.enum).toEqual(expect.arrayContaining(['en', 'zh', 'bi']));
+        expect(path.options.enum).toEqual(require('../config/ngonNgu').MA_NGON_NGU_BI);
         expect(path.defaultValue).toBe('en');
     });
 });

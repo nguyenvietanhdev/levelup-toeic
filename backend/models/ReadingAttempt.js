@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const { MA_NGON_NGU } = require('../config/ngonNgu');
 
 /**
  * Một lượt làm bài ĐỌC HIỂU Part 7 đã chấm.
@@ -27,7 +28,7 @@ const readingAttemptSchema = new mongoose.Schema(
          * đọc lại lịch sử mà không biết bài thuộc chuẩn nào thì không so sánh
          * được điểm giữa các lượt.
          */
-        lang: { type: String, enum: ['en', 'zh'], default: 'en', index: true },
+        lang: { type: String, enum: MA_NGON_NGU, default: 'en', index: true },
         /** Các từ đề bài được yêu cầu dùng tới. */
         words: { type: [String], default: [] },
 

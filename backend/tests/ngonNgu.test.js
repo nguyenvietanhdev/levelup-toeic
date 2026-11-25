@@ -66,3 +66,26 @@ describe('hàm của sổ', () => {
         expect(N.tenChoPrompt('xx')).toBe('English');
     });
 });
+
+describe('enum DB sinh từ sổ', () => {
+    test('không model nào còn liệt kê ngôn ngữ viết cứng; đều đọc từ sổ', () => {
+        const dir = path.join(__dirname, '..', 'models');
+        for (const f of fs.readdirSync(dir)) {
+            const src = fs.readFileSync(path.join(dir, f), 'utf8');
+            expect([f, /enum: \[\s*'en',\s*'zh'/.test(src)]).toEqual([f, false]);
+            if (/MA_NGON_NGU/.test(src)) expect(src).toMatch(/require\('\.\.\/config\/ngonNgu'\)/);
+        }
+        expect(require('../models/Essay').schema.path('lang').enumValues).toEqual(N.MA_NGON_NGU);
+        expect(require('../models/UserProfile').schema.path('settings.vocabLang').enumValues).toEqual(N.MA_NGON_NGU_BI);
+    });
+
+    test('thiết lập của người dùng: không tự đặt được ngôn ngữ chưa mở (enum DB đã nhận ja/ko)', () => {
+        expect(N.locThietLap({ vocabLang: 'ja', theme: 'dark' })).toEqual({ theme: 'dark' });
+        expect(N.locThietLap({ vocabLang: 'zh', theme: 'dark' })).toEqual({ vocabLang: 'zh', theme: 'dark' });
+        expect(N.locThietLap({ vocabLang: 'bi' })).toEqual({ vocabLang: 'bi' });
+        expect(N.locThietLap({ theme: 'dark' })).toEqual({ theme: 'dark' });
+        for (const f of ['authController.js', 'userStateController.js']) {
+            expect(fs.readFileSync(path.join(__dirname, '..', 'controllers', f), 'utf8')).toMatch(/locThietLap\((state\.)?settings\)/);
+        }
+    });
+});

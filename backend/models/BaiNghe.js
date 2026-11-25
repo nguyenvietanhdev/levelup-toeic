@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const { MA_NGON_NGU } = require('../config/ngonNgu');
 
 /**
  * Bài nghe có script chạy theo (nguồn chính: VOA Learning English — phạm vi công cộng).
@@ -19,7 +20,7 @@ const cauSchema = new mongoose.Schema(
 const baiNgheSchema = new mongoose.Schema(
     {
         tieuDe: { type: String, required: true, maxlength: 160 },
-        lang: { type: String, enum: ['en', 'zh'], default: 'en' },
+        lang: { type: String, enum: MA_NGON_NGU, default: 'en' },
         capDo: { type: String, enum: ['de', 'vua', 'kho'], default: 'vua' },
         // Ghi công nguồn: bắt buộc hiển thị cùng bài (VOA yêu cầu ghi nguồn khi dùng lại).
         nguon: { type: String, default: 'VOA Learning English', maxlength: 120 },

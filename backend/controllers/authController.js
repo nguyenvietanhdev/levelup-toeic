@@ -1,4 +1,5 @@
 const User = require('../models/User');
+const { locThietLap } = require('../config/ngonNgu');
 const UserProfile = require('../models/UserProfile');
 const UserStats = require('../models/UserStats');
 const OtpCode = require('../models/OtpCode');
@@ -211,7 +212,8 @@ const updateProfile = async (req, res, next) => {
         if (avatar) profile.avatar = avatar;
 
         if (settings) {
-            Object.assign(profile.settings, settings);
+            // Ngôn ngữ chưa mở (enum DB đã nhận ja/ko) không được tự đặt: sổ ngôn ngữ lọc.
+            Object.assign(profile.settings, locThietLap(settings));
             profile.markModified('settings');
         }
 
@@ -595,7 +597,8 @@ const syncProgress = async (req, res, next) => {
         void streak;
 
         if (settings) {
-            Object.assign(profile.settings, settings);
+            // Ngôn ngữ chưa mở (enum DB đã nhận ja/ko) không được tự đặt: sổ ngôn ngữ lọc.
+            Object.assign(profile.settings, locThietLap(settings));
             profile.markModified('settings');
             await profile.save();
         }

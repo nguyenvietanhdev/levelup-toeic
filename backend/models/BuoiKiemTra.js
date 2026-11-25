@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const { MA_NGON_NGU } = require('../config/ngonNgu');
 
 /**
  * Một lượt test đầu vào. Giữ câu hiện tại ở server: câu sau phụ thuộc kết quả câu trước,
@@ -8,7 +9,7 @@ const buoiKiemTraSchema = new mongoose.Schema(
     {
         userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
         coMic: { type: Boolean, default: true },
-        lang: { type: String, enum: ['en', 'zh'], default: 'en' },
+        lang: { type: String, enum: MA_NGON_NGU, default: 'en' },
         i: { type: Number, default: 0 },
         cauHienTai: { type: mongoose.Schema.Types.Mixed, default: null },
         daLam: { type: [mongoose.Schema.Types.Mixed], default: [] },

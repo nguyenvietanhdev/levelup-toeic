@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const { MA_NGON_NGU } = require('../config/ngonNgu');
 
 /**
  * Một lượt luyện ngữ pháp. Giữ danh sách câu ở server: đáp án chỉ về client sau khi chấm từng
@@ -24,7 +25,7 @@ const buoiNguPhapSchema = new mongoose.Schema(
         },
         daTongKet: { type: Boolean, default: false },
         tongHop: { type: Boolean, default: false },
-        lang: { type: String, enum: ['en', 'zh'], default: 'en' },
+        lang: { type: String, enum: MA_NGON_NGU, default: 'en' },
     },
     { timestamps: true, collection: 'buoi_ngu_phap' },
 );

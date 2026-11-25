@@ -15,6 +15,8 @@ const MAC_DINH = SO.macDinh;
 
 /** Mọi mã đã khai báo (dùng cho enum DB: bật ngôn ngữ mới không phải sửa schema). */
 const MA_NGON_NGU = DS.map((n) => n.ma);
+/** Thêm 'bi' (chế độ bộ từ song ngữ Trung–Anh) cho trường lưu cả chế độ đó (vocabLang, lang của bộ từ…). */
+const MA_NGON_NGU_BI = [...MA_NGON_NGU, 'bi'];
 /** Ngôn ngữ đang mở cho người học. */
 const NGON_NGU_HOAT_DONG = DS.filter((n) => n.hoatDong).map((n) => n.ma);
 
@@ -46,12 +48,26 @@ function nhanDienChuViet(text) {
 /** Ngôn ngữ đang HỌC từ thiết lập `vocabLang` ('bi' = bộ song ngữ Trung–Anh → học tiếng Trung). */
 const ngonNguHoc = (vocabLang) => (vocabLang === 'bi' ? 'zh' : chuanMa(vocabLang));
 
+/** `vocabLang` người dùng được đặt: ngôn ngữ đang mở hoặc 'bi'. */
+const vocabLangHopLe = (v) => v === 'bi' || NGON_NGU_HOAT_DONG.includes(v);
+
+/**
+ * Thiết lập client gửi lên, bỏ `vocabLang` nếu là ngôn ngữ chưa mở (thuần). Enum DB giờ nhận mọi
+ * mã đã khai (cả ja/ko chưa mở) — không lọc ở đây thì người dùng tự đặt được ngôn ngữ chưa có nội dung.
+ */
+function locThietLap(settings) {
+    if (!settings || typeof settings !== 'object') return settings;
+    if (!Object.prototype.hasOwnProperty.call(settings, 'vocabLang') || vocabLangHopLe(settings.vocabLang)) return settings;
+    const { vocabLang, ...con } = settings; // eslint-disable-line no-unused-vars
+    return con;
+}
+
 const tenChoPrompt = (ma) => layNgonNgu(ma).tenPrompt;
 const bcp47 = (ma) => layNgonNgu(ma).bcp47;
 const giongEdge = (ma) => layNgonNgu(ma).giongEdge;
 const donViDem = (ma) => layNgonNgu(ma).donViDem;
 
 module.exports = {
-    SO, MAC_DINH, MA_NGON_NGU, NGON_NGU_HOAT_DONG,
-    layNgonNgu, chuanMa, nhanDienChuViet, ngonNguHoc, tenChoPrompt, bcp47, giongEdge, donViDem,
+    SO, MAC_DINH, MA_NGON_NGU, MA_NGON_NGU_BI, NGON_NGU_HOAT_DONG,
+    layNgonNgu, chuanMa, nhanDienChuViet, ngonNguHoc, vocabLangHopLe, locThietLap, tenChoPrompt, bcp47, giongEdge, donViDem,
 };

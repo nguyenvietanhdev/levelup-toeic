@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const { MA_NGON_NGU_BI } = require('../config/ngonNgu');
 
 /**
  * Dạng bài AI gợi ý là HỢP với bộ từ của một Part, cho một chế độ AI.
@@ -14,7 +15,7 @@ const dangGoiYSchema = new mongoose.Schema(
         mode: { type: String, enum: ['reading', 'essay', 'translation', 'listening', 'conversation'], required: true },
         source: { type: String, required: true, trim: true, lowercase: true, maxlength: 100 },
         part: { type: String, required: true, trim: true, maxlength: 200 },
-        lang: { type: String, enum: ['en', 'zh', 'bi'], default: 'en' },
+        lang: { type: String, enum: MA_NGON_NGU_BI, default: 'en' },
         scope: { type: String, default: '', maxlength: 200 },
         // Khoá dạng bài trong kho của chế độ đó, theo thứ tự hợp nhất trước.
         keys: { type: [String], default: [] },

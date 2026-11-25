@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const { MA_NGON_NGU } = require('../config/ngonNgu');
 
 /**
  * MỘT LỖI CẦN ÔN — lấy từ chỗ đã chữa trong bài Viết, Dịch, Hội thoại.
@@ -16,7 +17,7 @@ const loiOnSchema = new mongoose.Schema(
     {
         userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
         khoa: { type: String, required: true, maxlength: 120 },
-        lang: { type: String, enum: ['en', 'zh'], default: 'en' },
+        lang: { type: String, enum: MA_NGON_NGU, default: 'en' },
         nguon: { type: String, enum: ['viet', 'dich', 'noi'], required: true },
         // Câu gốc (của chính người học) chứa lỗi, chỗ sai, cách sửa, giải thích.
         cau: { type: String, required: true, maxlength: 400 },
