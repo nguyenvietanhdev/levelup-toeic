@@ -6,7 +6,7 @@
  * lần vẽ lại; điền "dont" cho "don't" bị chấm sai.
  */
 import { describe, test, expect } from 'vitest';
-import { soAmTiet, tachMau, mauCoGio, tienDo, chonOTrong, khopTu, GIAY_MOI_AM, tocDoBai, lechCua, apLech, chonDongKhop, datLechTu } from './baiHat.js';
+import { tuCuaTungChu, soAmTiet, tachMau, mauCoGio, tienDo, chonOTrong, khopTu, GIAY_MOI_AM, tocDoBai, lechCua, apLech, chonDongKhop, datLechTu } from './baiHat.js';
 
 describe('âm tiết', () => {
     test.each([['be', 1], ['one', 1], ['are', 1], ['the', 1], ['trouble', 2], ['wisdom', 2], ['whisper', 2], ['time', 1], ['beautiful', 3], ['', 0]])('%s → %i', (tu, n) => {
@@ -149,5 +149,24 @@ describe('ô trống', () => {
         expect(khopTu('trouble.', 'trouble')).toBe(true);
         expect(khopTu('troubles', 'trouble')).toBe(false);
         expect(khopTu('', 'x')).toBe(false);
+    });
+});
+
+describe('tiếng Trung: tách từ, pinyin', () => {
+    test('mỗi chữ biết nó thuộc từ nào (để tra cả từ); dấu câu không thuộc từ nào', () => {
+        expect(tuCuaTungChu('我的好朋友在银行工作。')).toEqual(['我的', '我的', '好朋友', '好朋友', '好朋友', '在', '银行', '银行', '工作', '工作', '']);
+        const m = tachMau('银行。', 'zh');
+        expect(m.map((x) => x.tuTra)).toEqual(['银行', '银行', undefined]);
+    });
+    test('pinyin từng ký tự, đọc theo ngữ cảnh; ký tự không phải chữ Hán thì rỗng', async () => {
+        const { napPinyin, pinyinTheoChu, pinyinCuaTu } = await import('./pinyinBaiHat.js');
+        const f = await napPinyin();
+        expect(pinyinTheoChu(f, '银行，不行')).toEqual(['yín', 'háng', '', 'bù', 'xíng']);
+        expect(pinyinTheoChu(f, 'OK吗')).toEqual(['', '', 'ma']);
+        expect(pinyinCuaTu(f, '银行')).toBe('yín háng');
+    });
+    test('thư viện trả lệch độ dài thì không gắn pinyin sai chữ', async () => {
+        const { pinyinTheoChu } = await import('./pinyinBaiHat.js');
+        expect(pinyinTheoChu(() => [{ isZh: true, pinyin: 'x' }], '你好')).toEqual(['', '']);
     });
 });

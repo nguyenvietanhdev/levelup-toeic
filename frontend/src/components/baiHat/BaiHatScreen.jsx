@@ -9,6 +9,11 @@ import { gioPhut, cauTai, khopTim } from '@lib/baiNghe.js';
 import OTimBai from '@components/baiNghe/OTimBai.jsx';
 import { mauCoGio, tienDo, chonOTrong, khopTu, tocDoBai, apLech, lechCua, chonDongKhop, datLechTu } from '@lib/baiHat.js';
 import { useYoutube } from './useYoutube.js';
+import { napPinyin, pinyinTheoChu, pinyinCuaTu } from '@lib/pinyinBaiHat.js';
+
+/** Nhớ lựa chọn bật/tắt pinyin (mặc định bật: người học tiếng Trung cần nhất). */
+const KHOA_PINYIN = 'levelup.baiHat.pinyin';
+const docHienPinyin = () => { try { return localStorage.getItem(KHOA_PINYIN) !== '0'; } catch { return true; } };
 
 const TOC_DO = [0.75, 1];
 const MUC_DO = { de: 'Dễ', vua: 'Vừa', kho: 'Khó' };
@@ -42,6 +47,10 @@ export default function BaiHatScreen({ active }) {
     const [tocDo, setTocDo] = useState(1);
     const [dich, setDich] = useState({});
     const [tuChon, setTuChon] = useState(null);
+    // Tiếng Trung: hàm pinyin (tải trễ) và bật/tắt hiện pinyin trên chữ.
+    const [hamPinyin, setHamPinyin] = useState(null);
+    const [hienPinyin, setHienPinyin] = useState(docHienPinyin);
+    const doiPinyin = () => setHienPinyin((x) => { try { localStorage.setItem(KHOA_PINYIN, x ? '0' : '1'); } catch { /* chỉ là nhớ lựa chọn */ } return !x; });
 
     // Điền từ
     const [mucDo, setMucDo] = useState('vua');
@@ -64,6 +73,16 @@ export default function BaiHatScreen({ active }) {
     const mau = useMemo(() => (bai?.coMoc ? cauHieu.map((c) => mauCoGio(c, lang, giayMoiAm)) : []), [bai, cauHieu, lang, giayMoiAm]);
     const oTrong = useMemo(() => (bai ? chonOTrong(bai.cau, lang, mucDo, (bai.id || '').length * 31 + bai.cau.length) : []), [bai, lang, mucDo]);
     const conTrong = useCallback((i) => (oTrong[i] || []).some((k) => !daDien[`${i}-${k}`]), [oTrong, daDien]);
+
+    // Bài tiếng Trung: tải thư viện pinyin rồi tính pinyin từng chữ của mọi dòng (trên cả câu để
+    // chữ đa âm đọc theo ngữ cảnh). Lỗi tải thì thôi, lời vẫn hiện bình thường.
+    useEffect(() => {
+        if (lang !== 'zh' || hamPinyin) return undefined;
+        let huy = false;
+        napPinyin().then((f) => { if (!huy) setHamPinyin(() => f); }).catch(() => {});
+        return () => { huy = true; };
+    }, [lang, hamPinyin]);
+    const pinyin = useMemo(() => (lang === 'zh' && hamPinyin && bai ? bai.cau.map((c) => pinyinTheoChu(hamPinyin, c.text)) : []), [lang, hamPinyin, bai]);
 
     // Ref cho vòng lặp vẽ: không tạo lại vòng lặp mỗi lần state đổi.
     const r = useRef({});
@@ -239,7 +258,7 @@ export default function BaiHatScreen({ active }) {
 
     const chonTu = async (tu, dong) => {
         if (!tu) return;
-        setTuChon({ tu, dong, nghia: '', dang: true, luu: '' });
+        setTuChon({ tu, dong, nghia: '', dang: true, luu: '', py: lang === 'zh' && hamPinyin ? pinyinCuaTu(hamPinyin, tu) : '' });
         try {
             const nghia = await dichSangViet(tu);
             setTuChon((x) => (x?.tu === tu ? { ...x, nghia, dang: false } : x));
@@ -259,6 +278,7 @@ export default function BaiHatScreen({ active }) {
                 source: lang === 'zh' ? 'bai-hat-zh' : 'bai-hat-en',
                 part: bai.tieuDe,
                 example: tuChon.dong,
+                phonetic: tuChon.py || '',
             });
             setTuChon((x) => ({ ...x, luu: 'xong' }));
         } catch (e) {
@@ -333,9 +353,42 @@ export default function BaiHatScreen({ active }) {
     const veDong = (c, i) => {
         const dsMau = mau[i] || mauCoGio(c, lang);
         const trong = new Set(cheDo === 'dien' ? oTrong[i] || [] : []);
+        // Pinyin của mẩu k: mẩu tiếng Trung là đúng một ký tự, cùng vị trí trong `[...text]`.
+        const py = (k) => (hienPinyin && pinyin[i] ? pinyin[i][k] || '' : '');
         return dsMau.map((m, k) => {
             if (!m.tu) return <span key={k}>{m.hien}</span>;
             const khoa = `${i}-${k}`;
+            const zh = !!m.tuTra;
+            if (zh && trong.has(k) && !daDien[khoa]) {
+                // Ô trống chữ Hán: pinyin phía trên làm gợi ý (nghe + pinyin → gõ đúng chữ).
+                return (
+                    <ruby key={k} className="bh-ruby">
+                        <input
+                            className="bh-o bh-o-zh"
+                            aria-label={`Ô trống dòng ${i + 1}`}
+                            value={giaTri[khoa] || ''}
+                            size={2}
+                            autoComplete="off"
+                            spellCheck={false}
+                            onChange={(e) => setGiaTri((g) => ({ ...g, [khoa]: e.target.value }))}
+                            onKeyDown={(e) => {
+                                if (e.key !== 'Enter') return;
+                                if (!kiemO(i, k, m.tu)) e.currentTarget.classList.add('is-sai');
+                            }}
+                        />
+                        <rt>{py(k)}</rt>
+                    </ruby>
+                );
+            }
+            if (zh) {
+                // Màu karaoke trên CHỮ (span mang data-k), pinyin phía trên; bấm là tra cả TỪ chứa chữ đó.
+                const lopZh = `bh-chu${daDien[khoa] === 'dung' ? ' is-dung' : daDien[khoa] === 'lo' ? ' is-lo' : ''}`;
+                return (
+                    <button key={k} type="button" className="bh-chu-zh" aria-label={m.tuTra} onClick={() => chonTu(m.tuTra, c.text)}>
+                        <ruby className="bh-ruby"><span data-k={k} className={lopZh}>{m.hien}</span><rt>{py(k)}</rt></ruby>
+                    </button>
+                );
+            }
             if (trong.has(k) && !daDien[khoa]) {
                 const duoi = m.hien.slice(m.hien.indexOf(m.tu) + m.tu.length);
                 return (
@@ -431,6 +484,12 @@ export default function BaiHatScreen({ active }) {
                                             <button key={t} type="button" className={tocDo === t ? 'is-chon' : ''} onClick={() => setTocDo(t)}>{t}×</button>
                                         ))}
                                     </div>
+                                    {lang === 'zh' && (
+                                        <button type="button" className={`btn btn-sm ${hienPinyin ? 'btn-primary' : 'btn-secondary'}`}
+                                            aria-pressed={hienPinyin} onClick={doiPinyin} title="Hiện / ẩn pinyin trên chữ Hán">
+                                            拼 Pinyin
+                                        </button>
+                                    )}
                                     {cheDo !== 'nhip' && (
                                         <div className="bh-lech" role="group" aria-label="Chỉnh lời khớp nhạc">
                                             <button type="button" className="btn btn-primary btn-sm" disabled={!yt.san} onClick={khopLai}
@@ -483,6 +542,7 @@ export default function BaiHatScreen({ active }) {
                                 {tuChon && (
                                     <div className="bn-tu-chon" role="dialog" aria-label={`Từ: ${tuChon.tu}`}>
                                         <strong>{tuChon.tu}</strong>
+                                        {tuChon.py && <span className="bh-tu-py">{tuChon.py}</span>}
                                         <span>{tuChon.dang ? 'Đang tra…' : (tuChon.nghia || 'Không tra được nghĩa.')}</span>
                                         <div className="px-nut">
                                             <button type="button" className="btn btn-primary" disabled={tuChon.dang || tuChon.luu === 'dang' || tuChon.luu === 'xong'} onClick={luuTu}>

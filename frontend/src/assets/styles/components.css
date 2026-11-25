@@ -13160,3 +13160,13 @@ button.hs-muc:not(:disabled):hover { border-color: var(--accent-color); }
 .tr-hieu-sai li > div { flex: 1; min-width: 0; }
 .tr-hieu-sai small { display: block; color: var(--text-secondary); margin-top: 2px; font-style: italic; }
 .tr-luyen-lai { flex-wrap: wrap; margin: 4px 0 12px; }
+/* Bài hát tiếng Trung: pinyin phía trên từng chữ (ruby); nút bọc chữ không có khung. */
+.bh-chu-zh { border: 0; padding: 0; margin: 0; background: none; font: inherit; color: inherit; cursor: pointer; }
+.bh-chu-zh:hover .bh-chu, .bh-chu-zh:focus-visible .bh-chu { text-decoration: underline; }
+/* Mỗi chữ chừa khoảng hai bên: pinyin rộng hơn chữ, sát nhau thì dính thành một chuỗi khó đọc. */
+.bh-ruby { ruby-position: over; ruby-align: center; margin: 0 .12em; }
+.bh-ruby rt { font-size: .58em; color: var(--text-secondary); letter-spacing: 0; padding: 0 .15em; user-select: none; }
+.bh-loi li:has(.bh-ruby) .bn-cau p { line-height: 2.3; font-size: 1.2rem; }
+.bh-o-zh { width: 2.2em; }
+.bh-tu-py { color: var(--accent-color); font-style: italic; }
+

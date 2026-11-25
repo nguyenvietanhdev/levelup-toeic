@@ -13,7 +13,7 @@ export async function luuMauCau({ cau, nghia = '', lang = 'en', tenMuc = '' }) {
 }
 
 /** Lưu một mục bất kỳ vào Từ vựng riêng (kho `source`, phần `part`, câu ví dụ tuỳ chọn). */
-export async function luuVaoTuRieng({ en, vn = '', lang = 'en', source, part, example = '' }) {
+export async function luuVaoTuRieng({ en, vn = '', lang = 'en', source, part, example = '', phonetic = '' }) {
     const text = String(en || '').trim();
     if (!text) throw new Error('Không có nội dung để lưu');
     let res;
@@ -26,6 +26,7 @@ export async function luuVaoTuRieng({ en, vn = '', lang = 'en', source, part, ex
             part: (String(part || '').trim() || 'Chung').slice(0, 60),
             type: '',
             example: String(example || '').slice(0, 300),
+            phonetic: String(phonetic || '').slice(0, 120),
             retentionDays: 30,
         });
     } catch {

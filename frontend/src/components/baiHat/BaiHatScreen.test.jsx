@@ -130,7 +130,7 @@ describe('xem lời kiểu karaoke', () => {
         fireEvent.click(screen.getByRole('button', { name: /Lưu vào Từ vựng riêng/ }));
         await act(async () => {});
         expect(luu.luuVaoTuRieng).toHaveBeenCalledWith({
-            en: 'trouble', vn: 'rắc rối', lang: 'en', source: 'bai-hat-en', part: 'Let It Be', example: BAI.cau[0].text,
+            en: 'trouble', vn: 'rắc rối', lang: 'en', source: 'bai-hat-en', part: 'Let It Be', example: BAI.cau[0].text, phonetic: '',
         });
         expect(screen.getByRole('button', { name: /Đã lưu/ })).toBeTruthy();
     });
@@ -238,5 +238,53 @@ describe('thêm bài', () => {
         await act(async () => {});
         expect(api.them).toHaveBeenCalledWith({ youtube: 'https://youtu.be/QDYfEBY9NM4', lrclibId: 9 });
         await waitFor(() => expect(screen.getByRole('tablist', { name: 'Chế độ' })).toBeTruthy());
+    });
+});
+
+describe('bài hát tiếng Trung', () => {
+    const BAI_ZH = {
+        ...BAI, id: 'z1', tieuDe: '朋友', ngheSi: '周华健', lang: 'zh',
+        cau: [
+            { batDau: 10, ketThuc: 16, text: '我的好朋友在银行工作' },
+            { batDau: 16, ketThuc: 20, text: '他不行' },
+        ],
+    };
+
+    test('pinyin có dấu thanh phía trên từng chữ, đúng chữ đa âm theo ngữ cảnh; tắt được và nhớ lựa chọn', async () => {
+        await moBai(BAI_ZH);
+        // 银行 háng / 不行 xíng: thư viện đọc theo cả câu.
+        await waitFor(() => expect(document.querySelector('[data-dong="0"] rt')?.textContent).toBe('wǒ'));
+        const rt0 = [...document.querySelectorAll('[data-dong="0"] rt')].map((x) => x.textContent);
+        expect(rt0).toContain('háng');
+        expect([...document.querySelectorAll('[data-dong="1"] rt')].map((x) => x.textContent)).toEqual(['tā', 'bù', 'xíng']);
+        fireEvent.click(screen.getByRole('button', { name: /Pinyin/ }));
+        expect(document.querySelector('[data-dong="0"] rt').textContent).toBe('');
+        expect(localStorage.getItem('levelup.baiHat.pinyin')).toBe('0');
+        localStorage.removeItem('levelup.baiHat.pinyin');
+    });
+
+    test('màu karaoke vẫn chạy theo TỪNG CHỮ', async () => {
+        await moBai(BAI_ZH);
+        await toiGiay(10.3);
+        const chu = [...document.querySelectorAll('[data-dong="0"] .bh-chu')];
+        expect(chu).toHaveLength(10);
+        expect(Number(chu[0].style.getPropertyValue('--tien'))).toBeGreaterThan(0);
+        expect(Number(chu[9].style.getPropertyValue('--tien'))).toBe(0);
+    });
+
+    test('bấm một chữ là tra cả TỪ chứa nó; lưu kèm pinyin vào kho bài hát tiếng Trung', async () => {
+        await moBai(BAI_ZH);
+        await waitFor(() => expect(document.querySelector('[data-dong="0"] rt')?.textContent).toBe('wǒ'));
+        // Chữ "银" thuộc từ "银行".
+        const nut = screen.getAllByRole('button', { name: '银行' });
+        expect(nut).toHaveLength(2);
+        fireEvent.click(nut[0]);
+        await act(async () => {});
+        expect(screen.getByText('yín háng')).toBeTruthy();
+        fireEvent.click(screen.getByRole('button', { name: /Lưu vào Từ vựng riêng/ }));
+        await act(async () => {});
+        expect(luu.luuVaoTuRieng).toHaveBeenCalledWith(expect.objectContaining({
+            en: '银行', lang: 'zh', source: 'bai-hat-zh', phonetic: 'yín háng', example: '我的好朋友在银行工作',
+        }));
     });
 });

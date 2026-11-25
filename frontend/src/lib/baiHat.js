@@ -21,6 +21,24 @@ export function soAmTiet(tu) {
 }
 
 /**
+ * Mỗi ký tự của câu tiếng Trung thuộc TỪ nào (thuần): mảng cùng độ dài `[...text]`. Dùng bộ tách
+ * từ có sẵn của trình duyệt (Intl.Segmenter); không có thì mỗi chữ là một từ. Bấm vào "朋" trong
+ * "朋友" phải tra "朋友", tra riêng chữ "朋" thì nghĩa sai hoặc vô nghĩa.
+ */
+export function tuCuaTungChu(text) {
+    const s = String(text || '');
+    const ds = [...s];
+    if (typeof Intl === 'undefined' || typeof Intl.Segmenter !== 'function') return ds.map((ch) => (RE_HAN.test(ch) ? ch : ''));
+    const out = [];
+    for (const seg of new Intl.Segmenter('zh', { granularity: 'word' }).segment(s)) {
+        const chu = [...seg.segment];
+        const coHan = RE_HAN.test(seg.segment);
+        chu.forEach(() => out.push(coHan ? seg.segment : ''));
+    }
+    return out.length === ds.length ? out : ds.map((ch) => (RE_HAN.test(ch) ? ch : ''));
+}
+
+/**
  * Chia một dòng thành các mẩu hiển thị (thuần). Mỗi mẩu: `hien` (giữ dấu câu, khoảng trắng),
  * `tu` (chữ để tra/điền, rỗng nếu chỉ là dấu câu), `nang` (số âm tiết để chia thời gian).
  * Tiếng Trung: mỗi chữ Hán một mẩu.
@@ -28,7 +46,11 @@ export function soAmTiet(tu) {
 export function tachMau(text, lang = 'en') {
     const s = String(text || '');
     if (lang === 'zh' || RE_HAN.test(s)) {
-        return [...s].map((ch) => (RE_HAN.test(ch) ? { hien: ch, tu: ch, nang: 1 } : { hien: ch, tu: '', nang: 0 }));
+        // Màu karaoke và ô trống theo TỪNG CHỮ; tra nghĩa theo cả TỪ chứa chữ đó (`tuTra`).
+        const tuTra = tuCuaTungChu(s);
+        return [...s].map((ch, i) => (RE_HAN.test(ch)
+            ? { hien: ch, tu: ch, nang: 1, tuTra: tuTra[i] || ch }
+            : { hien: ch, tu: '', nang: 0 }));
     }
     return s.split(/(\s+)/).filter((p) => p !== '').map((p) => {
         const tu = p.replace(/^[^A-Za-z'’]+|[^A-Za-z'’]+$/g, '');
