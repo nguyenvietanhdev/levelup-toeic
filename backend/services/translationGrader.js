@@ -24,12 +24,12 @@ function chatCompletion(...args) {
 }
 
 const { parseJson, clampBand, countUnits } = require('./essayGrader');
-const { tenChoPrompt, bangNgonNgu, chuanChuHoa, nhanhNoiDung } = require('../config/ngonNgu');
+const { tenChoPrompt, bangNgonNgu, chuanChuHoa, nhanhNoiDung, promptCua } = require('../config/ngonNgu');
 // Nhánh nội dung theo ngôn ngữ (sổ ngôn ngữ): ngôn ngữ chưa viết nhánh → báo thiếu, không rơi về tiếng Anh.
-const nhanhRaDe = nhanhNoiDung('Dịch đoạn văn: prompt ra đề');
-const nhanhCham = nhanhNoiDung('Dịch đoạn văn: prompt chấm');
-const nhanhRaDeNguoc = nhanhNoiDung('Dịch ngược: prompt ra đề');
-const nhanhChamNguoc = nhanhNoiDung('Dịch ngược: prompt chấm');
+// Ngoại ngữ khác tiếng Anh dùng chung một nhánh, chi tiết từng ngôn ngữ lấy từ sổ (promptCua).
+const nhanhRaDe = nhanhNoiDung('Dịch đoạn văn: prompt ra đề', ['en', 'zh', 'ja', 'ko']);
+const nhanhRaDeNguoc = nhanhNoiDung('Dịch ngược: prompt ra đề', ['en', 'zh', 'ja', 'ko']);
+const nhanhChamNguoc = nhanhNoiDung('Dịch ngược: prompt chấm', ['en', 'zh', 'ja', 'ko']);
 const { chiThiPhanLoai, chuanHoaLoai, chiThiChuaBai, chuanHoaMuc } = require('./errorTaxonomy');
 const { chonDang, CHI_THI_HOP_BOI_CANH } = require('./dangBai');
 const { chiThiNham } = require('./nhamDiemYeu');
@@ -77,7 +77,7 @@ const MIN_ZH = 20;   // chữ Hán
 
 /** Bản dịch tiếng Việt (chiều ngược) tối thiểu bao nhiêu từ. */
 const MIN_VI = 15;
-const toiThieuCua = bangNgonNgu('Dịch đoạn văn: độ dài tối thiểu', { en: MIN_EN, zh: MIN_ZH });
+const toiThieuCua = bangNgonNgu('Dịch đoạn văn: độ dài tối thiểu', { en: MIN_EN, zh: MIN_ZH, ja: 25, ko: 12 });
 function limitsFor(lang, chieu = 'vi-ngoai') {
     if (chuanChieu(chieu) === 'ngoai-vi') return { min: MIN_VI };
     return { min: toiThieuCua(lang) };
@@ -160,7 +160,7 @@ const NHOM_DANG_DICH = [
  */
 async function generatePassage({ tuVung = [], userId = null, lang = 'en', level = 'medium', dang = '', tuChon = '', nham = [], chiThi = '', chieu = 'vi-ngoai' } = {}) {
     if (chuanChieu(chieu) === 'ngoai-vi') return generatePassageNguoc({ tuVung, userId, lang, level, dang, tuChon });
-    const zh = nhanhRaDe(lang) === 'zh';
+    const ma = nhanhRaDe(lang);
     // Dạng văn bản người học chọn (null = Ngẫu nhiên → một tình huống đời thường như trước).
     const chon = chonDang(NHOM_DANG_DICH, { dang, tuChon });
     const muc = mucKho(level);
@@ -185,7 +185,9 @@ async function generatePassage({ tuVung = [], userId = null, lang = 'en', level 
             ? `written in the form of: ${chon.en} — not ${soCau} unrelated sentences.`
             : 'about a single everyday situation — not ' + soCau + ' unrelated sentences.',
         // Không cho gợi ý sẵn: kèm bản dịch trong đề là đưa luôn đáp án.
-        'Do NOT include any English or Chinese words in the passage.',
+        ma === 'en' || ma === 'zh'
+            ? 'Do NOT include any English or Chinese words in the passage.'
+            : `Do NOT include any ${tenChoPrompt(lang)} or English words in the passage.`,
         'Do NOT include the translation.',
     ];
 
@@ -202,8 +204,8 @@ async function generatePassage({ tuVung = [], userId = null, lang = 'en', level 
     }
     // Lỗi ngữ pháp lặp lại của người học (chỉ khi dịch sang tiếng Anh): cài một
     // hai câu mà dịch đúng phải dùng đúng cấu trúc đó.
-    if (!zh) {
-        const nhamDong = chiThiNham(nham, 'dich', zh ? 'zh' : 'en');
+    if (ma === 'en') {
+        const nhamDong = chiThiNham(nham, 'dich', 'en');
         if (nhamDong) system.push(nhamDong);
     }
     if (chiThi) system.push(chiThi);
@@ -250,7 +252,6 @@ async function generatePassage({ tuVung = [], userId = null, lang = 'en', level 
  * thì điểm mất hết ý nghĩa, và người học không biết mình tiến bộ hay AI đổi ý.
  */
 async function gradeTranslation({ passage = '', translation = '', userId = null, lang = 'en' } = {}) {
-    const zh = nhanhCham(lang) === 'zh';
     const dich = tenChoPrompt(lang);
 
     const system = [
@@ -331,9 +332,10 @@ async function gradeTranslation({ passage = '', translation = '', userId = null,
 
 /** Độ khó của đoạn ngoại ngữ (chiều ngược), theo mức. */
 const CAP_DO_NGUOC = {
-    easy: { en: 'CEFR A2: common everyday words, short simple sentences', zh: 'HSK 2-3: common words, short simple sentences' },
-    medium: { en: 'CEFR B1: some phrasal verbs or common idioms, a few compound sentences', zh: 'HSK 3-4: some common set phrases, a few longer sentences' },
-    hard: { en: 'CEFR B2: natural idioms, phrasal verbs, longer sentences with clauses', zh: 'HSK 5: set phrases (成语) where natural, longer sentences' },
+    // Ngoại ngữ khác: `capDo` trong sổ ngôn ngữ.
+    easy: { en: 'CEFR A2: common everyday words, short simple sentences' },
+    medium: { en: 'CEFR B1: some phrasal verbs or common idioms, a few compound sentences' },
+    hard: { en: 'CEFR B2: natural idioms, phrasal verbs, longer sentences with clauses' },
 };
 
 /**
@@ -341,7 +343,8 @@ const CAP_DO_NGUOC = {
  * đang học xuất hiện NGUYÊN VĂN trong đoạn: đây là lúc nhận ra từ khi đọc, khác chiều xuôi.
  */
 async function generatePassageNguoc({ tuVung = [], userId = null, lang = 'en', level = 'medium', dang = '', tuChon = '' } = {}) {
-    const zh = nhanhRaDeNguoc(lang) === 'zh';
+    nhanhRaDeNguoc(lang);
+    const pr = promptCua(lang);
     const ten = tenChoPrompt(lang);
     const chon = chonDang(NHOM_DANG_DICH, { dang, tuChon });
     const muc = mucKho(level);
@@ -355,8 +358,8 @@ async function generatePassageNguoc({ tuVung = [], userId = null, lang = 'en', l
         `You write short ${ten} paragraphs that Vietnamese learners translate into Vietnamese to practise reading comprehension.`,
         'Return ONLY valid JSON, no markdown fences, no commentary.',
         'Shape: { "passage": "...", "topic": "..." }',
-        `The "passage" MUST be written in natural ${ten}${zh ? ' with simplified characters, no pinyin' : ''}.`,
-        `Level: ${CAP_DO_NGUOC[muc][zh ? 'zh' : 'en']}.`,
+        `The "passage" MUST be written in natural ${ten}${pr ? pr.ghiChuChuViet : ''}.`,
+        `Level: ${pr ? pr.capDo[muc] : CAP_DO_NGUOC[muc].en}.`,
         `It must be exactly ${soCau} sentences, forming ONE coherent paragraph`,
         chon
             ? `written in the form of: ${chon.en} — not ${soCau} unrelated sentences.`
@@ -417,13 +420,14 @@ function chuanHoaHieuSai(ds, passage, lang = 'en') {
  * Nhận mọi cách diễn đạt tiếng Việt giữ đúng nghĩa; chỉ trừ nặng khi hiểu sai.
  */
 async function gradeTranslationNguoc({ passage = '', translation = '', userId = null, lang = 'en' } = {}) {
-    const zh = nhanhChamNguoc(lang) === 'zh';
+    nhanhChamNguoc(lang);
+    const pr = promptCua(lang);
     const ten = tenChoPrompt(lang);
     const system = [
         `You are an experienced ${ten} teacher checking a Vietnamese learner's READING COMPREHENSION.`,
         `The learner translated a ${ten} passage into Vietnamese, their native language.`,
         'Score three criteria, each 0-9 (.5 steps):',
-        `  comprehension — did they understand every sentence correctly? Check word meanings, ${zh ? 'set phrases, measure words, aspect (了/过/着)' : 'phrasal verbs and idioms, tense and time'}, who does what to whom, negation, comparisons, modality. This is the main criterion.`,
+        `  comprehension — did they understand every sentence correctly? Check word meanings, ${pr ? pr.diemDocHieu : 'phrasal verbs and idioms, tense and time'}, who does what to whom, negation, comparisons, modality. This is the main criterion.`,
         '  completeness — is every idea present, with nothing omitted or invented?',
         '  expression — is the Vietnamese natural rather than word-for-word? Score this LENIENTLY: it matters least,',
         '    and correct-but-awkward Vietnamese should still get at least 6.',

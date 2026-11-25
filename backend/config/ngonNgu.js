@@ -142,6 +142,13 @@ const tenPromptDayDu = (ma) => layNgonNgu(ma).tenPromptDayDu || layNgonNgu(ma).t
 const tenViet = (ma) => layNgonNgu(ma).tenViet;
 /** Tên giữa câu: 'tiếng Trung' (chỉ hạ chữ đầu, giữ hoa tên riêng). */
 const tenVietGiuaCau = (ma) => tenViet(ma).replace(/^./, (c) => c.toLowerCase());
+/**
+ * Dữ liệu prompt của ngoại ngữ KHÔNG phải mặc định (chữ viết, cấp độ, độ dài, điểm ngữ pháp…) —
+ * nhánh "ngoại ngữ khác" của các prompt AI đọc từ đây. Ngôn ngữ mặc định (tiếng Anh) → null:
+ * prompt tiếng Anh viết riêng (CEFR, IELTS, TOEIC).
+ */
+const promptCua = (ma) => (chuanMa(ma) === MAC_DINH ? null : layNgonNgu(chuanMa(ma)).prompt || null);
+
 const tenChoPrompt = (ma) => layNgonNgu(ma).tenPrompt;
 const bcp47 = (ma) => layNgonNgu(ma).bcp47;
 const giongEdge = (ma) => layNgonNgu(ma).giongEdge;
@@ -151,5 +158,5 @@ module.exports = {
     SO, MAC_DINH, MA_NGON_NGU, MA_NGON_NGU_BI, NGON_NGU_HOAT_DONG,
     layNgonNgu, chuanMa, nhanDienChuViet, ngonNguHoc, vocabLangHopLe, locThietLap, locTheoNgonNgu, maKyNang, tenChoPrompt, bcp47, giongEdge, donViDem,
     tenDonVi, demDonVi, coKhoangTrang, chuanChuHoa, bangNgonNgu, thieuNoiDung,
-    nhanhNoiDung, coChuViet, ngonNguCuaKyNang, tenPromptDayDu, tenViet, tenVietGiuaCau,
+    nhanhNoiDung, promptCua, coChuViet, ngonNguCuaKyNang, tenPromptDayDu, tenViet, tenVietGiuaCau,
 };

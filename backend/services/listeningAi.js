@@ -8,9 +8,9 @@
  * Đoạn gốc chỉ nằm trên server — client chỉ nhận âm thanh, không nhận chữ.
  */
 const { textCompletion } = require('./aiClient');
-const { NGON_NGU_HOAT_DONG, giongEdge, chuanMa, nhanhNoiDung, coKhoangTrang } = require('../config/ngonNgu');
+const { NGON_NGU_HOAT_DONG, giongEdge, chuanMa, nhanhNoiDung, coKhoangTrang, promptCua } = require('../config/ngonNgu');
 // Nhánh nội dung theo ngôn ngữ (sổ ngôn ngữ): ngôn ngữ chưa viết nhánh → báo thiếu, không rơi về tiếng Anh.
-const nhanhRaDe = nhanhNoiDung('Nghe với AI: prompt ra đoạn nghe');
+const nhanhRaDe = nhanhNoiDung('Nghe với AI: prompt ra đoạn nghe', ['en', 'zh', 'ja', 'ko']);
 const { CHI_THI_HOP_BOI_CANH } = require('./dangBai');
 
 /** Đoạn nghe tối đa — đủ dài để nghe, không đủ dài để chép tràn. */
@@ -21,8 +21,6 @@ const MAX_KY_TU_DOAN_ZH = 90;
 
 /** Mức khó (easy/medium/hard) → dải CEFR của đoạn nghe tiếng Anh. */
 const CEFR_NGHE = { easy: 'A1–A2', medium: 'B1–B2', hard: 'C1–C2' };
-/** Mức khó → cấp HSK của đoạn nghe tiếng Trung. */
-const HSK_NGHE = { easy: 'HSK 1–2', medium: 'HSK 3–4', hard: 'HSK 5–6' };
 
 /** Giọng đọc theo ngôn ngữ: giọng nữ tự nhiên của Edge TTS. */
 /** Giọng Edge mặc định của mỗi ngôn ngữ đang mở — lấy từ sổ ngôn ngữ (config/ngonNgu.json). */
@@ -190,27 +188,27 @@ const NHOM_DANG_NGHE = [
  * không tiêu đề, không dấu nháy. Lỗi AI được ném ra để controller hoàn năng lượng.
  */
 async function sinhDoanNghe({ targetWords = [], level = 'medium', userId = null, chon = null, lang = 'en' }) {
-    const zh = nhanhRaDe(lang) === 'zh';
+    nhanhRaDe(lang);
+    // Ngoại ngữ khác tiếng Anh: chữ viết, cấp độ, độ dài lấy từ sổ (tiếng Trung/Nhật đo bằng CHỮ).
+    const pr = promptCua(lang);
     const cefr = CEFR_NGHE[level] || CEFR_NGHE.medium;
-    const hsk = HSK_NGHE[level] || HSK_NGHE.medium;
-    // Tiếng Trung: đo bằng CHỮ, không phải từ ("40 words" model không đo được).
-    const doDai = zh ? 'at most 60 Chinese characters' : 'at most 40 words';
+    const doDai = pr ? pr.doDaiNghe : 'at most 40 words';
     const out = await textCompletion({
         feature: 'listening-generate',
         messages: [
             {
                 role: 'system',
                 content: [
-                    zh
-                        ? 'You write a short Simplified Chinese passage for listening practice.'
+                    pr
+                        ? `You write a short ${pr.vietBang} passage for listening practice.`
                         : 'You write a short English passage for listening practice.',
-                    zh ? `Use vocabulary and grammar at ${hsk} level.` : `Use vocabulary at CEFR level ${cefr}.`,
+                    pr ? `Use vocabulary and grammar at ${pr.capDoNghe[level] || pr.capDoNghe.medium} level.` : `Use vocabulary at CEFR level ${cefr}.`,
                     chon
                         // Dạng người học chọn (từ kho hoặc tự nhập, đã làm sạch ở `chonDang`).
                         ? `The passage is 2 to 4 sentences, ${doDai}, spoken by ONE person, in the form of: ${chon.en}.`
                         : `The passage is 2 to 4 sentences, ${doDai}, in a realistic everyday or workplace situation.`,
                     // Người học gõ lại bằng chữ Hán: pinyin hay tiếng Anh lẫn vào là chấm sai.
-                    ...(zh ? ['Write only Chinese characters and Chinese punctuation: no pinyin, no English.'] : []),
+                    ...(pr ? [pr.chiChuViet] : []),
                     'Use the given words naturally (each at least once when possible).',
                     ...(chon ? [CHI_THI_HOP_BOI_CANH] : []),
                     'Reply with the plain passage only: no title, no quotes, no labels.',

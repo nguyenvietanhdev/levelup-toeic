@@ -25,8 +25,9 @@ const { homNayVN } = require('./loTrinh');
 const logger = require('../utils/logger');
 const { chuanMa, MAC_DINH, MA_NGON_NGU, nhanhNoiDung } = require('../config/ngonNgu');
 // Nhánh nội dung theo ngôn ngữ (sổ ngôn ngữ): ngôn ngữ chưa viết nhánh → báo thiếu, không rơi về tiếng Anh.
-const nhanhViDu = nhanhNoiDung('Ngữ pháp: kiểm định ví dụ');
-const nhanhMoTa = nhanhNoiDung('Ngữ pháp: prompt soạn chủ điểm');
+// ja/ko không tới được: routes/nguPhap chặn ngôn ngữ chưa có thư viện.
+const nhanhViDu = nhanhNoiDung('Ngữ pháp: kiểm định ví dụ', ['en', 'zh', 'ja', 'ko']);
+const nhanhMoTa = nhanhNoiDung('Ngữ pháp: prompt soạn chủ điểm', ['en', 'zh', 'ja', 'ko']);
 
 // Nạp trễ như các bộ chấm khác: nạp module không được khởi tạo client AI.
 function chatCompletion(...args) {

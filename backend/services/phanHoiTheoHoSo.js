@@ -21,7 +21,7 @@ const { parseJson } = require('./essayGrader');
 const logger = require('../utils/logger');
 const { chuanMa, maKyNang, bangNgonNgu, nhanhNoiDung, ngonNguCuaKyNang } = require('../config/ngonNgu');
 // Nhánh nội dung theo ngôn ngữ (sổ ngôn ngữ): ngôn ngữ chưa viết nhánh → báo thiếu, không rơi về tiếng Anh.
-const nhanhLoiKyNang = nhanhNoiDung('Hồ sơ: nhóm lỗi → kỹ năng');
+const nhanhLoiKyNang = nhanhNoiDung('Hồ sơ: nhóm lỗi → kỹ năng', ['en', 'zh', 'ja', 'ko']);
 
 // Nạp trễ như các bộ chấm khác: nạp module không được khởi tạo client AI.
 function chatCompletion(...args) {
@@ -42,7 +42,7 @@ const CO_HOI_KY_NANG_ZH = {
     'zh-luong-tu': 'counting different objects with the right measure words',
     'zh-giao-tiep': 'polite everyday requests and questions',
 };
-const coHoiCua = bangNgonNgu('Phản hồi theo hồ sơ: cơ hội luyện kỹ năng', { en: CO_HOI_KY_NANG, zh: CO_HOI_KY_NANG_ZH });
+const coHoiCua = bangNgonNgu('Phản hồi theo hồ sơ: cơ hội luyện kỹ năng', { en: CO_HOI_KY_NANG, zh: CO_HOI_KY_NANG_ZH, ja: {}, ko: {} }); // Nhật/Hàn: chưa có kỹ năng khung
 const TEN_CHU_DE_MUC_TIEU = {
     'giao-tiep': 'everyday situations such as shopping, eating out, travel and small talk',
     toeic: 'workplace and business situations such as meetings, emails, schedules and customer service',
@@ -172,6 +172,8 @@ function bangChungTuBai({ loi = [], diemNguPhap = null, lang = 'en' } = {}) {
         xet('measure-word', 'zh-luong-tu');
         return ket;
     }
+    // Nhật/Hàn: chưa có kỹ năng khung để ghi bằng chứng từ lỗi bài viết.
+    if (nhanhLoiKyNang(lang) !== 'en') return ket;
     xet('tense', 'qua-khu');
     xet('literal-translation', 'khung-cau');
     const saiTell = that.some((l) => loaiCua(l) === 'word-choice'

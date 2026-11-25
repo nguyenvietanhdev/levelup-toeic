@@ -30,7 +30,10 @@ const { NGON_NGU_HOAT_DONG, MAC_DINH } = require('../config/ngonNgu');
  */
 const EN = ['en'];
 const ZH = ['zh'];
-const CA_HAI = ['en', 'zh'];
+const JA = ['ja'];
+const KO = ['ko'];
+/** Nhóm dùng chung mọi ngôn ngữ (tên cũ giữ nguyên: bài cũ không đổi). */
+const CA_HAI = ['en', 'zh', 'ja', 'ko'];
 const LOAI_LOI = [
     { key: 'article', lang: EN, vi: 'Mạo từ (a/an/the)', hint: 'Danh từ đếm được số ít gần như luôn cần mạo từ.' },
     { key: 'tense', lang: EN, vi: 'Thì của động từ', hint: 'Xác định mốc thời gian của câu trước khi chọn thì.' },
@@ -44,6 +47,16 @@ const LOAI_LOI = [
     { key: 'complement', lang: ZH, vi: 'Bổ ngữ', hint: 'Kết quả đứng ngay sau động từ: 听懂, 做完; không làm được thì chen 不: 听不懂.' },
     { key: 'ba-bei', lang: ZH, vi: 'Câu 把 / 被', hint: 'Sau 把 / 被, động từ phải có thành phần đi kèm: 把门关上, không dừng ở 把门关.' },
     { key: 'comparison', lang: ZH, vi: 'So sánh', hint: 'A 比 B + tính từ, không thêm 很: 他比我高; không bằng thì dùng 没有.' },
+    // Tiếng Nhật.
+    { key: 'particle-ja', lang: JA, vi: 'Trợ từ は / が / を / に / で', hint: 'は nêu chủ đề, が nêu chủ ngữ mới; nơi chốn của hành động dùng で, nơi tồn tại dùng に.' },
+    { key: 'verb-form', lang: JA, vi: 'Chia động từ', hint: 'Học theo nhóm động từ: thể て và thể た của nhóm 1 đổi theo đuôi (書く → 書いて, 読む → 読んで).' },
+    { key: 'politeness', lang: JA, vi: 'Thể lịch sự / kính ngữ', hint: 'Giữ một thể suốt bài: đã dùng です/ます thì không xen thể thường.' },
+    { key: 'kanji-kana', lang: JA, vi: 'Viết sai kanji / kana', hint: 'Gõ romaji dễ chọn nhầm kanji đồng âm (橋/箸): đọc lại từng chữ trước khi nộp.' },
+    // Tiếng Hàn.
+    { key: 'particle-ko', lang: KO, vi: 'Trợ từ 은/는, 이/가, 을/를', hint: 'Chọn theo âm cuối: có patchim dùng 은/이/을, không có dùng 는/가/를.' },
+    { key: 'verb-ending', lang: KO, vi: 'Đuôi câu / chia động từ', hint: 'Đuôi 아요/어요 theo nguyên âm cuối của gốc: 가다 → 가요, 먹다 → 먹어요.' },
+    { key: 'speech-level', lang: KO, vi: 'Mức kính ngữ', hint: 'Giữ một mức suốt bài: 해요 với người lạ, 합니다 khi trang trọng; không xen 반말.' },
+    { key: 'spacing', lang: KO, vi: 'Viết cách (띄어쓰기)', hint: 'Trợ từ viết liền với danh từ; danh từ phụ thuộc (것, 수) viết cách.' },
     {
         key: 'word-order', lang: CA_HAI, vi: 'Trật tự từ',
         hint: 'Tiếng Anh: chủ ngữ – động từ – tân ngữ; trạng ngữ hiếm khi chen giữa.',

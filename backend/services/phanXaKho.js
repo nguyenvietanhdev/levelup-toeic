@@ -145,7 +145,7 @@ const { KHUNG_ZH, QUY_TAC_ZH } = require('./phanXaKhoZh');
  * `KHUNG` vẫn chỉ là bốn khung tiếng Anh: hồ sơ người học, bài test đầu vào và lộ trình
  * Giao tiếp được dựng trên chúng. `khungCua(lang)` cho đúng bộ khung của ngôn ngữ đang học.
  */
-const khungCua = bangNgonNgu('Phản xạ câu: các khung câu', { en: KHUNG, zh: KHUNG_ZH });
+const khungCua = bangNgonNgu('Phản xạ câu: các khung câu', { en: KHUNG, zh: KHUNG_ZH, ja: [], ko: [] }); // Nhật/Hàn: đợt sau
 const QUY_TAC_TAT_CA = { ...QUY_TAC, ...QUY_TAC_ZH };
 
 const phang = (ds, lang) => ds.flatMap((k) => k.cau.map((c) => ({ ...c, khung: k.key, tenKhung: k.ten, lang })));

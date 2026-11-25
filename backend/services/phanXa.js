@@ -22,7 +22,7 @@ const { ghiKetQua, diemCua, NGUONG_YEU } = require('./hoSoHoc');
 const logger = require('../utils/logger');
 const { chuanMa, maKyNang, coKhoangTrang, tenPromptDayDu, MAC_DINH, bangNgonNgu } = require('../config/ngonNgu');
 // Trường chẩn đoán trong hồ sơ học viên (HoSoHocVien) của từng ngôn ngữ.
-const truongChanDoan = bangNgonNgu('Hồ sơ: trường chẩn đoán', { en: 'chanDoan', zh: 'chanDoanZh' });
+const truongChanDoan = bangNgonNgu('Hồ sơ: trường chẩn đoán', { en: 'chanDoan', zh: 'chanDoanZh', ja: null, ko: null }); // Nhật/Hàn: chưa có test đầu vào
 
 // Nạp trễ như các bộ chấm khác: nạp module không được khởi tạo client AI.
 function chatCompletion(...args) {

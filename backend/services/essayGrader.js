@@ -21,10 +21,11 @@
  * band) kiểm thử được mà không cần khoá API — đó là chỗ dễ sai nhất.
  */
 const { chiThiPhanLoai, chuanHoaLoai, chiThiChuaBai, chuanHoaMuc } = require('./errorTaxonomy');
-const { tenChoPrompt, demDonVi, bangNgonNgu, nhanhNoiDung } = require('../config/ngonNgu');
+const { tenChoPrompt, demDonVi, bangNgonNgu, nhanhNoiDung, promptCua, chuanMa, coKhoangTrang } = require('../config/ngonNgu');
 // Nhánh nội dung theo ngôn ngữ (sổ ngôn ngữ): ngôn ngữ chưa viết nhánh → báo thiếu, không rơi về tiếng Anh.
-const nhanhRaDe = nhanhNoiDung('Viết luận: prompt ra đề');
-const nhanhCham = nhanhNoiDung('Viết luận: prompt chấm');
+// Tiếng Nhật/Hàn đi nhánh đề thực tế + chấm khung chung (kiểu Giao tiếp), chi tiết lấy từ sổ.
+const nhanhRaDe = nhanhNoiDung('Viết luận: prompt ra đề', ['en', 'zh', 'ja', 'ko']);
+const nhanhCham = nhanhNoiDung('Viết luận: prompt chấm', ['en', 'zh', 'ja', 'ko']);
 const { chiThiMuc } = require('./aiLevel');
 const { chonDang } = require('./dangBai');
 const { chiThiNham } = require('./nhamDiemYeu');
@@ -55,7 +56,6 @@ const CRITERIA_ZH = [
     { key: 'characters', label: '汉字词汇', vi: 'Chữ Hán & dùng từ' },
     { key: 'grammar', label: '语法', vi: 'Ngữ pháp' },
 ];
-const tieuChiMacDinh = bangNgonNgu('Viết luận: tiêu chí mặc định', { en: CRITERIA, zh: CRITERIA_ZH });
 
 /**
  * Bộ chấm GIAO TIẾP cho bài viết: bài viết thực tế (email, tin nhắn, đoạn văn đời
@@ -67,6 +67,9 @@ const RUBRIC_GIAOTIEP = [
     { key: 'dung_ngu_canh', label: 'Appropriateness', vi: 'Đúng ngữ cảnh' },
     { key: 'ngu_phap', label: 'Grammar', vi: 'Ngữ pháp' },
 ];
+
+// Tiếng Nhật/Hàn chấm theo bộ Giao tiếp (khung chung) cho tới khi có bộ JLPT/TOPIK riêng.
+const tieuChiMacDinh = bangNgonNgu('Viết luận: tiêu chí mặc định', { en: CRITERIA, zh: CRITERIA_ZH, ja: RUBRIC_GIAOTIEP, ko: RUBRIC_GIAOTIEP });
 
 /** Bộ chấm TOEIC cho bài viết (Writing): ngữ pháp, mạch lạc, từ vựng, bám đề. */
 const RUBRIC_TOEIC = [
@@ -83,10 +86,12 @@ const RUBRIC_TOEIC = [
 const RUBRICS_BY_LANG = {
     en: ['giaotiep', 'toeic', 'ielts'],
     zh: ['giaotiep', 'hsk'],
+    ja: ['giaotiep'],
+    ko: ['giaotiep'],
 };
 
 /** Kiểu chấm mặc định khi không chọn gì: IELTS cho tiếng Anh, HSK cho tiếng Trung. */
-const DEFAULT_RUBRIC = { en: 'ielts', zh: 'hsk' };
+const DEFAULT_RUBRIC = { en: 'ielts', zh: 'hsk', ja: 'giaotiep', ko: 'giaotiep' };
 const cacKieuCham = bangNgonNgu('Viết luận: các kiểu chấm', RUBRICS_BY_LANG);
 const kieuChamMacDinh = bangNgonNgu('Viết luận: kiểu chấm mặc định', DEFAULT_RUBRIC);
 
@@ -136,6 +141,9 @@ const MAX_CHARS_ZH = 2000;
 const nguongCua = bangNgonNgu('Viết luận: độ dài tối thiểu/tối đa', {
     en: { min: MIN_WORDS, max: MAX_WORDS },
     zh: { min: MIN_CHARS_ZH, max: MAX_CHARS_ZH },
+    // Tiếng Nhật đếm CHỮ như tiếng Trung (作文 thường 400 chữ); tiếng Hàn có khoảng trắng → đếm từ.
+    ja: { min: 300, max: 3000 },
+    ko: { min: 120, max: 1000 },
 });
 function limitsFor(lang) {
     return { ...nguongCua(lang) };
@@ -235,8 +243,10 @@ function overallBand(scores = {}, lang = 'en', rubric) {
  */
 const CEFR_DE_BAI = { easy: 'A1–A2', medium: 'B1–B2', hard: 'C1–C2' };
 
-function capTuVungDeBai(level) {
+function capTuVungDeBai(level, lang = 'en') {
     const k = Object.prototype.hasOwnProperty.call(CEFR_DE_BAI, level) ? level : 'medium';
+    const pr = promptCua(lang);
+    if (pr) return `Use vocabulary and grammar at ${pr.capDo[k]}; keep every word within that level.`;
     return `Use vocabulary and grammar at CEFR level ${CEFR_DE_BAI[k]}; keep every word within that level.`;
 }
 
@@ -306,7 +316,7 @@ async function generatePrompt({ topicHint = '', userId = null, lang = 'en', leve
     // Dạng người học chọn (null = Ngẫu nhiên → giữ đề như trước).
     const chon = chonDang(NHOM_DANG_VIET, { dang, tuChon });
     if (chon) {
-        return deTheoDang({ chon, zh, rb, level, topicHint, userId, nham, chiThi });
+        return deTheoDang({ chon, zh, rb, level, topicHint, userId, nham, chiThi, lang });
     }
 
     const system = zh
@@ -326,13 +336,15 @@ async function generatePrompt({ topicHint = '', userId = null, lang = 'en', leve
             ? [
                 // Giao tiếp / TOEIC: đề viết thực tế (email, tin nhắn, ghi chú công việc),
                 // không phải câu hỏi luận học thuật.
-                'You write one practical English writing task for a learner.',
+                `You write one practical ${tenChoPrompt(lang)} writing task for a learner.`,
                 'Return ONLY valid JSON, no markdown fences, no commentary.',
                 'Shape: { "prompt": "...", "type": "" }',
-                capTuVungDeBai(level),
+                // Đề PHẢI bằng chính ngôn ngữ đích (như HSK): đề tiếng Anh bắt viết tiếng Nhật là bài dịch.
+                promptCua(lang) ? `The task MUST be written in ${promptCua(lang).vietBang}.` : '',
+                capTuVungDeBai(level, lang),
                 'The task must be ONE instruction of 2-3 sentences, realistic for everyday life or the office',
                 '(for example: write a short email, a message, or a note).',
-            ].join('\n')
+            ].filter(Boolean).join('\n')
             : [
                 'You write IELTS Writing Task 2 questions.',
                 'Return ONLY valid JSON, no markdown fences, no commentary.',
@@ -355,7 +367,7 @@ async function generatePrompt({ topicHint = '', userId = null, lang = 'en', leve
                 : 'Write one Task 2 question on a common IELTS topic.');
 
     // Lỗi ngữ pháp lặp lại của người học (chỉ tiếng Anh): chọn đề cần đúng cấu trúc đó.
-    const nhamDong = chiThiNham(nham, 'viet', zh ? 'zh' : 'en');
+    const nhamDong = chiThiNham(nham, 'viet', chuanMa(lang));
     const messages = [
         { role: 'system', content: [system, nhamDong, chiThi].filter(Boolean).join('\n') },
         { role: 'user', content: user },
@@ -380,21 +392,25 @@ async function generatePrompt({ topicHint = '', userId = null, lang = 'en', leve
  * Đề theo DẠNG BÀI người học chọn (hoặc tự nhập). Kiểu chấm chỉ quyết định giọng
  * đề; dạng bài quyết định viết cái gì — nên IELTS + "Email cá nhân" vẫn hợp lệ.
  */
-async function deTheoDang({ chon, zh, rb, level, topicHint, userId, nham = [], chiThi = '' }) {
+async function deTheoDang({ chon, zh, rb, level, topicHint, userId, nham = [], chiThi = '', lang = zh ? 'zh' : 'en' }) {
+    const pr = promptCua(lang);
+    const ngoai = !zh && pr; // Nhật/Hàn: đề bằng chính ngôn ngữ đó, đo độ dài theo đơn vị của nó
     const system = [
         zh
             ? 'You write Chinese writing prompts for learners. The prompt MUST be written in Simplified Chinese.'
-            : 'You write one English writing task for a learner.',
+            : ngoai
+                ? `You write ${tenChoPrompt(lang)} writing prompts for learners. The prompt MUST be written in ${pr.vietBang}.`
+                : 'You write one English writing task for a learner.',
         'Return ONLY valid JSON, no markdown fences, no commentary.',
         'Shape: { "prompt": "...", "type": "" }',
-        zh ? chiThiMuc(level) : capTuVungDeBai(level),
+        zh ? chiThiMuc(level) : capTuVungDeBai(level, lang),
         `The task must ask the learner to write this kind of text: ${chon.en}.`,
         'It must be ONE instruction of 1-3 sentences that gives a concrete situation.',
-        zh ? `Ask for about ${MIN_CHARS_ZH} characters.` : '',
+        zh ? `Ask for about ${MIN_CHARS_ZH} characters.` : ngoai ? `Ask for about ${nguongCua(lang).min} ${coKhoangTrang(lang) ? 'words' : 'characters'}.` : '',
         GIONG_DE_VIET[rb] || '',
         // Có chủ đề của bộ từ: đặt đề vào bối cảnh hợp cả dạng bài lẫn chủ đề, không ghép gượng.
         topicHint ? 'Set the task in a situation that fits both this kind of text and the topic naturally.' : '',
-        chiThiNham(nham, 'viet', zh ? 'zh' : 'en'),
+        chiThiNham(nham, 'viet', chuanMa(lang)),
         chiThi,
     ].filter(Boolean).join('\n');
 

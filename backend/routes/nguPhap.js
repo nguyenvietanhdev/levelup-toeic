@@ -9,9 +9,17 @@ const { protect } = require('../middleware/auth');
 const { tim, hoi, themVaoThuVien, themViDu } = require('../services/nguPhap');
 const { moLuot, traLoi, ganTienDo, moTongHop, thongKeNganHang, moRongNganHang, lichSu } = require('../services/nguPhapLuyen');
 const { baoSaiCau, baoSaiMuc } = require('../services/nguPhapBaoSai');
-const { chuanMa } = require('../config/ngonNgu');
+const { chuanMa, bangNgonNgu, tenVietGiuaCau } = require('../config/ngonNgu');
 
 router.use(protect);
+
+/** Thư viện ngữ pháp viết tay theo ngôn ngữ; Nhật/Hàn đang soạn (đợt sau). */
+const coThuVien = bangNgonNgu('Ngữ pháp: thư viện công thức', { en: true, zh: true, ja: false, ko: false });
+router.use((req, res, next) => {
+    const lang = chuanMa(req.query?.lang ?? req.body?.lang);
+    if (coThuVien(lang)) return next();
+    return res.status(400).json({ success: false, message: `Công thức ngữ pháp ${tenVietGiuaCau(lang)} đang được soạn — sắp có.` });
+});
 
 /** Tra cứu, không gọi AI. */
 router.get('/', async (req, res, next) => {

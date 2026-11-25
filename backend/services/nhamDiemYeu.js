@@ -47,7 +47,7 @@ const CO_HOI_ZH = {
     'word-choice': 'precise descriptions where similar words (会/能/可以, 知道/认识) must be chosen carefully',
     'literal-translation': 'complete sentences where a word-for-word translation from Vietnamese would fail',
 };
-const coHoiCua = bangNgonNgu('Nhắm điểm yếu: cách tạo cơ hội luyện', { en: CO_HOI, zh: CO_HOI_ZH });
+const coHoiCua = bangNgonNgu('Nhắm điểm yếu: cách tạo cơ hội luyện', { en: CO_HOI, zh: CO_HOI_ZH, ja: {}, ko: {} }); // Nhật/Hàn: chưa nhắm điểm yếu
 
 /** Nhóm lỗi nhắm được, tối đa 2, giữ thứ tự hay mắc nhất trước. */
 function locNhamDuoc(diemYeu, lang = 'en') {

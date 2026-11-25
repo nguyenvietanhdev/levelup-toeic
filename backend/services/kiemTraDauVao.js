@@ -18,7 +18,7 @@ const { TEN_KY_NANG, ghiKetQua, layHoSo, tomTatKyNang, tongQuanTrinhDo, anhKyNan
 const { homNayVN } = require('./loTrinh');
 const { chuanMa, bangNgonNgu, nhanhNoiDung, MAC_DINH, tenVietGiuaCau } = require('../config/ngonNgu');
 // Nhánh nội dung theo ngôn ngữ (sổ ngôn ngữ): ngôn ngữ chưa viết nhánh → báo thiếu, không rơi về tiếng Anh.
-const nhanhKetQua = nhanhNoiDung('Kiểm tra đầu vào: kết quả và lời khuyên');
+const nhanhKetQua = nhanhNoiDung('Kiểm tra đầu vào: kết quả và lời khuyên', ['en', 'zh', 'ja', 'ko']); // ja/ko không tới được: moTest chặn khi chưa có bộ đề
 
 /** Test có câu chấm bằng AI nên giới hạn số lần mở mỗi ngày. */
 const TOI_DA_MOI_NGAY = 3;
@@ -168,7 +168,8 @@ const BO_DE = {
         keHoach: keHoachCho(['zh-giao-tiep', 'zh-trat-tu', 'zh-da-lam', 'zh-luong-tu'], 'zh-nghe'),
     },
 };
-const boDe = bangNgonNgu('Kiểm tra đầu vào: bộ đề', BO_DE);
+// Nhật/Hàn: bộ đề đang soạn (đợt sau) — null = chưa có, moTest báo "sắp có".
+const boDe = bangNgonNgu('Kiểm tra đầu vào: bộ đề', { ...BO_DE, ja: null, ko: null });
 const KE_HOACH = BO_DE.en.keHoach;
 
 const NGAU_NHIEN = (a) => a[Math.floor(Math.random() * a.length)];
@@ -296,6 +297,7 @@ async function moTest(userId, { coMic = true, lang: muon = '' } = {}, now = new 
     // Không nói rõ thì theo ngôn ngữ đang học, như trước khi có bộ đề tiếng Trung.
     const chon = langTest(muon || (chuanMa(p?.settings?.vocabLang)), p?.settings?.vocabLang);
     if (chon.loi) return { loi: chon.loi, ma: 400 };
+    if (!boDe(chon.lang)) return { loi: `Test đầu vào ${tenVietGiuaCau(chon.lang)} đang được soạn — sắp có.`, ma: 400 };
     const daMo = await BuoiKiemTra.countDocuments({ userId, createdAt: { $gte: homNayVN(now).dau } });
     if (daMo >= TOI_DA_MOI_NGAY) return { loi: 'Hôm nay bạn đã mở đủ số lượt test. Hãy thử lại vào ngày mai.', ma: 429 };
     const cauHienTai = chonCauTest(0, [], !!coMic, NGAU_NHIEN, chon.lang);

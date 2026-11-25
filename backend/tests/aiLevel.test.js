@@ -117,10 +117,11 @@ describe('bốn chế độ AI đều dùng mức khó', () => {
         // (`capTuVungDeBai`). Thiếu một trong hai là bên đó im lặng bỏ qua mức khó.
         // Đếm LẦN GỌI (có dấu phẩy sau), không đếm dòng định nghĩa hàm.
         expect(essayAi.split('chiThiMuc(level),').length - 1).toBe(1);
-        // Hai nhánh tiếng Anh (IELTS và đề thực tế cho Giao tiếp/TOEIC) và nhánh đề theo dạng bài.
-        expect(essayAi.split('capTuVungDeBai(level),').length - 1).toBe(3);
-        // Nhánh đề theo DẠNG BÀI (deTheoDang) cũng chèn mức khó cho cả hai ngôn ngữ.
-        expect(essayAi).toContain('zh ? chiThiMuc(level) : capTuVungDeBai(level)');
+        // IELTS (tiếng Anh), đề thực tế (Giao tiếp/TOEIC, cả Nhật/Hàn — cấp độ theo sổ) và đề theo dạng bài.
+        expect(essayAi.split('capTuVungDeBai(level),').length - 1).toBe(1);
+        expect(essayAi.split('capTuVungDeBai(level, lang),').length - 1).toBe(2);
+        // Nhánh đề theo DẠNG BÀI (deTheoDang) cũng chèn mức khó cho mọi ngôn ngữ.
+        expect(essayAi).toContain('zh ? chiThiMuc(level) : capTuVungDeBai(level, lang)');
     });
 
     test('mức luôn qua `chuanHoaMuc` trước khi dùng', () => {

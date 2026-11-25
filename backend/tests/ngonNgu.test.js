@@ -165,3 +165,17 @@ describe('không còn ternary Anh–Trung cho mã / tên / đơn vị (backend)'
         expect(vi_pham).toEqual([]);
     });
 });
+
+describe('dữ liệu prompt của ngoại ngữ khác tiếng Anh', () => {
+    const N = require('../config/ngonNgu');
+    const MUC = ['easy', 'medium', 'hard'];
+    test.each(N.MA_NGON_NGU.filter((m) => m !== N.MAC_DINH))('%s có đủ trường prompt', (ma) => {
+        const p = N.layNgonNgu(ma).prompt;
+        for (const k of ['vietBang', 'ghiChuChuViet', 'chiChuViet', 'doDaiNghe', 'diemDocHieu']) expect([k, typeof p[k]]).toEqual([k, 'string']);
+        for (const k of ['doDaiDoc', 'capDo', 'capDoNghe']) for (const m of MUC) expect([k, m, typeof p[k][m]]).toEqual([k, m, 'string']);
+    });
+    test('tiếng Anh không có: prompt tiếng Anh viết riêng (CEFR/IELTS/TOEIC)', () => {
+        expect(N.promptCua('en')).toBeNull();
+        expect(N.promptCua('zh').vietBang).toBe('Simplified Chinese');
+    });
+});

@@ -32,13 +32,37 @@
       "giongEdge": "zh-CN-XiaoxiaoNeural",
       "chuViet": "han",
       "donViDem": "chu",
-      "chuDem": ["han"],
+      "chuDem": [
+        "han"
+      ],
       "tachTu": "segmenter",
       "phienAm": "pinyin",
       "goiYWhisper": "以下是普通话的句子，使用简体中文，并加上标点符号。",
       "khungCapDo": "HSK",
       "kho": "VocabularyZh",
-      "truongDauMuc": "zh"
+      "truongDauMuc": "zh",
+      "prompt": {
+        "vietBang": "Simplified Chinese",
+        "ghiChuChuViet": " with simplified characters, no pinyin",
+        "chiChuViet": "Write only Chinese characters and Chinese punctuation: no pinyin, no English.",
+        "doDaiNghe": "at most 60 Chinese characters",
+        "doDaiDoc": {
+          "easy": "100-150 characters",
+          "medium": "160-220 characters",
+          "hard": "250-350 characters"
+        },
+        "capDo": {
+          "easy": "HSK 2-3: common words, short simple sentences",
+          "medium": "HSK 3-4: some common set phrases, a few longer sentences",
+          "hard": "HSK 5: set phrases (成语) where natural, longer sentences"
+        },
+        "capDoNghe": {
+          "easy": "HSK 1–2",
+          "medium": "HSK 3–4",
+          "hard": "HSK 5–6"
+        },
+        "diemDocHieu": "set phrases, measure words, aspect (了/过/着)"
+      }
     },
     {
       "ma": "ja",
@@ -52,12 +76,37 @@
       "giongEdge": "ja-JP-NanamiNeural",
       "chuViet": "kana",
       "donViDem": "chu",
-      "chuDem": ["kana", "han"],
+      "chuDem": [
+        "kana",
+        "han"
+      ],
       "tachTu": "segmenter",
       "phienAm": "furigana",
       "khungCapDo": "JLPT",
       "kho": null,
-      "truongDauMuc": null
+      "truongDauMuc": null,
+      "prompt": {
+        "vietBang": "natural Japanese (kanji with hiragana and katakana)",
+        "ghiChuChuViet": " using standard kanji and kana, no furigana, no romaji",
+        "chiChuViet": "Write only Japanese (kanji, hiragana, katakana) and Japanese punctuation: no furigana in brackets, no romaji, no English.",
+        "doDaiNghe": "at most 80 Japanese characters",
+        "doDaiDoc": {
+          "easy": "150-220 characters",
+          "medium": "250-350 characters",
+          "hard": "400-500 characters"
+        },
+        "capDo": {
+          "easy": "JLPT N5-N4: common everyday words, short simple sentences in polite です/ます form",
+          "medium": "JLPT N4-N3: some common expressions, a few longer sentences joined with て, から, けど",
+          "hard": "JLPT N2: natural expressions, longer sentences with subordinate clauses"
+        },
+        "capDoNghe": {
+          "easy": "JLPT N5–N4",
+          "medium": "JLPT N3",
+          "hard": "JLPT N2–N1"
+        },
+        "diemDocHieu": "particles (は/が/を/に/で), verb forms and tense, politeness levels, omitted subjects"
+      }
     },
     {
       "ma": "ko",
@@ -75,7 +124,29 @@
       "phienAm": "romaja",
       "khungCapDo": "TOPIK",
       "kho": null,
-      "truongDauMuc": null
+      "truongDauMuc": null,
+      "prompt": {
+        "vietBang": "Korean (Hangul)",
+        "ghiChuChuViet": " in Hangul only, no romanization, no hanja",
+        "chiChuViet": "Write only Korean in Hangul with normal punctuation: no romanization, no hanja, no English.",
+        "doDaiNghe": "at most 30 words",
+        "doDaiDoc": {
+          "easy": "50-80 words",
+          "medium": "90-130 words",
+          "hard": "150-200 words"
+        },
+        "capDo": {
+          "easy": "TOPIK 1-2: common everyday words, short simple sentences in polite 해요 form",
+          "medium": "TOPIK 3: some common expressions, a few longer connected sentences",
+          "hard": "TOPIK 4-5: natural expressions, longer sentences with clauses"
+        },
+        "capDoNghe": {
+          "easy": "TOPIK 1–2",
+          "medium": "TOPIK 3–4",
+          "hard": "TOPIK 5–6"
+        },
+        "diemDocHieu": "particles (은/는, 이/가, 을/를), verb endings and tense, speech levels and honorifics"
+      }
     }
   ],
   "mauChuViet": {
@@ -83,5 +154,9 @@
     "hangul": "[\\uac00-\\ud7af\\u1100-\\u11ff\\u3130-\\u318f]",
     "han": "[\\u4e00-\\u9fff\\u3400-\\u4dbf]"
   },
-  "thuTuNhanDien": ["kana", "hangul", "han"]
+  "thuTuNhanDien": [
+    "kana",
+    "hangul",
+    "han"
+  ]
 }

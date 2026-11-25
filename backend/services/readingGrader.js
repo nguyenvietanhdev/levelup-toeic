@@ -19,9 +19,9 @@ function chatCompletion(...args) {
 
 const { parseJson } = require('./essayGrader');
 const { chuanHoaTuChon, CHI_THI_HOP_BOI_CANH } = require('./dangBai');
-const { chuanMa, nhanhNoiDung } = require('../config/ngonNgu');
+const { chuanMa, nhanhNoiDung, promptCua, bangNgonNgu } = require('../config/ngonNgu');
 // Nhánh nội dung theo ngôn ngữ (sổ ngôn ngữ): ngôn ngữ chưa viết nhánh → báo thiếu, không rơi về tiếng Anh.
-const nhanhRaDe = nhanhNoiDung('Luyện đọc: prompt ra đề');
+const nhanhRaDe = nhanhNoiDung('Luyện đọc: prompt ra đề', ['en', 'zh', 'ja', 'ko']);
 
 /**
  * Kho DẠNG BÀI dùng chung cho mọi kiểu chấm, chia theo nhóm.
@@ -107,14 +107,17 @@ function mucKho(v) {
 const KIEU_DOC_THEO_NGON_NGU = {
     en: ['giaotiep', 'toeic', 'ielts'],
     zh: ['giaotiep', 'hsk'],
+    ja: ['giaotiep'],
+    ko: ['giaotiep'],
 };
-const KIEU_DOC_MAC_DINH = { en: 'toeic', zh: 'hsk' };
+const KIEU_DOC_MAC_DINH = { en: 'toeic', zh: 'hsk', ja: 'giaotiep', ko: 'giaotiep' };
+const cacKieuDoc = bangNgonNgu('Luyện đọc: các kiểu chấm', KIEU_DOC_THEO_NGON_NGU);
+const kieuDocMacDinh = bangNgonNgu('Luyện đọc: kiểu chấm mặc định', KIEU_DOC_MAC_DINH);
 
 /** Kiểu chấm hợp lệ cho ngôn ngữ, hoặc mặc định. Chỉ nhận chuỗi trong danh sách. */
 function chuanHoaKieuDoc(v, lang = 'en') {
-    const ngonNgu = chuanMa(lang);
-    const cho = KIEU_DOC_THEO_NGON_NGU[ngonNgu];
-    return typeof v === 'string' && cho.includes(v) ? v : KIEU_DOC_MAC_DINH[ngonNgu];
+    const cho = cacKieuDoc(lang);
+    return typeof v === 'string' && cho.includes(v) ? v : kieuDocMacDinh(lang);
 }
 
 /**
@@ -125,6 +128,8 @@ const MO_TA_KIEU_DOC = {
     giaotiep: {
         en: 'You write everyday English reading comprehension items for a general learner.',
         zh: 'You write everyday Chinese reading comprehension items for a general learner.',
+        ja: 'You write everyday Japanese reading comprehension items for a general learner.',
+        ko: 'You write everyday Korean reading comprehension items for a general learner.',
         giong: 'Use natural, everyday language; questions check gist, details and the writer\'s intent.',
     },
     toeic: {
@@ -192,14 +197,15 @@ function donCauHoi(raw) {
  * xong là ôn lại luôn — thay vì gặp một văn bản toàn từ chưa thấy bao giờ.
  */
 async function generateReading({ tuVung = [], userId = null, level = 'medium', dang = '', tuChon = '', lang = 'en', rubric } = {}) {
-    const zh = nhanhRaDe(lang) === 'zh';
+    nhanhRaDe(lang);
+    const pr = promptCua(lang);
     const muc = mucKho(level);
     const soCau = CAU_HOI_THEO_MUC[muc];
     // Kiểu chấm quyết định văn phong bài đọc: Giao tiếp (đời thường), TOEIC (công sở),
     // IELTS (học thuật), HSK (tiếng Trung). Không chọn gì thì giữ TOEIC như trước.
     const kieuDoc = chuanHoaKieuDoc(rubric, lang);
     const moTa = MO_TA_KIEU_DOC[kieuDoc];
-    const vaiTro = moTa[zh ? 'zh' : 'en'];
+    const vaiTro = moTa[chuanMa(lang)] || moTa.en;
     // Dạng bài tự nhập được ưu tiên; không có thì lấy trong kho chung.
     const tuNhap = chuanHoaTuChon(tuChon);
     const kieu = tuNhap ? 'custom' : chuanHoaDang(dang, kieuDoc);
@@ -218,7 +224,6 @@ async function generateReading({ tuVung = [], userId = null, level = 'medium', d
     const doDai = muc === 'easy' ? '80-120' : muc === 'hard' ? '200-260' : '130-180';
     // Chữ Hán đặc hơn từ tiếng Anh: cùng một lượng thông tin cần ít ký tự hơn.
     // Dùng chung con số là bài tiếng Trung dài gấp rưỡi bài tiếng Anh.
-    const doDaiZh = muc === 'easy' ? '100-150' : muc === 'hard' ? '250-350' : '160-220';
 
     // Hai CHUẨN chứ không phải một chuẩn dịch sang hai thứ tiếng — cùng lý do
     // đã tách IELTS/HSK ở Viết luận. Tiếng Trung không có TOEIC; dạng đọc hiểu
@@ -233,10 +238,10 @@ async function generateReading({ tuVung = [], userId = null, level = 'medium', d
         `  "questions": [ { "question": "...", "options": ["...","...","...","..."],`,
         '                  "answer": "A|B|C|D", "explain": "..." } ]',
         '}',
-        zh
-            // Đơn vị là CHỮ, không phải từ: tiếng Trung không đặt khoảng trắng
-            // giữa các từ nên "150 words" là một yêu cầu model không đo được.
-            ? `The passage must be a realistic ${dangMoTa} in Simplified Chinese, ${doDaiZh} characters.`
+        pr
+            // Độ dài theo ĐƠN VỊ của ngôn ngữ (sổ ngôn ngữ): tiếng Trung/Nhật đo bằng CHỮ —
+            // không đặt khoảng trắng giữa các từ nên "150 words" là yêu cầu model không đo được.
+            ? `The passage must be a realistic ${dangMoTa} in ${pr.vietBang}, ${pr.doDaiDoc[muc]}.`
             : `The passage must be a realistic ${dangMoTa} of ${doDai} words.`,
         `Write exactly ${soCau} questions.`,
         'Each question must have exactly 4 options.',
@@ -250,9 +255,7 @@ async function generateReading({ tuVung = [], userId = null, level = 'medium', d
         // là thêm một tầng rào cản đúng lúc họ cần hiểu vì sao mình sai.
         'Write "explain" in Vietnamese, one or two sentences, quoting the part',
         'of the passage that proves the answer.',
-        zh
-            ? 'Keep "title", "passage", "question" and "options" in Simplified Chinese.'
-            : 'Keep "title", "passage", "question" and "options" in English.',
+        `Keep "title", "passage", "question" and "options" in ${pr ? pr.vietBang : 'English'}.`,
     ];
 
     if (tu.length) {
@@ -289,7 +292,7 @@ async function generateReading({ tuVung = [], userId = null, level = 'medium', d
 
     return {
         success: true,
-        lang: zh ? 'zh' : 'en',
+        lang: chuanMa(lang),
         title: String(parsed.title || '').trim(),
         passage: String(parsed.passage).trim(),
         dang: kieu,

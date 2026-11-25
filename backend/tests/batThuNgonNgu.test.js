@@ -33,10 +33,13 @@ describe('bật thử tiếng Nhật trong sổ', () => {
         expect(N.tenPromptDayDu('ja')).toBe('Japanese');
     });
 
-    test('ra đề khi CHƯA viết nhánh nội dung tiếng Nhật: báo rõ thiếu gì, không ra đề tiếng Anh', async () => {
+    test('ra đề dịch ngược: prompt nói tiếng Nhật, cấp JLPT, không phải tiếng Anh/HSK', async () => {
         const G = require('../services/translationGrader');
-        await expect(G.generatePassage({ tuVung: ['勉強'], lang: 'ja', chieu: 'ngoai-vi' })).rejects.toThrow(/Dịch ngược: prompt ra đề.*"ja"/);
-        expect(chatCompletion).not.toHaveBeenCalled();
+        await G.generatePassage({ tuVung: ['勉強'], lang: 'ja', chieu: 'ngoai-vi' });
+        const sys = chatCompletion.mock.calls[0][0][0].content;
+        expect(sys).toMatch(/natural Japanese using standard kanji and kana/);
+        expect(sys).toMatch(/JLPT/);
+        expect(sys).not.toMatch(/English|HSK|CEFR/);
     });
 
     test('nhận diện: lời bài hát tiếng Nhật không còn bị chặn, gán đúng ja', () => {
@@ -50,7 +53,7 @@ describe('bật thử tiếng Nhật trong sổ', () => {
     });
 });
 
-describe('mở tiếng Nhật cần thêm nội dung gì', () => {
+describe('tiếng Nhật/Hàn đủ bảng nội dung', () => {
     test('thieuNoiDung liệt kê đúng các bảng còn thiếu (danh sách việc phải làm)', () => {
         const fs = require('fs');
         const path = require('path');
@@ -60,8 +63,9 @@ describe('mở tiếng Nhật cần thêm nội dung gì', () => {
                 if (ten.endsWith('.js') && fs.readFileSync(p, 'utf8').includes('bangNgonNgu(')) require(p);
             }
         }
-        const thieu = N.thieuNoiDung('ja');
-        expect(thieu).toEqual(expect.arrayContaining(['Viết luận: tiêu chí mặc định', 'Kiểm tra đầu vào: bộ đề', 'Phản xạ câu: các khung câu']));
+        // Đợt 1: mọi bảng đã có mục tiếng Nhật (phần chưa soạn khai rõ là null/[] = "sắp có").
+        expect(N.thieuNoiDung('ja')).toEqual([]);
+        expect(N.thieuNoiDung('ko')).toEqual([]);
         expect(N.thieuNoiDung('en')).toEqual([]);
     });
 });

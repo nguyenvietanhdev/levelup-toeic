@@ -30,8 +30,18 @@ const KY_NANG_ZH = [
     { key: 'zh-noi', ten: 'Nói thành câu', icon: 'fa-microphone-lines' },
 ];
 const KHUNG_KEYS_ZH = KHUNG_ZH.map((k) => k.key);
-const kyNangCua = bangNgonNgu('Hồ sơ học: các kỹ năng', { en: KY_NANG, zh: KY_NANG_ZH });
-const TEN_KY_NANG = new Map([...KY_NANG, ...KY_NANG_ZH].map((k) => [k.key, k.ten]));
+/**
+ * Tiếng Nhật/Hàn: chưa có khung Phản xạ và test đầu vào (đợt sau) — hồ sơ chỉ có Nghe và Nói,
+ * ghi từ bài nghe chép lại và hội thoại giọng nói (mã kỹ năng `ja-nghe`, `ko-noi`… theo maKyNang).
+ */
+const kyNangCoBan = (ma) => [
+    { key: `${ma}-nghe`, ten: 'Nghe hiểu câu', icon: 'fa-headphones' },
+    { key: `${ma}-noi`, ten: 'Nói thành câu', icon: 'fa-microphone-lines' },
+];
+const KY_NANG_JA = kyNangCoBan('ja');
+const KY_NANG_KO = kyNangCoBan('ko');
+const kyNangCua = bangNgonNgu('Hồ sơ học: các kỹ năng', { en: KY_NANG, zh: KY_NANG_ZH, ja: KY_NANG_JA, ko: KY_NANG_KO });
+const TEN_KY_NANG = new Map([...KY_NANG, ...KY_NANG_ZH, ...KY_NANG_JA, ...KY_NANG_KO].map((k) => [k.key, k.ten]));
 
 const GIAM = 0.9;
 const NGUONG_YEU = 50;
