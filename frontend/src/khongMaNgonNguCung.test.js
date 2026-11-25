@@ -46,7 +46,7 @@ describe('mã giọng lấy từ sổ ngôn ngữ', () => {
             if (/'zh-CN'|'en-US'/.test(ma)) vi_pham.push(rel);
         }
         expect(vi_pham).toEqual([]);
-    });
+    }, 30000); // quét toàn bộ mã nguồn: cả bộ test chạy song song thì chậm
 
     test('mọi ngoại lệ còn tồn tại (xoá file thì gỡ khỏi danh sách)', () => {
         for (const rel of Object.keys(NGOAI_LE)) {

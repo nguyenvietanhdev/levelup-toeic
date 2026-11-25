@@ -5,6 +5,7 @@ import { EventBus, GameEvents } from '@game/eventBus.js';
 import { Notification } from '@ui/Toaster.jsx';
 import { levelsFor, bandLabel, BANDS } from '@lib/levelBands.js';
 import { nhanKho } from '@lib/nhanKho.js';
+import { luaChonNgonNguHoc } from '@lib/ngonNgu.js';
 
 // Bảng mức độ khó theo ngôn ngữ nằm ở `@lib/levelBands.js` — tiếng Trung dùng
 // HSK, tiếng Anh dùng CEFR. Trước đây bảng CEFR bị chép cứng ở đây, nên chọn
@@ -199,8 +200,10 @@ export default function QuickSettings({ variant = 'bar' }) {
                     opacity: blocked ? 0.7 : 1,
                 }}
             >
-                <option value="en">🇬🇧 Tiếng Anh</option>
-                <option value="zh">🇨🇳 Tiếng Trung</option>
+                {/* Ngôn ngữ đang mở — sinh từ sổ ngôn ngữ. */}
+                {luaChonNgonNguHoc().map((n) => (
+                    <option key={n.ma} value={n.ma}>{n.co} {n.tenViet}</option>
+                ))}
                 <option value="bi">🔀 Trung–Anh</option>
             </select>
         </div>

@@ -16,6 +16,7 @@
 import { describe, test, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { luaChonNgonNguHoc } from '@lib/ngonNgu.js';
 
 const strip = (s) => s
     .replace(/\/\*[\s\S]*?\*\//g, '')
@@ -101,8 +102,10 @@ describe('chọn ngôn ngữ học dùng <select>', () => {
         // Đồng bộ với ba lựa chọn còn lại trong nhóm; nút chỉ hiện giá trị hiện
         // tại nên phải bấm thử mới biết lựa chọn kia là gì.
         expect(quick).toMatch(/id=\{inMenu \? 'menu-lang-select' : 'quick-lang-select'\}/);
-        expect(quick).toMatch(/<option value="en">/);
-        expect(quick).toMatch(/<option value="zh">/);
+        // Lựa chọn sinh từ sổ ngôn ngữ (bật ngôn ngữ mới là tự hiện ở đây), 'bi' thêm riêng.
+        expect(quick).toMatch(/\{luaChonNgonNguHoc\(\)\.map\(\(n\) => \(\s*<option key=\{n\.ma\} value=\{n\.ma\}>\{n\.co\} \{n\.tenViet\}<\/option>/);
+        expect(quick).toMatch(/<option value="bi">/);
+        expect(luaChonNgonNguHoc().map((n) => n.ma)).toEqual(['en', 'zh']);
     });
 
     test('KHÔNG dùng `disabled` khi bị khoá', () => {
@@ -114,7 +117,8 @@ describe('chọn ngôn ngữ học dùng <select>', () => {
     });
 
     test('nhãn tiếng Trung là tên trơn, không còn ổ khoá', () => {
-        expect(quick).toMatch(/<option value="zh">🇨🇳 Tiếng Trung<\/option>/);
+        const zh = luaChonNgonNguHoc().find((n) => n.ma === 'zh');
+        expect(`${zh.co} ${zh.tenViet}`).toBe('🇨🇳 Tiếng Trung');
         expect(quick).not.toMatch(/🔒 Tiếng Trung/);
     });
 

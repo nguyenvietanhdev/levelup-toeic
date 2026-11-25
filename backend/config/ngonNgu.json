@@ -4,6 +4,7 @@
   "ngonNgu": [
     {
       "ma": "en",
+      "co": "🇬🇧",
       "hoatDong": true,
       "tenViet": "Tiếng Anh",
       "tenNgan": "Anh",
@@ -20,6 +21,7 @@
     },
     {
       "ma": "zh",
+      "co": "🇨🇳",
       "hoatDong": true,
       "tenViet": "Tiếng Trung",
       "tenNgan": "Trung",
@@ -36,6 +38,7 @@
     },
     {
       "ma": "ja",
+      "co": "🇯🇵",
       "hoatDong": false,
       "tenViet": "Tiếng Nhật",
       "tenNgan": "Nhật",
@@ -52,6 +55,7 @@
     },
     {
       "ma": "ko",
+      "co": "🇰🇷",
       "hoatDong": false,
       "tenViet": "Tiếng Hàn",
       "tenNgan": "Hàn",

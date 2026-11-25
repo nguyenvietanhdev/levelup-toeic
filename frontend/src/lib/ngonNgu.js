@@ -43,3 +43,12 @@ export const tenChoPrompt = (ma) => layNgonNgu(ma).tenPrompt;
 export const bcp47 = (ma) => layNgonNgu(ma).bcp47;
 export const donViDem = (ma) => layNgonNgu(ma).donViDem;
 export const tenViet = (ma) => layNgonNgu(ma).tenViet;
+
+/**
+ * Lựa chọn cho ô chọn NGÔN NGỮ HỌC — sinh từ sổ: bật một ngôn ngữ (`hoatDong: true`) là nó tự hiện
+ * ở mọi ô chọn. Chế độ song ngữ 'bi' không phải ngôn ngữ nên các ô tự thêm riêng.
+ */
+export const luaChonNgonNguHoc = () => NGON_NGU_HOAT_DONG.map((ma) => {
+    const n = layNgonNgu(ma);
+    return { ma, co: n.co || '', tenViet: n.tenViet };
+});

@@ -4,6 +4,7 @@ import Toggle from './Toggle.jsx';
 import { QUESTION_TIME_MODES, getQuestionTimeDefault } from '@components/practice/questionTime.js';
 import { bandLabel, BANDS, levelsFor } from '@lib/levelBands.js';
 import { Notification } from '@ui/Toaster.jsx';
+import { luaChonNgonNguHoc } from '@lib/ngonNgu.js';
 
 const SEC_OPTIONS = [10, 15, 20, 25, 30, 45, 60, 90, 120];
 
@@ -160,8 +161,10 @@ export default function PracticePanel({ s, handleQPS, updateSetting, handleDiffi
                     } catch { /* mạng hỏng — localStorage đã đúng, save sau đẩy lên */ }
                     window.location.reload();
                 }}>
-                    <option value="en">🇬🇧 Tiếng Anh (EN)</option>
-                    <option value="zh">🇨🇳 Tiếng Trung (ZH)</option>
+                    {/* Ngôn ngữ đang mở — sinh từ sổ ngôn ngữ (bật ngôn ngữ mới là tự hiện ở đây). */}
+                    {luaChonNgonNguHoc().map((n) => (
+                        <option key={n.ma} value={n.ma}>{n.co} {n.tenViet} ({n.ma.toUpperCase()})</option>
+                    ))}
                     {/* Kho song ngữ: mỗi bản ghi có cả chữ Hán lẫn từ tiếng Anh,
                         không có nghĩa tiếng Việt. Ô này TỪNG THIẾU ở đây trong
                         khi thanh nav đã có — đổi ở nav xong vào Cài đặt thì

@@ -14,6 +14,7 @@ import { describe, test, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { luaChonNgonNguHoc } from '@lib/ngonNgu.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const home = readFileSync(
@@ -31,11 +32,12 @@ describe('Cài đặt có đủ ba lựa chọn ngôn ngữ', () => {
     });
 
     test('đủ cả ba, khớp với thanh nav', () => {
-        const cua = (src) => [...src.matchAll(/<option value="(en|zh|bi)"/g)].map((m) => m[1]);
-        expect(cua(panel)).toEqual(['en', 'zh', 'bi']);
-        // Nav là nơi đã đúng từ trước — hai chỗ lệch nhau thì đổi bên này xong
-        // sang bên kia thấy giá trị khác.
-        expect(new Set(cua(nav))).toEqual(new Set(['en', 'zh', 'bi']));
+        // Ngôn ngữ đang mở sinh từ sổ ngôn ngữ ở CẢ HAI ô (không lệch nhau được nữa), 'bi' thêm riêng.
+        for (const src of [panel, nav]) {
+            expect(src).toMatch(/luaChonNgonNguHoc\(\)\.map\(/);
+            expect(src).toMatch(/<option value="bi">/);
+        }
+        expect(luaChonNgonNguHoc().map((n) => n.ma)).toEqual(['en', 'zh']);
     });
 });
 

@@ -19,7 +19,10 @@ const NAP = {
  */
 function khoTuVung(lang, { coBi = false } = {}) {
     if (coBi && lang === 'bi') return NAP.VocabularyBi();
-    return NAP[layNgonNgu(chuanMa(lang)).kho]();
+    const n = layNgonNgu(chuanMa(lang));
+    // Ngôn ngữ đã mở mà chưa khai kho (hoặc chưa thêm model vào NAP): báo rõ, đừng để lỗi khó hiểu.
+    if (!n.kho || !NAP[n.kho]) throw new Error(`Ngôn ngữ "${n.ma}" chưa có kho từ vựng (khai "kho" trong config/ngonNgu.json và thêm model vào NAP).`);
+    return NAP[n.kho]();
 }
 
 /** Trường lưu mặt chữ chính của từ trong kho của `lang` ('en' | 'zh'). */
