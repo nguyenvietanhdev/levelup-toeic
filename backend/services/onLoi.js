@@ -21,6 +21,7 @@
  *     việc sửa câu cũ ở các ngày khác nhau.
  */
 const LoiOn = require('../models/LoiOn');
+const { tenChoPrompt } = require('../config/ngonNgu');
 const CauLuyenLoi = require('../models/CauLuyenLoi');
 const BuoiOnLoi = require('../models/BuoiOnLoi');
 const Essay = require('../models/Essay');
@@ -445,7 +446,7 @@ function kiemTuDat(cau, dapAn, lang) {
 
 /** AI chấm câu tự đặt: có dùng đúng cấu trúc và đúng ngữ pháp không. */
 async function chamTuDat({ cau, dapAn, lang, userId }) {
-    const L = lang === 'zh' ? 'Chinese' : 'English';
+    const L = tenChoPrompt(lang);
     const res = await chatCompletion([
         {
             role: 'system',

@@ -8,6 +8,7 @@
  * Chặn trước khi gọi AI (miễn phí): bài không đổi chữ nào, hết lượt xem lại.
  */
 const { parseJson } = require('./essayGrader');
+const { tenChoPrompt } = require('../config/ngonNgu');
 const { chuanHoaLoai, chuanHoaMuc, chiThiPhanLoai, chiThiChuaBai } = require('./errorTaxonomy');
 
 // Nạp trễ như các bộ chấm khác: nạp module không được khởi tạo client AI.
@@ -27,7 +28,7 @@ const gon = (s) => String(s || '').replace(/\s+/g, ' ').trim();
 const khongDoi = (a, b) => gon(a) === gon(b);
 
 function promptXemLai({ lang, kieu, passage }) {
-    const L = lang === 'zh' ? 'Chinese' : 'English';
+    const L = tenChoPrompt(lang);
     return [
         `You are a ${L} teacher checking a learner's REVISION of their ${kieu === 'dich' ? 'translation' : 'writing'}.`,
         'You get the list of mistakes marked earlier (numbered) and the revised text.',

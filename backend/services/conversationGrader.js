@@ -8,6 +8,7 @@
  * từng kỳ thi khác nhau — ghi rõ trong phần mô tả để người học hiểu.
  */
 const { textCompletion } = require('./aiClient');
+const { tenChoPrompt } = require('../config/ngonNgu');
 const { khoaCua, chuanHoaLoai, chuanHoaMuc } = require('./errorTaxonomy');
 const logger = require('../utils/logger');
 
@@ -138,7 +139,7 @@ function buildGradingMessages({ rubric, lang, track, level, turns, nghiemNguPhap
             ? 'Grammar: judge against standard written English. Count every error.'
             : 'Grammar: this is spoken conversation. Do NOT penalize contractions, slang, abbreviations or everyday spoken forms (e.g. "gonna", "wanna", "u", dropped articles in casual speech). Lower the grammar score only for errors that actually hurt understanding.')
         : '';
-    const ngonNgu = lang === 'zh' ? 'Chinese' : 'English';
+    const ngonNgu = tenChoPrompt(lang);
     const transcript = turns
         .map((t) => `${t.role === 'user' ? 'LEARNER' : 'PARTNER'}: ${t.content}`)
         .join('\n');

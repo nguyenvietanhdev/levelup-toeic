@@ -21,6 +21,7 @@
  * band) kiểm thử được mà không cần khoá API — đó là chỗ dễ sai nhất.
  */
 const { chiThiPhanLoai, chuanHoaLoai, chiThiChuaBai, chuanHoaMuc } = require('./errorTaxonomy');
+const { tenChoPrompt } = require('../config/ngonNgu');
 const { chiThiMuc } = require('./aiLevel');
 const { chonDang } = require('./dangBai');
 const { chiThiNham } = require('./nhamDiemYeu');
@@ -431,11 +432,11 @@ async function deTheoDang({ chon, zh, rb, level, topicHint, userId, nham = [], c
 const TOI_DA_LOI = 12;
 const DONG_GIOI_HAN_LOI = `List at most ${TOI_DA_LOI} errors, the most important first; skip minor repeats of the same mistake.`;
 
-function khungChamChung(crit, zh, rb) {
-    const ngonNguBai = zh ? 'CHINESE' : 'ENGLISH';
+function khungChamChung(crit, lang, rb) {
+    const ngonNguBai = tenChoPrompt(lang).toUpperCase();
     const tenBo = rb === 'toeic' ? 'TOEIC Writing' : 'everyday communication';
     return [
-        `You are an experienced ${zh ? 'Chinese' : 'English'} writing examiner judging ${tenBo}.`,
+        `You are an experienced ${tenChoPrompt(lang)} writing examiner judging ${tenBo}.`,
         'Assess the piece against these criteria (key — meaning):',
         ...crit.map((c) => `  ${c.key} — ${c.vi}`),
         'Return ONLY valid JSON, no markdown fences, no commentary.',
@@ -452,7 +453,7 @@ function khungChamChung(crit, zh, rb) {
         `Keep "quote", "fix" and "improved" in ${ngonNguBai} (they are the learner's text).`,
         'Be specific: quote the actual wording, never say "some grammar errors".',
         DONG_GIOI_HAN_LOI,
-        chiThiPhanLoai(zh ? 'zh' : 'en'),
+        chiThiPhanLoai(lang),
         chiThiChuaBai('fix'),
     ].join('\n');
 }
@@ -463,7 +464,7 @@ async function gradeEssay({ prompt = '', essay = '', userId = null, lang = 'en',
     const crit = criteriaFor(lang, rb);
 
     const system = laBoChungKhung(rb)
-        ? khungChamChung(crit, zh, rb)
+        ? khungChamChung(crit, lang, rb)
         : zh
         ? [
             'You are an experienced HSK writing (书写) examiner.',

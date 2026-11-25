@@ -24,6 +24,7 @@ function chatCompletion(...args) {
 }
 
 const { parseJson, clampBand, countUnits } = require('./essayGrader');
+const { tenChoPrompt } = require('../config/ngonNgu');
 const { chiThiPhanLoai, chuanHoaLoai, chiThiChuaBai, chuanHoaMuc } = require('./errorTaxonomy');
 const { chonDang, CHI_THI_HOP_BOI_CANH } = require('./dangBai');
 const { chiThiNham } = require('./nhamDiemYeu');
@@ -188,7 +189,7 @@ async function generatePassage({ tuVung = [], userId = null, lang = 'en', level 
         // Việt là hỏng chính yêu cầu "không có tiếng Anh trong đề".
         system.push(
             `Write the paragraph so that a good translation would naturally use`,
-            `these ${zh ? 'Chinese' : 'English'} words: ${tu.join(', ')}.`,
+            `these ${tenChoPrompt(lang)} words: ${tu.join(', ')}.`,
             'Express their meaning in Vietnamese; never write them literally.',
         );
         if (chon) system.push(CHI_THI_HOP_BOI_CANH);
@@ -244,7 +245,7 @@ async function generatePassage({ tuVung = [], userId = null, lang = 'en', level 
  */
 async function gradeTranslation({ passage = '', translation = '', userId = null, lang = 'en' } = {}) {
     const zh = lang === 'zh';
-    const dich = zh ? 'Chinese' : 'English';
+    const dich = tenChoPrompt(lang);
 
     const system = [
         `You are an experienced ${dich} teacher marking a Vietnamese-to-${dich} translation.`,
@@ -335,7 +336,7 @@ const CAP_DO_NGUOC = {
  */
 async function generatePassageNguoc({ tuVung = [], userId = null, lang = 'en', level = 'medium', dang = '', tuChon = '' } = {}) {
     const zh = lang === 'zh';
-    const ten = zh ? 'Chinese' : 'English';
+    const ten = tenChoPrompt(lang);
     const chon = chonDang(NHOM_DANG_DICH, { dang, tuChon });
     const muc = mucKho(level);
     const soCau = CAU_THEO_MUC[muc];
@@ -411,7 +412,7 @@ function chuanHoaHieuSai(ds, passage, lang = 'en') {
  */
 async function gradeTranslationNguoc({ passage = '', translation = '', userId = null, lang = 'en' } = {}) {
     const zh = lang === 'zh';
-    const ten = zh ? 'Chinese' : 'English';
+    const ten = tenChoPrompt(lang);
     const system = [
         `You are an experienced ${ten} teacher checking a Vietnamese learner's READING COMPREHENSION.`,
         `The learner translated a ${ten} passage into Vietnamese, their native language.`,

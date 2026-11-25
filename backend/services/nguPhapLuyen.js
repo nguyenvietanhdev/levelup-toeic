@@ -21,6 +21,7 @@
  * Mỗi câu đã làm được ghi vào lịch sử để xem lại, nghe lại và lưu vào Từ vựng riêng.
  */
 const NguPhapBaiTap = require('../models/NguPhapBaiTap');
+const { tenChoPrompt } = require('../config/ngonNgu');
 const BuoiNguPhap = require('../models/BuoiNguPhap');
 const NguPhapTienDo = require('../models/NguPhapTienDo');
 const NguPhapLichSu = require('../models/NguPhapLichSu');
@@ -155,7 +156,7 @@ async function aiSoatBoCau(muc, boCau, userId) {
         {
             role: 'system',
             content: [
-                `You are a strict ${muc.lang === 'zh' ? 'Mandarin Chinese' : 'English'} teacher reviewing practice questions on: ${muc.ten}.`,
+                `You are a strict ${tenChoPrompt(muc.lang)} teacher reviewing practice questions on: ${muc.ten}.`,
                 'Reject an item if any of these is true:',
                 '- multiple choice: put EACH option into the sentence in turn and judge it on its own. Reject if the marked answer is wrong, or if MORE THAN ONE option gives a grammatical, natural sentence, even when one sounds more common (for example "talk about it" and "speak about it" are both correct);',
                 '- correction: the corrected sentence is still wrong or unnatural, or the "wrong" sentence has no real mistake;',

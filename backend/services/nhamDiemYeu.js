@@ -17,6 +17,7 @@
  */
 const { layTienBo } = require('./tienBo');
 
+const { tenChoPrompt } = require('../config/ngonNgu');
 /**
  * Cách tạo cơ hội luyện cho từng nhóm lỗi (tiếng Anh vì đi thẳng vào prompt).
  * Nhóm không có ở đây (chính tả, dấu câu, khác) không nhắm được bằng nội dung.
@@ -75,7 +76,7 @@ function chiThiNham(keys, cheDo, lang = 'en') {
         return `The learner often makes mistakes with: ${ds}. Choose a task whose answer naturally needs this, without mentioning grammar.`;
     }
     // Dịch: đoạn gốc tiếng Việt, người học dịch SANG ngoại ngữ.
-    return `The learner often makes mistakes with: ${ds}. Include one or two sentences whose correct ${lang === 'zh' ? 'Chinese' : 'English'} translation needs this. Do not mention grammar.`;
+    return `The learner often makes mistakes with: ${ds}. Include one or two sentences whose correct ${tenChoPrompt(lang)} translation needs this. Do not mention grammar.`;
 }
 
 /**

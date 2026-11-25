@@ -58,7 +58,7 @@ describe('hàm của sổ', () => {
     });
 
     test('tên cho prompt, mã giọng, đơn vị đếm', () => {
-        expect(N.tenChoPrompt('zh')).toBe('Mandarin Chinese');
+        expect(N.tenChoPrompt('zh')).toBe('Chinese');
         expect(N.tenChoPrompt('ja')).toBe('Japanese');
         expect(N.bcp47('ko')).toBe('ko-KR');
         expect(N.giongEdge('zh')).toBe('zh-CN-XiaoxiaoNeural');
@@ -87,5 +87,19 @@ describe('enum DB sinh từ sổ', () => {
         for (const f of ['authController.js', 'userStateController.js']) {
             expect(fs.readFileSync(path.join(__dirname, '..', 'controllers', f), 'utf8')).toMatch(/locThietLap\((state\.)?settings\)/);
         }
+    });
+});
+
+describe('tên ngôn ngữ trong prompt AI lấy từ sổ', () => {
+    test("không còn ternary kiểu zh ? 'Chinese' : 'English' trong services/controllers", () => {
+        const vi_pham = [];
+        for (const thuMuc of ['services', 'controllers']) {
+            const dir = path.join(__dirname, '..', thuMuc);
+            for (const f of fs.readdirSync(dir).filter((x) => x.endsWith('.js'))) {
+                const src = fs.readFileSync(path.join(dir, f), 'utf8');
+                if (/\?\s*'(Mandarin )?Chinese'\s*:\s*'English'/.test(src) || /\?\s*'CHINESE'\s*:\s*'ENGLISH'/.test(src)) vi_pham.push(`${thuMuc}/${f}`);
+            }
+        }
+        expect(vi_pham).toEqual([]);
     });
 });
