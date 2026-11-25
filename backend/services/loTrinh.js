@@ -25,6 +25,7 @@ const ToeicAttempt = require('../models/ToeicAttempt');
 const { layHoSoToeic, SO_CAU_TOI_THIEU_FULL } = require('./hoSoToeic');
 const { layHoSoBang, CAU_HINH: CAU_HINH_BANG } = require('./hoSoBang');
 const { tomTatKyNang, chonTrongTam, nenTangZh, NGUONG_YEU, NGUONG_VUNG } = require('./hoSoHoc');
+const { chuanMa } = require('../config/ngonNgu');
 
 /** Giờ Việt Nam = UTC+7, không đổi theo mùa. */
 const LECH_GIO_VN = 7 * 60 * 60 * 1000;
@@ -204,7 +205,7 @@ function dungLoTrinhBang(dem, hs, { ngay, soNgay }) {
 async function layLoTrinh(userId, now = new Date()) {
     const { dau, ngay, soNgay } = homNayVN(now);
     const profile = await UserProfile.findOne({ userId }).select('settings').lean();
-    const lang = profile?.settings?.vocabLang === 'zh' ? 'zh' : 'en';
+    const lang = chuanMa(profile?.settings?.vocabLang);
     const tuNay = { $gte: dau };
 
     const [onSai, hocTu, nghe, doc, noi, viet, dich, tuDenHan, tongKet, loiDenHan, onLoi, phanXa, hoSo] = await Promise.all([

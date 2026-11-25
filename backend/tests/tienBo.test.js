@@ -183,7 +183,7 @@ describe('đọc từ DB', () => {
 
     test('lọc theo ngôn ngữ đang học (bài cũ không có lang tính là tiếng Anh)', async () => {
         await layTienBo('u1', NOW);
-        expect(goi.find(([t]) => t === 'Essay')[1].lang).toEqual({ $ne: 'zh' });
+        expect(goi.find(([t]) => t === 'Essay')[1].lang).toEqual(require('../config/ngonNgu').locTheoNgonNgu('en').lang);
         mockLang = 'zh';
         goi.length = 0;
         await layTienBo('u1', NOW);

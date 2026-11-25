@@ -62,6 +62,21 @@ function locThietLap(settings) {
     return con;
 }
 
+/**
+ * Điều kiện Mongo lọc bản ghi theo ngôn ngữ. Bản ghi cũ không có `lang` (trước khi có tiếng Trung)
+ * thuộc ngôn ngữ mặc định → mặc định lấy mọi thứ KHÔNG phải ngôn ngữ khác đã khai.
+ */
+function locTheoNgonNgu(lang) {
+    const ma = chuanMa(lang);
+    return ma === MAC_DINH ? { lang: { $nin: MA_NGON_NGU.filter((m) => m !== MAC_DINH) } } : { lang: ma };
+}
+
+/** Mã kỹ năng của hồ sơ học: ngôn ngữ mặc định giữ tên gốc ('noi'), ngôn ngữ khác thêm tiền tố ('zh-noi'). */
+function maKyNang(lang, ky) {
+    const ma = chuanMa(lang);
+    return ma === MAC_DINH ? ky : `${ma}-${ky}`;
+}
+
 const tenChoPrompt = (ma) => layNgonNgu(ma).tenPrompt;
 const bcp47 = (ma) => layNgonNgu(ma).bcp47;
 const giongEdge = (ma) => layNgonNgu(ma).giongEdge;
@@ -69,5 +84,5 @@ const donViDem = (ma) => layNgonNgu(ma).donViDem;
 
 module.exports = {
     SO, MAC_DINH, MA_NGON_NGU, MA_NGON_NGU_BI, NGON_NGU_HOAT_DONG,
-    layNgonNgu, chuanMa, nhanDienChuViet, ngonNguHoc, vocabLangHopLe, locThietLap, tenChoPrompt, bcp47, giongEdge, donViDem,
+    layNgonNgu, chuanMa, nhanDienChuViet, ngonNguHoc, vocabLangHopLe, locThietLap, locTheoNgonNgu, maKyNang, tenChoPrompt, bcp47, giongEdge, donViDem,
 };

@@ -19,6 +19,7 @@ function chatCompletion(...args) {
 
 const { parseJson } = require('./essayGrader');
 const { chuanHoaTuChon, CHI_THI_HOP_BOI_CANH } = require('./dangBai');
+const { chuanMa } = require('../config/ngonNgu');
 
 /**
  * Kho DẠNG BÀI dùng chung cho mọi kiểu chấm, chia theo nhóm.
@@ -109,7 +110,7 @@ const KIEU_DOC_MAC_DINH = { en: 'toeic', zh: 'hsk' };
 
 /** Kiểu chấm hợp lệ cho ngôn ngữ, hoặc mặc định. Chỉ nhận chuỗi trong danh sách. */
 function chuanHoaKieuDoc(v, lang = 'en') {
-    const ngonNgu = lang === 'zh' ? 'zh' : 'en';
+    const ngonNgu = chuanMa(lang);
     const cho = KIEU_DOC_THEO_NGON_NGU[ngonNgu];
     return typeof v === 'string' && cho.includes(v) ? v : KIEU_DOC_MAC_DINH[ngonNgu];
 }

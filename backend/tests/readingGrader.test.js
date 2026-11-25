@@ -529,7 +529,7 @@ describe('hỗ trợ CẢ HAI ngôn ngữ', () => {
             join(__dirname, '..', 'controllers', 'readingController.js'), 'utf8');
         const i = ctrl.indexOf('exports.passage');
         const than = ctrl.slice(i, ctrl.indexOf('exports.grade'));
-        expect(than).toMatch(/settings\?\.vocabLang === 'zh'/);
+        expect(than).toMatch(/chuanMa\(profile\?\.settings\?\.vocabLang\)/);
         expect(than).not.toMatch(/req\.body\.lang/);
     });
 

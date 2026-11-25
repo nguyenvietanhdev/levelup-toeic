@@ -12,6 +12,7 @@ const Translation = require('../models/Translation');
 const Conversation = require('../models/Conversation');
 const UserProfile = require('../models/UserProfile');
 const { thongKe, chuanHoaLoai, nhanLoi, chuanHoaMuc } = require('./errorTaxonomy');
+const { chuanMa, locTheoNgonNgu } = require('../config/ngonNgu');
 
 /** Lấy lỗi trong chừng này ngày; đủ xa để thấy thói quen, đủ gần để còn liên quan. */
 const SO_NGAY = 180;
@@ -65,8 +66,8 @@ function dungSoTay({ viet = [], dich = [], noi = [] }, lang) {
 
 async function laySoTay(userId, now = new Date()) {
     const profile = await UserProfile.findOne({ userId }).select('settings').lean();
-    const lang = profile?.settings?.vocabLang === 'zh' ? 'zh' : 'en';
-    const theoLang = lang === 'zh' ? { lang: 'zh' } : { lang: { $ne: 'zh' } };
+    const lang = chuanMa(profile?.settings?.vocabLang);
+    const theoLang = locTheoNgonNgu(lang);
     const tu = new Date(now.getTime() - SO_NGAY * 86400000);
 
     const [viet, dich, noi] = await Promise.all([

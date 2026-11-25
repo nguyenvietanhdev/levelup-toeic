@@ -174,6 +174,6 @@ describe('bài nháp Đọc / Nghe', () => {
         const de = src.slice(src.indexOf('const de = {'), src.indexOf('};', src.indexOf('const de = {')));
         expect(de).not.toMatch(/passage/);
         expect(src).toMatch(/await luuDe\(userId, 'nghe', lang, de\);/);
-        expect(src).toMatch(/await xoaNhap\(userId, 'nghe', phien\.lang === 'zh' \? 'zh' : 'en'\);/);
+        expect(src).toMatch(/await xoaNhap\(userId, 'nghe', chuanMa\(phien\.lang\)\);/);
     });
 });

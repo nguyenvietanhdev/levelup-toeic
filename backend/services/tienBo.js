@@ -26,6 +26,7 @@ const WrongWord = require('../models/WrongWord');
 const UserProfile = require('../models/UserProfile');
 const { homNayVN } = require('./loTrinh');
 const { thongKe, chuanHoaLoai } = require('./errorTaxonomy');
+const { chuanMa, locTheoNgonNgu } = require('../config/ngonNgu');
 
 /** Số tuần theo dõi. Chia đôi để so sánh: 4 tuần trước với 4 tuần gần đây. */
 const SO_TUAN = 8;
@@ -273,10 +274,10 @@ async function layTienBo(userId, now = new Date()) {
     // Từ 00:00 (giờ VN) của ngày đầu tuần cũ nhất.
     const tu = new Date((soNgay - (SO_TUAN * 7 - 1)) * MOT_NGAY - 7 * 60 * 60 * 1000);
     const profile = await UserProfile.findOne({ userId }).select('settings').lean();
-    const lang = profile?.settings?.vocabLang === 'zh' ? 'zh' : 'en';
+    const lang = chuanMa(profile?.settings?.vocabLang);
     // Hồ sơ của NGÔN NGỮ đang học: lỗi ngữ pháp tiếng Anh và điểm HSK trộn chung
     // thì xu hướng vô nghĩa. Lượt luyện từ không lưu ngôn ngữ nên lấy hết.
-    const theoLang = lang === 'zh' ? { lang: 'zh' } : { lang: { $ne: 'zh' } };
+    const theoLang = locTheoNgonNgu(lang);
 
     const [luyen, nghe, doc, noi, viet, dich, tuDangOn, tuDenHan, tuDaThuoc, tuMoiThuoc] = await Promise.all([
         PracticeSession.find({ user: userId, completedAt: { $gte: tu } })

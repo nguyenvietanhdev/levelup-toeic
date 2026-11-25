@@ -7,13 +7,14 @@ const router = express.Router();
 const { protect } = require('../middleware/auth');
 const UserProfile = require('../models/UserProfile');
 const { layNhap, luuNoiDung, xoaNhap, MODES } = require('../services/baiNhap');
+const { chuanMa } = require('../config/ngonNgu');
 
 router.use(protect);
 
 /** Ngôn ngữ đang học — bài nháp tách theo ngôn ngữ như mọi dữ liệu học khác. */
 async function langCua(userId) {
     const p = await UserProfile.findOne({ userId }).select('settings').lean();
-    return p?.settings?.vocabLang === 'zh' ? 'zh' : 'en';
+    return chuanMa(p?.settings?.vocabLang);
 }
 
 router.param('mode', (req, res, next, mode) => {

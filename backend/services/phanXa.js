@@ -20,6 +20,7 @@ const { parseJson } = require('./essayGrader');
 const HoSoHocVien = require('../models/HoSoHocVien');
 const { ghiKetQua, diemCua, NGUONG_YEU } = require('./hoSoHoc');
 const logger = require('../utils/logger');
+const { chuanMa, maKyNang } = require('../config/ngonNgu');
 
 // Nạp trễ như các bộ chấm khác: nạp module không được khởi tạo client AI.
 function chatCompletion(...args) {
@@ -88,7 +89,7 @@ const tron = (a) => {
  */
 function chonCau({ tienDo = [], khung = '', som = false, now = new Date(), soCau = SO_CAU, lang = 'en' }) {
     const theoId = new Map(tienDo.map((t) => [t.cauId, t]));
-    const kho = TAT_CA.filter((c) => c.lang === (lang === 'zh' ? 'zh' : 'en') && (!khung || c.khung === khung));
+    const kho = TAT_CA.filter((c) => c.lang === (chuanMa(lang)) && (!khung || c.khung === khung));
     const denHan = kho
         .filter((c) => theoId.has(c.id) && new Date(theoId.get(c.id).denHan) <= now)
         .sort((a, b) => (theoId.get(b.id).sai || 0) - (theoId.get(a.id).sai || 0));
@@ -252,7 +253,7 @@ async function traLoi(userId, buoiId, i, body = {}, now = new Date()) {
         // và vào đúng kỹ năng Nói của ngôn ngữ đó (hồ sơ Giao tiếp và nền tảng HSK tách riêng).
         await ghiKetQua(userId, [
             { kyNang: cau.khung, dung },
-            ...(body.cach === 'noi' && chu ? [{ kyNang: cau.lang === 'zh' ? 'zh-noi' : 'noi', dung }] : []),
+            ...(body.cach === 'noi' && chu ? [{ kyNang: maKyNang(cau.lang, 'noi'), dung }] : []),
         ], now).catch((e) => logger.warn('Phản xạ câu: không ghi được hồ sơ', { message: e?.message }));
     }
     return { dung, khongChac, boQua: !chu, cauDung: cau.en, ...(cau.py ? { pinyin: cau.py } : {}), ghiChu, daThuoc };

@@ -21,7 +21,7 @@
  * Mỗi câu đã làm được ghi vào lịch sử để xem lại, nghe lại và lưu vào Từ vựng riêng.
  */
 const NguPhapBaiTap = require('../models/NguPhapBaiTap');
-const { tenChoPrompt } = require('../config/ngonNgu');
+const { tenChoPrompt, chuanMa, locTheoNgonNgu } = require('../config/ngonNgu');
 const BuoiNguPhap = require('../models/BuoiNguPhap');
 const NguPhapTienDo = require('../models/NguPhapTienDo');
 const NguPhapLichSu = require('../models/NguPhapLichSu');
@@ -110,7 +110,7 @@ const NGON_NGU_LUYEN = {
 };
 
 async function aiSoanBoCau(muc, userId, tranh = []) {
-    const lang = muc.lang === 'zh' ? 'zh' : 'en';
+    const lang = chuanMa(muc.lang);
     const nn = NGON_NGU_LUYEN[lang];
     const res = await chatCompletion([
         {
@@ -372,7 +372,7 @@ async function traLoi(userId, buoiId, i, body = {}, now = new Date()) {
     return ketQua;
 }
 
-const locNgonNgu = (lang) => (lang === 'zh' ? { lang: 'zh' } : { lang: { $in: ['en', null] } });
+const locNgonNgu = (lang) => (locTheoNgonNgu(lang));
 
 /**
  * Mọi chủ điểm của một ngôn ngữ (kho lõi + mục AI trong thư viện) kèm bộ câu đã lưu. Mục AI đã bị

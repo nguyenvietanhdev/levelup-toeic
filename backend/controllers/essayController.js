@@ -11,6 +11,7 @@ const { generatePrompt, gradeEssay, countUnits, limitsFor, chuanHoaRubric } =
 const { awardXp } = require('../utils/userStateHelper');
 const { isVipActive } = require('../utils/energyCosts');
 const logger = require('../utils/logger');
+const { chuanMa } = require('../config/ngonNgu');
 
 /**
  * Luyện VIẾT LUẬN — IELTS Task 2 (tiếng Anh) hoặc HSK 书写 (tiếng Trung).
@@ -71,7 +72,7 @@ exports.prompt = async (req, res, next) => {
         // mỗi tham số client tự gom là một chỗ đoán sai hình dạng dữ liệu.
         // Người đang học tiếng Trung mà nhận đề IELTS tiếng Anh thì chế độ này
         // vô dụng với họ.
-        const lang = profile?.settings?.vocabLang === 'zh' ? 'zh' : 'en';
+        const lang = chuanMa(profile?.settings?.vocabLang);
         const { min } = limitsFor(lang);
 
         const level = chuanHoaMuc(req.body.level);
@@ -136,7 +137,7 @@ exports.grade = async (req, res, next) => {
         // TRƯỚC — bài quá ngắn thì không được mất năng lượng.
         const settingsOnly = await UserProfile.findOne({ userId: req.user.id })
             .select('settings').lean();
-        const lang = settingsOnly?.settings?.vocabLang === 'zh' ? 'zh' : 'en';
+        const lang = chuanMa(settingsOnly?.settings?.vocabLang);
         const rubric = chuanHoaRubric(req.body.rubric, lang);
 
         // Đơn vị đếm khác nhau: tiếng Trung đếm CHỮ HÁN vì không có khoảng trắng

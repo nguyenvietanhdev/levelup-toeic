@@ -17,7 +17,7 @@
  */
 const { layTienBo } = require('./tienBo');
 
-const { tenChoPrompt } = require('../config/ngonNgu');
+const { tenChoPrompt, chuanMa } = require('../config/ngonNgu');
 /**
  * Cách tạo cơ hội luyện cho từng nhóm lỗi (tiếng Anh vì đi thẳng vào prompt).
  * Nhóm không có ở đây (chính tả, dấu câu, khác) không nhắm được bằng nội dung.
@@ -91,7 +91,7 @@ const cache = new Map();
 
 async function layNham(userId, lang = 'en') {
     if (!userId) return [];
-    const ngonNgu = lang === 'zh' ? 'zh' : 'en';
+    const ngonNgu = chuanMa(lang);
     const k = `${userId}|${ngonNgu}`;
     const c = cache.get(k);
     if (c && Date.now() - c.at < CACHE_MS) return c.nham;

@@ -103,3 +103,18 @@ describe('tên ngôn ngữ trong prompt AI lấy từ sổ', () => {
         expect(vi_pham).toEqual([]);
     });
 });
+
+describe('lọc Mongo và mã kỹ năng theo ngôn ngữ', () => {
+    const { locTheoNgonNgu, maKyNang } = require('../config/ngonNgu');
+    test('mặc định lấy cả bản ghi cũ không có lang; ngôn ngữ khác lọc đúng mã', () => {
+        expect(locTheoNgonNgu('en')).toEqual({ lang: { $nin: ['zh', 'ja', 'ko'] } });
+        expect(locTheoNgonNgu('zh')).toEqual({ lang: 'zh' });
+        expect(locTheoNgonNgu('bi')).toEqual(locTheoNgonNgu('en')); // giữ hành vi cũ: chỉ 'zh' mới lọc tiếng Trung
+        expect(locTheoNgonNgu('ja')).toEqual(locTheoNgonNgu('en')); // chưa mở
+    });
+    test('mã kỹ năng: mặc định giữ tên gốc, ngôn ngữ khác thêm tiền tố', () => {
+        expect(maKyNang('en', 'noi')).toBe('noi');
+        expect(maKyNang('zh', 'nghe')).toBe('zh-nghe');
+        expect(maKyNang(undefined, 'noi')).toBe('noi');
+    });
+});

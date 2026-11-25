@@ -13,6 +13,7 @@ const { isVipActive } = require('../utils/energyCosts');
 const Essay = require('../models/Essay');
 const { thongKe, chuanHoaLoai } = require('../services/errorTaxonomy');
 const logger = require('../utils/logger');
+const { chuanMa } = require('../config/ngonNgu');
 
 /**
  * Luyện DỊCH — đọc một đoạn tiếng Việt, viết lại bằng tiếng Anh (hoặc Trung).
@@ -63,7 +64,7 @@ exports.passage = async (req, res, next) => {
     try {
         const profile = await UserProfile.findOne({ userId: req.user.id })
             .select('settings').lean();
-        const lang = profile?.settings?.vocabLang === 'zh' ? 'zh' : 'en';
+        const lang = chuanMa(profile?.settings?.vocabLang);
 
         // Từ cho đoạn dịch chọn ở SERVER (service chung), không nhận từ client: client
         // từng gửi `w.en` — kho tiếng Trung để trống trường đó, nên đoạn dịch sang
@@ -136,7 +137,7 @@ exports.grade = async (req, res, next) => {
 
         const settingsOnly = await UserProfile.findOne({ userId: req.user.id })
             .select('settings').lean();
-        const lang = settingsOnly?.settings?.vocabLang === 'zh' ? 'zh' : 'en';
+        const lang = chuanMa(settingsOnly?.settings?.vocabLang);
         const chieu = chuanChieu(req.body.chieu);
         const nguoc = chieu === 'ngoai-vi';
 

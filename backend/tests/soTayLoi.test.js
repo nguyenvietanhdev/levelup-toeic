@@ -84,7 +84,7 @@ describe('đọc từ DB', () => {
         const r = await laySoTay('u1', new Date('2026-10-25T00:00:00Z'));
         expect(r).toMatchObject({ tong: 2, soNgay: 180, lang: 'en' });
         const q = goi.find(([t]) => t === 'Essay')[1];
-        expect(q.lang).toEqual({ $ne: 'zh' });
+        expect(q.lang).toEqual(require('../config/ngonNgu').locTheoNgonNgu('en').lang);
         expect(q.createdAt.$gte.toISOString()).toBe('2026-04-28T00:00:00.000Z');
         mockLang = 'zh';
         goi.length = 0;

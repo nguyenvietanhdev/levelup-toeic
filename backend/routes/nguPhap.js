@@ -9,6 +9,7 @@ const { protect } = require('../middleware/auth');
 const { tim, hoi, themVaoThuVien, themViDu } = require('../services/nguPhap');
 const { moLuot, traLoi, ganTienDo, moTongHop, thongKeNganHang, moRongNganHang, lichSu } = require('../services/nguPhapLuyen');
 const { baoSaiCau, baoSaiMuc } = require('../services/nguPhapBaoSai');
+const { chuanMa } = require('../config/ngonNgu');
 
 router.use(protect);
 
@@ -39,7 +40,7 @@ router.post('/nhap/:id/them', async (req, res, next) => {
     } catch (err) { next(err); }
 });
 
-const langCua = (v) => (v === 'zh' ? 'zh' : 'en');
+const langCua = (v) => (chuanMa(v));
 
 /** Ngân hàng câu của kiểm tra tổng hợp: bao nhiêu câu, phủ bao nhiêu chủ điểm. Không gọi AI. */
 router.get('/tong-hop', async (req, res, next) => {

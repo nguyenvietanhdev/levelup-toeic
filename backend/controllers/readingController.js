@@ -8,6 +8,7 @@ const { isVipActive } = require('../utils/energyCosts');
 const logger = require('../utils/logger');
 const { luuDe, xoaNhap, chiemDeDoc } = require('../services/baiNhap');
 const { chonTu } = require('../services/chonTu');
+const { chuanMa } = require('../config/ngonNgu');
 
 /**
  * Luyện ĐỌC HIỂU nhiều dạng bài (không chỉ TOEIC Part 7).
@@ -106,7 +107,7 @@ exports.passage = async (req, res, next) => {
         // Anh thì chế độ này vô dụng với họ.
         const profile = await UserProfile.findOne({ userId: req.user.id })
             .select('settings').lean();
-        const lang = profile?.settings?.vocabLang === 'zh' ? 'zh' : 'en';
+        const lang = chuanMa(profile?.settings?.vocabLang);
         // Từ cho bài đọc chọn ở SERVER (service chung), không nhận từ client: client
         // từng gửi `w.en` — kho tiếng Trung để trống trường đó, nên bài đọc tiếng Trung
         // không bám bộ từ nào. Chưa chọn đề thì AI viết theo chủ đề chung như cũ.
@@ -196,7 +197,7 @@ exports.grade = async (req, res, next) => {
         // Xoá đề NGAY sau khi chấm: để lại thì nộp lần hai ăn thưởng lần nữa
         // trên cùng một bài. Bài nháp cũng hết việc.
         DE_MO.delete(readingId);
-        await xoaNhap(req.user.id, 'doc', luu.data.lang === 'zh' ? 'zh' : 'en');
+        await xoaNhap(req.user.id, 'doc', chuanMa(luu.data.lang));
 
         const xp = Math.round(XP_BASE + r.ratio * XP_PER_RATIO);
         const coins = Math.round(r.ratio * COINS_PER_RATIO);

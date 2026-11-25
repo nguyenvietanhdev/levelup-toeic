@@ -29,6 +29,7 @@ const { anMuc } = require('./nguPhapQuanTri');
 const { dungNgonNgu, soSanh } = require('./nguPhapLuyen');
 const { kiemCauMoi, MO_TA_LOI } = require('./onLoi');
 const { chuanHoaVaiText, chuanHoaTieuDe, chuanHoaKhoa, hashVai } = require('./aiRoles');
+const { chuanMa } = require('../config/ngonNgu');
 
 const MOI_TRANG = 30;
 const RE_OBJECT_ID = /^[a-f0-9]{24}$/i;
@@ -41,7 +42,7 @@ const escapeRe = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 const reTim = (q) => (q ? new RegExp(escapeRe(String(q).slice(0, 80)), 'i') : null);
 const soTrang = (n) => Math.max(1, Math.floor(Number(n) || 1));
 const ngay = (d) => (d ? new Date(d).toISOString() : '');
-const langCua = (v) => (v === 'zh' ? 'zh' : 'en');
+const langCua = (v) => (chuanMa(v));
 
 /** Cắt trang một danh sách đã có trong bộ nhớ (thuần). */
 function catTrang(ds, trang) {

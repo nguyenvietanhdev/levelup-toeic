@@ -21,7 +21,7 @@
  *     việc sửa câu cũ ở các ngày khác nhau.
  */
 const LoiOn = require('../models/LoiOn');
-const { tenChoPrompt } = require('../config/ngonNgu');
+const { tenChoPrompt, chuanMa, locTheoNgonNgu } = require('../config/ngonNgu');
 const CauLuyenLoi = require('../models/CauLuyenLoi');
 const BuoiOnLoi = require('../models/BuoiOnLoi');
 const Essay = require('../models/Essay');
@@ -230,7 +230,7 @@ const tron = (a) => {
 
 async function langCua(userId) {
     const p = await UserProfile.findOne({ userId }).select('settings').lean();
-    return p?.settings?.vocabLang === 'zh' ? 'zh' : 'en';
+    return chuanMa(p?.settings?.vocabLang);
 }
 
 /**
@@ -240,7 +240,7 @@ async function langCua(userId) {
  */
 async function dongBo(userId, lang, now = new Date()) {
     const tu = new Date(now.getTime() - SO_NGAY_DONG_BO * MOT_NGAY);
-    const theoLang = lang === 'zh' ? { lang: 'zh' } : { lang: { $ne: 'zh' } };
+    const theoLang = locTheoNgonNgu(lang);
     const [viet, dich, noi] = await Promise.all([
         Essay.find({ userId, createdAt: { $gte: tu }, ...theoLang }).select('essay issues').lean(),
         // Bài dịch ngược (Anh/Trung → Việt) ghi lỗi HIỂU, không có câu ngoại ngữ người học viết sai.

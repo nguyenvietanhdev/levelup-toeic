@@ -6,12 +6,13 @@ const mongoose = require('mongoose');
 const router = express.Router();
 const { protect } = require('../middleware/auth');
 const { danhSach, layBai } = require('../services/baiNghe');
+const { chuanMa } = require('../config/ngonNgu');
 
 router.use(protect);
 
 router.get('/', async (req, res, next) => {
     try {
-        res.json({ success: true, data: await danhSach(req.query.lang === 'zh' ? 'zh' : 'en') });
+        res.json({ success: true, data: await danhSach(chuanMa(req.query.lang)) });
     } catch (err) { next(err); }
 });
 

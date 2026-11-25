@@ -1,3 +1,4 @@
+const { chuanMa } = require('../config/ngonNgu');
 /**
  * KHO LÕI của Công thức ngữ pháp — các chủ điểm cơ bản, viết tay để chắc đúng và tra ngay
  * không tốn AI. Chủ điểm ngoài kho do AI tạo (xem `services/nguPhap.js`).
@@ -469,6 +470,6 @@ const MUC = [...MUC_EN.map((m) => ({ ...m, lang: 'en' })), ...MUC_ZH.map((m) => 
 const THEO_ID = new Map(MUC.map((m) => [m.id, m]));
 
 /** Ngôn ngữ hợp lệ, mặc định tiếng Anh (thuần). */
-const chuanLang = (lang) => (lang === 'zh' ? 'zh' : 'en');
+const chuanLang = (lang) => (chuanMa(lang));
 
 module.exports = { NHOM, MUC, THEO_ID, chuanLang };

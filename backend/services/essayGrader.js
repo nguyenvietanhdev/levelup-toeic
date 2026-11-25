@@ -21,7 +21,7 @@
  * band) kiểm thử được mà không cần khoá API — đó là chỗ dễ sai nhất.
  */
 const { chiThiPhanLoai, chuanHoaLoai, chiThiChuaBai, chuanHoaMuc } = require('./errorTaxonomy');
-const { tenChoPrompt } = require('../config/ngonNgu');
+const { tenChoPrompt, chuanMa } = require('../config/ngonNgu');
 const { chiThiMuc } = require('./aiLevel');
 const { chonDang } = require('./dangBai');
 const { chiThiNham } = require('./nhamDiemYeu');
@@ -86,7 +86,7 @@ const DEFAULT_RUBRIC = { en: 'ielts', zh: 'hsk' };
 
 /** Kiểu chấm hợp lệ cho ngôn ngữ đó, hoặc mặc định. Chỉ nhận chuỗi trong danh sách. */
 function chuanHoaRubric(rubric, lang = 'en') {
-    const ngonNgu = lang === 'zh' ? 'zh' : 'en';
+    const ngonNgu = chuanMa(lang);
     const cho = RUBRICS_BY_LANG[ngonNgu];
     if (typeof rubric === 'string' && cho.includes(rubric)) return rubric;
     return DEFAULT_RUBRIC[ngonNgu];

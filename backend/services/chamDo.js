@@ -17,12 +17,13 @@ const PracticeSession = require('../models/PracticeSession');
 const TongKetTuan = require('../models/TongKetTuan');
 const UserProfile = require('../models/UserProfile');
 const { layLoTrinh, homNayVN, dauTuanVN } = require('./loTrinh');
+const { chuanMa } = require('../config/ngonNgu');
 
 const MOT_NGAY = 24 * 60 * 60 * 1000;
 
 async function layChamDo(userId, now = new Date()) {
     const profile = await UserProfile.findOne({ userId }).select('settings').lean();
-    const lang = profile?.settings?.vocabLang === 'zh' ? 'zh' : 'en';
+    const lang = chuanMa(profile?.settings?.vocabLang);
     const tuan = dauTuanVN(now);
 
     const [nhap, chat, giong, loTrinh, daTongKet, coDuLieu] = await Promise.all([

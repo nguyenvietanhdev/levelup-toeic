@@ -16,6 +16,7 @@
  */
 const BaiNghe = require('../models/BaiNghe');
 const logger = require('../utils/logger');
+const { chuanMa } = require('../config/ngonNgu');
 
 /** Whisper nhận tối đa 25 MB mỗi file (MP3 64 kbps ≈ 50 phút). */
 const TOI_DA_BYTE = 25 * 1024 * 1024;
@@ -195,7 +196,7 @@ async function chepLoi(buffer, lang = 'en', tenFile = 'audio.mp3') {
     const kq = await openai.audio.transcriptions.create({
         file: await toFile(buffer, tenFile),
         model: nha.model,
-        language: lang === 'zh' ? 'zh' : 'en',
+        language: chuanMa(lang),
         // Whisper hay trả tiếng Trung không dấu câu, đôi khi phồn thể: câu mồi giản thể có dấu
         // câu kéo nó về đúng kiểu đó.
         ...(lang === 'zh' ? { prompt: '以下是普通话的句子，使用简体中文，并加上标点符号。' } : {}),
@@ -345,7 +346,7 @@ const tomTat = (b) => ({
 /** Thư viện cho người học: bài đang hiện, của ngôn ngữ đang học. Không gửi script cho danh sách. */
 async function danhSach(lang = 'en') {
     const ds = await BaiNghe.aggregate([
-        { $match: { an: false, lang: lang === 'zh' ? 'zh' : 'en' } },
+        { $match: { an: false, lang: chuanMa(lang) } },
         { $sort: { createdAt: -1 } },
         { $limit: 200 },
         { $project: { tieuDe: 1, lang: 1, capDo: 1, nguon: 1, thoiLuong: 1, coHinh: 1, cloudinaryId: 1, soCau: { $size: '$cau' } } },

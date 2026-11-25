@@ -19,6 +19,7 @@ const HoSoHocVien = require('../models/HoSoHocVien');
 const { tomTatKyNang, tongQuanTrinhDo, ghiKetQua, NGUONG_YEU } = require('./hoSoHoc');
 const { parseJson } = require('./essayGrader');
 const logger = require('../utils/logger');
+const { chuanMa, maKyNang } = require('../config/ngonNgu');
 
 // Nạp trễ như các bộ chấm khác: nạp module không được khởi tạo client AI.
 function chatCompletion(...args) {
@@ -52,19 +53,19 @@ const GIOI_HAN_YEU = 2;
 /** Đọc những gì cần biết từ hồ sơ cho bài của ngôn ngữ `lang` (thuần). `null` khi chưa có gì dùng được. */
 function boiCanh(doc, lang = 'en') {
     if (!doc) return null;
-    const zh = lang === 'zh' ? 'zh' : 'en';
-    const tomTat = tomTatKyNang(doc.kyNang || {}, zh);
+    const ma = chuanMa(lang);
+    const tomTat = tomTatKyNang(doc.kyNang || {}, ma);
     const { diem, nhan } = tongQuanTrinhDo(tomTat);
     const coDuLieu = tomTat.some((k) => k.duDuLieu);
-    const coHoi = coHoiCua(zh);
+    const coHoi = coHoiCua(ma);
     const yeu = tomTat
         .filter((k) => k.duDuLieu && k.diem < NGUONG_YEU && coHoi[k.key])
         .sort((a, b) => a.diem - b.diem)
         .slice(0, GIOI_HAN_YEU)
         .map((k) => k.key);
-    const mucTieu = NGON_NGU_MUC_TIEU[doc.mucTieu] === zh ? doc.mucTieu : '';
+    const mucTieu = NGON_NGU_MUC_TIEU[doc.mucTieu] === ma ? doc.mucTieu : '';
     if (!mucTieu && !coDuLieu) return null;
-    return { lang: zh, mucTieu, trinhDo: coDuLieu ? nhan : '', diem: coDuLieu ? diem : null, yeu };
+    return { lang: ma, mucTieu, trinhDo: coDuLieu ? nhan : '', diem: coDuLieu ? diem : null, yeu };
 }
 
 /** Chỉ thị lúc ra bài hoặc hội thoại (thuần). */
@@ -181,7 +182,7 @@ function bangChungTuBai({ loi = [], diemNguPhap = null, lang = 'en' } = {}) {
 function bangChungNoi(feedback, lang = 'en') {
     const diem = (feedback?.criteria || []).map((c) => Number(c?.score)).filter(Number.isFinite);
     if (!diem.length) return [];
-    const kyNang = lang === 'zh' ? 'zh-noi' : 'noi';
+    const kyNang = maKyNang(lang, 'noi');
     const tb = diem.reduce((s, d) => s + d, 0) / diem.length;
     if (tb >= DIEM_NOI_TOT) return [{ kyNang, dung: true }];
     return tb < DIEM_NOI_YEU ? [{ kyNang, dung: false }] : [];
@@ -191,7 +192,7 @@ function bangChungNoi(feedback, lang = 'en') {
 function bangChungNghe(diem, lang = 'en') {
     const d = Number(diem);
     if (!Number.isFinite(d)) return [];
-    const kyNang = lang === 'zh' ? 'zh-nghe' : 'nghe';
+    const kyNang = maKyNang(lang, 'nghe');
     if (d >= 70) return [{ kyNang, dung: true }];
     return d < 50 ? [{ kyNang, dung: false }] : [];
 }

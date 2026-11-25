@@ -17,6 +17,7 @@ const { isVipActive } = require('../utils/energyCosts');
 const { chuanHoaMuc } = require('../services/aiLevel');
 const logger = require('../utils/logger');
 const { luuDe, xoaNhap } = require('../services/baiNhap');
+const { chuanMa } = require('../config/ngonNgu');
 
 /** Năng lượng mỗi lượt nghe (thấp hơn hội thoại vì không có lượt đáp qua lại). */
 const ENERGY_COST_NGHE = 10;
@@ -57,7 +58,7 @@ exports.start = async (req, res, next) => {
         const st = profile?.settings || {};
 
         // Tiếng Anh hoặc tiếng Trung (kho song ngữ 'bi' nghe bằng tiếng Anh).
-        const lang = st.vocabLang === 'zh' ? 'zh' : 'en';
+        const lang = chuanMa(st.vocabLang);
         const source = typeof st.selectedSource === 'string' ? st.selectedSource.trim().toLowerCase() : '';
         const part = typeof st.selectedPart === 'string' ? st.selectedPart.trim() : '';
         if (!source) {
@@ -198,7 +199,7 @@ exports.grade = async (req, res, next) => {
         const xp = Math.round((ketQua.score / 100) * 30);
         const coins = Math.round((ketQua.score / 100) * 10);
         // Đã nộp → bài nháp hết việc (kể cả khi lần nộp song song kia mới là lần được thưởng).
-        await xoaNhap(userId, 'nghe', phien.lang === 'zh' ? 'zh' : 'en');
+        await xoaNhap(userId, 'nghe', chuanMa(phien.lang));
         // Chiếm phiên bằng điều kiện `status: 'open'` — hai request song song chỉ một cái được thưởng.
         const dat = await ListeningSession.findOneAndUpdate(
             { _id: phien._id, userId, status: 'open' },
@@ -220,7 +221,7 @@ exports.grade = async (req, res, next) => {
             await Promise.all([profile.save(), stats.save()]);
         }
         // Chỉ lần chiếm được phiên mới tới đây nên mỗi bài chỉ tính một lần.
-        await ghiBangChung(userId, phien.lang === 'zh' ? 'zh' : 'en', bangChungNghe(ketQua.score, phien.lang === 'zh' ? 'zh' : 'en'));
+        await ghiBangChung(userId, chuanMa(phien.lang), bangChungNghe(ketQua.score, chuanMa(phien.lang)));
 
         res.json({
             success: true,

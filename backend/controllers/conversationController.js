@@ -15,6 +15,7 @@ const { awardXp } = require('../utils/userStateHelper');
 const { isVipActive } = require('../utils/energyCosts');
 const logger = require('../utils/logger');
 const roles = require('../services/aiRoles');
+const { chuanMa } = require('../config/ngonNgu');
 
 /**
  * Chế độ HỘI THOẠI — luyện dùng lại từ vựng vừa học.
@@ -104,7 +105,7 @@ exports.start = async (req, res, next) => {
         const part = asString(req.body.part) || asString(st.selectedPart);
         const lang = req.body.lang === 'zh' || req.body.lang === 'en'
             ? req.body.lang
-            : (st.vocabLang === 'zh' ? 'zh' : 'en');
+            : (chuanMa(st.vocabLang));
         // Kho song ngữ Trung–Anh: hội thoại vẫn nói tiếng Anh (`lang`), nhưng bộ
         // tiêu chí được chọn theo cả hai ngôn ngữ (`track`).
         const track = st.vocabLang === 'bi' ? 'bi' : lang;

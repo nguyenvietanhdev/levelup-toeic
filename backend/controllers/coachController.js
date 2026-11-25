@@ -7,6 +7,7 @@ const {
     dungGoiY, phanTichCheDo, vongNenTapTrung, vongCua, chotNhiemVu,
 } = require('../services/coachAdvisor');
 const { thongKe } = require('../services/errorTaxonomy');
+const { chuanMa, locTheoNgonNgu } = require('../config/ngonNgu');
 
 /**
  * Bộ gợi ý luyện tập — "hôm nay nên luyện gì".
@@ -20,7 +21,7 @@ const { thongKe } = require('../services/errorTaxonomy');
 async function loiHayMacNhat(userId, lang = 'en') {
     const tu = new Date(Date.now() - 90 * 86400000);
     // Chỉ bài của ngôn ngữ đang học: học tiếng Trung mà được khuyên "hay sai mạo từ" là vô nghĩa.
-    const theoLang = lang === 'zh' ? { lang: 'zh' } : { lang: { $ne: 'zh' } };
+    const theoLang = locTheoNgonNgu(lang);
     const [dich, luan] = await Promise.all([
         Translation.find({ userId, createdAt: { $gte: tu }, chieu: { $ne: 'ngoai-vi' }, ...theoLang }).select('notes').lean(),
         Essay.find({ userId, createdAt: { $gte: tu }, ...theoLang }).select('issues').lean(),
@@ -47,7 +48,7 @@ exports.suggestions = async (req, res, next) => {
         // Số từ đến hạn phải lọc theo NGÔN NGỮ đang học, giống mọi nơi khác:
         // báo 189 mà mở ra chỉ có 98 là sai lệch người dùng nhìn thấy ngay.
         const profile = await UserProfile.findOne({ userId }).select('settings').lean();
-        const lang = profile?.settings?.vocabLang === 'zh' ? 'zh' : 'en';
+        const lang = chuanMa(profile?.settings?.vocabLang);
 
         const [stats, dueTotal, loi] = await Promise.all([
             UserStats.findOne({ userId }).select('modeStats nhiemVu').lean(),

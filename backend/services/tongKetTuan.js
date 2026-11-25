@@ -20,6 +20,7 @@ function chatCompletion(...args) {
 const { parseJson } = require('./essayGrader');
 const { layTienBo } = require('./tienBo');
 const { dauTuanVN } = require('./loTrinh');
+const { chuanMa } = require('../config/ngonNgu');
 
 /** Các bước của Lộ trình hôm nay mà kế hoạch được phép trỏ tới. */
 const BUOC_HOP_LE = ['on-sai', 'hoc-tu', 'nghe', 'doc', 'noi', 'viet-dich'];
@@ -111,7 +112,7 @@ async function layTongKet(userId, lang = 'en', now = new Date()) {
  */
 async function taoTongKet(userId, now = new Date()) {
     const hs = await layTienBo(userId, now);
-    const lang = hs.lang === 'zh' ? 'zh' : 'en';
+    const lang = chuanMa(hs.lang);
     const tuan = dauTuanVN(now);
 
     const cu = await TongKetTuan.findOne({ userId, tuan, lang }).lean();

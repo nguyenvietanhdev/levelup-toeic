@@ -137,7 +137,7 @@ exports.uploadVocabulary = async (req, res, next) => {
           // không có hoa/thường) nên "动词 / 名词" vẫn lọt vào nguyên dạng, và
           // dữ liệu mới lại lệch với dữ liệu vừa dọn. `normalizeWordType` bỏ
           // khoảng trắng quanh "/" + sắp lại thứ tự cho cả hai ngôn ngữ.
-          type: normalizeWordType(type, lang === 'zh' ? 'zh' : 'en'),
+          type: normalizeWordType(type, chuanMa(lang)),
           image: lower(image),
           example: capFirst(example),
           level: upper(level),

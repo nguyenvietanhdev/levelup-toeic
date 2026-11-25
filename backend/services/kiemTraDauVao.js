@@ -16,6 +16,7 @@ const { THEO_ID, khungCua } = require('./phanXaKho');
 const { khopKho, aiCham } = require('./phanXa');
 const { TEN_KY_NANG, ghiKetQua, layHoSo, tomTatKyNang, tongQuanTrinhDo, anhKyNang } = require('./hoSoHoc');
 const { homNayVN } = require('./loTrinh');
+const { chuanMa } = require('../config/ngonNgu');
 
 /** Test có câu chấm bằng AI nên giới hạn số lần mở mỗi ngày. */
 const TOI_DA_MOI_NGAY = 3;
@@ -165,7 +166,7 @@ const BO_DE = {
         keHoach: keHoachCho(['zh-giao-tiep', 'zh-trat-tu', 'zh-da-lam', 'zh-luong-tu'], 'zh-nghe'),
     },
 };
-const boDe = (lang) => BO_DE[lang === 'zh' ? 'zh' : 'en'];
+const boDe = (lang) => BO_DE[chuanMa(lang)];
 const KE_HOACH = BO_DE.en.keHoach;
 
 const NGAU_NHIEN = (a) => a[Math.floor(Math.random() * a.length)];
@@ -209,7 +210,7 @@ function timCauTracNghiem(q) {
 function congKhai(q, i) {
     const chung = {
         i, tong: boDe(q.lang).keHoach.length, loai: q.loai, kyNang: q.kyNang, tenKyNang: TEN_KY_NANG.get(q.kyNang),
-        lang: q.lang === 'zh' ? 'zh' : 'en',
+        lang: chuanMa(q.lang),
     };
     if (q.loai === 'go' || q.loai === 'noi') return { ...chung, vi: THEO_ID.get(q.id).vi };
     const x = timCauTracNghiem(q);
@@ -278,7 +279,7 @@ function chanDoan(daLam, lang = 'en') {
  * (`bi`) làm được cả hai. Không khớp thì trả lỗi kèm lời nhắn.
  */
 function langTest(muon, vocabLang) {
-    const lang = muon === 'zh' ? 'zh' : 'en';
+    const lang = chuanMa(muon);
     const dangHoc = vocabLang || 'en';
     if (dangHoc === 'bi' || dangHoc === lang) return { lang };
     return {
@@ -291,7 +292,7 @@ function langTest(muon, vocabLang) {
 async function moTest(userId, { coMic = true, lang: muon = '' } = {}, now = new Date()) {
     const p = await UserProfile.findOne({ userId }).select('settings').lean();
     // Không nói rõ thì theo ngôn ngữ đang học, như trước khi có bộ đề tiếng Trung.
-    const chon = langTest(muon || (p?.settings?.vocabLang === 'zh' ? 'zh' : 'en'), p?.settings?.vocabLang);
+    const chon = langTest(muon || (chuanMa(p?.settings?.vocabLang)), p?.settings?.vocabLang);
     if (chon.loi) return { loi: chon.loi, ma: 400 };
     const daMo = await BuoiKiemTra.countDocuments({ userId, createdAt: { $gte: homNayVN(now).dau } });
     if (daMo >= TOI_DA_MOI_NGAY) return { loi: 'Hôm nay bạn đã mở đủ số lượt test. Hãy thử lại vào ngày mai.', ma: 429 };
@@ -363,7 +364,7 @@ async function traLoiTest(userId, buoiId, body = {}, now = new Date()) {
     const r = await chamCau(q, body, userId);
     const daLam = [...buoi.daLam, { ...q, ...r }];
 
-    const lang = buoi.lang === 'zh' ? 'zh' : 'en';
+    const lang = chuanMa(buoi.lang);
     if (i + 1 >= boDe(lang).keHoach.length) {
         await BuoiKiemTra.updateOne({ _id: buoiId, userId }, { $set: { daLam, cauHienTai: null } });
         return ketThuc(userId, daLam, now, lang);
