@@ -11,7 +11,7 @@ import { mauCoGio, tienDo, chonOTrong, khopTu, tocDoBai, apLech, lechCua, chonDo
 import { useYoutube } from './useYoutube.js';
 import { napPinyin, pinyinTheoChu, pinyinCuaTu } from '@lib/pinyinBaiHat.js';
 import { vocabLang } from '@game/gameLogic.js';
-import { ngonNguHoc, luaChonNgonNguHoc, layNgonNgu, tenVietGiuaCau } from '@lib/ngonNgu.js';
+import { ngonNguHoc, luaChonNgonNguHoc, layNgonNgu, tenVietGiuaCau, chuanMa } from '@lib/ngonNgu.js';
 
 /** Nhớ lựa chọn bật/tắt pinyin (mặc định bật: người học tiếng Trung cần nhất). */
 const KHOA_PINYIN = 'levelup.baiHat.pinyin';
@@ -68,7 +68,7 @@ export default function BaiHatScreen({ active }) {
     const khungYt = useRef(null);
     const khungLoi = useRef(null);
     const yt = useYoutube(khungYt, view === 'hoc' ? bai?.youtubeId : null);
-    const lang = bai?.lang === 'zh' ? 'zh' : 'en';
+    const lang = chuanMa(bai?.lang);
 
     // Lời sau khi cộng độ lệch chung và độ lệch từng đoạn: mọi chỗ so thời gian đều dùng bản này.
     const cauHieu = useMemo(() => (bai ? apLech(bai.cau, lech, lechTu) : []), [bai, lech, lechTu]);

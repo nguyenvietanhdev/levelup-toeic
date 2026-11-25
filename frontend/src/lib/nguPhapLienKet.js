@@ -10,6 +10,7 @@ export function moNguPhap(dich = {}) {
 }
 
 import { getVocabLang } from '@api/vocabulary.js';
+import { chuanMa } from '@lib/ngonNgu.js';
 
 /** Nhóm lỗi → nơi cần xem. Lỗi không gắn được với một công thức thì không có lối vào. */
 export const NGU_PHAP_THEO_LOI = {
@@ -41,7 +42,7 @@ export const NGU_PHAP_THEO_LOI_ZH = {
  * Mặc định là ngôn ngữ đang học (cùng quy ước với backend: chỉ `zh` là tiếng Trung).
  * Kèm `lang` để ngăn ngữ pháp mở đúng thư viện, kể cả khi chỉ lọc theo nhóm.
  */
-export function nguPhapChoLoi(key, lang = getVocabLang() === 'zh' ? 'zh' : 'en') {
+export function nguPhapChoLoi(key, lang = chuanMa(getVocabLang())) {
     const zh = lang === 'zh';
     const dich = (zh ? NGU_PHAP_THEO_LOI_ZH : NGU_PHAP_THEO_LOI)[key];
     return dich ? { ...dich, lang: zh ? 'zh' : 'en' } : null;

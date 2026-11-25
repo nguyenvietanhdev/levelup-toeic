@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Notification } from '@ui/Toaster.jsx';
 import { OnLoiAPI } from '@api/onLoi.js';
+import { coKhoangTrang } from '@lib/ngonNgu.js';
 
 /**
  * KIỂM TRA LẠI LỖI ĐÃ CHỮA — trả lời: còn nhớ lỗi không, biết sửa không, hay học vẹt?
@@ -33,7 +34,7 @@ const NAC = ['Nhận ra', 'Sửa được', 'Hiểu vì sao', 'Áp dụng'];
 /** Tách câu thành các mảnh bấm được: tiếng Anh theo từ, tiếng Trung theo từng chữ. */
 function tachManh(cau, lang) {
     const out = [];
-    const re = lang === 'zh' ? /\S/gu : /\S+/g;
+    const re = coKhoangTrang(lang) ? /\S+/g : /\S/gu;
     let m;
     while ((m = re.exec(cau)) !== null) out.push({ chu: m[0], start: m.index, end: m.index + m[0].length });
     return out;
@@ -43,7 +44,7 @@ function tachManh(cau, lang) {
 function CauBam({ cau, lang, chon, onChon, khoa }) {
     const manh = useMemo(() => tachManh(cau, lang), [cau, lang]);
     return (
-        <p className={`ol-cau ol-cau-bam${lang === 'zh' ? ' is-zh' : ''}`}>
+        <p className={`ol-cau ol-cau-bam${coKhoangTrang(lang) ? '' : ' is-zh'}`}>
             {manh.map((m, i) => (
                 <button
                     key={`${m.start}-${i}`}

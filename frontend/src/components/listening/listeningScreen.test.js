@@ -66,7 +66,7 @@ describe('nghe tiếng Trung', () => {
     });
 
     test('ngôn ngữ theo phiên (server trả), đơn vị chấm là chữ với tiếng Trung', () => {
-        expect(screen).toMatch(/const zh = \(phien\?\.lang \|\| \(getVocabLang\(\) === 'zh' \? 'zh' : 'en'\)\) === 'zh';/);
+        expect(screen).toMatch(/const zh = \(phien\?\.lang \|\| \(chuanMa\(getVocabLang\(\)\)\)\) === 'zh';/);
         expect(screen).toMatch(/const donVi = zh \? 'chữ' : 'từ';/);
         expect(screen).toMatch(/\{ketQua\.total\} \{donVi\}/);
         expect(screen).toMatch(/zh \? 'Gõ đoạn bạn nghe được bằng chữ Hán…'/);

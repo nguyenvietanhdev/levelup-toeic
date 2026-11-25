@@ -5,7 +5,7 @@ import { Config } from '@game/config.js';
 import { Utils } from '@lib/utils.js';
 import { Notification } from '@ui/Toaster.jsx';
 import { scoreAttempt, feedbackMessage, scoreSentence, sentenceFeedback, chotSomDuoc } from './pronunciationScoring.js';
-import { bcp47 } from '@lib/ngonNgu.js';
+import { bcp47, tenVietGiuaCau } from '@lib/ngonNgu.js';
 
 export const PronunciationMode = {
 
@@ -50,8 +50,13 @@ export const PronunciationMode = {
         return vocabLang() === 'zh' || vocabLang() === 'bi';
     },
 
+    /** Ngôn ngữ của từ đang luyện (theo chữ viết, xem `_isZh`). */
+    _lang() {
+        return this._isZh() ? 'zh' : 'en';
+    },
+
     _recogLang() {
-        return bcp47(this._isZh() ? 'zh' : 'en');
+        return bcp47(this._lang());
     },
 
     async start(config) {
@@ -293,7 +298,7 @@ export const PronunciationMode = {
         if (!container) return;
 
         const isZh = this._isZh();
-        const langLabel = isZh ? 'tiếng Trung' : 'tiếng Anh';
+        const langLabel = tenVietGiuaCau(isZh ? 'zh' : 'en');
         const langFlag  = isZh ? '🇨🇳' : '🇬🇧';
 
         container.innerHTML = `
@@ -473,7 +478,7 @@ export const PronunciationMode = {
             this.recognition.start();
             const micStatus = document.getElementById('mic-status');
             if (micStatus) {
-                micStatus.textContent = `Đang nghe... Hãy nói ${this._isZh() ? 'tiếng Trung' : 'tiếng Anh'}!`;
+                micStatus.textContent = `Đang nghe... Hãy nói ${tenVietGiuaCau(this._lang())}!`;
                 micStatus.className = 'mic-status listening';
             }
         } catch (error) {

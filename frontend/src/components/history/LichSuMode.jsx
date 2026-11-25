@@ -8,6 +8,7 @@ import { TranslationAPI } from '@api/translation.js';
 import { ReadingAPI } from '@api/reading.js';
 import { deLuyenLai, nhanChieu, doiChieu } from '../translation/luyenLai.js';
 import { ListeningAPI } from '@api/listening.js';
+import { chuanMa, tenVietGiuaCau, tenDonVi } from '@lib/ngonNgu.js';
 
 /**
  * Tab "Lịch sử" dùng chung cho các màn AI: danh sách bài đã làm, bấm vào để
@@ -286,12 +287,12 @@ function ChiTietViet({ bai }) {
  */
 function NutLuyenLai({ bai, luyenLai }) {
     if (!luyenLai?.chon) return null;
-    const lang = bai.lang === 'zh' ? 'zh' : 'en';
+    const lang = chuanMa(bai.lang);
     if (luyenLai.lang && luyenLai.lang !== lang) {
         return (
             <p className="tr-intro-note">
-                <i className="fas fa-circle-info"></i> Bài này là {lang === 'zh' ? 'tiếng Trung' : 'tiếng Anh'}: đổi ngôn ngữ học sang{' '}
-                {lang === 'zh' ? 'tiếng Trung' : 'tiếng Anh'} để luyện lại.
+                <i className="fas fa-circle-info"></i> Bài này là {tenVietGiuaCau(lang)}: đổi ngôn ngữ học sang{' '}
+                {tenVietGiuaCau(lang)} để luyện lại.
             </p>
         );
     }
@@ -448,7 +449,7 @@ function ChiTietNghe({ bai }) {
             <div className="essay-band">
                 <div className="essay-band-num">{bai.score ?? kq.score ?? 0}</div>
                 <div className="essay-band-label">
-                    Điểm /100 · đúng {kq.correct ?? 0}/{kq.total ?? 0} {bai.lang === 'zh' ? 'chữ' : 'từ'}
+                    Điểm /100 · đúng {kq.correct ?? 0}/{kq.total ?? 0} {tenDonVi(bai.lang)}
                 </div>
             </div>
             {kq.missing?.length > 0 && <p className="tr-intro-note"><strong>Bỏ sót:</strong> {kq.missing.join(', ')}</p>}

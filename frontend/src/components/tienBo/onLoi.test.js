@@ -28,7 +28,7 @@ describe('gắn vào Sổ tay lỗi', () => {
 
 describe('trả lời', () => {
     test('mảnh bấm giữ VỊ TRÍ ký tự thật; tiếng Trung theo từng chữ', () => {
-        expect(ol).toMatch(/const re = lang === 'zh' \? \/\\S\/gu : \/\\S\+\/g;/);
+        expect(ol).toMatch(/const re = coKhoangTrang\(lang\) \? \/\\S\+\/g : \/\\S\/gu;/);
         expect(ol).toMatch(/out\.push\(\{ chu: m\[0\], start: m\.index, end: m\.index \+ m\[0\]\.length \}\)/);
         expect(ol).toMatch(/return ds\.length \? \{ start: ds\[0\]\.start, end: ds\[ds\.length - 1\]\.end \} : null;/);
     });

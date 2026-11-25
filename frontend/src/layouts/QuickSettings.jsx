@@ -5,7 +5,7 @@ import { EventBus, GameEvents } from '@game/eventBus.js';
 import { Notification } from '@ui/Toaster.jsx';
 import { levelsFor, bandLabel, BANDS } from '@lib/levelBands.js';
 import { nhanKho } from '@lib/nhanKho.js';
-import { luaChonNgonNguHoc } from '@lib/ngonNgu.js';
+import { luaChonNgonNguHoc, NGON_NGU_HOAT_DONG } from '@lib/ngonNgu.js';
 
 // Bảng mức độ khó theo ngôn ngữ nằm ở `@lib/levelBands.js` — tiếng Trung dùng
 // HSK, tiếng Anh dùng CEFR. Trước đây bảng CEFR bị chép cứng ở đây, nên chọn
@@ -58,7 +58,7 @@ export default function QuickSettings({ variant = 'bar' }) {
             // cây, mà lúc đó GameState thường CHƯA nạp xong hồ sơ server → chốt
             // 'en' rồi giữ mãi. Người dùng đang luyện tiếng Trung mà ô trên nav
             // vẫn hiện "Tiếng Anh", bấm vào là đổi nhầm sang tiếng Anh thật.
-            if (s.vocabLang === 'en' || s.vocabLang === 'zh') setVocabLang(s.vocabLang);
+            if (NGON_NGU_HOAT_DONG.includes(s.vocabLang)) setVocabLang(s.vocabLang);
         };
         sync();
         const unsub = EventBus.on(GameEvents.SESSION_BADGE_UPDATED, sync);

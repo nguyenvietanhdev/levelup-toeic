@@ -12,6 +12,7 @@ import { KIEU_CHAM, kieuChoNgonNgu, doKhoChoKieu } from '@lib/kieuCham.js';
 import NutBatDau from '../ai/NutBatDau.jsx';
 import { useHoiKhiThoat } from '../ai/aiExitGuard.js';
 import { useBaiNhap, TheBaiDo } from '../ai/BaiNhap.jsx';
+import { chuanMa, tenVietGiuaCau } from '@lib/ngonNgu.js';
 
 /**
  * Luyện ĐỌC HIỂU nhiều dạng bài: đời thường, công việc, báo chí, học thuật —
@@ -104,7 +105,7 @@ export default function ReadingScreen({ active }) {
     const [grading, setGrading] = useState(false);
 
     // Ngôn ngữ đề lấy từ hồ sơ ở server (`vocabLang`), nên ở đây chỉ chia hai nhánh en/zh.
-    const ngonNgu = getVocabLang() === 'zh' ? 'zh' : 'en';
+    const ngonNgu = chuanMa(getVocabLang());
     const kieuList = kieuChoNgonNgu(ngonNgu);
     const kieuDangChon = kieu && kieuList.some((k) => k.key === kieu) ? kieu : KIEU_MAC_DINH[ngonNgu];
     const kieuMoTa = KIEU_CHAM.find((k) => k.key === kieuDangChon) || {};
@@ -239,7 +240,7 @@ export default function ReadingScreen({ active }) {
                         onBo={baiNhap.boQua}
                     />
                     <p>
-                        Đọc một văn bản {ngonNgu === 'zh' ? 'tiếng Trung' : 'tiếng Anh'} theo
+                        Đọc một văn bản {tenVietGiuaCau(ngonNgu)} theo
                         văn phong <strong>{kieuMoTa.label}</strong>, rồi trả lời câu hỏi.
                     </p>
                     <p className="tr-intro-note">

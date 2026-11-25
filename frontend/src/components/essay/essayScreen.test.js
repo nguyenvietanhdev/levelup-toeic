@@ -255,7 +255,7 @@ describe('tiếng Trung — bộ tiêu chí riêng', () => {
     test('hiển thị theo ngôn ngữ của BÀI ĐÃ CHẤM, không phải đề hiện tại', () => {
         // Người dùng có thể đổi ngôn ngữ học sau khi chấm xong; đọc lại bài cũ
         // mà lấy bộ tiêu chí của đề mới là bốn ô trống.
-        expect(src).toMatch(/const resultLang = result\?\.lang === 'zh'/);
+        expect(src).toMatch(/const resultLang = chuanMa\(result\?\.lang\)/);
         expect(src).toMatch(/criteriaFor\(resultLang\)/);
     });
 });
@@ -292,7 +292,7 @@ describe('tiếng Trung — ĐƠN VỊ đếm', () => {
     });
 
     test('nhãn đơn vị đổi theo ngôn ngữ (chữ / từ)', () => {
-        expect(src).toMatch(/const unit = lang === 'zh' \? 'chữ' : 'từ'/);
+        expect(src).toMatch(/const unit = tenDonVi\(lang\)/);
         expect(src).toMatch(/\{words\} \/ \{minUnits\} \{unit\}/);
     });
 
@@ -316,7 +316,7 @@ describe('tiếng Trung — không bịa thang điểm', () => {
     test('màn giới thiệu nói đúng chuẩn NGAY khi chưa có đề', () => {
         // Người học tiếng Trung đọc "bài luận IELTS Task 2" sẽ tưởng chế độ này
         // không dành cho mình và thoát ra luôn.
-        expect(src).toMatch(/GameState\.state\?\.settings\?\.vocabLang === 'zh'/);
+        expect(src).toMatch(/chuanMa\(GameState\.state\?\.settings\?\.vocabLang\)/);
         expect(src).toMatch(/HSK 书写/);
     });
 });

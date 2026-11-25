@@ -8,6 +8,7 @@ import { getVocabLang } from '@api/vocabulary.js';
 import { dichSangViet } from '@lib/dichNhanh.js';
 import { gioPhut, cauTai, tachTu, viTriCuon, khopTim } from '@lib/baiNghe.js';
 import OTimBai from './OTimBai.jsx';
+import { chuanMa } from '@lib/ngonNgu.js';
 
 const TEN_CAP_DO = { de: 'Dễ', vua: 'Vừa', kho: 'Khó' };
 const TOC_DO = [0.75, 1, 1.25];
@@ -22,7 +23,7 @@ const TU_CUON_NGHI_MS = 4000;
 export default function BaiNgheScreen({ active }) {
     const { showScreen } = useGame();
     const { isLoggedIn } = useAuth();
-    const lang = getVocabLang() === 'zh' ? 'zh' : 'en';
+    const lang = chuanMa(getVocabLang());
 
     const [ds, setDs] = useState(null);
     const [capDo, setCapDo] = useState('');

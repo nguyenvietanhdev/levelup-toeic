@@ -147,3 +147,21 @@ describe('bảng nội dung theo ngôn ngữ', () => {
         expect(tra('ja')).toBe(1); // chưa mở → chuẩn về mặc định như mọi chỗ khác
     });
 });
+
+describe('không còn ternary Anh–Trung cho mã / tên / đơn vị (backend)', () => {
+    const fs = require('fs');
+    const path = require('path');
+    test('services, controllers, routes, models dùng hàm của sổ', () => {
+        const MAU = [/=== 'zh' \? 'zh' : 'en'/, /\? 'tiếng Trung' : 'tiếng Anh'/, /=== 'zh' \? 'chữ' : 'từ'/, /\? \{ lang: 'zh' \} : \{ lang: \{/];
+        const vi_pham = [];
+        for (const thu of ['services', 'controllers', 'routes', 'models']) {
+            for (const ten of fs.readdirSync(path.join(__dirname, '..', thu))) {
+                if (!ten.endsWith('.js')) continue;
+                const ma = fs.readFileSync(path.join(__dirname, '..', thu, ten), 'utf8')
+                    .split('\n').filter((d) => !/^\s*(\/\/|\*|\/\*)/.test(d)).join('\n');
+                for (const re of MAU) if (re.test(ma)) vi_pham.push(`${thu}/${ten}: ${re}`);
+            }
+        }
+        expect(vi_pham).toEqual([]);
+    });
+});

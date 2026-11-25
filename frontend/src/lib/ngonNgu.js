@@ -39,6 +39,30 @@ export function nhanDienChuViet(text) {
 /** Ngôn ngữ đang HỌC từ `vocabLang` ('bi' = bộ song ngữ Trung–Anh → học tiếng Trung). */
 export const ngonNguHoc = (vocabLang) => (vocabLang === 'bi' ? 'zh' : chuanMa(vocabLang));
 
+/** `vocabLang` người dùng được đặt: ngôn ngữ đang mở hoặc 'bi'. */
+export const vocabLangHopLe = (v) => v === 'bi' || NGON_NGU_HOAT_DONG.includes(v);
+
+/** Tên đơn vị đếm độ dài bài ('chữ' với tiếng Trung/Nhật, 'từ' với ngôn ngữ có khoảng trắng). */
+export const tenDonVi = (ma) => (layNgonNgu(ma).donViDem === 'chu' ? 'chữ' : 'từ');
+
+const MAU_DEM = new Map(DS.filter((n) => n.donViDem === 'chu').map((n) => [
+    n.ma, new RegExp('[' + (n.chuDem || [n.chuViet]).map((c) => SO.mauChuViet[c].slice(1, -1)).join('') + ']', 'g'),
+]));
+/** Độ dài bài theo đúng đơn vị của ngôn ngữ (như backend: đếm chữ thuộc hệ chữ, hoặc đếm từ). */
+export function demDonVi(text, ma) {
+    const s = String(text || '');
+    const mau = MAU_DEM.get(layNgonNgu(ma).ma);
+    if (mau) return (s.match(mau) || []).length;
+    return s.trim().split(/\s+/).filter(Boolean).length;
+}
+
+/** Ngôn ngữ viết cách từ bằng khoảng trắng. */
+export const coKhoangTrang = (ma) => layNgonNgu(ma).tachTu === 'khoangTrang';
+/** Tên ngắn ('Anh', 'Trung') cho nhãn chật chỗ. */
+export const tenNgan = (ma) => layNgonNgu(ma).tenNgan;
+/** Kiểu phiên âm của ngôn ngữ ('pinyin' | 'furigana' | 'romaja' | null). */
+export const phienAm = (ma) => layNgonNgu(ma).phienAm;
+
 export const tenChoPrompt = (ma) => layNgonNgu(ma).tenPrompt;
 export const bcp47 = (ma) => layNgonNgu(ma).bcp47;
 export const donViDem = (ma) => layNgonNgu(ma).donViDem;

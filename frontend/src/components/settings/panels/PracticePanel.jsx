@@ -4,7 +4,7 @@ import Toggle from './Toggle.jsx';
 import { QUESTION_TIME_MODES, getQuestionTimeDefault } from '@components/practice/questionTime.js';
 import { bandLabel, BANDS, levelsFor } from '@lib/levelBands.js';
 import { Notification } from '@ui/Toaster.jsx';
-import { luaChonNgonNguHoc } from '@lib/ngonNgu.js';
+import { luaChonNgonNguHoc, tenDonVi } from '@lib/ngonNgu.js';
 
 const SEC_OPTIONS = [10, 15, 20, 25, 30, 45, 60, 90, 120];
 
@@ -115,7 +115,7 @@ export default function PracticePanel({ s, handleQPS, updateSetting, handleDiffi
                     <h4>Phát âm: đọc cả câu</h4>
                     <p>
                         Đọc câu ví dụ thay vì một từ — chấm từng{' '}
-                        {(s.vocabLang || 'en') === 'zh' ? 'chữ' : 'từ'}, chỉ ra chỗ nào chưa rõ
+                        {tenDonVi(s.vocabLang)}, chỉ ra chỗ nào chưa rõ
                     </p>
                 </div>
                 <Toggle

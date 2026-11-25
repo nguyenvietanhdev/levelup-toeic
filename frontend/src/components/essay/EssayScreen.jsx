@@ -15,6 +15,7 @@ import { useBaiNhap, TheBaiDo } from '../ai/BaiNhap.jsx';
 import { useNhamYeu, NutNhamYeu, NhanNham } from '../ai/NhamDiemYeu.jsx';
 import { useHoiKhiThoat } from '../ai/aiExitGuard.js';
 import { chuoiKhoang } from '@lib/khoangDiem.js';
+import { chuanMa, tenDonVi } from '@lib/ngonNgu.js';
 
 /**
  * Luyện VIẾT LUẬN — IELTS Task 2 (tiếng Anh) hoặc HSK 书写 (tiếng Trung).
@@ -170,11 +171,11 @@ export default function EssayScreen({ active }) {
     // tạm từ GameState để màn giới thiệu nói đúng chuẩn ngay từ đầu — người học
     // tiếng Trung đọc "bài luận IELTS Task 2" sẽ tưởng chế độ này không dành cho
     // mình và thoát ra luôn.
-    const langLocal = GameState.state?.settings?.vocabLang === 'zh' ? 'zh' : 'en';
-    const lang = prompt ? (prompt.lang === 'zh' ? 'zh' : 'en') : langLocal;
+    const langLocal = chuanMa(GameState.state?.settings?.vocabLang);
+    const lang = prompt ? (chuanMa(prompt.lang)) : langLocal;
     const [nhamYeu, doiNhamYeu] = useNhamYeu();
     const minUnits = Number(prompt?.minWords) || (lang === 'zh' ? MIN_ZH : MIN_EN);
-    const unit = lang === 'zh' ? 'chữ' : 'từ';
+    const unit = tenDonVi(lang);
 
     // Kiểu chấm đang áp dụng: người học chọn (nếu hợp ngôn ngữ), không thì mặc định.
     const kieuHopLe = KIEU_CHAM.filter((k) => k.langs.includes(lang)).map((k) => k.key);
@@ -185,7 +186,7 @@ export default function EssayScreen({ active }) {
     const words = countUnits(essay, lang);
     // Ngôn ngữ của BÀI ĐÃ CHẤM — không nhất thiết trùng đề hiện tại (người dùng
     // có thể đổi ngôn ngữ học sau khi chấm xong).
-    const resultLang = result?.lang === 'zh' ? 'zh' : 'en';
+    const resultLang = chuanMa(result?.lang);
     const enough = words >= minUnits;
 
     const handleNewPrompt = useCallback(async () => {

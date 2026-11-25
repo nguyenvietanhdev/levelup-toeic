@@ -9,7 +9,7 @@ import { moNguPhap, NGU_PHAP_THEO_KHUNG } from '@lib/nguPhapLienKet.js';
 import { useGhiAm } from '../conversation/useGhiAm.js';
 import { useHoiKhiThoat } from '../ai/aiExitGuard.js';
 import { getVocabLang } from '@api/vocabulary.js';
-import { bcp47 } from '@lib/ngonNgu.js';
+import { bcp47, chuanMa } from '@lib/ngonNgu.js';
 
 /** Thanh giờ chỉ để giục, hết giờ KHÔNG tính sai: bắt lỗi phản xạ chứ không phạt người chậm. */
 const GIAY_GOI_Y = 10;
@@ -60,7 +60,7 @@ export default function PhanXaScreen({ active }) {
     const [tongQuan, setTongQuan] = useState(null);
     // Ngôn ngữ do server quyết (theo ngôn ngữ học, kho song ngữ học tiếng Anh); chưa tải xong
     // thì đoán cùng quy tắc để micro không mở nhầm ngôn ngữ ngay từ câu đầu.
-    const lang = tongQuan?.lang || (getVocabLang() === 'zh' ? 'zh' : 'en');
+    const lang = tongQuan?.lang || (chuanMa(getVocabLang()));
     const ghi = useGhiAm(speechLangFor(lang));
     const [pha, setPha] = useState('tong'); // tong → hoi ⇄ ketqua → xong
     const [buoi, setBuoi] = useState(null);

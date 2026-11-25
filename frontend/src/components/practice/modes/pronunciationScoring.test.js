@@ -477,7 +477,7 @@ describe('chế độ đọc CÂU — nối vào PronunciationMode', () => {
 
     test('mô tả dùng đúng đơn vị theo ngôn ngữ đang học', () => {
         // "chấm từng từ" với tiếng Trung là sai: đơn vị ở đó là CHỮ.
-        expect(panel).toMatch(/=== 'zh' \? 'chữ' : 'từ'/);
+        expect(panel).toMatch(/tenDonVi\(s\.vocabLang\)/);
     });
 
     test('từ chưa rõ phân biệt bằng GẠCH CHÂN, không chỉ bằng màu', () => {

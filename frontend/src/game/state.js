@@ -7,6 +7,7 @@ import { Utils } from '@lib/utils.js';
 import { EventBus, GameEvents } from '@game/eventBus.js';
 import { Storage } from '@lib/storage.js';
 import { logger } from '@lib/logger.js';
+import { NGON_NGU_HOAT_DONG } from '@lib/ngonNgu.js';
 
 // Canonical default settings — single source for both the initial state
 // and "restore default settings" (avoids the two drifting apart).
@@ -244,7 +245,7 @@ export const GameState = {
         try {
             if (this.state.settings.vocabLang === undefined) {
                 const vocabLang = localStorage.getItem('vocabLang');
-                if (vocabLang === 'en' || vocabLang === 'zh') {
+                if (NGON_NGU_HOAT_DONG.includes(vocabLang)) {
                     this.state.settings.vocabLang = vocabLang;
                 }
             }
@@ -290,7 +291,7 @@ export const GameState = {
             if (typeof st.reverseMode === 'boolean') {
                 localStorage.setItem('reverseMode', String(st.reverseMode));
             }
-            if (st.vocabLang === 'en' || st.vocabLang === 'zh') {
+            if (NGON_NGU_HOAT_DONG.includes(st.vocabLang)) {
                 localStorage.setItem('vocabLang', st.vocabLang);
             }
             if (typeof st.practiceSoundEnabled === 'boolean') {

@@ -11,7 +11,7 @@ import PanelToeic from './PanelToeic.jsx';
 import PanelBang from './PanelBang.jsx';
 import { useHoiKhiThoat } from '../ai/aiExitGuard.js';
 import { getVocabLang } from '@api/vocabulary.js';
-import { bcp47 } from '@lib/ngonNgu.js';
+import { bcp47, chuanMa } from '@lib/ngonNgu.js';
 
 /** Chỉ mục tiêu đã có đủ nội dung mới chọn được, để không hứa lộ trình chưa tồn tại. */
 const MUC_TIEU = [
@@ -168,7 +168,7 @@ export default function HoSoHocScreen({ active }) {
     const { isLoggedIn } = useAuth();
     const coMic = isSpeechSupported();
     // Ngôn ngữ của bài test đang làm: nghe micro, đọc câu nghe và lời nhắc đều theo nó.
-    const [langTest, setLangTest] = useState(getVocabLang() === 'zh' ? 'zh' : 'en');
+    const [langTest, setLangTest] = useState(chuanMa(getVocabLang()));
     const ghi = useGhiAm(speechLangFor(langTest));
 
     const [hoSo, setHoSo] = useState(null);

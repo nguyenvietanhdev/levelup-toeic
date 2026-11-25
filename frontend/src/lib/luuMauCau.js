@@ -1,4 +1,5 @@
 import { UploadVocabAPI } from '@api/uploadVocab.js';
+import { chuanMa } from '@lib/ngonNgu.js';
 
 /**
  * Lưu một mẫu câu ngữ pháp vào Từ vựng riêng.
@@ -21,7 +22,7 @@ export async function luuVaoTuRieng({ en, vn = '', lang = 'en', source, part, ex
         res = await UploadVocabAPI.create({
             en: text,
             vn: String(vn || '').trim(),
-            lang: lang === 'zh' ? 'zh' : 'en',
+            lang: chuanMa(lang),
             source,
             part: (String(part || '').trim() || 'Chung').slice(0, 60),
             type: '',

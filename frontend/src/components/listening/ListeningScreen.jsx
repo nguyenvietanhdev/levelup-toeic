@@ -12,6 +12,7 @@ import LichSuMode from '../history/LichSuMode.jsx';
 import NutBatDau from '../ai/NutBatDau.jsx';
 import { useHoiKhiThoat } from '../ai/aiExitGuard.js';
 import { useBaiNhap, TheBaiDo } from '../ai/BaiNhap.jsx';
+import { chuanMa } from '@lib/ngonNgu.js';
 
 /** Mức khó của đoạn nghe (khoá gửi server; server chọn dải CEFR tương ứng). */
 const MUC = [
@@ -128,7 +129,7 @@ export default function ListeningScreen({ active }) {
     const source = TopicSelector.currentTopic?.source || '';
     // Ngôn ngữ của bài đang nghe (server trả về khi mở phiên); trước khi mở thì theo
     // bộ từ đang học. Tiếng Trung chấm theo từng CHỮ HÁN, tiếng Anh theo TỪ.
-    const zh = (phien?.lang || (getVocabLang() === 'zh' ? 'zh' : 'en')) === 'zh';
+    const zh = (phien?.lang || (chuanMa(getVocabLang()))) === 'zh';
     const donVi = zh ? 'chữ' : 'từ';
     const part = PartSelector.selectedPart || '';
 

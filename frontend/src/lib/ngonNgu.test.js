@@ -29,6 +29,12 @@ describe('sổ ngôn ngữ frontend = backend', () => {
         expect(FE.tenChoPrompt(m)).toBe(BE.tenChoPrompt(m));
         expect(FE.bcp47(m)).toBe(BE.bcp47(m));
         expect(FE.donViDem(m)).toBe(BE.donViDem(m));
+        expect(FE.tenViet(m)).toBe(BE.tenViet(m));
+        expect(FE.tenVietGiuaCau(m)).toBe(BE.tenVietGiuaCau(m));
+        expect(FE.tenDonVi(m)).toBe(BE.tenDonVi(m));
+        expect(FE.coKhoangTrang(m)).toBe(BE.coKhoangTrang(m));
+        expect(FE.vocabLangHopLe(m)).toBe(BE.vocabLangHopLe(m));
+        for (const t of ['我的好朋友，在银行。', 'hello  big world', '私は学生です', '']) expect(FE.demDonVi(t, m)).toBe(BE.demDonVi(t, m));
     });
 
     test('Nhật có Kanji không bị nhận là Trung', () => {

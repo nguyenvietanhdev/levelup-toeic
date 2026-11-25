@@ -6,7 +6,7 @@ import { NguPhapAPI } from '@api/nguPhap.js';
 import { getVocabLang } from '@api/vocabulary.js';
 import LuyenNguPhap from './LuyenNguPhap.jsx';
 import LichSuNguPhap from './LichSuNguPhap.jsx';
-import { bcp47, nhanDienChuViet } from '@lib/ngonNgu.js';
+import { bcp47, nhanDienChuViet, NGON_NGU_HOAT_DONG } from '@lib/ngonNgu.js';
 
 const CHO_GO_MS = 250;
 const KHOA_LANG = 'levelup.nguPhap.lang';
@@ -26,7 +26,7 @@ const phat = (text) => {
 function langBanDau() {
     try {
         const daChon = localStorage.getItem(KHOA_LANG);
-        if (daChon === 'en' || daChon === 'zh') return daChon;
+        if (NGON_NGU_HOAT_DONG.includes(daChon)) return daChon;
     } catch { /* không đọc được thì theo từ vựng */ }
     return getVocabLang() === 'en' ? 'en' : 'zh';
 }
@@ -160,7 +160,7 @@ export default function NguPhapTra({ active, dich = null }) {
     useEffect(() => {
         if (!dich?.lan) return;
         // Mục trong kho tiếng Trung có id `zh-…`; mở tới một mục hay một nhóm thì chuyển đúng ngôn ngữ của nó.
-        if (dich.lang === 'zh' || dich.lang === 'en') setLang(dich.lang);
+        if (NGON_NGU_HOAT_DONG.includes(dich.lang)) setLang(dich.lang);
         else if (dich.id) setLang(dich.id.startsWith('zh-') ? 'zh' : 'en');
         setQ(dich.q || '');
         setNhomChon(dich.nhom || '');

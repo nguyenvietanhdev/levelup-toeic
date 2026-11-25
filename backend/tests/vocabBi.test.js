@@ -351,7 +351,9 @@ describe('app luyện tập: lựa chọn ngôn ngữ thứ ba', () => {
     test('`getVocabLang` cho `bi` đi qua', () => {
         // Thiếu nó thì lựa chọn thứ ba âm thầm rơi về tiếng Anh.
         const i = api.indexOf('const stored = localStorage.getItem');
-        expect(api.slice(i, i + 300)).toMatch(/stored === 'bi'/);
+        // vocabLangHopLe (sổ ngôn ngữ) nhận 'bi' cùng các ngôn ngữ đang mở.
+        expect(api.slice(i, i + 300)).toMatch(/vocabLangHopLe\(stored\)/);
+        expect(require('../config/ngonNgu').vocabLangHopLe('bi')).toBe(true);
     });
 
     test('`ttsLang` quyết theo TỪNG TỪ, không theo cả kho', () => {

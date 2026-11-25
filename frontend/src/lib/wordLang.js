@@ -1,4 +1,5 @@
 import { bcp47 } from './ngonNgu.js';
+import { NGON_NGU_HOAT_DONG } from '@lib/ngonNgu.js';
 // Xác định ngôn ngữ của một từ trong bộ "Từ vựng riêng".
 //
 // Bộ này trộn lẫn Anh–Trung: gõ `你会吗` vào ô Dịch nhanh rồi lưu thì chữ Hán
@@ -20,7 +21,7 @@ export function hasHanzi(text) {
  * Ưu tiên `lang` đã lưu; không có thì nhìn mặt chữ. Trả 'zh' hoặc 'en'.
  */
 export function wordLang(word) {
-    if (word?.lang === 'zh' || word?.lang === 'en') return word.lang;
+    if (NGON_NGU_HOAT_DONG.includes(word?.lang)) return word.lang;
     return hasHanzi(word?.en) ? 'zh' : 'en';
 }
 

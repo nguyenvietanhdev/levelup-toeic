@@ -54,3 +54,22 @@ describe('mã giọng lấy từ sổ ngôn ngữ', () => {
         }
     });
 });
+
+describe('nhãn / đơn vị / chuẩn hoá mã lấy từ sổ ngôn ngữ', () => {
+    // Mỗi mẫu là một kiểu nhị phân Anh–Trung cũ: ngôn ngữ thứ ba sẽ âm thầm thành "tiếng Anh".
+    const MAU = [
+        [/=== 'zh' \? 'zh' : 'en'/, 'dùng chuanMa(x)'],
+        [/\? 'tiếng Trung' : 'tiếng Anh'/, 'dùng tenVietGiuaCau(lang)'],
+        [/=== 'zh' \? 'chữ' : 'từ'/, 'dùng tenDonVi(lang)'],
+    ];
+    test('không còn ternary Anh–Trung cho mã, tên ngôn ngữ, đơn vị đếm', () => {
+        const vi_pham = [];
+        for (const p of quet(GOC)) {
+            const rel = relative(GOC, p).replace(/\\/g, '/');
+            if (rel === 'lib/ngonNgu.js') continue;
+            const ma = readFileSync(p, 'utf8').split('\n').filter((d) => !/^\s*(\/\/|\*|\/\*)/.test(d)).join('\n');
+            for (const [re, cach] of MAU) if (re.test(ma)) vi_pham.push(`${rel}: ${cach}`);
+        }
+        expect(vi_pham).toEqual([]);
+    }, 30000);
+});

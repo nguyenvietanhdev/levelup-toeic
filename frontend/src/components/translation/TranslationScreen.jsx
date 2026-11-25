@@ -16,7 +16,7 @@ import { useNhamYeu, NutNhamYeu, NhanNham } from '../ai/NhamDiemYeu.jsx';
 import { useHoiKhiThoat } from '../ai/aiExitGuard.js';
 import { GameLogic } from '@game/gameLogic.js';
 import { luuVaoTuRieng } from '@lib/luuMauCau.js';
-import { bcp47 } from '@lib/ngonNgu.js';
+import { bcp47, chuanMa, tenVietGiuaCau, tenDonVi, tenNgan as tenNganCua } from '@lib/ngonNgu.js';
 
 /**
  * Luyện DỊCH — đọc một đoạn tiếng Việt, viết lại bằng tiếng Anh (hoặc Trung).
@@ -166,17 +166,17 @@ export default function TranslationScreen({ active }) {
 
     // Ngôn ngữ và ngưỡng do SERVER quyết, gửi kèm đề. TRƯỚC khi có đề thì đọc
     // tạm từ GameState để màn giới thiệu nói đúng ngôn ngữ ngay từ đầu.
-    const langLocal = GameState.state?.settings?.vocabLang === 'zh' ? 'zh' : 'en';
-    const lang = de ? (de.lang === 'zh' ? 'zh' : 'en') : langLocal;
+    const langLocal = chuanMa(GameState.state?.settings?.vocabLang);
+    const lang = de ? (chuanMa(de.lang)) : langLocal;
     const [nhamYeu, doiNhamYeu] = useNhamYeu();
     const chieu = de ? (de.chieu === 'ngoai-vi' ? 'ngoai-vi' : 'vi-ngoai') : chieuChon;
     const nguoc = chieu === 'ngoai-vi';
-    const tenNgonNgu = lang === 'zh' ? 'tiếng Trung' : 'tiếng Anh';
-    const tenNgan = lang === 'zh' ? 'Trung' : 'Anh';
+    const tenNgonNgu = tenVietGiuaCau(lang);
+    const tenNgan = tenNganCua(lang);
     // Chiều ngược bản dịch là tiếng Việt: đếm theo từ.
     const langBanDich = nguoc ? 'vi' : lang;
     const minUnits = Number(de?.minUnits) || (nguoc ? MIN_VI : (lang === 'zh' ? MIN_ZH : MIN_EN));
-    const unit = langBanDich === 'zh' ? 'chữ' : 'từ';
+    const unit = tenDonVi(langBanDich);
     const tieuChi = nguoc ? CRITERIA_NGUOC : CRITERIA;
 
     const soDonVi = countUnits(banDich, langBanDich);

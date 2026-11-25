@@ -1,3 +1,4 @@
+import { chuanMa, tenNgan } from '@lib/ngonNgu.js';
 /**
  * Luyện lại một bài dịch đã làm, từ tab Lịch sử — không gọi AI sinh đề.
  *
@@ -16,7 +17,7 @@ export function deLuyenLai(bai, doiChieu = false) {
     const chieu = doiChieu ? doi(chieuCu) : chieuCu;
     const passage = String((doiChieu ? bai.reference : bai.passage) || '').trim();
     if (!passage) return null;
-    const lang = bai.lang === 'zh' ? 'zh' : 'en';
+    const lang = chuanMa(bai.lang);
     return {
         chieu,
         passage,
@@ -32,7 +33,7 @@ export function deLuyenLai(bai, doiChieu = false) {
 
 /** Nhãn chiều cho nút (thuần): "Việt → Anh" / "Trung → Việt"… */
 export function nhanChieu(chieu, lang) {
-    const ten = lang === 'zh' ? 'Trung' : 'Anh';
+    const ten = tenNgan(lang);
     return chieu === 'ngoai-vi' ? `${ten} → Việt` : `Việt → ${ten}`;
 }
 

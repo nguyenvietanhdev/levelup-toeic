@@ -58,7 +58,7 @@ describe('ô ngôn ngữ theo kịp hồ sơ server', () => {
     });
 
     test('chỉ nhận en/zh, không nhận giá trị lạ', () => {
-        expect(syncBody).toMatch(/s\.vocabLang === 'en' \|\| s\.vocabLang === 'zh'/);
+        expect(syncBody).toMatch(/NGON_NGU_HOAT_DONG\.includes\(s\.vocabLang\)/);
     });
 });
 

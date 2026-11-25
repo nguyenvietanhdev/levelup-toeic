@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { BaiNhapAPI } from '@api/baiNhap.js';
+import { chuanMa, coKhoangTrang, tenDonVi } from '@lib/ngonNgu.js';
 
 /**
  * BÀI LÀM DỞ (Viết / Dịch / Đọc / Nghe): đề đã lấy được server lưu ngay lúc sinh;
@@ -53,7 +54,7 @@ export function useBaiNhap(mode, { active, coDe, xong, noiDung, deBai }) {
 const soChu = (s, lang) => {
     const t = String(s || '').trim();
     if (!t) return 0;
-    return lang === 'zh' ? t.replace(/\s/g, '').length : t.split(/\s+/).length;
+    return coKhoangTrang(lang) ? t.split(/\s+/).length : t.replace(/\s/g, '').length;
 };
 
 const luc = (d) => {
@@ -68,7 +69,7 @@ const luc = (d) => {
  */
 export function TheBaiDo({ nhap, deBai, moTa, onLamTiep, onBo }) {
     if (!nhap) return null;
-    const lang = nhap.de?.lang === 'zh' ? 'zh' : 'en';
+    const lang = chuanMa(nhap.de?.lang);
     const n = soChu(nhap.noiDung, lang);
     return (
         <div className="bai-do" role="status">
@@ -76,7 +77,7 @@ export function TheBaiDo({ nhap, deBai, moTa, onLamTiep, onBo }) {
             <p className="bai-do-de">{String(deBai || '').slice(0, 220)}{String(deBai || '').length > 220 ? '…' : ''}</p>
             <div className="bai-do-chan">
                 <span>
-                    {moTa ?? (n > 0 ? `Đã viết ${n} ${lang === 'zh' ? 'chữ' : 'từ'}` : 'Chưa viết gì')}
+                    {moTa ?? (n > 0 ? `Đã viết ${n} ${tenDonVi(lang)}` : 'Chưa viết gì')}
                     {nhap.capNhat ? ` · lưu lúc ${luc(nhap.capNhat)}` : ''}
                 </span>
                 <div className="bai-do-nut">

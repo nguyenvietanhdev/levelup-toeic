@@ -1,3 +1,4 @@
+import { vocabLangHopLe } from '@lib/ngonNgu.js';
 // ===================================
 // VOCABULARY API SERVICE
 // ===================================
@@ -7,7 +8,7 @@ export function getVocabLang() {
         const stored = localStorage.getItem('vocabLang');
         // `bi` = kho song ngữ (Trung ↔ Anh). Thiếu nó ở danh sách này thì
         // lựa chọn thứ ba âm thầm rơi về tiếng Anh — chọn một đằng học một nẻo.
-        if (stored === 'en' || stored === 'zh' || stored === 'bi') return stored;
+        if (vocabLangHopLe(stored)) return stored;
         return window.GameState?.state?.settings?.vocabLang || 'en';
     } catch {
         return 'en';

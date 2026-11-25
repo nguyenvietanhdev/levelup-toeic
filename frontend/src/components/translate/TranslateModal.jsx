@@ -10,6 +10,7 @@ import { Notification } from '@ui/Toaster.jsx';
 import { TtsAPI } from '@api/tts.js';
 import { giongVietTrinhDuyet, laTiengViet } from '@lib/giongViet.js';
 import { dichMay } from '@lib/dichMay.js';
+import { chuanMa } from '@lib/ngonNgu.js';
 
 // Ngôn ngữ học của hệ thống (en/zh) → mã đích ưu tiên khi dịch.
 const studyTargetLang = () => (getVocabLang() === 'zh' ? 'zh-CN' : 'en');
@@ -442,7 +443,7 @@ export default function TranslateModal({ text, onClose, editWord = null, onSaved
             // ghi nhầm thành 'en'.
             // baseLang() vì Google trả 'zh-CN'/'zh-TW', không phải 'zh'.
             const langOfEn = result.sourceLang === 'vi' ? targetLang : result.sourceLang;
-            const savedLang = baseLang(langOfEn) === 'zh' ? 'zh' : 'en';
+            const savedLang = chuanMa(baseLang(langOfEn));
 
             // Tách kho theo NGÔN NGỮ, không dồn chung một chỗ.
             //
