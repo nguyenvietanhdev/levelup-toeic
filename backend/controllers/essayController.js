@@ -11,7 +11,7 @@ const { generatePrompt, gradeEssay, countUnits, limitsFor, chuanHoaRubric } =
 const { awardXp } = require('../utils/userStateHelper');
 const { isVipActive } = require('../utils/energyCosts');
 const logger = require('../utils/logger');
-const { chuanMa } = require('../config/ngonNgu');
+const { chuanMa, tenDonVi } = require('../config/ngonNgu');
 
 /**
  * Luyện VIẾT LUẬN — IELTS Task 2 (tiếng Anh) hoặc HSK 书写 (tiếng Trung).
@@ -144,7 +144,7 @@ exports.grade = async (req, res, next) => {
         // giữa các từ — đếm theo từ thì cả bài luận ra đúng 1 và người học không
         // bao giờ nộp được bài.
         const { min, max } = limitsFor(lang);
-        const unit = lang === 'zh' ? 'chữ' : 'từ';
+        const unit = tenDonVi(lang);
         const wordCount = countUnits(essay, lang);
 
         if (wordCount < min) {

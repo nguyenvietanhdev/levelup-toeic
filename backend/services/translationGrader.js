@@ -24,7 +24,7 @@ function chatCompletion(...args) {
 }
 
 const { parseJson, clampBand, countUnits } = require('./essayGrader');
-const { tenChoPrompt } = require('../config/ngonNgu');
+const { tenChoPrompt, bangNgonNgu, chuanChuHoa } = require('../config/ngonNgu');
 const { chiThiPhanLoai, chuanHoaLoai, chiThiChuaBai, chuanHoaMuc } = require('./errorTaxonomy');
 const { chonDang, CHI_THI_HOP_BOI_CANH } = require('./dangBai');
 const { chiThiNham } = require('./nhamDiemYeu');
@@ -72,9 +72,10 @@ const MIN_ZH = 20;   // chữ Hán
 
 /** Bản dịch tiếng Việt (chiều ngược) tối thiểu bao nhiêu từ. */
 const MIN_VI = 15;
+const toiThieuCua = bangNgonNgu('Dịch đoạn văn: độ dài tối thiểu', { en: MIN_EN, zh: MIN_ZH });
 function limitsFor(lang, chieu = 'vi-ngoai') {
     if (chuanChieu(chieu) === 'ngoai-vi') return { min: MIN_VI };
-    return lang === 'zh' ? { min: MIN_ZH } : { min: MIN_EN };
+    return { min: toiThieuCua(lang) };
 }
 
 /** Điểm tổng = trung bình (có trọng số ở chiều ngược) các trục, làm tròn 0.5 như thang band. */
@@ -383,8 +384,8 @@ async function generatePassageNguoc({ tuVung = [], userId = null, lang = 'en', l
 /** Câu của đoạn văn chứa cụm `cum` (thuần), để lưu làm câu ví dụ. */
 function cauChua(passage, cum, lang = 'en') {
     const cau = String(passage || '').split(/(?<=[.!?。！？])\s*/).filter(Boolean);
-    const tim = lang === 'zh' ? cum : String(cum).toLowerCase();
-    return (cau.find((c) => (lang === 'zh' ? c : c.toLowerCase()).includes(tim)) || '').trim();
+    const tim = chuanChuHoa(cum, lang);
+    return (cau.find((c) => chuanChuHoa(c, lang).includes(tim)) || '').trim();
 }
 
 /**
@@ -392,12 +393,12 @@ function cauChua(passage, cum, lang = 'en') {
  * không có thì bỏ — lưu vào Từ vựng riêng là học nhầm), có nghĩa đúng, không trùng, tối đa 5.
  */
 function chuanHoaHieuSai(ds, passage, lang = 'en') {
-    const goc = lang === 'zh' ? String(passage || '') : String(passage || '').toLowerCase();
+    const goc = chuanChuHoa(passage || '', lang);
     const daCo = new Set();
     return (Array.isArray(ds) ? ds : [])
         .map((x) => ({ cum: String(x?.phrase || '').trim().slice(0, 60), nghia: String(x?.meaning || '').trim().slice(0, 120) }))
         .filter((x) => {
-            const k = lang === 'zh' ? x.cum : x.cum.toLowerCase();
+            const k = chuanChuHoa(x.cum, lang);
             if (!x.cum || !x.nghia || !goc.includes(k) || daCo.has(k)) return false;
             daCo.add(k);
             return true;

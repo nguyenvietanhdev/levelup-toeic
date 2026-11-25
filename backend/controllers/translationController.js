@@ -13,7 +13,7 @@ const { isVipActive } = require('../utils/energyCosts');
 const Essay = require('../models/Essay');
 const { thongKe, chuanHoaLoai } = require('../services/errorTaxonomy');
 const logger = require('../utils/logger');
-const { chuanMa } = require('../config/ngonNgu');
+const { chuanMa, tenDonVi } = require('../config/ngonNgu');
 
 /**
  * Luyện DỊCH — đọc một đoạn tiếng Việt, viết lại bằng tiếng Anh (hoặc Trung).
@@ -145,7 +145,7 @@ exports.grade = async (req, res, next) => {
         // theo từ thì cả bài ra đúng 1 và người học không bao giờ nộp được.
         // Chiều ngược bản dịch là tiếng Việt: đếm theo từ.
         const { min } = limitsFor(lang, chieu);
-        const unit = !nguoc && lang === 'zh' ? 'chữ' : 'từ';
+        const unit = tenDonVi(nguoc ? 'vi' : lang);
         const unitCount = countUnits(translation, nguoc ? 'vi' : lang);
 
         if (unitCount < min) {

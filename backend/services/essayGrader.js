@@ -21,7 +21,7 @@
  * band) kiểm thử được mà không cần khoá API — đó là chỗ dễ sai nhất.
  */
 const { chiThiPhanLoai, chuanHoaLoai, chiThiChuaBai, chuanHoaMuc } = require('./errorTaxonomy');
-const { tenChoPrompt, chuanMa } = require('../config/ngonNgu');
+const { tenChoPrompt, demDonVi, bangNgonNgu } = require('../config/ngonNgu');
 const { chiThiMuc } = require('./aiLevel');
 const { chonDang } = require('./dangBai');
 const { chiThiNham } = require('./nhamDiemYeu');
@@ -52,6 +52,7 @@ const CRITERIA_ZH = [
     { key: 'characters', label: '汉字词汇', vi: 'Chữ Hán & dùng từ' },
     { key: 'grammar', label: '语法', vi: 'Ngữ pháp' },
 ];
+const tieuChiMacDinh = bangNgonNgu('Viết luận: tiêu chí mặc định', { en: CRITERIA, zh: CRITERIA_ZH });
 
 /**
  * Bộ chấm GIAO TIẾP cho bài viết: bài viết thực tế (email, tin nhắn, đoạn văn đời
@@ -83,13 +84,14 @@ const RUBRICS_BY_LANG = {
 
 /** Kiểu chấm mặc định khi không chọn gì: IELTS cho tiếng Anh, HSK cho tiếng Trung. */
 const DEFAULT_RUBRIC = { en: 'ielts', zh: 'hsk' };
+const cacKieuCham = bangNgonNgu('Viết luận: các kiểu chấm', RUBRICS_BY_LANG);
+const kieuChamMacDinh = bangNgonNgu('Viết luận: kiểu chấm mặc định', DEFAULT_RUBRIC);
 
 /** Kiểu chấm hợp lệ cho ngôn ngữ đó, hoặc mặc định. Chỉ nhận chuỗi trong danh sách. */
 function chuanHoaRubric(rubric, lang = 'en') {
-    const ngonNgu = chuanMa(lang);
-    const cho = RUBRICS_BY_LANG[ngonNgu];
+    const cho = cacKieuCham(lang);
     if (typeof rubric === 'string' && cho.includes(rubric)) return rubric;
-    return DEFAULT_RUBRIC[ngonNgu];
+    return kieuChamMacDinh(lang);
 }
 
 /**
@@ -101,7 +103,7 @@ function criteriaFor(lang, rubric) {
     if (rb === 'giaotiep') return RUBRIC_GIAOTIEP;
     if (rb === 'toeic') return RUBRIC_TOEIC;
     if (rb === 'hsk') return CRITERIA_ZH;
-    return lang === 'zh' ? CRITERIA_ZH : CRITERIA;
+    return tieuChiMacDinh(lang);
 }
 
 /** Bộ chấm dùng khung chung (không phải IELTS/HSK có sẵn): giao tiếp và TOEIC. */
@@ -128,10 +130,12 @@ const MAX_WORDS = 1000;
 const MAX_CHARS_ZH = 2000;
 
 /** Ngưỡng tối thiểu/tối đa theo ngôn ngữ. */
+const nguongCua = bangNgonNgu('Viết luận: độ dài tối thiểu/tối đa', {
+    en: { min: MIN_WORDS, max: MAX_WORDS },
+    zh: { min: MIN_CHARS_ZH, max: MAX_CHARS_ZH },
+});
 function limitsFor(lang) {
-    return lang === 'zh'
-        ? { min: MIN_CHARS_ZH, max: MAX_CHARS_ZH }
-        : { min: MIN_WORDS, max: MAX_WORDS };
+    return { ...nguongCua(lang) };
 }
 
 /** Đếm từ. Dùng chung cho cả kiểm đầu vào lẫn hiển thị. */
@@ -155,9 +159,9 @@ function countChars(text) {
     return m ? m.length : 0;
 }
 
-/** Đếm theo đơn vị ĐÚNG với ngôn ngữ — chữ Hán cho `zh`, từ cho `en`. */
+/** Đếm theo đơn vị ĐÚNG với ngôn ngữ (sổ ngôn ngữ: chữ cho Trung/Nhật, từ cho ngôn ngữ có khoảng trắng). */
 function countUnits(text, lang) {
-    return lang === 'zh' ? countChars(text) : countWords(text);
+    return demDonVi(text, lang);
 }
 
 /**

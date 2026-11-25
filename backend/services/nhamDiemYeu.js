@@ -17,7 +17,7 @@
  */
 const { layTienBo } = require('./tienBo');
 
-const { tenChoPrompt, chuanMa } = require('../config/ngonNgu');
+const { tenChoPrompt, chuanMa, bangNgonNgu } = require('../config/ngonNgu');
 /**
  * Cách tạo cơ hội luyện cho từng nhóm lỗi (tiếng Anh vì đi thẳng vào prompt).
  * Nhóm không có ở đây (chính tả, dấu câu, khác) không nhắm được bằng nội dung.
@@ -47,7 +47,7 @@ const CO_HOI_ZH = {
     'word-choice': 'precise descriptions where similar words (会/能/可以, 知道/认识) must be chosen carefully',
     'literal-translation': 'complete sentences where a word-for-word translation from Vietnamese would fail',
 };
-const coHoiCua = (lang) => (lang === 'zh' ? CO_HOI_ZH : CO_HOI);
+const coHoiCua = bangNgonNgu('Nhắm điểm yếu: cách tạo cơ hội luyện', { en: CO_HOI, zh: CO_HOI_ZH });
 
 /** Nhóm lỗi nhắm được, tối đa 2, giữ thứ tự hay mắc nhất trước. */
 function locNhamDuoc(diemYeu, lang = 'en') {

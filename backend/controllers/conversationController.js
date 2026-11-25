@@ -15,7 +15,7 @@ const { awardXp } = require('../utils/userStateHelper');
 const { isVipActive } = require('../utils/energyCosts');
 const logger = require('../utils/logger');
 const roles = require('../services/aiRoles');
-const { chuanMa } = require('../config/ngonNgu');
+const { chuanMa, NGON_NGU_HOAT_DONG } = require('../config/ngonNgu');
 
 /**
  * Chế độ HỘI THOẠI — luyện dùng lại từ vựng vừa học.
@@ -103,7 +103,7 @@ exports.start = async (req, res, next) => {
         const asString = (v) => (typeof v === 'string' ? v.trim() : '');
         const source = asString(req.body.source) || asString(st.selectedSource);
         const part = asString(req.body.part) || asString(st.selectedPart);
-        const lang = req.body.lang === 'zh' || req.body.lang === 'en'
+        const lang = NGON_NGU_HOAT_DONG.includes(req.body.lang)
             ? req.body.lang
             : (chuanMa(st.vocabLang));
         // Kho song ngữ Trung–Anh: hội thoại vẫn nói tiếng Anh (`lang`), nhưng bộ

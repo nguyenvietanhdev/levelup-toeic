@@ -19,7 +19,7 @@ const HoSoHocVien = require('../models/HoSoHocVien');
 const { tomTatKyNang, tongQuanTrinhDo, ghiKetQua, NGUONG_YEU } = require('./hoSoHoc');
 const { parseJson } = require('./essayGrader');
 const logger = require('../utils/logger');
-const { chuanMa, maKyNang } = require('../config/ngonNgu');
+const { chuanMa, maKyNang, bangNgonNgu } = require('../config/ngonNgu');
 
 // Nạp trễ như các bộ chấm khác: nạp module không được khởi tạo client AI.
 function chatCompletion(...args) {
@@ -40,7 +40,7 @@ const CO_HOI_KY_NANG_ZH = {
     'zh-luong-tu': 'counting different objects with the right measure words',
     'zh-giao-tiep': 'polite everyday requests and questions',
 };
-const coHoiCua = (lang) => (lang === 'zh' ? CO_HOI_KY_NANG_ZH : CO_HOI_KY_NANG);
+const coHoiCua = bangNgonNgu('Phản hồi theo hồ sơ: cơ hội luyện kỹ năng', { en: CO_HOI_KY_NANG, zh: CO_HOI_KY_NANG_ZH });
 const TEN_CHU_DE_MUC_TIEU = {
     'giao-tiep': 'everyday situations such as shopping, eating out, travel and small talk',
     toeic: 'workplace and business situations such as meetings, emails, schedules and customer service',

@@ -16,7 +16,7 @@
  */
 const BaiNghe = require('../models/BaiNghe');
 const logger = require('../utils/logger');
-const { chuanMa } = require('../config/ngonNgu');
+const { chuanMa, coKhoangTrang, demDonVi } = require('../config/ngonNgu');
 
 /** Whisper nhận tối đa 25 MB mỗi file (MP3 64 kbps ≈ 50 phút). */
 const TOI_DA_BYTE = 25 * 1024 * 1024;
@@ -207,7 +207,8 @@ async function chepLoi(buffer, lang = 'en', tenFile = 'audio.mp3') {
 }
 
 const RE_HET_CAU = /([.!?。！？]+["'”’)]?)\s*/g;
-const soTu = (s, lang) => (lang === 'zh' ? s.replace(/[^一-鿿]/g, '').length / 2 : s.split(/\s+/).filter(Boolean).length);
+// Ngôn ngữ đếm chữ: ~2 chữ một từ.
+const soTu = (s, lang) => (coKhoangTrang(lang) ? demDonVi(s, lang) : demDonVi(s, lang) / 2);
 
 /**
  * Chia các đoạn Whisper thành từng câu (thuần). Một đoạn có thể chứa vài câu: tách theo dấu kết
@@ -244,10 +245,10 @@ function tachCau(doan, lang = 'en') {
         // Tiếng Trung thì không dựa vào dấu câu: Whisper hay bỏ dấu kết câu, gộp theo nó là dồn cả
         // bài vào một câu — mỗi đoạn Whisper cắt ra đã là một câu nói.
         // Có trần độ dài: file không có dấu câu thì không dồn cả bài vào một câu.
-        const chuaHetCau = lang !== 'zh' && !/[.!?。！？]["'”’)]?$/.test(truoc?.text || '');
+        const chuaHetCau = coKhoangTrang(lang) && !/[.!?。！？]["'”’)]?$/.test(truoc?.text || '');
         const gop = truoc && truoc.text.length < 300 && (soTu(m.text, lang) < 3 || chuaHetCau);
         if (gop) {
-            truoc.text = cat(`${truoc.text}${lang === 'zh' ? '' : ' '}${m.text}`, 600);
+            truoc.text = cat(`${truoc.text}${coKhoangTrang(lang) ? ' ' : ''}${m.text}`, 600);
             truoc.ketThuc = m.ketThuc;
         } else {
             cau.push({ ...m, text: cat(m.text, 600) });

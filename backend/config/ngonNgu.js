@@ -77,6 +77,47 @@ function maKyNang(lang, ky) {
     return ma === MAC_DINH ? ky : `${ma}-${ky}`;
 }
 
+/** Tên đơn vị đếm độ dài bài hiển thị cho người học ('chữ' với tiếng Trung/Nhật, 'từ' với ngôn ngữ có khoảng trắng). */
+const tenDonVi = (ma) => (layNgonNgu(ma).donViDem === 'chu' ? 'chữ' : 'từ');
+
+/**
+ * Độ dài bài theo ĐÚNG đơn vị của ngôn ngữ (thuần). Ngôn ngữ đếm chữ (Trung, Nhật) không có khoảng
+ * trắng giữa các từ — đếm theo từ thì cả bài ra 1. Chỉ đếm chữ thuộc hệ chữ của ngôn ngữ (`chuDem`),
+ * bỏ dấu câu và khoảng trắng: đếm cả `。，！` thì nhồi dấu câu là qua ngưỡng. Mã lạ (vd 'vi') → đếm từ.
+ */
+const MAU_DEM = new Map(DS.filter((n) => n.donViDem === 'chu').map((n) => [
+    n.ma, new RegExp((n.chuDem || [n.chuViet]).map((c) => SO.mauChuViet[c].slice(1, -1)).join('').replace(/^/, '[') + ']', 'g'),
+]));
+function demDonVi(text, ma) {
+    const s = String(text || '');
+    const mau = MAU_DEM.get(layNgonNgu(ma).ma);
+    if (mau) return (s.match(mau) || []).length;
+    return s.trim().split(/\s+/).filter(Boolean).length;
+}
+
+/** Ngôn ngữ viết cách từ bằng khoảng trắng (ghép hai mảnh câu phải chèn ' '). */
+const coKhoangTrang = (ma) => layNgonNgu(ma).tachTu === 'khoangTrang';
+
+/** So khớp không phân biệt hoa thường với chữ Latin; chữ Hán/kana/hangul để nguyên (thuần). */
+const chuanChuHoa = (s, ma) => (layNgonNgu(ma).chuViet === 'latin' ? String(s ?? '').toLowerCase() : String(s ?? ''));
+
+/**
+ * BẢNG NỘI DUNG THEO NGÔN NGỮ — thay cho `lang === 'zh' ? X_ZH : X`. Mỗi bảng đăng ký một tên để
+ * `thieuNoiDung(ma)` liệt kê bảng nào còn thiếu khi muốn mở một ngôn ngữ (test chặn: ngôn ngữ đang
+ * mở phải đủ mọi bảng). Tra ngôn ngữ chưa có trong bảng → lỗi rõ ràng, không âm thầm dùng tiếng Anh.
+ */
+const BANG_DA_KHAI = new Map();
+function bangNgonNgu(ten, bang) {
+    BANG_DA_KHAI.set(ten, bang);
+    return (lang) => {
+        const ma = chuanMa(lang);
+        if (!Object.prototype.hasOwnProperty.call(bang, ma)) throw new Error(`Bảng "${ten}" chưa có nội dung cho ngôn ngữ "${ma}".`);
+        return bang[ma];
+    };
+}
+/** Tên các bảng đã đăng ký (sau khi nạp module) còn thiếu nội dung cho `ma`. */
+const thieuNoiDung = (ma) => [...BANG_DA_KHAI].filter(([, b]) => !Object.prototype.hasOwnProperty.call(b, ma)).map(([t]) => t);
+
 const tenChoPrompt = (ma) => layNgonNgu(ma).tenPrompt;
 const bcp47 = (ma) => layNgonNgu(ma).bcp47;
 const giongEdge = (ma) => layNgonNgu(ma).giongEdge;
@@ -85,4 +126,5 @@ const donViDem = (ma) => layNgonNgu(ma).donViDem;
 module.exports = {
     SO, MAC_DINH, MA_NGON_NGU, MA_NGON_NGU_BI, NGON_NGU_HOAT_DONG,
     layNgonNgu, chuanMa, nhanDienChuViet, ngonNguHoc, vocabLangHopLe, locThietLap, locTheoNgonNgu, maKyNang, tenChoPrompt, bcp47, giongEdge, donViDem,
+    tenDonVi, demDonVi, coKhoangTrang, chuanChuHoa, bangNgonNgu, thieuNoiDung,
 };

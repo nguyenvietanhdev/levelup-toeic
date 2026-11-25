@@ -21,7 +21,7 @@
  *     việc sửa câu cũ ở các ngày khác nhau.
  */
 const LoiOn = require('../models/LoiOn');
-const { tenChoPrompt, chuanMa, locTheoNgonNgu } = require('../config/ngonNgu');
+const { tenChoPrompt, chuanMa, locTheoNgonNgu, coKhoangTrang } = require('../config/ngonNgu');
 const CauLuyenLoi = require('../models/CauLuyenLoi');
 const BuoiOnLoi = require('../models/BuoiOnLoi');
 const Essay = require('../models/Essay');
@@ -436,7 +436,7 @@ async function sinhLuaSai(ds, userId) {
 /** Câu tự đặt: chặn trước (miễn phí) câu quá ngắn hoặc chép lại câu cũ. */
 function kiemTuDat(cau, dapAn, lang) {
     const c = gon(cau);
-    const du = lang === 'zh' ? c.replace(/\s/g, '').length >= 5 : c.split(' ').length >= 4;
+    const du = coKhoangTrang(lang) ? c.split(' ').length >= 4 : c.replace(/\s/g, '').length >= 5;
     if (!du) return 'Câu hơi ngắn — hãy viết một câu đầy đủ.';
     if ([dapAn.cauDung, dapAn.cauGoc].some((x) => chuanHoaSo(x) === chuanHoaSo(c))) {
         return 'Đây là câu cũ — hãy tự đặt một câu MỚI của bạn.';

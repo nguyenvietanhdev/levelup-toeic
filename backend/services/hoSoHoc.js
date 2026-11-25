@@ -11,6 +11,7 @@
 const HoSoHocVien = require('../models/HoSoHocVien');
 const UserProfile = require('../models/UserProfile');
 const { KHUNG, KHUNG_ZH } = require('./phanXaKho');
+const { bangNgonNgu } = require('../config/ngonNgu');
 
 const KHUNG_KEYS = KHUNG.map((k) => k.key);
 const KY_NANG = [
@@ -29,7 +30,7 @@ const KY_NANG_ZH = [
     { key: 'zh-noi', ten: 'Nói thành câu', icon: 'fa-microphone-lines' },
 ];
 const KHUNG_KEYS_ZH = KHUNG_ZH.map((k) => k.key);
-const kyNangCua = (lang) => (lang === 'zh' ? KY_NANG_ZH : KY_NANG);
+const kyNangCua = bangNgonNgu('Hồ sơ học: các kỹ năng', { en: KY_NANG, zh: KY_NANG_ZH });
 const TEN_KY_NANG = new Map([...KY_NANG, ...KY_NANG_ZH].map((k) => [k.key, k.ten]));
 
 const GIAM = 0.9;

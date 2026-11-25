@@ -16,7 +16,7 @@ const { THEO_ID, khungCua } = require('./phanXaKho');
 const { khopKho, aiCham } = require('./phanXa');
 const { TEN_KY_NANG, ghiKetQua, layHoSo, tomTatKyNang, tongQuanTrinhDo, anhKyNang } = require('./hoSoHoc');
 const { homNayVN } = require('./loTrinh');
-const { chuanMa } = require('../config/ngonNgu');
+const { chuanMa, bangNgonNgu } = require('../config/ngonNgu');
 
 /** Test có câu chấm bằng AI nên giới hạn số lần mở mỗi ngày. */
 const TOI_DA_MOI_NGAY = 3;
@@ -166,7 +166,7 @@ const BO_DE = {
         keHoach: keHoachCho(['zh-giao-tiep', 'zh-trat-tu', 'zh-da-lam', 'zh-luong-tu'], 'zh-nghe'),
     },
 };
-const boDe = (lang) => BO_DE[chuanMa(lang)];
+const boDe = bangNgonNgu('Kiểm tra đầu vào: bộ đề', BO_DE);
 const KE_HOACH = BO_DE.en.keHoach;
 
 const NGAU_NHIEN = (a) => a[Math.floor(Math.random() * a.length)];

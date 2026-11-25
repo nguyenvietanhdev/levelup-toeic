@@ -46,3 +46,19 @@ describe('bật thử tiếng Nhật trong sổ', () => {
         expect(() => khoTuVung('ja')).toThrow(/chưa có kho từ vựng/);
     });
 });
+
+describe('mở tiếng Nhật cần thêm nội dung gì', () => {
+    test('thieuNoiDung liệt kê đúng các bảng còn thiếu (danh sách việc phải làm)', () => {
+        const fs = require('fs');
+        const path = require('path');
+        for (const thu of ['services', 'controllers', 'routes']) {
+            for (const ten of fs.readdirSync(path.join(__dirname, '..', thu))) {
+                const p = path.join(__dirname, '..', thu, ten);
+                if (ten.endsWith('.js') && fs.readFileSync(p, 'utf8').includes('bangNgonNgu(')) require(p);
+            }
+        }
+        const thieu = N.thieuNoiDung('ja');
+        expect(thieu).toEqual(expect.arrayContaining(['Viết luận: tiêu chí mặc định', 'Kiểm tra đầu vào: bộ đề', 'Phản xạ câu: các khung câu']));
+        expect(N.thieuNoiDung('en')).toEqual([]);
+    });
+});

@@ -29,7 +29,7 @@ const { anMuc } = require('./nguPhapQuanTri');
 const { dungNgonNgu, soSanh } = require('./nguPhapLuyen');
 const { kiemCauMoi, MO_TA_LOI } = require('./onLoi');
 const { chuanHoaVaiText, chuanHoaTieuDe, chuanHoaKhoa, hashVai } = require('./aiRoles');
-const { chuanMa } = require('../config/ngonNgu');
+const { chuanMa, NGON_NGU_HOAT_DONG } = require('../config/ngonNgu');
 
 const MOI_TRANG = 30;
 const RE_OBJECT_ID = /^[a-f0-9]{24}$/i;
@@ -597,7 +597,7 @@ async function lam(key, viec, ...args) {
     if (viec === 'truong') return { truong: await l.truong() };
     if (viec === 'ds') {
         const [opts] = args;
-        return l.ds({ q: cat(opts?.q, 80), lang: opts?.lang === 'en' || opts?.lang === 'zh' ? opts.lang : '', trang: opts?.trang, mucId: opts?.mucId });
+        return l.ds({ q: cat(opts?.q, 80), lang: NGON_NGU_HOAT_DONG.includes(opts?.lang) ? opts.lang : '', trang: opts?.trang, mucId: opts?.mucId });
     }
     if (viec === 'tao' && !(l.themDuoc && l.tao)) return loi('Loại này không thêm tay được.', 405);
     if (viec === 'capNhat' && !(l.suaDuoc && l.capNhat)) return loi('Loại này không sửa được.', 405);

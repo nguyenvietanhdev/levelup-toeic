@@ -8,6 +8,7 @@ const router = express.Router();
 const { protect } = require('../middleware/auth');
 const { layHoSo, datMucTieu } = require('../services/hoSoHoc');
 const { moTest, traLoiTest } = require('../services/kiemTraDauVao');
+const { NGON_NGU_HOAT_DONG } = require('../config/ngonNgu');
 
 router.use(protect);
 
@@ -27,7 +28,7 @@ router.put('/muc-tieu', async (req, res, next) => {
 
 router.post('/kiem-tra', async (req, res, next) => {
     try {
-        const r = await moTest(req.user.id, { coMic: req.body?.coMic !== false, lang: req.body?.lang === 'zh' ? 'zh' : (req.body?.lang === 'en' ? 'en' : '') });
+        const r = await moTest(req.user.id, { coMic: req.body?.coMic !== false, lang: NGON_NGU_HOAT_DONG.includes(req.body?.lang) ? req.body.lang : '' });
         if (r.loi) return res.status(r.ma || 400).json({ success: false, message: r.loi });
         res.json({ success: true, data: r });
     } catch (err) { next(err); }

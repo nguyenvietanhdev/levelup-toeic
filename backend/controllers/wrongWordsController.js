@@ -3,6 +3,7 @@ const WrongWord = require('../models/WrongWord');
 const User = require('../models/User');
 const UserProfile = require('../models/UserProfile');
 const logger = require('../utils/logger');
+const { NGON_NGU_HOAT_DONG, MAC_DINH } = require('../config/ngonNgu');
 
 /**
  * Kho từ vựng người dùng đang học — dùng để lọc từ sai.
@@ -49,8 +50,8 @@ async function resolveUserEmail(userId) {
  */
 const HAN_RE = /[一-鿿㐀-䶿]/;
 function deriveLang(body = {}) {
-    if (body.lang === 'zh' || body.lang === 'en') return body.lang;
-    return HAN_RE.test(String(body.en || '') + String(body.wordId || '')) ? 'zh' : 'en';
+    if (NGON_NGU_HOAT_DONG.includes(body.lang)) return body.lang;
+    return HAN_RE.test(String(body.en || '') + String(body.wordId || '')) ? 'zh' : MAC_DINH;
 }
 
 /**

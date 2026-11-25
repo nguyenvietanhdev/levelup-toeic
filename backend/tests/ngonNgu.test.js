@@ -118,3 +118,32 @@ describe('lọc Mongo và mã kỹ năng theo ngôn ngữ', () => {
         expect(maKyNang(undefined, 'noi')).toBe('noi');
     });
 });
+
+describe('bảng nội dung theo ngôn ngữ', () => {
+    const fs = require('fs');
+    const path = require('path');
+    const N = require('../config/ngonNgu');
+    /** Nạp mọi file có khai `bangNgonNgu(` để bảng nào cũng được đăng ký. */
+    const napHet = () => {
+        const ds = [];
+        for (const thu of ['services', 'controllers', 'routes']) {
+            for (const ten of fs.readdirSync(path.join(__dirname, '..', thu))) {
+                const p = path.join(__dirname, '..', thu, ten);
+                if (ten.endsWith('.js') && fs.readFileSync(p, 'utf8').includes('bangNgonNgu(')) { require(p); ds.push(ten); }
+            }
+        }
+        return ds;
+    };
+
+    test('mọi ngôn ngữ đang mở có đủ nội dung trong mọi bảng', () => {
+        expect(napHet().length).toBeGreaterThan(5);
+        for (const ma of N.NGON_NGU_HOAT_DONG) expect([ma, N.thieuNoiDung(ma)]).toEqual([ma, []]);
+    });
+
+    test('tra ngôn ngữ thiếu trong bảng: lỗi nêu rõ tên bảng, không âm thầm dùng tiếng Anh', () => {
+        const tra = N.bangNgonNgu('Bảng thử', { en: 1 });
+        expect(tra('en')).toBe(1);
+        expect(() => tra('zh')).toThrow(/Bảng thử.*"zh"/);
+        expect(tra('ja')).toBe(1); // chưa mở → chuẩn về mặc định như mọi chỗ khác
+    });
+});
