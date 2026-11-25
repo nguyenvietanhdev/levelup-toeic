@@ -13107,6 +13107,7 @@ button.hs-muc:not(:disabled):hover { border-color: var(--accent-color); }
 .bh-o.is-sai { border-bottom-color: #ef4444; animation: bh-lac .25s; }
 @keyframes bh-lac { 25% { transform: translateX(-3px); } 75% { transform: translateX(3px); } }
 .bh-the-vo { position: relative; }
+.bh-loc-lang { margin-left: auto; padding: 8px 12px; border-radius: 10px; border: 1px solid var(--border-color, rgba(255,255,255,.15)); background: var(--bg-secondary, transparent); color: inherit; font: inherit; cursor: pointer; }
 .bh-xoa { position: absolute; top: 6px; right: 6px; background: rgba(0,0,0,.55); color: #fff; border-radius: 8px; padding: 4px 8px; }
 .bh-them { display: grid; gap: 10px; max-width: 720px; }
 .bh-them label { display: grid; gap: 4px; font-weight: 500; }

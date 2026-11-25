@@ -19,6 +19,8 @@ vi.mock('./useYoutube.js', () => ({
     }),
 }));
 vi.mock('@lib/luuMauCau.js', () => luu);
+const hoc = vi.hoisted(() => ({ lang: 'en' }));
+vi.mock('@game/gameLogic.js', async (goc) => ({ ...(await goc()), vocabLang: () => hoc.lang }));
 vi.mock('@lib/dichNhanh.js', () => ({ dichSangViet: vi.fn(async (t) => (t === 'trouble' ? 'rắc rối' : `[vi] ${t}`)) }));
 vi.mock('@game/GameContext.jsx', () => ({ useGame: () => ({ showScreen: vi.fn() }) }));
 vi.mock('@components/auth/AuthContext.jsx', () => ({ useAuth: () => ({ isLoggedIn: true }) }));
@@ -57,6 +59,7 @@ beforeEach(() => {
     api.danhSach.mockResolvedValue([{ ...BAI, cau: undefined }]);
     api.capNhat.mockImplementation(async (id, body) => ({ bai: { ...BAI, ...body } }));
     luu.luuVaoTuRieng.mockReset().mockResolvedValue({ success: true });
+    hoc.lang = 'en';
     Element.prototype.scrollTo = vi.fn();
 });
 afterEach(() => vi.useRealTimers());
@@ -218,6 +221,43 @@ describe('tìm bài hát', () => {
         expect(screen.getByRole('button', { name: /Shape of You.*Ed Sheeran/ })).toBeTruthy();
         fireEvent.change(screen.getByRole('searchbox', { name: 'Tìm bài' }), { target: { value: 'xyz' } });
         expect(screen.getByText('Không có bài nào khớp "xyz".')).toBeTruthy();
+    });
+});
+
+describe('lọc theo ngôn ngữ', () => {
+    const DS = [
+        { ...BAI, cau: undefined },
+        { ...BAI, id: 'z1', tieuDe: '朋友', ngheSi: '周华健', lang: 'zh', cau: undefined },
+    ];
+
+    test('vào trang: mặc định hiện bài của ngôn ngữ đang học; đổi ô chọn thì đổi danh sách', async () => {
+        hoc.lang = 'zh';
+        api.danhSach.mockResolvedValue(DS);
+        render(<BaiHatScreen active />);
+        await screen.findByRole('button', { name: /朋友.*周华健/ });
+        expect(screen.queryByRole('button', { name: /Let It Be.*The Beatles/ })).toBeNull();
+        const o = screen.getByRole('combobox', { name: 'Ngôn ngữ bài hát' });
+        expect(o.value).toBe('zh');
+        fireEvent.change(o, { target: { value: 'en' } });
+        expect(screen.getByRole('button', { name: /Let It Be.*The Beatles/ })).toBeTruthy();
+        expect(screen.queryByRole('button', { name: /朋友.*周华健/ })).toBeNull();
+        fireEvent.change(o, { target: { value: '' } });
+        expect(screen.getByRole('button', { name: /Let It Be.*The Beatles/ })).toBeTruthy();
+        expect(screen.getByRole('button', { name: /朋友.*周华健/ })).toBeTruthy();
+    });
+
+    test('bộ song ngữ Trung–Anh tính là đang học tiếng Trung', async () => {
+        hoc.lang = 'bi';
+        api.danhSach.mockResolvedValue(DS);
+        render(<BaiHatScreen active />);
+        await screen.findByRole('button', { name: /朋友.*周华健/ });
+        expect(screen.queryByRole('button', { name: /Let It Be.*The Beatles/ })).toBeNull();
+    });
+
+    test('chưa có bài của ngôn ngữ đang chọn: báo rõ', async () => {
+        hoc.lang = 'zh';
+        render(<BaiHatScreen active />);
+        expect(await screen.findByText('Chưa có bài hát tiếng trung nào.')).toBeTruthy();
     });
 });
 

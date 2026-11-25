@@ -10,6 +10,8 @@ import OTimBai from '@components/baiNghe/OTimBai.jsx';
 import { mauCoGio, tienDo, chonOTrong, khopTu, tocDoBai, apLech, lechCua, chonDongKhop, datLechTu } from '@lib/baiHat.js';
 import { useYoutube } from './useYoutube.js';
 import { napPinyin, pinyinTheoChu, pinyinCuaTu } from '@lib/pinyinBaiHat.js';
+import { vocabLang } from '@game/gameLogic.js';
+import { ngonNguHoc, luaChonNgonNguHoc, layNgonNgu } from '@lib/ngonNgu.js';
 
 /** Nhớ lựa chọn bật/tắt pinyin (mặc định bật: người học tiếng Trung cần nhất). */
 const KHOA_PINYIN = 'levelup.baiHat.pinyin';
@@ -38,6 +40,8 @@ export default function BaiHatScreen({ active }) {
     const [view, setView] = useState('ds'); // ds | them | hoc
     const [ds, setDs] = useState(null);
     const [tim, setTim] = useState('');
+    // Lọc theo ngôn ngữ: mỗi lần vào trang đặt về ngôn ngữ đang học ('' = tất cả).
+    const [locLang, setLocLang] = useState(() => ngonNguHoc(vocabLang()));
     const [bai, setBai] = useState(null);
     const [cheDo, setCheDo] = useState('xem'); // xem | dien | nhip
     const [hien, setHien] = useState(-1);
@@ -94,6 +98,7 @@ export default function BaiHatScreen({ active }) {
     }, [active, isLoggedIn, ds]);
 
     useEffect(() => { if (!active) yt.dung(); }, [active]); // eslint-disable-line react-hooks/exhaustive-deps
+    useEffect(() => { if (active) setLocLang(ngonNguHoc(vocabLang())); }, [active]);
     useEffect(() => { if (yt.san) yt.tocDo(tocDo); }, [tocDo, yt.san]); // eslint-disable-line react-hooks/exhaustive-deps
 
     /**
@@ -207,6 +212,7 @@ export default function BaiHatScreen({ active }) {
 
     const batDauHoc = (b) => {
         setBai(b);
+        if (locLang && b.lang && b.lang !== locLang) setLocLang(b.lang); // bài vừa thêm khác ngôn ngữ đang lọc: quay về vẫn thấy nó
         setLech(b.lech || 0);
         setLechTu(b.lechTu || []);
         setBaoKhop('');
@@ -307,7 +313,8 @@ export default function BaiHatScreen({ active }) {
         if (choDong === i) { setChoDong(-1); yt.phat(); }
     };
 
-    const locDs = (ds || []).filter((b) => khopTim(tim, b.tieuDe, b.ngheSi));
+    const theoLang = (ds || []).filter((b) => !locLang || (b.lang || 'en') === locLang);
+    const locDs = theoLang.filter((b) => khopTim(tim, b.tieuDe, b.ngheSi));
     const tongO = oTrong.reduce((n, d) => n + d.length, 0);
     const soDung = Object.values(daDien).filter((v) => v === 'dung').length;
 
@@ -437,10 +444,15 @@ export default function BaiHatScreen({ active }) {
                         <p className="px-mo-ta">Thêm bài hát bạn thích bằng link YouTube. Hệ thống tự tìm lời, rồi bạn xem lời chạy theo nhạc, điền từ còn thiếu, bấm vào từ để tra và lưu lại.</p>
                         <div className="px-nut">
                             <button type="button" className="btn btn-primary" onClick={() => setView('them')}><i className="fas fa-plus"></i> Thêm bài hát</button>
+                            <select className="bh-loc-lang" aria-label="Ngôn ngữ bài hát" value={locLang} onChange={(e) => setLocLang(e.target.value)}>
+                                {luaChonNgonNguHoc().map((n) => <option key={n.ma} value={n.ma}>{n.co} {n.tenViet}</option>)}
+                                <option value="">Tất cả ngôn ngữ</option>
+                            </select>
                         </div>
                         {!ds && <p className="px-mo-ta"><i className="fas fa-spinner fa-spin"></i> Đang tải…</p>}
                         {ds && !ds.length && <p className="px-mo-ta">Chưa có bài nào.</p>}
-                        {ds?.length > 0 && !locDs.length && <p className="px-mo-ta">Không có bài nào khớp "{tim.trim()}".</p>}
+                        {ds?.length > 0 && !theoLang.length && <p className="px-mo-ta">Chưa có bài hát {layNgonNgu(locLang).tenViet.toLowerCase()} nào.</p>}
+                        {theoLang.length > 0 && !locDs.length && <p className="px-mo-ta">Không có bài nào khớp "{tim.trim()}".</p>}
                         <div className="bn-ds">
                             {locDs.map((b) => (
                                 <div key={b.id} className="bh-the-vo">
@@ -451,7 +463,7 @@ export default function BaiHatScreen({ active }) {
                                             {b.thoiLuong > 0 && <span className="bn-thoi-luong">{gioPhut(b.thoiLuong)}</span>}
                                         </span>
                                         <strong>{b.tieuDe}</strong>
-                                        <span className="bn-the-phu">{b.ngheSi || '—'} · {b.soDong} dòng{b.coMoc ? '' : ' · chưa có nhịp'}</span>
+                                        <span className="bn-the-phu">{!locLang && layNgonNgu(b.lang).co ? `${layNgonNgu(b.lang).co} ` : ''}{b.ngheSi || '—'} · {b.soDong} dòng{b.coMoc ? '' : ' · chưa có nhịp'}</span>
                                     </button>
                                     <button type="button" className="lt-ke-hoach-link bh-xoa" aria-label={`Xoá ${b.tieuDe}`} onClick={() => xoaBai(b)}>
                                         <i className="fas fa-trash"></i>
