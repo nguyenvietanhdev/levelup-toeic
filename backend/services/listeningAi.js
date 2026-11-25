@@ -8,7 +8,9 @@
  * Đoạn gốc chỉ nằm trên server — client chỉ nhận âm thanh, không nhận chữ.
  */
 const { textCompletion } = require('./aiClient');
-const { NGON_NGU_HOAT_DONG, giongEdge, chuanMa } = require('../config/ngonNgu');
+const { NGON_NGU_HOAT_DONG, giongEdge, chuanMa, nhanhNoiDung, coKhoangTrang } = require('../config/ngonNgu');
+// Nhánh nội dung theo ngôn ngữ (sổ ngôn ngữ): ngôn ngữ chưa viết nhánh → báo thiếu, không rơi về tiếng Anh.
+const nhanhRaDe = nhanhNoiDung('Nghe với AI: prompt ra đoạn nghe');
 const { CHI_THI_HOP_BOI_CANH } = require('./dangBai');
 
 /** Đoạn nghe tối đa — đủ dài để nghe, không đủ dài để chép tràn. */
@@ -123,7 +125,7 @@ function lamSachDoan(raw, lang = 'en') {
         .trim()
         .replace(/^["'“”]+|["'“”]+$/g, '')
         .trim();
-    if (lang === 'zh') {
+    if (!coKhoangTrang(lang)) {
         const kyTu = [...text];
         if (kyTu.length > MAX_KY_TU_DOAN_ZH) text = kyTu.slice(0, MAX_KY_TU_DOAN_ZH).join('');
         return text;
@@ -188,7 +190,7 @@ const NHOM_DANG_NGHE = [
  * không tiêu đề, không dấu nháy. Lỗi AI được ném ra để controller hoàn năng lượng.
  */
 async function sinhDoanNghe({ targetWords = [], level = 'medium', userId = null, chon = null, lang = 'en' }) {
-    const zh = lang === 'zh';
+    const zh = nhanhRaDe(lang) === 'zh';
     const cefr = CEFR_NGHE[level] || CEFR_NGHE.medium;
     const hsk = HSK_NGHE[level] || HSK_NGHE.medium;
     // Tiếng Trung: đo bằng CHỮ, không phải từ ("40 words" model không đo được).

@@ -29,7 +29,7 @@ const { anMuc } = require('./nguPhapQuanTri');
 const { dungNgonNgu, soSanh } = require('./nguPhapLuyen');
 const { kiemCauMoi, MO_TA_LOI } = require('./onLoi');
 const { chuanHoaVaiText, chuanHoaTieuDe, chuanHoaKhoa, hashVai } = require('./aiRoles');
-const { chuanMa, NGON_NGU_HOAT_DONG } = require('../config/ngonNgu');
+const { chuanMa, NGON_NGU_HOAT_DONG, MAC_DINH, layNgonNgu } = require('../config/ngonNgu');
 
 const MOI_TRANG = 30;
 const RE_OBJECT_ID = /^[a-f0-9]{24}$/i;
@@ -67,7 +67,7 @@ async function dsChuDiem() {
         ...thuVien.map((d) => ({ id: String(d._id), ten: d.noiDung?.ten || '', lang: d.lang || 'en' })),
     ];
 }
-const tuyChonChuDiem = (ds) => ds.map((m) => ({ v: m.id, t: `${m.lang === 'zh' ? '[Trung] ' : ''}${m.ten}` }));
+const tuyChonChuDiem = (ds) => ds.map((m) => ({ v: m.id, t: `${m.lang && m.lang !== MAC_DINH ? `[${layNgonNgu(m.lang).tenNgan}] ` : ''}${m.ten}` }));
 
 // ---------- Chủ điểm ngữ pháp do AI thêm vào thư viện ----------
 

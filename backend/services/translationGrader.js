@@ -24,7 +24,12 @@ function chatCompletion(...args) {
 }
 
 const { parseJson, clampBand, countUnits } = require('./essayGrader');
-const { tenChoPrompt, bangNgonNgu, chuanChuHoa } = require('../config/ngonNgu');
+const { tenChoPrompt, bangNgonNgu, chuanChuHoa, nhanhNoiDung } = require('../config/ngonNgu');
+// Nhánh nội dung theo ngôn ngữ (sổ ngôn ngữ): ngôn ngữ chưa viết nhánh → báo thiếu, không rơi về tiếng Anh.
+const nhanhRaDe = nhanhNoiDung('Dịch đoạn văn: prompt ra đề');
+const nhanhCham = nhanhNoiDung('Dịch đoạn văn: prompt chấm');
+const nhanhRaDeNguoc = nhanhNoiDung('Dịch ngược: prompt ra đề');
+const nhanhChamNguoc = nhanhNoiDung('Dịch ngược: prompt chấm');
 const { chiThiPhanLoai, chuanHoaLoai, chiThiChuaBai, chuanHoaMuc } = require('./errorTaxonomy');
 const { chonDang, CHI_THI_HOP_BOI_CANH } = require('./dangBai');
 const { chiThiNham } = require('./nhamDiemYeu');
@@ -155,7 +160,7 @@ const NHOM_DANG_DICH = [
  */
 async function generatePassage({ tuVung = [], userId = null, lang = 'en', level = 'medium', dang = '', tuChon = '', nham = [], chiThi = '', chieu = 'vi-ngoai' } = {}) {
     if (chuanChieu(chieu) === 'ngoai-vi') return generatePassageNguoc({ tuVung, userId, lang, level, dang, tuChon });
-    const zh = lang === 'zh';
+    const zh = nhanhRaDe(lang) === 'zh';
     // Dạng văn bản người học chọn (null = Ngẫu nhiên → một tình huống đời thường như trước).
     const chon = chonDang(NHOM_DANG_DICH, { dang, tuChon });
     const muc = mucKho(level);
@@ -245,7 +250,7 @@ async function generatePassage({ tuVung = [], userId = null, lang = 'en', level 
  * thì điểm mất hết ý nghĩa, và người học không biết mình tiến bộ hay AI đổi ý.
  */
 async function gradeTranslation({ passage = '', translation = '', userId = null, lang = 'en' } = {}) {
-    const zh = lang === 'zh';
+    const zh = nhanhCham(lang) === 'zh';
     const dich = tenChoPrompt(lang);
 
     const system = [
@@ -336,7 +341,7 @@ const CAP_DO_NGUOC = {
  * đang học xuất hiện NGUYÊN VĂN trong đoạn: đây là lúc nhận ra từ khi đọc, khác chiều xuôi.
  */
 async function generatePassageNguoc({ tuVung = [], userId = null, lang = 'en', level = 'medium', dang = '', tuChon = '' } = {}) {
-    const zh = lang === 'zh';
+    const zh = nhanhRaDeNguoc(lang) === 'zh';
     const ten = tenChoPrompt(lang);
     const chon = chonDang(NHOM_DANG_DICH, { dang, tuChon });
     const muc = mucKho(level);
@@ -412,7 +417,7 @@ function chuanHoaHieuSai(ds, passage, lang = 'en') {
  * Nhận mọi cách diễn đạt tiếng Việt giữ đúng nghĩa; chỉ trừ nặng khi hiểu sai.
  */
 async function gradeTranslationNguoc({ passage = '', translation = '', userId = null, lang = 'en' } = {}) {
-    const zh = lang === 'zh';
+    const zh = nhanhChamNguoc(lang) === 'zh';
     const ten = tenChoPrompt(lang);
     const system = [
         `You are an experienced ${ten} teacher checking a Vietnamese learner's READING COMPREHENSION.`,

@@ -257,7 +257,7 @@ describe('lọc theo ngôn ngữ', () => {
     test('chưa có bài của ngôn ngữ đang chọn: báo rõ', async () => {
         hoc.lang = 'zh';
         render(<BaiHatScreen active />);
-        expect(await screen.findByText('Chưa có bài hát tiếng trung nào.')).toBeTruthy();
+        expect(await screen.findByText('Chưa có bài hát tiếng Trung nào.')).toBeTruthy();
     });
 });
 

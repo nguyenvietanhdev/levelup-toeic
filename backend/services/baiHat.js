@@ -11,7 +11,7 @@
 const BaiHat = require('../models/BaiHat');
 const logger = require('../utils/logger');
 
-const { nhanDienChuViet, NGON_NGU_HOAT_DONG, layNgonNgu } = require('../config/ngonNgu');
+const { nhanDienChuViet, NGON_NGU_HOAT_DONG, tenVietGiuaCau } = require('../config/ngonNgu');
 const LRCLIB = 'https://lrclib.net/api';
 const TOI_DA_BAI = 100;
 const TOI_DA_DONG = 300;
@@ -178,7 +178,7 @@ async function themBai(userId, body = {}) {
     if (!cau.length) return { loi: 'Chưa có lời bài hát.', ma: 400 };
     // Ngôn ngữ chưa mở (vd lời tiếng Nhật/Hàn): báo rõ, không gán nhầm sang tiếng Trung (pinyin sai).
     const lang = doanLang(cau);
-    if (!NGON_NGU_HOAT_DONG.includes(lang)) return { loi: `Lời bài hát này là ${layNgonNgu(lang).tenViet.toLowerCase()} — ngôn ngữ này chưa được hỗ trợ.`, ma: 400 };
+    if (!NGON_NGU_HOAT_DONG.includes(lang)) return { loi: `Lời bài hát này là ${tenVietGiuaCau(lang)} — ngôn ngữ này chưa được hỗ trợ.`, ma: 400 };
     if (!tieuDe) return { loi: 'Nhập tên bài hát.', ma: 400 };
 
     const d = await BaiHat.create({

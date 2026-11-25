@@ -28,12 +28,15 @@ describe('bật thử tiếng Nhật trong sổ', () => {
         expect(L.GIONG_THEO_NGON_NGU.ja).toBe('ja-JP-NanamiNeural');
     });
 
-    test('prompt AI: sinh đề dịch nói "Japanese", không phải "English"', async () => {
+    test('prompt AI: tên ngôn ngữ trong prompt là "Japanese"', () => {
+        expect(N.tenChoPrompt('ja')).toBe('Japanese');
+        expect(N.tenPromptDayDu('ja')).toBe('Japanese');
+    });
+
+    test('ra đề khi CHƯA viết nhánh nội dung tiếng Nhật: báo rõ thiếu gì, không ra đề tiếng Anh', async () => {
         const G = require('../services/translationGrader');
-        await G.generatePassage({ tuVung: ['勉強'], lang: 'ja', chieu: 'ngoai-vi' });
-        const sys = chatCompletion.mock.calls[0][0][0].content;
-        expect(sys).toMatch(/natural Japanese/);
-        expect(sys).not.toMatch(/English/);
+        await expect(G.generatePassage({ tuVung: ['勉強'], lang: 'ja', chieu: 'ngoai-vi' })).rejects.toThrow(/Dịch ngược: prompt ra đề.*"ja"/);
+        expect(chatCompletion).not.toHaveBeenCalled();
     });
 
     test('nhận diện: lời bài hát tiếng Nhật không còn bị chặn, gán đúng ja', () => {

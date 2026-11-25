@@ -21,7 +21,7 @@
  * Mỗi câu đã làm được ghi vào lịch sử để xem lại, nghe lại và lưu vào Từ vựng riêng.
  */
 const NguPhapBaiTap = require('../models/NguPhapBaiTap');
-const { tenChoPrompt, chuanMa, locTheoNgonNgu } = require('../config/ngonNgu');
+const { tenChoPrompt, chuanMa, locTheoNgonNgu, coChuViet, coKhoangTrang } = require('../config/ngonNgu');
 const BuoiNguPhap = require('../models/BuoiNguPhap');
 const NguPhapTienDo = require('../models/NguPhapTienDo');
 const NguPhapLichSu = require('../models/NguPhapLichSu');
@@ -71,14 +71,14 @@ const tron = (a) => {
 };
 const RE_HAN = /[\u4e00-\u9fff]/;
 /** Câu đúng ngôn ngữ của mục (thuần): tiếng Trung phải có chữ Hán; không câu nào được là tiếng Việt. */
-const dungNgonNgu = (s, lang = 'en') => !!s && !RE_VIET.test(s) && (lang !== 'zh' || RE_HAN.test(s));
+const dungNgonNgu = (s, lang = 'en') => !!s && !RE_VIET.test(s) && coChuViet(s, lang);
 
 /**
  * Chuẩn hoá để so câu trả lời (thuần). Tiếng Trung bỏ mọi khoảng trắng và dấu câu kể cả dấu Trung
  * (，。！？…): người học gõ "我吃饭了" hay "我 吃饭 了。" đều là một câu.
  */
 function soSanh(s, lang = 'en') {
-    if (lang !== 'zh') return chuanHoa(s);
+    if (coKhoangTrang(lang)) return chuanHoa(s);
     return String(s || '').normalize('NFC').replace(/[\s.,!?;:"'()，。！？；：、“”‘’（）…—·]/g, '');
 }
 

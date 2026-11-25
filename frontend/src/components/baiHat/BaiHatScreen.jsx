@@ -11,7 +11,7 @@ import { mauCoGio, tienDo, chonOTrong, khopTu, tocDoBai, apLech, lechCua, chonDo
 import { useYoutube } from './useYoutube.js';
 import { napPinyin, pinyinTheoChu, pinyinCuaTu } from '@lib/pinyinBaiHat.js';
 import { vocabLang } from '@game/gameLogic.js';
-import { ngonNguHoc, luaChonNgonNguHoc, layNgonNgu } from '@lib/ngonNgu.js';
+import { ngonNguHoc, luaChonNgonNguHoc, layNgonNgu, tenVietGiuaCau } from '@lib/ngonNgu.js';
 
 /** Nhớ lựa chọn bật/tắt pinyin (mặc định bật: người học tiếng Trung cần nhất). */
 const KHOA_PINYIN = 'levelup.baiHat.pinyin';
@@ -451,7 +451,7 @@ export default function BaiHatScreen({ active }) {
                         </div>
                         {!ds && <p className="px-mo-ta"><i className="fas fa-spinner fa-spin"></i> Đang tải…</p>}
                         {ds && !ds.length && <p className="px-mo-ta">Chưa có bài nào.</p>}
-                        {ds?.length > 0 && !theoLang.length && <p className="px-mo-ta">Chưa có bài hát {layNgonNgu(locLang).tenViet.toLowerCase()} nào.</p>}
+                        {ds?.length > 0 && !theoLang.length && <p className="px-mo-ta">Chưa có bài hát {tenVietGiuaCau(locLang)} nào.</p>}
                         {theoLang.length > 0 && !locDs.length && <p className="px-mo-ta">Không có bài nào khớp "{tim.trim()}".</p>}
                         <div className="bn-ds">
                             {locDs.map((b) => (

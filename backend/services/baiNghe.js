@@ -16,7 +16,7 @@
  */
 const BaiNghe = require('../models/BaiNghe');
 const logger = require('../utils/logger');
-const { chuanMa, coKhoangTrang, demDonVi } = require('../config/ngonNgu');
+const { chuanMa, coKhoangTrang, demDonVi, layNgonNgu } = require('../config/ngonNgu');
 
 /** Whisper nhận tối đa 25 MB mỗi file (MP3 64 kbps ≈ 50 phút). */
 const TOI_DA_BYTE = 25 * 1024 * 1024;
@@ -199,7 +199,8 @@ async function chepLoi(buffer, lang = 'en', tenFile = 'audio.mp3') {
         language: chuanMa(lang),
         // Whisper hay trả tiếng Trung không dấu câu, đôi khi phồn thể: câu mồi giản thể có dấu
         // câu kéo nó về đúng kiểu đó.
-        ...(lang === 'zh' ? { prompt: '以下是普通话的句子，使用简体中文，并加上标点符号。' } : {}),
+        // Gợi ý cho Whisper (sổ ngôn ngữ): tiếng Trung ép chữ giản thể và có dấu câu.
+        ...(layNgonNgu(lang).goiYWhisper ? { prompt: layNgonNgu(lang).goiYWhisper } : {}),
         response_format: 'verbose_json',
         timestamp_granularities: ['segment'],
     });

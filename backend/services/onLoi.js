@@ -21,7 +21,7 @@
  *     việc sửa câu cũ ở các ngày khác nhau.
  */
 const LoiOn = require('../models/LoiOn');
-const { tenChoPrompt, chuanMa, locTheoNgonNgu, coKhoangTrang } = require('../config/ngonNgu');
+const { tenChoPrompt, chuanMa, locTheoNgonNgu, coKhoangTrang, tenPromptDayDu } = require('../config/ngonNgu');
 const CauLuyenLoi = require('../models/CauLuyenLoi');
 const BuoiOnLoi = require('../models/BuoiOnLoi');
 const Essay = require('../models/Essay');
@@ -119,7 +119,7 @@ function chamTimLoi(chon, span, cau, lang) {
     if (!Number.isInteger(s) || !Number.isInteger(e) || s < 0 || e <= s || !span) return false;
     let a = span.start;
     let b = span.end;
-    if (lang !== 'zh') {
+    if (coKhoangTrang(lang)) {
         while (a > 0 && !/\s/.test(cau[a - 1])) a -= 1;
         while (b < cau.length && !/\s/.test(cau[b])) b += 1;
     }
@@ -300,7 +300,7 @@ async function layCauMoi({ loai, lang, daGap = [], userId, dangSinh }) {
 }
 
 async function sinhCauMoi({ loai, lang, userId }) {
-    const L = lang === 'zh' ? 'Chinese (Simplified)' : 'English';
+    const L = tenPromptDayDu(lang);
     const res = await chatCompletion([
         {
             role: 'system',

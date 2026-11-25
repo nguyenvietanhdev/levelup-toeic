@@ -16,7 +16,9 @@ const { THEO_ID, khungCua } = require('./phanXaKho');
 const { khopKho, aiCham } = require('./phanXa');
 const { TEN_KY_NANG, ghiKetQua, layHoSo, tomTatKyNang, tongQuanTrinhDo, anhKyNang } = require('./hoSoHoc');
 const { homNayVN } = require('./loTrinh');
-const { chuanMa, bangNgonNgu } = require('../config/ngonNgu');
+const { chuanMa, bangNgonNgu, nhanhNoiDung, MAC_DINH, tenVietGiuaCau } = require('../config/ngonNgu');
+// Nhánh nội dung theo ngôn ngữ (sổ ngôn ngữ): ngôn ngữ chưa viết nhánh → báo thiếu, không rơi về tiếng Anh.
+const nhanhKetQua = nhanhNoiDung('Kiểm tra đầu vào: kết quả và lời khuyên');
 
 /** Test có câu chấm bằng AI nên giới hạn số lần mở mỗi ngày. */
 const TOI_DA_MOI_NGAY = 3;
@@ -197,7 +199,7 @@ function chonCauTest(i, daLam, coMic, chon = NGAU_NHIEN, lang = 'en') {
     // Hết câu ở mức cần thì lấy mức kia, không để test đứt giữa chừng.
     const mau = conLai(ds[muc]).length ? ds[muc] : ds[muc === 1 ? 2 : 1];
     const x = chon(conLai(mau));
-    return { id: x.id ?? x, kyNang, loai, muc, ...(lang === 'zh' ? { lang: 'zh' } : {}) };
+    return { id: x.id ?? x, kyNang, loai, muc, ...(chuanMa(lang) !== MAC_DINH ? { lang: chuanMa(lang) } : {}) };
 }
 
 function timCauTracNghiem(q) {
@@ -283,9 +285,9 @@ function langTest(muon, vocabLang) {
     const dangHoc = vocabLang || 'en';
     if (dangHoc === 'bi' || dangHoc === lang) return { lang };
     return {
-        loi: lang === 'zh'
-            ? 'Test tiếng Trung cần học tiếng Trung. Hãy đổi ngôn ngữ học sang tiếng Trung ở thanh trên cùng.'
-            : 'Test này dùng tiếng Anh. Hãy đổi ngôn ngữ học sang tiếng Anh ở thanh trên cùng.',
+        loi: lang === MAC_DINH
+            ? `Test này dùng ${tenVietGiuaCau(lang)}. Hãy đổi ngôn ngữ học sang ${tenVietGiuaCau(lang)} ở thanh trên cùng.`
+            : `Test ${tenVietGiuaCau(lang)} cần học ${tenVietGiuaCau(lang)}. Hãy đổi ngôn ngữ học sang ${tenVietGiuaCau(lang)} ở thanh trên cùng.`,
     };
 }
 
@@ -331,7 +333,7 @@ function cauCanXem(daLam) {
 }
 
 async function ketThuc(userId, daLam, now, lang = 'en') {
-    const zh = lang === 'zh';
+    const zh = nhanhKetQua(lang) === 'zh';
     const kyNoi = boDe(lang).kyNoi;
     const ketQua = daLam.filter((c) => !c.khongChac).flatMap((c) => [
         { kyNang: c.kyNang, dung: c.dung },

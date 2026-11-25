@@ -19,7 +19,9 @@ const HoSoHocVien = require('../models/HoSoHocVien');
 const { tomTatKyNang, tongQuanTrinhDo, ghiKetQua, NGUONG_YEU } = require('./hoSoHoc');
 const { parseJson } = require('./essayGrader');
 const logger = require('../utils/logger');
-const { chuanMa, maKyNang, bangNgonNgu } = require('../config/ngonNgu');
+const { chuanMa, maKyNang, bangNgonNgu, nhanhNoiDung, ngonNguCuaKyNang } = require('../config/ngonNgu');
+// Nhánh nội dung theo ngôn ngữ (sổ ngôn ngữ): ngôn ngữ chưa viết nhánh → báo thiếu, không rơi về tiếng Anh.
+const nhanhLoiKyNang = nhanhNoiDung('Hồ sơ: nhóm lỗi → kỹ năng');
 
 // Nạp trễ như các bộ chấm khác: nạp module không được khởi tạo client AI.
 function chatCompletion(...args) {
@@ -163,7 +165,7 @@ function bangChungTuBai({ loi = [], diemNguPhap = null, lang = 'en' } = {}) {
         if (co(...ds)) ket.push({ kyNang, dung: false });
         else if (tot) ket.push({ kyNang, dung: true });
     };
-    if (lang === 'zh') {
+    if (nhanhLoiKyNang(lang) === 'zh') {
         // Nhóm lỗi tiếng Trung → khung nền tảng. Chỉ nối những cặp chắc chắn cùng một vấn đề.
         xet(['aspect', 'negation'], 'zh-da-lam');
         xet('word-order', 'zh-trat-tu');
@@ -202,8 +204,8 @@ function bangChungNghe(diem, lang = 'en') {
  * ghi vào kỹ năng tiếng Trung và ngược lại: bằng chứng lạc ngôn ngữ thì bỏ.
  */
 async function ghiBangChung(userId, lang, ketQua) {
-    const zh = lang === 'zh';
-    ketQua = (ketQua || []).filter((k) => String(k.kyNang).startsWith('zh-') === zh);
+    const ma = chuanMa(lang);
+    ketQua = (ketQua || []).filter((k) => ngonNguCuaKyNang(k.kyNang) === ma);
     if (!ketQua.length) return;
     await ghiKetQua(userId, ketQua).catch((e) => {
         logger.warn('Không ghi được bằng chứng vào hồ sơ', { message: e?.message });

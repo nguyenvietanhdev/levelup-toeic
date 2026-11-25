@@ -1,3 +1,4 @@
+const { NGON_NGU_HOAT_DONG, MAC_DINH } = require('../config/ngonNgu');
 /**
  * Phân loại LỖI NGỮ PHÁP thành nhóm cố định, để thống kê được.
  *
@@ -74,7 +75,7 @@ const LOAI_LOI = [
 const KEYS = new Set(LOAI_LOI.map((l) => l.key));
 
 /** Ngôn ngữ hợp lệ, hoặc null = không lọc theo ngôn ngữ (thuần). */
-const chuanLang = (lang) => (lang === 'zh' ? 'zh' : lang === 'en' ? 'en' : null);
+const chuanLang = (lang) => (NGON_NGU_HOAT_DONG.includes(lang) ? lang : null);
 
 /** Các nhóm áp dụng cho một ngôn ngữ; không truyền thì mọi nhóm (thuần). */
 function loaiCua(lang) {
@@ -90,7 +91,9 @@ function nhanLoi(key) {
 /** Gợi ý luyện tập cho một nhóm, theo ngôn ngữ của bài khi nhóm có gợi ý riêng. */
 function goiYLoi(key, lang) {
     const l = LOAI_LOI.find((x) => x.key === key) || {};
-    return (chuanLang(lang) === 'zh' && l.hintZh) || l.hint || '';
+    // Gợi ý riêng theo ngôn ngữ: trường `hint` + mã viết hoa chữ đầu (hintZh); không có thì gợi ý chung.
+    const ma = chuanLang(lang);
+    return (ma && ma !== MAC_DINH && l[`hint${ma[0].toUpperCase()}${ma.slice(1)}`]) || l.hint || '';
 }
 
 /**

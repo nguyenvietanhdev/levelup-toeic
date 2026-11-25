@@ -247,7 +247,8 @@ async function layLoTrinh(userId, now = new Date()) {
         };
     }
 
-    if (lang !== 'zh' && hoSo?.mucTieu === 'toeic') {
+    // TOEIC và lộ trình giao tiếp theo test chỉ có cho tiếng Anh.
+    if (lang === 'en' && hoSo?.mucTieu === 'toeic') {
         const hs = await layHoSoToeic(userId);
         const daXong = { userId, status: 'completed' };
         const [toeicPart, toeicFull] = await Promise.all([
@@ -271,8 +272,8 @@ async function layLoTrinh(userId, now = new Date()) {
     }
 
     // Chưa có mục tiêu + test (hoặc học tiếng Trung, chưa có kho): giữ lộ trình chung.
-    if (lang === 'zh' || hoSo?.mucTieu !== 'giao-tiep' || !hoSo?.testNgay) {
-        return { ...dungLoTrinh(dem, { ngay, soNgay }), keHoachTuan, moiLapHoSo: lang !== 'zh' };
+    if (lang !== 'en' || hoSo?.mucTieu !== 'giao-tiep' || !hoSo?.testNgay) {
+        return { ...dungLoTrinh(dem, { ngay, soNgay }), keHoachTuan, moiLapHoSo: lang === 'en' };
     }
     const tomTat = tomTatKyNang(hoSo.kyNang);
     // Nạp trễ vì nhamDiemYeu → tienBo → loTrinh. Lỗi đọc đã được nó tự xử lý (trả rỗng).

@@ -23,6 +23,10 @@ const { NHOM, MUC, THEO_ID, chuanLang } = require('./nguPhapKho');
 const { parseJson } = require('./essayGrader');
 const { homNayVN } = require('./loTrinh');
 const logger = require('../utils/logger');
+const { chuanMa, MAC_DINH, MA_NGON_NGU, nhanhNoiDung } = require('../config/ngonNgu');
+// Nhánh nội dung theo ngôn ngữ (sổ ngôn ngữ): ngôn ngữ chưa viết nhánh → báo thiếu, không rơi về tiếng Anh.
+const nhanhViDu = nhanhNoiDung('Ngữ pháp: kiểm định ví dụ');
+const nhanhMoTa = nhanhNoiDung('Ngữ pháp: prompt soạn chủ điểm');
 
 // Nạp trễ như các bộ chấm khác: nạp module không được khởi tạo client AI.
 function chatCompletion(...args) {
@@ -44,10 +48,12 @@ const RE_HAN = /[\u4e00-\u9fff]/;
  * Điều kiện ngôn ngữ cho bản ghi thư viện (thuần). Bản ghi trước khi có tiếng Trung không lưu
  * `lang` và đều là tiếng Anh.
  */
-const theoNgonNgu = (lang) => (chuanLang(lang) === 'zh' ? { lang: 'zh' } : { lang: { $in: ['en', null] } });
+// Thư viện ngữ pháp chỉ có bản ghi mặc định (lang hoặc không có lang) và theo từng mã.
+const theoNgonNgu = (lang) => (chuanMa(lang) === MAC_DINH ? { lang: { $in: [MAC_DINH, null] } } : { lang: chuanMa(lang) });
 /** Khoá câu tra: tiếng Trung có tiền tố riêng để "bi dong" của hai ngôn ngữ không đè nhau. */
-const khoaHoi = (lang, khoaTra) => (chuanLang(lang) === 'zh' ? `hoi:zh:${khoaTra}` : `hoi:${khoaTra}`);
-const boTienTo = (khoa) => String(khoa || '').replace(/^hoi:(zh:)?/, '');
+const khoaHoi = (lang, khoaTra) => (chuanMa(lang) === MAC_DINH ? `hoi:${khoaTra}` : `hoi:${chuanMa(lang)}:${khoaTra}`);
+const RE_TIEN_TO = new RegExp(`^hoi:(?:(?:${MA_NGON_NGU.join('|')}):)?`);
+const boTienTo = (khoa) => String(khoa || '').replace(RE_TIEN_TO, '');
 
 /** Bỏ dấu, chữ thường, gom khoảng trắng: người học hay gõ không dấu. */
 function boDau(s) {
@@ -89,7 +95,7 @@ const cat = (s, n) => (typeof s === 'string' ? s.trim().slice(0, n) : '');
  * Trung thì phải có chữ Hán, và giữ `py` (pinyin). Sai thì bỏ: không phát âm được, dạy sai.
  */
 function chuanHoaViDu(ds, lang = 'en') {
-    const zh = chuanLang(lang) === 'zh';
+    const zh = nhanhViDu(lang) === 'zh';
     return (Array.isArray(ds) ? ds : [])
         .map((v) => ({ en: cat(v?.en, 200), vi: cat(v?.vi, 200), ...(zh ? { py: cat(v?.py, 240) } : {}) }))
         .filter((v) => v.en && v.vi && !RE_VIET.test(v.en) && (!zh || RE_HAN.test(v.en)));
@@ -222,7 +228,7 @@ async function danhSachDoiChieu(lang = 'en') {
 /** Nhận diện chủ điểm đã có; chưa có thì soạn nháp. Gộp một lần gọi để chỉ tốn một lượt. */
 /** Phần prompt khác nhau giữa hai ngôn ngữ (thuần). */
 function moTaNgonNgu(lang) {
-    if (chuanLang(lang) === 'zh') {
+    if (nhanhMoTa(lang) === 'zh') {
         return {
             ten: 'Mandarin Chinese',
             congThuc: 'e.g. 主语 + 把 + 宾语 + 动词 + 其他, using Chinese characters for grammar words',

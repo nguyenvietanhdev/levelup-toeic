@@ -20,7 +20,9 @@ const { parseJson } = require('./essayGrader');
 const HoSoHocVien = require('../models/HoSoHocVien');
 const { ghiKetQua, diemCua, NGUONG_YEU } = require('./hoSoHoc');
 const logger = require('../utils/logger');
-const { chuanMa, maKyNang } = require('../config/ngonNgu');
+const { chuanMa, maKyNang, coKhoangTrang, tenPromptDayDu, MAC_DINH, bangNgonNgu } = require('../config/ngonNgu');
+// Trường chẩn đoán trong hồ sơ học viên (HoSoHocVien) của từng ngôn ngữ.
+const truongChanDoan = bangNgonNgu('Hồ sơ: trường chẩn đoán', { en: 'chanDoan', zh: 'chanDoanZh' });
 
 // Nạp trễ như các bộ chấm khác: nạp module không được khởi tạo client AI.
 function chatCompletion(...args) {
@@ -58,7 +60,7 @@ function chuanHoa(s) {
 
 /** Khớp câu mẫu hoặc cách nói khác trong kho. */
 function khopKho(traLoi, cau) {
-    const ch = cau.lang === 'zh' ? chuanHoaZh : chuanHoa;
+    const ch = coKhoangTrang(cau.lang) ? chuanHoa : chuanHoaZh;
     const a = ch(traLoi);
     return !!a && [cau.en, ...(cau.chap || [])].some((x) => ch(x) === a);
 }
@@ -106,7 +108,7 @@ function chonCau({ tienDo = [], khung = '', som = false, now = new Date(), soCau
 
 /** AI chấm câu khác đáp án. null = không chấm được (không tính sai). */
 async function aiCham(cau, traLoi, userId, lang = 'en') {
-    const ngonNgu = lang === 'zh' ? 'Mandarin Chinese (simplified characters)' : 'English';
+    const ngonNgu = tenPromptDayDu(lang);
     const res = await chatCompletion([
         {
             role: 'system',
@@ -131,8 +133,8 @@ async function aiCham(cau, traLoi, userId, lang = 'en') {
  * Trung, nên Phản xạ câu phải mở đúng khung đó.
  */
 function chonLang(vocabLang, mucTieu) {
-    if (vocabLang === 'zh') return 'zh';
-    return vocabLang === 'bi' && mucTieu === 'hsk' ? 'zh' : 'en';
+    if (vocabLang === 'bi') return mucTieu === 'hsk' ? 'zh' : MAC_DINH;
+    return chuanMa(vocabLang);
 }
 
 async function langCua(userId) {
@@ -194,7 +196,7 @@ async function taoBuoi(userId, { khung = '', som = false } = {}, now = new Date(
     const buoi = await BuoiPhanXa.create({ userId, cau: chon.map((c) => ({ cauId: c.id })) });
     // Không đọc được hồ sơ thì chỉ mất phần tự hiện thẻ, lượt luyện vẫn chạy.
     const doc = await HoSoHocVien.findOne({ userId }).select('chanDoan chanDoanZh kyNang').lean().catch(() => null);
-    const hoSo = doc && { ...doc, chanDoan: lang === 'zh' ? (doc.chanDoanZh || []) : (doc.chanDoan || []) };
+    const hoSo = doc && { ...doc, chanDoan: doc[truongChanDoan(lang)] || [] };
     return {
         buoi: {
             id: String(buoi._id),

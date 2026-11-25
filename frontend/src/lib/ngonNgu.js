@@ -43,6 +43,8 @@ export const tenChoPrompt = (ma) => layNgonNgu(ma).tenPrompt;
 export const bcp47 = (ma) => layNgonNgu(ma).bcp47;
 export const donViDem = (ma) => layNgonNgu(ma).donViDem;
 export const tenViet = (ma) => layNgonNgu(ma).tenViet;
+/** Tên giữa câu: 'tiếng Trung' (chỉ hạ chữ đầu, giữ hoa tên riêng). */
+export const tenVietGiuaCau = (ma) => tenViet(ma).replace(/^./, (c) => c.toLowerCase());
 
 /**
  * Lựa chọn cho ô chọn NGÔN NGỮ HỌC — sinh từ sổ: bật một ngôn ngữ (`hoatDong: true`) là nó tự hiện

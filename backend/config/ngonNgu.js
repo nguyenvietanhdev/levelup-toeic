@@ -118,6 +118,30 @@ function bangNgonNgu(ten, bang) {
 /** Tên các bảng đã đăng ký (sau khi nạp module) còn thiếu nội dung cho `ma`. */
 const thieuNoiDung = (ma) => [...BANG_DA_KHAI].filter(([, b]) => !Object.prototype.hasOwnProperty.call(b, ma)).map(([t]) => t);
 
+/**
+ * Nhánh NỘI DUNG của một tính năng (đề HSK hay IELTS, chỉ thị prompt riêng…): trả mã ngôn ngữ có
+ * nhánh viết sẵn. Ngôn ngữ chưa có nhánh → lỗi rõ ràng (và `thieuNoiDung` liệt kê), không âm thầm
+ * rơi vào nhánh tiếng Anh. Thêm nhánh cho ngôn ngữ mới: thêm mã vào `ds` và viết nội dung nhánh đó.
+ */
+const nhanhNoiDung = (ten, ds = [MAC_DINH, 'zh']) => bangNgonNgu(ten, Object.fromEntries(ds.map((m) => [m, m])));
+
+/** Câu có viết bằng hệ chữ của ngôn ngữ không (Latin luôn đúng: không phân biệt được Anh/Pháp…). */
+function coChuViet(s, ma) {
+    const n = layNgonNgu(ma);
+    if (n.chuViet === 'latin') return true;
+    return (n.chuDem || [n.chuViet]).some((c) => MAU[c]?.test(String(s || '')));
+}
+
+/** Ngôn ngữ của một mã kỹ năng hồ sơ ('zh-noi' → 'zh', 'noi' → mặc định) — ngược của `maKyNang`. */
+function ngonNguCuaKyNang(key) {
+    const m = /^([a-z]{2})-/.exec(String(key || ''));
+    return m && m[1] !== MAC_DINH && MA_NGON_NGU.includes(m[1]) ? m[1] : MAC_DINH;
+}
+
+const tenPromptDayDu = (ma) => layNgonNgu(ma).tenPromptDayDu || layNgonNgu(ma).tenPrompt;
+const tenViet = (ma) => layNgonNgu(ma).tenViet;
+/** Tên giữa câu: 'tiếng Trung' (chỉ hạ chữ đầu, giữ hoa tên riêng). */
+const tenVietGiuaCau = (ma) => tenViet(ma).replace(/^./, (c) => c.toLowerCase());
 const tenChoPrompt = (ma) => layNgonNgu(ma).tenPrompt;
 const bcp47 = (ma) => layNgonNgu(ma).bcp47;
 const giongEdge = (ma) => layNgonNgu(ma).giongEdge;
@@ -127,4 +151,5 @@ module.exports = {
     SO, MAC_DINH, MA_NGON_NGU, MA_NGON_NGU_BI, NGON_NGU_HOAT_DONG,
     layNgonNgu, chuanMa, nhanDienChuViet, ngonNguHoc, vocabLangHopLe, locThietLap, locTheoNgonNgu, maKyNang, tenChoPrompt, bcp47, giongEdge, donViDem,
     tenDonVi, demDonVi, coKhoangTrang, chuanChuHoa, bangNgonNgu, thieuNoiDung,
+    nhanhNoiDung, coChuViet, ngonNguCuaKyNang, tenPromptDayDu, tenViet, tenVietGiuaCau,
 };

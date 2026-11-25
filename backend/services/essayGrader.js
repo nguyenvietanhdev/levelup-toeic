@@ -21,7 +21,10 @@
  * band) kiểm thử được mà không cần khoá API — đó là chỗ dễ sai nhất.
  */
 const { chiThiPhanLoai, chuanHoaLoai, chiThiChuaBai, chuanHoaMuc } = require('./errorTaxonomy');
-const { tenChoPrompt, demDonVi, bangNgonNgu } = require('../config/ngonNgu');
+const { tenChoPrompt, demDonVi, bangNgonNgu, nhanhNoiDung } = require('../config/ngonNgu');
+// Nhánh nội dung theo ngôn ngữ (sổ ngôn ngữ): ngôn ngữ chưa viết nhánh → báo thiếu, không rơi về tiếng Anh.
+const nhanhRaDe = nhanhNoiDung('Viết luận: prompt ra đề');
+const nhanhCham = nhanhNoiDung('Viết luận: prompt chấm');
 const { chiThiMuc } = require('./aiLevel');
 const { chonDang } = require('./dangBai');
 const { chiThiNham } = require('./nhamDiemYeu');
@@ -297,7 +300,7 @@ const GIONG_DE_VIET = {
 };
 
 async function generatePrompt({ topicHint = '', userId = null, lang = 'en', level = 'medium', rubric, dang = '', tuChon = '', nham = [], chiThi = '' } = {}) {
-    const zh = lang === 'zh';
+    const zh = nhanhRaDe(lang) === 'zh';
     const rb = chuanHoaRubric(rubric, lang);
     const thucTe = laBoChungKhung(rb);
     // Dạng người học chọn (null = Ngẫu nhiên → giữ đề như trước).
@@ -463,7 +466,7 @@ function khungChamChung(crit, lang, rb) {
 }
 
 async function gradeEssay({ prompt = '', essay = '', userId = null, lang = 'en', rubric } = {}) {
-    const zh = lang === 'zh';
+    const zh = nhanhCham(lang) === 'zh';
     const rb = chuanHoaRubric(rubric, lang);
     const crit = criteriaFor(lang, rb);
 

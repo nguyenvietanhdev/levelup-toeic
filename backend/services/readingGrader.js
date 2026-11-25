@@ -19,7 +19,9 @@ function chatCompletion(...args) {
 
 const { parseJson } = require('./essayGrader');
 const { chuanHoaTuChon, CHI_THI_HOP_BOI_CANH } = require('./dangBai');
-const { chuanMa } = require('../config/ngonNgu');
+const { chuanMa, nhanhNoiDung } = require('../config/ngonNgu');
+// Nhánh nội dung theo ngôn ngữ (sổ ngôn ngữ): ngôn ngữ chưa viết nhánh → báo thiếu, không rơi về tiếng Anh.
+const nhanhRaDe = nhanhNoiDung('Luyện đọc: prompt ra đề');
 
 /**
  * Kho DẠNG BÀI dùng chung cho mọi kiểu chấm, chia theo nhóm.
@@ -190,7 +192,7 @@ function donCauHoi(raw) {
  * xong là ôn lại luôn — thay vì gặp một văn bản toàn từ chưa thấy bao giờ.
  */
 async function generateReading({ tuVung = [], userId = null, level = 'medium', dang = '', tuChon = '', lang = 'en', rubric } = {}) {
-    const zh = lang === 'zh';
+    const zh = nhanhRaDe(lang) === 'zh';
     const muc = mucKho(level);
     const soCau = CAU_HOI_THEO_MUC[muc];
     // Kiểu chấm quyết định văn phong bài đọc: Giao tiếp (đời thường), TOEIC (công sở),
