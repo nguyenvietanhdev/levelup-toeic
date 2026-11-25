@@ -358,7 +358,8 @@ describe('app luyện tập: lựa chọn ngôn ngữ thứ ba', () => {
     test('vẫn rơi về luật cũ khi không có `word`', () => {
         const i = gl.indexOf('export function ttsLang');
         const t = gl.slice(i, gl.indexOf('\n}', i));
-        expect(t).toMatch(/vocabLang\(\) === 'zh' \? 'zh-CN' : 'en-US'/);
+        // Mã giọng lấy từ sổ ngôn ngữ; 'bi' chuẩn về mặc định (en-US) như luật cũ.
+        expect(t).toMatch(/return bcp47\(chuanMa\(vocabLang\(\)\)\);/);
     });
 
     test('API đổi hình cho app, trả nguyên bản cho admin', () => {

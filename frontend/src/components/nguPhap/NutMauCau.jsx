@@ -1,13 +1,14 @@
 import { useEffect, useState } from 'react';
 import { GameLogic } from '@game/gameLogic.js';
 import { luuMauCau } from '@lib/luuMauCau.js';
+import { bcp47 } from '@lib/ngonNgu.js';
 
 /** Đọc cả câu bằng giọng đúng ngôn ngữ. */
 export function phatCau(text, lang) {
     if (!text) return;
     try {
         GameLogic.stopSpeaking?.();
-        GameLogic.speakWord(text, lang === 'zh' ? 'zh-CN' : 'en-US');
+        GameLogic.speakWord(text, bcp47(lang));
     } catch { /* không đọc được thì thôi */ }
 }
 

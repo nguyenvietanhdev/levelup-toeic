@@ -21,6 +21,7 @@
  * án. Đặt nó vào ô `vn` là mẹo quan trọng nhất ở đây: 13/16 chế độ đọc
  * `word.vn` làm đáp án, và nhờ vậy không chế độ nào phải sửa một dòng.
  */
+const { bcp47 } = require('../config/ngonNgu');
 
 /**
  * Mặt "từ phải nhớ" của một bản ghi, theo `hienThi`.
@@ -97,7 +98,7 @@ function doiHinh(doc) {
         // Cờ để client biết đây là từ song ngữ mà không phải đoán.
         songNgu: true,
         // Giọng đọc — `ttsLang()` ở client là nhị phân zh/en nên phải nói rõ.
-        ttsLang: laZh ? 'zh-CN' : 'en-US',
+        ttsLang: bcp47(laZh ? 'zh' : 'en'),
     };
 }
 

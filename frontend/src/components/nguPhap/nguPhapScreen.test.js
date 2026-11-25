@@ -155,6 +155,7 @@ describe('hành vi khác', () => {
         expect(src).toMatch(/hetLuot=\{conLuot <= 0\}/);
     });
     test('ví dụ đọc đúng giọng: câu có chữ Hán đọc giọng Trung, còn lại giọng Anh', () => {
-        expect(src).toMatch(/GameLogic\.speakWord\(text, RE_HAN\.test\(text\) \? 'zh-CN' : 'en-US'\)/);
+        // Theo chữ viết của câu, qua sổ ngôn ngữ (chữ Hán → zh-CN, chữ Latin → mặc định en-US).
+        expect(src).toMatch(/GameLogic\.speakWord\(text, bcp47\(nhanDienChuViet\(text\) \|\| 'en'\)\)/);
     });
 });

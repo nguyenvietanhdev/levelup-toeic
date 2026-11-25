@@ -1,3 +1,4 @@
+import { bcp47, ngonNguHoc } from './ngonNgu.js';
 // Nhập bằng giọng nói qua Web Speech API.
 //
 // Ba điều bất ngờ của API này, và cách xử lý:
@@ -33,8 +34,8 @@ export function speechLangFor(vocabLang) {
     // Thiếu nhánh này thì nó rơi về 'en-US': người dùng đổi sang Trung–Anh, bấm
     // Shift để nói 你好, mà bộ nhận diện đang nghe tiếng Anh nên ra một chuỗi
     // Latin vô nghĩa — không có lỗi nào báo.
-    if (vocabLang === 'zh' || vocabLang === 'bi') return 'zh-CN';
-    return 'en-US';
+    // Mã nhận dạng lấy từ sổ ngôn ngữ (ngonNguHoc: 'bi' → zh).
+    return bcp47(ngonNguHoc(vocabLang));
 }
 
 // Mã ngôn ngữ Google Dịch (`zh-CN`, `vi`, `ja`…) → mã BCP-47 mà Web Speech nhận.

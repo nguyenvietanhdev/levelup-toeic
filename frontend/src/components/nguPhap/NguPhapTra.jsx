@@ -6,6 +6,7 @@ import { NguPhapAPI } from '@api/nguPhap.js';
 import { getVocabLang } from '@api/vocabulary.js';
 import LuyenNguPhap from './LuyenNguPhap.jsx';
 import LichSuNguPhap from './LichSuNguPhap.jsx';
+import { bcp47, nhanDienChuViet } from '@lib/ngonNgu.js';
 
 const CHO_GO_MS = 250;
 const KHOA_LANG = 'levelup.nguPhap.lang';
@@ -16,7 +17,8 @@ const phat = (text) => {
     if (!text) return;
     try {
         GameLogic.stopSpeaking?.();
-        GameLogic.speakWord(text, RE_HAN.test(text) ? 'zh-CN' : 'en-US');
+        // Giọng theo chữ viết của câu (sổ ngôn ngữ): chữ Hán → Trung; về sau Kana → Nhật, Hangul → Hàn.
+        GameLogic.speakWord(text, bcp47(nhanDienChuViet(text) || 'en'));
     } catch { /* không đọc được thì thôi */ }
 };
 

@@ -9,6 +9,7 @@ import { moNguPhap, NGU_PHAP_THEO_KHUNG } from '@lib/nguPhapLienKet.js';
 import { useGhiAm } from '../conversation/useGhiAm.js';
 import { useHoiKhiThoat } from '../ai/aiExitGuard.js';
 import { getVocabLang } from '@api/vocabulary.js';
+import { bcp47 } from '@lib/ngonNgu.js';
 
 /** Thanh giờ chỉ để giục, hết giờ KHÔNG tính sai: bắt lỗi phản xạ chứ không phạt người chậm. */
 const GIAY_GOI_Y = 10;
@@ -22,7 +23,7 @@ const dungPhat = () => {
 const phat = (text, lang = 'en') => {
     if (!text) return;
     dungPhat();
-    try { GameLogic.speakWord(text, lang === 'zh' ? 'zh-CN' : 'en-US'); } catch { /* không đọc được thì thôi */ }
+    try { GameLogic.speakWord(text, bcp47(lang)); } catch { /* không đọc được thì thôi */ }
 };
 
 const TEN_NGON_NGU = { en: 'tiếng Anh', zh: 'tiếng Trung' };

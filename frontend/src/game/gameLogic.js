@@ -13,12 +13,15 @@ import { giongVietTrinhDuyet } from '@lib/giongViet.js';
 import { giongTheoMa, giongCungNgonNgu } from '@lib/giongTrinhDuyet.js';
 import { batDauPhat, ketThucPhat } from '@lib/nutPhatAm.js';
 import { nhanKho, nhanKhoThuong } from '@lib/nhanKho.js';
+import { bcp47, chuanMa, layNgonNgu } from '@lib/ngonNgu.js';
 
 export function vocabLang() {
     return GameState.state?.settings?.vocabLang || getVocabLang() || 'en';
 }
+/** Mặt chữ chính của từ: trường đầu mục của ngôn ngữ đang học (sổ ngôn ngữ), thiếu thì `en`. */
 export function wordPk(word) {
-    return vocabLang() === 'zh' ? (word?.zh || word?.en || '') : (word?.en || '');
+    const truong = layNgonNgu(chuanMa(vocabLang())).truongDauMuc || 'en';
+    return word?.[truong] || word?.en || '';
 }
 /**
  * Giọng đọc cho TTS.
@@ -32,7 +35,8 @@ export function wordPk(word) {
  */
 export function ttsLang(word) {
     if (word?.ttsLang) return word.ttsLang;
-    return vocabLang() === 'zh' ? 'zh-CN' : 'en-US';
+    // Mã giọng lấy từ sổ ngôn ngữ ('bi' chuẩn về mặc định như trước: từ song ngữ mang ttsLang riêng).
+    return bcp47(chuanMa(vocabLang()));
 }
 
 export const GameLogic = {

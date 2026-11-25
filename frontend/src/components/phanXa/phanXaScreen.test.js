@@ -55,7 +55,8 @@ describe('hành vi', () => {
         expect(giay).not.toMatch(/gui\(/);
     });
     test('đọc và nghe đúng ngôn ngữ đang luyện (server quyết), không để máy đoán', () => {
-        expect(src).toMatch(/GameLogic\.speakWord\(text, lang === 'zh' \? 'zh-CN' : 'en-US'\)/);
+        // Mã giọng lấy từ sổ ngôn ngữ theo ngôn ngữ server quyết.
+        expect(src).toMatch(/GameLogic\.speakWord\(text, bcp47\(lang\)\)/);
         expect(src).toMatch(/const lang = tongQuan\?\.lang \|\| \(getVocabLang\(\) === 'zh' \? 'zh' : 'en'\);/);
         expect(src).toMatch(/useGhiAm\(speechLangFor\(lang\)\)/);
         expect(src).toMatch(/phat\(kq\.cauDung, lang\)/);

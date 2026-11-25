@@ -8,6 +8,7 @@
  * Đoạn gốc chỉ nằm trên server — client chỉ nhận âm thanh, không nhận chữ.
  */
 const { textCompletion } = require('./aiClient');
+const { NGON_NGU_HOAT_DONG, giongEdge, chuanMa } = require('../config/ngonNgu');
 const { CHI_THI_HOP_BOI_CANH } = require('./dangBai');
 
 /** Đoạn nghe tối đa — đủ dài để nghe, không đủ dài để chép tràn. */
@@ -22,7 +23,8 @@ const CEFR_NGHE = { easy: 'A1–A2', medium: 'B1–B2', hard: 'C1–C2' };
 const HSK_NGHE = { easy: 'HSK 1–2', medium: 'HSK 3–4', hard: 'HSK 5–6' };
 
 /** Giọng đọc theo ngôn ngữ: giọng nữ tự nhiên của Edge TTS. */
-const GIONG_THEO_NGON_NGU = { en: 'en-US-AriaNeural', zh: 'zh-CN-XiaoxiaoNeural' };
+/** Giọng Edge mặc định của mỗi ngôn ngữ đang mở — lấy từ sổ ngôn ngữ (config/ngonNgu.json). */
+const GIONG_THEO_NGON_NGU = Object.fromEntries(NGON_NGU_HOAT_DONG.map((m) => [m, giongEdge(m)]));
 
 /**
  * Giọng tiếng Anh theo vùng — đề TOEIC thật dùng giọng Mỹ, Anh, Úc, Canada; chỉ nghe một giọng
@@ -43,7 +45,8 @@ const VUNG = Object.keys(GIONG_VUNG);
  * giọng phổ thông.
  */
 function chonGiong(lang, vung, ngauNhien = Math.random) {
-    if (lang === 'zh') return { giong: GIONG_THEO_NGON_NGU.zh, vung: '', tenVung: '' };
+    // Giọng theo vùng chỉ có ở tiếng Anh; ngôn ngữ khác dùng giọng mặc định trong sổ.
+    if (chuanMa(lang) !== 'en') return { giong: giongEdge(chuanMa(lang)), vung: '', tenVung: '' };
     const v = VUNG.includes(vung) ? vung : VUNG[Math.floor(ngauNhien() * VUNG.length) % VUNG.length];
     const ds = GIONG_VUNG[v].ds;
     return { giong: ds[Math.floor(ngauNhien() * ds.length) % ds.length], vung: v, tenVung: GIONG_VUNG[v].ten };

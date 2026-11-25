@@ -11,6 +11,7 @@ import PanelToeic from './PanelToeic.jsx';
 import PanelBang from './PanelBang.jsx';
 import { useHoiKhiThoat } from '../ai/aiExitGuard.js';
 import { getVocabLang } from '@api/vocabulary.js';
+import { bcp47 } from '@lib/ngonNgu.js';
 
 /** Chỉ mục tiêu đã có đủ nội dung mới chọn được, để không hứa lộ trình chưa tồn tại. */
 const MUC_TIEU = [
@@ -51,7 +52,7 @@ const dungPhat = () => {
 const phat = (text, lang = 'en') => {
     if (!text) return;
     dungPhat();
-    try { GameLogic.speakWord(text, lang === 'zh' ? 'zh-CN' : 'en-US'); } catch { /* không đọc được thì thôi */ }
+    try { GameLogic.speakWord(text, bcp47(lang)); } catch { /* không đọc được thì thôi */ }
 };
 
 const TEN_NGON_NGU = { en: 'tiếng Anh', zh: 'tiếng Trung' };

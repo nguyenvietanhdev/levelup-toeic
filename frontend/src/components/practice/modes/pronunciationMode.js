@@ -5,6 +5,7 @@ import { Config } from '@game/config.js';
 import { Utils } from '@lib/utils.js';
 import { Notification } from '@ui/Toaster.jsx';
 import { scoreAttempt, feedbackMessage, scoreSentence, sentenceFeedback, chotSomDuoc } from './pronunciationScoring.js';
+import { bcp47 } from '@lib/ngonNgu.js';
 
 export const PronunciationMode = {
 
@@ -50,7 +51,7 @@ export const PronunciationMode = {
     },
 
     _recogLang() {
-        return this._isZh() ? 'zh-CN' : 'en-US';
+        return bcp47(this._isZh() ? 'zh' : 'en');
     },
 
     async start(config) {

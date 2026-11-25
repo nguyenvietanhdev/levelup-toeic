@@ -1,3 +1,4 @@
+import { bcp47 } from './ngonNgu.js';
 // Xác định ngôn ngữ của một từ trong bộ "Từ vựng riêng".
 //
 // Bộ này trộn lẫn Anh–Trung: gõ `你会吗` vào ô Dịch nhanh rồi lưu thì chữ Hán
@@ -25,5 +26,5 @@ export function wordLang(word) {
 
 /** Mã giọng đọc cho Web Speech / TTS. */
 export function ttsLangOf(word) {
-    return wordLang(word) === 'zh' ? 'zh-CN' : 'en-US';
+    return bcp47(wordLang(word));
 }

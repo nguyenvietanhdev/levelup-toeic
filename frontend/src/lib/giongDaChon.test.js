@@ -124,7 +124,9 @@ describe('thu âm nghe đúng ngôn ngữ', () => {
         const si = readFileSync(join(__dirname, 'speechInput.js'), 'utf8');
         const i = si.indexOf('export function speechLangFor');
         const t = si.slice(i, si.indexOf('\n}', i));
-        expect(t).toMatch(/vocabLang === 'zh' \|\| vocabLang === 'bi'/);
+        // Mã lấy từ sổ ngôn ngữ: ngonNguHoc('bi') = zh → zh-CN.
+        expect(t).toMatch(/return bcp47\(ngonNguHoc\(vocabLang\)\);/);
+        expect(si).toMatch(/import \{ bcp47, ngonNguHoc \} from '\.\/ngonNgu\.js';/);
     });
 
     test('chế độ Phát âm quyết theo TỪ, không theo kho', () => {

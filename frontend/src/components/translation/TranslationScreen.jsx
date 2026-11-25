@@ -16,6 +16,7 @@ import { useNhamYeu, NutNhamYeu, NhanNham } from '../ai/NhamDiemYeu.jsx';
 import { useHoiKhiThoat } from '../ai/aiExitGuard.js';
 import { GameLogic } from '@game/gameLogic.js';
 import { luuVaoTuRieng } from '@lib/luuMauCau.js';
+import { bcp47 } from '@lib/ngonNgu.js';
 
 /**
  * Luyện DỊCH — đọc một đoạn tiếng Việt, viết lại bằng tiếng Anh (hoặc Trung).
@@ -279,7 +280,7 @@ export default function TranslationScreen({ active }) {
     }, []);
 
     const ngheDoan = () => {
-        try { GameLogic.stopSpeaking?.(); GameLogic.speakWord(de.passage, lang === 'zh' ? 'zh-CN' : 'en-US'); } catch { /* không đọc được thì thôi */ }
+        try { GameLogic.stopSpeaking?.(); GameLogic.speakWord(de.passage, bcp47(lang)); } catch { /* không đọc được thì thôi */ }
     };
 
     gradeRef.current = handleGrade;
