@@ -1,0 +1,76 @@
+{
+  "_ghiChu": "SỔ ĐĂNG KÝ NGÔN NGỮ — nguồn duy nhất cho cả backend (config/ngonNgu.js) và frontend (frontend/src/lib/ngonNgu.js, alias @ngonNgu). Thêm ngôn ngữ: khai báo một mục ở đây; bật cho người học (hoatDong: true) khi đã có nội dung (bộ từ, kho ngữ pháp...). 'bi' không phải ngôn ngữ mà là chế độ bộ từ song ngữ Trung–Anh, giữ riêng.",
+  "macDinh": "en",
+  "ngonNgu": [
+    {
+      "ma": "en",
+      "hoatDong": true,
+      "tenViet": "Tiếng Anh",
+      "tenNgan": "Anh",
+      "tenPrompt": "English",
+      "bcp47": "en-US",
+      "giongEdge": "en-US-AriaNeural",
+      "chuViet": "latin",
+      "donViDem": "tu",
+      "tachTu": "khoangTrang",
+      "phienAm": null,
+      "khungCapDo": "CEFR",
+      "kho": "Vocabulary",
+      "truongDauMuc": "en"
+    },
+    {
+      "ma": "zh",
+      "hoatDong": true,
+      "tenViet": "Tiếng Trung",
+      "tenNgan": "Trung",
+      "tenPrompt": "Mandarin Chinese",
+      "bcp47": "zh-CN",
+      "giongEdge": "zh-CN-XiaoxiaoNeural",
+      "chuViet": "han",
+      "donViDem": "chu",
+      "tachTu": "segmenter",
+      "phienAm": "pinyin",
+      "khungCapDo": "HSK",
+      "kho": "VocabularyZh",
+      "truongDauMuc": "zh"
+    },
+    {
+      "ma": "ja",
+      "hoatDong": false,
+      "tenViet": "Tiếng Nhật",
+      "tenNgan": "Nhật",
+      "tenPrompt": "Japanese",
+      "bcp47": "ja-JP",
+      "giongEdge": "ja-JP-NanamiNeural",
+      "chuViet": "kana",
+      "donViDem": "chu",
+      "tachTu": "segmenter",
+      "phienAm": "furigana",
+      "khungCapDo": "JLPT",
+      "kho": null,
+      "truongDauMuc": null
+    },
+    {
+      "ma": "ko",
+      "hoatDong": false,
+      "tenViet": "Tiếng Hàn",
+      "tenNgan": "Hàn",
+      "tenPrompt": "Korean",
+      "bcp47": "ko-KR",
+      "giongEdge": "ko-KR-SunHiNeural",
+      "chuViet": "hangul",
+      "donViDem": "tu",
+      "tachTu": "khoangTrang",
+      "phienAm": "romaja",
+      "khungCapDo": "TOPIK",
+      "kho": null,
+      "truongDauMuc": null
+    }
+  ],
+  "mauChuViet": {
+    "kana": "[\\u3040-\\u30ff\\u31f0-\\u31ff]",
+    "hangul": "[\\uac00-\\ud7af\\u1100-\\u11ff\\u3130-\\u318f]",
+    "han": "[\\u4e00-\\u9fff\\u3400-\\u4dbf]"
+  },
+  "thuTuNhanDien": ["kana", "hangul", "han"]
+}

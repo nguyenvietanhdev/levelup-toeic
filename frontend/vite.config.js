@@ -18,10 +18,15 @@ export default defineConfig({
       '@game': path.resolve(__dirname, './src/game'),
       '@api': path.resolve(__dirname, './src/api'),
       '@lib': path.resolve(__dirname, './src/lib'),
+      // Sổ đăng ký ngôn ngữ dùng chung với backend: MỘT file, nằm trong backend/ (ảnh Docker
+      // của backend chỉ chép thư mục backend/).
+      '@ngonNgu': path.resolve(__dirname, '../backend/config/ngonNgu.json'),
     },
   },
   server: {
     port: 5173,
+    // Cho dev server đọc file sổ ngôn ngữ nằm ngoài gốc frontend (backend/config/ngonNgu.json).
+    fs: { allow: ['..'] },
     proxy: {
       '/api': {
         target: 'http://localhost:5000',
