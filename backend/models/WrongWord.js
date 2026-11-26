@@ -328,6 +328,8 @@ WrongWordSchema.statics.langFilter = function(lang) {
     // đoán bằng chữ Hán. Loại hẳn `bi` ra, nếu không từ song ngữ lọt vào cả hai
     // nhóm — mặt Hán vào nhóm zh, mặt Latin vào nhóm en.
     const khongPhaiBi = { lang: { $ne: 'bi' } };
+    // Ngôn ngữ thêm sau (Nhật, Hàn…): mọi bản ghi đều mang `lang`, không có dữ liệu cũ phải đoán.
+    if (lang !== 'zh' && lang !== 'en') return { lang };
     return lang === 'zh'
         ? { $and: [khongPhaiBi, { $or: [{ lang: 'zh' }, { lang: { $exists: false }, en: { $regex: HAN } }] }] }
         : { $and: [khongPhaiBi, { $or: [{ lang: 'en' }, { lang: { $exists: false }, en: { $not: { $regex: HAN } } }] }] };

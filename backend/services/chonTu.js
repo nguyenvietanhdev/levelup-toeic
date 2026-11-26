@@ -17,6 +17,7 @@ const UserUpload = require('../models/UserUpload');
 const WrongWord = require('../models/WrongWord');
 
 const { khoTuVung } = require('./khoTuVung');
+const TRUONG_NGOAI = require('../config/ngonNgu').MA_NGON_NGU.filter((m) => m !== 'en');
 /**
  * Mặt từ dùng để so khớp và đưa vào prompt.
  *
@@ -26,11 +27,12 @@ const { khoTuVung } = require('./khoTuVung');
  */
 function faceOf(w) {
     if (!w) return '';
-    const zh = typeof w.zh === 'string' ? w.zh.trim() : '';
-    const en = typeof w.en === 'string' ? w.en.trim() : '';
-    // Ưu tiên `zh` khi có: bản ghi tiếng Trung nào cũng có `zh`, còn `en` có thể
-    // là chuỗi rỗng hoặc phiên âm.
-    return zh || en;
+    // Ưu tiên mặt chữ ngoại ngữ (zh, ja, ko — sổ ngôn ngữ) khi có: bản ghi kho ngoại ngữ nào cũng
+    // có trường đó, còn `en` có thể là chuỗi rỗng hoặc phiên âm.
+    for (const k of TRUONG_NGOAI) {
+        if (typeof w[k] === 'string' && w[k].trim()) return w[k].trim();
+    }
+    return typeof w.en === 'string' ? w.en.trim() : '';
 }
 
 /** Toàn bộ từ của một đề (kho chung + từ vựng riêng của người học). */

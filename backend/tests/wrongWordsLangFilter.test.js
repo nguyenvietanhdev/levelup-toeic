@@ -201,7 +201,7 @@ describe('danh sách từ sai ở popup chọn nhóm cũng lọc theo ngôn ng�
         const i = ctrl.indexOf('function khoDangHoc');
         expect(i).toBeGreaterThan(-1);
         const ham = ctrl.slice(i, ctrl.indexOf('\n}', i));
-        expect(ham).toMatch(/kho === 'zh' \|\| kho === 'bi' \? kho : 'en'/);
+        expect(ham).toMatch(/kho === 'bi' \? 'bi' : chuanMa\(kho\)/);
     });
 
     test('CẢ HAI chỗ đọc ngôn ngữ đều dùng chung hàm đó', () => {

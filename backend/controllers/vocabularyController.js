@@ -9,7 +9,10 @@ const VocabularyZh = require('../models/VocabularyZh');
 const VocabularyBi = require('../models/VocabularyBi');
 const { doiHinh } = require('../services/vocabBiMapper');
 
-const { khoTuVung } = require('../services/khoTuVung');
+const { khoTuVung, truongDauMuc } = require('../services/khoTuVung');
+const { tenViet, MA_NGON_NGU } = require('../config/ngonNgu');
+/** Trường mặt chữ của các kho ngoại ngữ (zh, ja, ko…), lấy từ sổ ngôn ngữ. */
+const TRUONG_NGOAI = MA_NGON_NGU.filter((m) => m !== 'en');
 const escapeRegex = (str) => str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 /**
@@ -35,9 +38,15 @@ function getVocabModel(req) {
     return khoTuVung(req.query.lang, { coBi: true });
 }
 
-function isZhRequest(req) {
-    return req.query.lang === 'zh';
+/**
+ * Kho NGOẠI NGỮ có trường mặt chữ riêng (`zh`, `ja`, `ko` — sổ ngôn ngữ `truongDauMuc`), khác kho
+ * tiếng Anh dùng `en`. Kho song ngữ tính riêng (`isBiRequest`).
+ */
+function laKhoNgoai(req) {
+    return !isBiRequest(req) && truongCua(req) !== 'en';
 }
+/** Trường mặt chữ của kho đang thao tác theo `?lang=` (ngôn ngữ chưa mở → kho mặc định). */
+const truongCua = (req) => truongDauMuc(req.query.lang);
 
 function isBiRequest(req) {
     return req.query.lang === 'bi';
@@ -52,7 +61,7 @@ function isBiRequest(req) {
  */
 function pkField(req) {
     if (isBiRequest(req)) return 'zh';
-    return isZhRequest(req) ? 'zh' : 'en';
+    return truongCua(req);
 }
 
 function primaryValue(req, word) {
@@ -68,11 +77,13 @@ function validateVocabularyPayloadForLang(req, word) {
             ? `Kho song ngữ cần đủ ${thieu.join(', ')}. Đây là kho học Trung ↔ Anh, không qua tiếng Việt.`
             : null;
     }
-    if (isZhRequest(req) && word.en !== undefined && word.zh === undefined) {
-        return 'Bạn đang nhập vào collection Tiếng Trung, vui lòng dùng key "zh" thay vì "en".';
+    const pk = truongCua(req);
+    if (laKhoNgoai(req) && word.en !== undefined && word[pk] === undefined) {
+        return `Bạn đang nhập vào collection ${tenViet(req.query.lang)}, vui lòng dùng key "${pk}" thay vì "en".`;
     }
-    if (!isZhRequest(req) && word.zh !== undefined && word.en === undefined) {
-        return 'Bạn đang nhập vào collection Tiếng Anh, vui lòng dùng key "en" thay vì "zh".';
+    const nham = TRUONG_NGOAI.find((k) => word[k] !== undefined);
+    if (!laKhoNgoai(req) && nham && word.en === undefined) {
+        return `Bạn đang nhập vào collection Tiếng Anh, vui lòng dùng key "en" thay vì "${nham}".`;
     }
     return null;
 }
@@ -81,7 +92,7 @@ function normalizePartForLang(req, part) {
     // Chỉ kho tiếng Anh viết hoa `part` (CONTRACTS, MEETINGS…). Kho Trung và
     // kho song ngữ đặt tên Part bằng chữ thường/chữ Hán nên viết hoa là lọc ra
     // 0 từ.
-    if (isZhRequest(req) || isBiRequest(req)) return part;
+    if (laKhoNgoai(req) || isBiRequest(req)) return part;
     return String(part).toUpperCase();
 }
 
@@ -113,12 +124,12 @@ function getReadableVocabFilter(req) {
     if (isBiRequest(req)) {
         return { zh: { $type: 'string', $ne: '' } };
     }
-    if (isZhRequest(req)) {
+    if (laKhoNgoai(req)) {
         return {
             ...PUBLIC_FILTER,
             $or: [
                 { en: { $type: 'string', $ne: '' } },
-                { zh: { $type: 'string', $ne: '' } },
+                { [truongCua(req)]: { $type: 'string', $ne: '' } },
             ],
         };
     }
@@ -141,8 +152,9 @@ function normalizeVocabDocForResponse(req, word) {
         return doiHinh(word);
     }
 
-    if (isZhRequest(req) && (!word.en || !String(word.en).trim()) && word.zh) {
-        return { ...word, en: word.zh };
+    const pk = truongCua(req);
+    if (laKhoNgoai(req) && (!word.en || !String(word.en).trim()) && word[pk]) {
+        return { ...word, en: word[pk] };
     }
     return word;
 }
@@ -311,8 +323,8 @@ exports.searchVocabulary = async (req, res, next) => {
             { vn: new RegExp(escapeRegex(q), 'i') },
             { phonetic: new RegExp(escapeRegex(q), 'i') },
         ];
-        if (isZhRequest(req)) {
-            searchFields.push({ zh: new RegExp(escapeRegex(q), 'i') });
+        if (laKhoNgoai(req)) {
+            searchFields.push({ [truongCua(req)]: new RegExp(escapeRegex(q), 'i') });
         }
 
         const results = await getVocabModel(req).find({
@@ -470,7 +482,7 @@ exports.upsertVocabulary = async (req, res, next) => {
 
                 const doc = {
                     ...(pk !== 'en' && word.en !== undefined && { en: word.en }),
-                    ...(pk !== 'zh' && word.zh !== undefined && { zh: word.zh }),
+                    ...Object.fromEntries(TRUONG_NGOAI.filter((k) => k !== pk && word[k] !== undefined).map((k) => [k, word[k]])),
                     ...(word.vn        !== undefined && { vn: word.vn }),
                     ...(word.phonetic  !== undefined && { phonetic: word.phonetic }),
                     ...(word.part      !== undefined && { part: normalizePartForLang(req, word.part) }),
@@ -608,6 +620,7 @@ exports.updateVocabulary = async (req, res, next) => {
 
         if (en) word.en = en;
         if (zh) word.zh = zh;
+        for (const k of ['ja', 'ko']) if (req.body?.[k]) word[k] = req.body[k];
         if (vn) word.vn = vn;
         if (phonetic !== undefined) word.phonetic = phonetic;
         if (part) word.part = normalizePartForLang(req, part);
@@ -766,7 +779,7 @@ exports.bulkImportVocabulary = async (req, res, next) => {
 
                 const newVocab = new Model({
                     ...(word.en !== undefined && { en: word.en }),
-                    ...(word.zh !== undefined && { zh: word.zh }),
+                    ...Object.fromEntries(TRUONG_NGOAI.filter((k) => word[k] !== undefined).map((k) => [k, word[k]])),
                     vn: word.vn,
                     phonetic: word.phonetic || null,
                     part: partKey,
@@ -818,7 +831,7 @@ exports.bulkDeleteVocabulary = async (req, res, next) => {
     }
 };
 
-const FILTER_DELETE_ALLOWED_FIELDS = ['part', 'type', 'source', 'level', 'en', 'zh', 'uploadBatchId', 'image'];
+const FILTER_DELETE_ALLOWED_FIELDS = ['part', 'type', 'source', 'level', 'en', 'zh', 'ja', 'ko', 'uploadBatchId', 'image'];
 
 /**
  * @desc    Delete all docs matching one or more field=value conditions (AND)
@@ -841,7 +854,7 @@ exports.filterDeleteVocabulary = async (req, res, next) => {
             if (!FILTER_DELETE_ALLOWED_FIELDS.includes(field)) {
                 return res.status(400).json({ success: false, message: `Invalid field "${field}". Allowed: ${FILTER_DELETE_ALLOWED_FIELDS.join(', ')}` });
             }
-            conditions[field] = field === 'part' && !isZhRequest(req) ? value.toUpperCase() : value;
+            conditions[field] = field === 'part' && !laKhoNgoai(req) ? value.toUpperCase() : value;
         }
 
         if (Object.keys(conditions).length === 0) {
@@ -916,7 +929,7 @@ exports.replaceVocabulary = async (req, res, next) => {
 
         const docs = words.map(word => ({
             ...(word.en !== undefined && { en: word.en }),
-            ...(word.zh !== undefined && { zh: word.zh }),
+            ...Object.fromEntries(TRUONG_NGOAI.filter((k) => word[k] !== undefined).map((k) => [k, word[k]])),
             vn: word.vn,
             phonetic: word.phonetic || null,
             part: normalizePartForLang(req, word.part || 'PART1'),

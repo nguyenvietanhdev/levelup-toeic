@@ -1,4 +1,4 @@
-import { vocabLangHopLe } from '@lib/ngonNgu.js';
+import { vocabLangHopLe, layNgonNgu, chuanMa } from '@lib/ngonNgu.js';
 // ===================================
 // VOCABULARY API SERVICE
 // ===================================
@@ -17,10 +17,12 @@ export function getVocabLang() {
 
 export function normalizeVocabularyWord(word, lang = getVocabLang()) {
     if (!word || typeof word !== 'object') return word;
-    if (lang !== 'zh') return word;
+    // Kho ngoại ngữ (zh, ja, ko — sổ ngôn ngữ) có trường mặt chữ riêng; kho tiếng Anh dùng `en`.
+    const pk = layNgonNgu(chuanMa(lang)).truongDauMuc || 'en';
+    if (pk === 'en') return word;
 
-    const primary = typeof word.zh === 'string' && word.zh.trim()
-        ? word.zh.trim()
+    const primary = typeof word[pk] === 'string' && word[pk].trim()
+        ? word[pk].trim()
         : word.en;
 
     return {

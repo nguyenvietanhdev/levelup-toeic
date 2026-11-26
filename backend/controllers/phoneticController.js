@@ -1,8 +1,8 @@
-const Vocabulary = require('../models/Vocabulary');
-const VocabularyZh = require('../models/VocabularyZh');
 const VocabularyBi = require('../models/VocabularyBi');
 const { layPhienAmCau, coChuHan } = require('../services/sentencePhonetic');
 const logger = require('../utils/logger');
+const { khoTuVung } = require('../services/khoTuVung');
+const { chuanMa, nhanDienChuViet } = require('../config/ngonNgu');
 
 /**
  * Phiên âm câu ví dụ — IPA cho tiếng Anh, pinyin cho tiếng Trung.
@@ -24,9 +24,11 @@ const logger = require('../utils/logger');
  * ngữ là một lần gọi AI tính tiền, lặp lại vô hạn.
  */
 function khoTheoCau(cau) {
-    const zh = coChuHan(cau);
-    const KhoCu = zh ? VocabularyZh : Vocabulary;
-    const hau = zh ? 'Zh' : 'En';
+    // Kho theo CHỮ VIẾT của câu (sổ ngôn ngữ): kana → Nhật, Hangul → Hàn, Hán → Trung.
+    const ma = chuanMa(nhanDienChuViet(cau) || (coChuHan(cau) ? 'zh' : 'en'));
+    const KhoCu = khoTuVung(ma);
+    // Kho song ngữ chỉ có hai mặt Trung / Anh.
+    const hau = ma === 'zh' ? 'Zh' : 'En';
 
     // Cả câu ví dụ LẪN chuỗi đồng nghĩa: client chỉ gửi đoạn chữ, không nói đó
     // là loại nào — mà cùng một endpoint phục vụ cả hai. Thiếu vế đồng nghĩa

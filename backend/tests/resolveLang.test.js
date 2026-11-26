@@ -24,7 +24,8 @@ function loadResolveLang() {
     if (!fnSrc) throw new Error('Không tìm thấy `resolveLang` trong uploadController.js');
     // eslint-disable-next-line no-new-func
     // `chuanMa` lấy từ sổ ngôn ngữ (config/ngonNgu.js), như trong controller.
-    return new Function('chuanMa', `${hanSrc[0]}\n${fnSrc[0]}\nreturn resolveLang;`)(require('../config/ngonNgu').chuanMa);
+    const N = require('../config/ngonNgu');
+    return new Function('chuanMa', 'nhanDienChuViet', 'NGON_NGU_HOAT_DONG', `${hanSrc[0]}\n${fnSrc[0]}\nreturn resolveLang;`)(N.chuanMa, N.nhanDienChuViet, N.NGON_NGU_HOAT_DONG);
 }
 
 const resolveLang = loadResolveLang();

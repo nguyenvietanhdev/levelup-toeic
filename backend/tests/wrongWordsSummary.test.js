@@ -35,7 +35,7 @@ describe('kho đang học — ba giá trị, không phải hai', () => {
         expect(i).toBeGreaterThan(-1);
         const than = ctrl.slice(i, ctrl.indexOf('\n}', i) + 2);
         // eslint-disable-next-line no-new-func
-        return new Function(`${than}; return khoDangHoc;`)();
+        return new Function('chuanMa', `${than}; return khoDangHoc;`)(require('../config/ngonNgu').chuanMa);
     })();
 
     test('song ngữ giữ nguyên `bi`', () => {

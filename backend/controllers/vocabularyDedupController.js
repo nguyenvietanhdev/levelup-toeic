@@ -5,16 +5,12 @@
 // duplicate entries. DUP_GROUP_KEY is local to this cluster. Verbatim
 // move; behaviour unchanged. routes/vocabulary.js imports these here now.
 
-const Vocabulary = require('../models/Vocabulary');
-const VocabularyZh = require('../models/VocabularyZh');
-const VocabularyBi = require('../models/VocabularyBi');
 const activityLogger = require('../utils/activityLogger');
+const { khoTuVung } = require('../services/khoTuVung');
 
 function getVocabModel(req) {
-    // Ba kho tách biệt: `bi` là kho song ngữ, collection riêng, nạp tay.
-    if (req.query.lang === 'zh') return VocabularyZh;
-    if (req.query.lang === 'bi') return VocabularyBi;
-    return Vocabulary;
+    // Kho theo sổ ngôn ngữ; `bi` là kho song ngữ, collection riêng, nạp tay.
+    return khoTuVung(req.query.lang, { coBi: true });
 }
 
 // Normalized composite duplicate key: source + part + en (case-insensitive,

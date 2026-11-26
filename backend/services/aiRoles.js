@@ -22,6 +22,7 @@ const { textCompletion } = require('./aiClient');
 const logger = require('../utils/logger');
 
 const { khoTuVung, truongDauMuc } = require('./khoTuVung');
+const { chuanMa } = require('../config/ngonNgu');
 const DO_DAI_TOI_THIEU = 10;
 const DO_DAI_TOI_DA = 400;
 const TIEU_DE_TOI_THIEU = 2;
@@ -95,7 +96,7 @@ function chuanHoaKhoa({ source, part, lang }) {
     const p = String(part || '').trim();
     if (!s || !p) throw loiNhap('Thiếu đề (source) hoặc Part.');
     if (s.length > 100 || p.length > 200) throw loiNhap('Đề hoặc Part quá dài.');
-    const ngonNgu = lang === 'zh' || lang === 'bi' ? lang : 'en';
+    const ngonNgu = lang === 'bi' ? 'bi' : chuanMa(lang);
     return { source: s, part: p, lang: ngonNgu };
 }
 
@@ -152,7 +153,7 @@ async function deXuatVaiAI({ userId, email, source, part, lang }) {
         .select(truongDauMuc(khoa.lang))
         .limit(8)
         .lean();
-    const tu = mau.map((w) => (khoa.lang === 'zh' ? w.zh : w.en)).filter(Boolean);
+    const tu = mau.map((w) => w[truongDauMuc(khoa.lang)]).filter(Boolean);
 
     // Vai AI đã lưu của Part: đưa cho AI để mỗi lần đề xuất ra một NGƯỜI khác
     // (Mother rồi Grandfather rồi Older sister…), không lặp lại vai đã có.

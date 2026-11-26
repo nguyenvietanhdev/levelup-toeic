@@ -47,9 +47,10 @@ describe('bật thử tiếng Nhật trong sổ', () => {
         expect(N.NGON_NGU_HOAT_DONG.includes(N.nhanDienChuViet('君の名前を教えて'))).toBe(true);
     });
 
-    test('chưa có kho từ vựng tiếng Nhật: báo rõ phải khai gì, không rơi nhầm sang kho tiếng Anh', () => {
-        const { khoTuVung } = require('../services/khoTuVung');
-        expect(() => khoTuVung('ja')).toThrow(/chưa có kho từ vựng/);
+    test('kho từ vựng: tiếng Nhật có kho riêng (VocabularyJa, trường mặt chữ ja), không rơi sang kho tiếng Anh', () => {
+        const { khoTuVung, truongDauMuc } = require('../services/khoTuVung');
+        expect(khoTuVung('ja').modelName).toBe('VocabularyJa');
+        expect(truongDauMuc('ja')).toBe('ja');
     });
 });
 

@@ -155,7 +155,7 @@ describe('nghe tiếng Trung: chấm theo từng chữ Hán', () => {
         expect(src).toMatch(/chonTu\(\{\s*userId, email: req\.user\.email, settings: st, lang, soLuong: TU_MUC_TIEU, tiLeYeu: 0\.5,\s*\}\)/);
         const svc = readFileSync(join(__dirname, '..', 'services', 'chonTu.js'), 'utf8');
         expect(svc).toMatch(/const SharedModel = khoTuVung\(lang\);/); // kho theo sổ ngôn ngữ
-        expect(svc).toMatch(/return zh \|\| en;/);
+        expect(svc).toMatch(/for \(const k of TRUONG_NGOAI\)/); // mặt chữ ngoại ngữ (zh/ja/ko) trước, rồi en
         expect(src).toMatch(/sinhDoanNghe\(\{ targetWords, level, userId, chon, lang \}\)/);
         expect(src).toMatch(/GIONG_THEO_NGON_NGU\[phien\.lang\] \|\| GIONG_NGHE/);
     });

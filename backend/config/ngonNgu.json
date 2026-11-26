@@ -83,8 +83,8 @@
       "tachTu": "segmenter",
       "phienAm": "furigana",
       "khungCapDo": "JLPT",
-      "kho": null,
-      "truongDauMuc": null,
+      "kho": "VocabularyJa",
+      "truongDauMuc": "ja",
       "prompt": {
         "vietBang": "natural Japanese (kanji with hiragana and katakana)",
         "ghiChuChuViet": " using standard kanji and kana, no furigana, no romaji",
@@ -123,8 +123,8 @@
       "tachTu": "khoangTrang",
       "phienAm": "romaja",
       "khungCapDo": "TOPIK",
-      "kho": null,
-      "truongDauMuc": null,
+      "kho": "VocabularyKo",
+      "truongDauMuc": "ko",
       "prompt": {
         "vietBang": "Korean (Hangul)",
         "ghiChuChuViet": " in Hangul only, no romanization, no hanja",

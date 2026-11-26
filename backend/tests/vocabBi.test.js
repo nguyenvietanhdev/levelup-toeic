@@ -625,7 +625,7 @@ describe('sửa từ riêng không làm mất dữ liệu song ngữ', () => {
         // Ép thì sửa một từ song ngữ là mất nhãn riêng, bộ đó lẫn vào danh sách
         // kho tiếng Trung.
         const t = thanUpdate();
-        expect(t).toMatch(/\['zh', 'en', 'bi'\]\.includes\(lang\)/);
+        expect(t).toMatch(/vocabLangHopLe\(lang\)/); // sổ ngôn ngữ: 'bi' + ngôn ngữ đang mở
     });
 
     test('chỉ ghi đè khi client THỰC SỰ gửi trường đó', () => {

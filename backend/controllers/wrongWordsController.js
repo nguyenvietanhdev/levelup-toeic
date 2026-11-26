@@ -3,7 +3,7 @@ const WrongWord = require('../models/WrongWord');
 const User = require('../models/User');
 const UserProfile = require('../models/UserProfile');
 const logger = require('../utils/logger');
-const { NGON_NGU_HOAT_DONG, MAC_DINH } = require('../config/ngonNgu');
+const { NGON_NGU_HOAT_DONG, MAC_DINH, chuanMa } = require('../config/ngonNgu');
 
 /**
  * Kho từ vựng người dùng đang học — dùng để lọc từ sai.
@@ -18,7 +18,7 @@ const { NGON_NGU_HOAT_DONG, MAC_DINH } = require('../config/ngonNgu');
  */
 function khoDangHoc(profile) {
     const kho = profile?.settings?.vocabLang;
-    return kho === 'zh' || kho === 'bi' ? kho : 'en';
+    return kho === 'bi' ? 'bi' : chuanMa(kho);
 }
 
 

@@ -15,7 +15,7 @@ const { levelSumStage, LEVEL_STATS_PROJECT } = require('../utils/levelStats');
 const { normalizeWordType } = require('../utils/wordType');
 const activityLogger = require('../utils/activityLogger');
 
-const { chuanMa } = require('../config/ngonNgu');
+const { chuanMa, nhanDienChuViet, NGON_NGU_HOAT_DONG, vocabLangHopLe } = require('../config/ngonNgu');
 // Private uploads: user picks retention at upload time.
 const ALLOWED_RETENTION_DAYS = [3, 7, 14, 30];
 const DEFAULT_RETENTION_DAYS = 30;
@@ -53,6 +53,9 @@ const resolveLang = (lang, word) => {
     // toàn chữ Hán nên `hasHan` sẽ ép nó thành 'zh' và bộ đó mất nhãn riêng —
     // lẫn vào danh sách của kho tiếng Trung.
     if (lang === 'bi') return 'bi';
+    // Chữ viết nói lên ngôn ngữ (sổ ngôn ngữ): kana → Nhật, Hangul → Hàn — khi ngôn ngữ đó đã mở.
+    const theoChu = nhanDienChuViet(word);
+    if (theoChu && theoChu !== 'zh' && NGON_NGU_HOAT_DONG.includes(theoChu)) return theoChu;
     if (hasHan(word)) return 'zh';
     return chuanMa(lang); // sổ ngôn ngữ: mã chưa mở / lạ → mặc định, như trước
 };
@@ -320,7 +323,7 @@ exports.updateMyWord = async (req, res, next) => {
     if (level !== undefined) word.level = upper(level);
     // `bi` phải nằm trong danh sách hợp lệ: ép về 'zh'/'en' thì sửa một từ
     // song ngữ là mất nhãn riêng, bộ đó lẫn vào danh sách kho tiếng Trung.
-    if (lang !== undefined) word.lang = ['zh', 'en', 'bi'].includes(lang) ? lang : 'en';
+    if (lang !== undefined) word.lang = vocabLangHopLe(lang) ? lang : 'en';
 
     await word.save();
     res.json({ success: true, data: word, message: `Đã cập nhật "${word.en}"` });

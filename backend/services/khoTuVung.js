@@ -10,6 +10,8 @@ const { layNgonNgu, chuanMa } = require('../config/ngonNgu');
 const NAP = {
     Vocabulary: () => require('../models/Vocabulary'),
     VocabularyZh: () => require('../models/VocabularyZh'),
+    VocabularyJa: () => require('../models/VocabularyJa'),
+    VocabularyKo: () => require('../models/VocabularyKo'),
     VocabularyBi: () => require('../models/VocabularyBi'),
 };
 
@@ -25,7 +27,7 @@ function khoTuVung(lang, { coBi = false } = {}) {
     return NAP[n.kho]();
 }
 
-/** Trường lưu mặt chữ chính của từ trong kho của `lang` ('en' | 'zh'). */
+/** Trường lưu mặt chữ chính của từ trong kho của `lang` ('en' | 'zh' | 'ja' | 'ko'). */
 const truongDauMuc = (lang) => layNgonNgu(chuanMa(lang)).truongDauMuc;
 
 module.exports = { khoTuVung, truongDauMuc };
