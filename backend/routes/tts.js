@@ -68,6 +68,13 @@ const VOICE_MAP = {
     'vi-multi-brian':     'en-US-BrianMultilingualNeural',
 };
 
+// Mọi ngôn ngữ trong sổ (Nhật, Hàn…) có giọng Edge của nó: không có ở bảng trên thì lấy từ sổ,
+// thay vì rơi về giọng Anh. Đổi ngôn ngữ ở một nơi (config/ngonNgu.json), giọng tự theo.
+for (const n of require('../config/ngonNgu').SO.ngonNgu) {
+    const k = n.bcp47.toLowerCase();
+    if (!VOICE_MAP[k]) VOICE_MAP[k] = n.giongEdge;
+}
+
 /**
  * Trình duyệt được giữ audio bao lâu (giây).
  *

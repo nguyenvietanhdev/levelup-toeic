@@ -64,6 +64,8 @@ const MENU_GROUPS = [
             { label: 'Luyện đề test TOEIC', icon: 'fa-graduation-cap', screen: 'toeic-screen', hot: true, feature: 'feature:toeic' },
             // Tra cứu nhanh: kho lõi viết tay, AI chỉ chạy khi người học bấm. Không khoá Level.
             { label: 'Công thức ngữ pháp', icon: 'fa-spell-check', screen: 'ngu-phap-screen' },
+            // Cùng kiểu tra cứu: phiên âm chuẩn, đọc kiểu tiếng Việt, nối âm — mọi ngôn ngữ trong sổ.
+            { label: 'Tra cứu phát âm', icon: 'fa-ear-listen', screen: 'phat-am-screen' },
             // Thư viện bài nghe thật (VOA, phạm vi công cộng) kèm script chạy theo. Không gọi AI
             // khi nghe nên không thuộc nhóm "với AI"; người học tìm đến khi muốn nghe một bài.
             { label: 'Bài nghe có script', icon: 'fa-podcast', screen: 'bai-nghe-screen' },

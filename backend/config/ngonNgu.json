@@ -18,7 +18,11 @@
       "phienAm": null,
       "khungCapDo": "CEFR",
       "kho": "Vocabulary",
-      "truongDauMuc": "en"
+      "truongDauMuc": "en",
+      "phatAm": {
+        "chuan": "IPA (General American)",
+        "luuY": "Mark word stress. Connected speech to look for: consonant-to-vowel linking (an apple), flap t/d between vowels (water, better), elision of t/d between consonants (next day), weak forms of function words (to, and, of, can), contractions, and reduced vowels (schwa). Common problems for Vietnamese speakers: final consonants dropped or unreleased, th, v/z/ʒ, consonant clusters, missing -s/-ed endings."
+      }
     },
     {
       "ma": "zh",
@@ -62,6 +66,10 @@
           "hard": "HSK 5–6"
         },
         "diemDocHieu": "set phrases, measure words, aspect (了/过/着)"
+      },
+      "phatAm": {
+        "chuan": "Hanyu Pinyin with tone marks",
+        "luuY": "Tones are the core: give each syllable its tone. Sound changes to look for: third-tone sandhi (你好 nǐ hǎo → ní hǎo), tone changes of 一 and 不, neutral tone, erhua (儿化). Common problems for Vietnamese speakers: zh/ch/sh vs z/c/s, j/q/x, the ü vowel, the 3rd tone, and the aspirated p/t/k/q/c/ch."
       }
     },
     {
@@ -106,6 +114,10 @@
           "hard": "JLPT N2–N1"
         },
         "diemDocHieu": "particles (は/が/を/に/で), verb forms and tense, politeness levels, omitted subjects"
+      },
+      "phatAm": {
+        "chuan": "hiragana reading followed by Hepburn romaji, e.g. \"がっこう (gakkō)\"",
+        "luuY": "Sound changes to look for: long vowels (おう, えい read as long vowels), small っ (doubled consonant with a short pause), ん before b/m/p sounding like m and before k/g like ng, devoiced i/u (です → des, ～ます → mas), particles は→wa, へ→e, を→o, and pitch accent (mark high/low for important words). Common problems for Vietnamese speakers: vowel length, っ pauses, つ (tsu), ふ (fu), and the r sound."
       }
     },
     {
@@ -146,6 +158,10 @@
           "hard": "TOPIK 5–6"
         },
         "diemDocHieu": "particles (은/는, 이/가, 을/를), verb endings and tense, speech levels and honorifics"
+      },
+      "phatAm": {
+        "chuan": "Revised Romanization of Korean, plus the ACTUAL pronounced Hangul in square brackets when it differs from the spelling, e.g. \"합니다 [함니다] hamnida\"",
+        "luuY": "Sound changes are essential in Korean: liaison 연음 (음악 → [으막]), nasalization 비음화 (합니다 → [함니다], 국물 → [궁물]), tensification 경음화 (학교 → [학꾜]), aspiration 격음화 (좋다 → [조타]), palatalization 구개음화 (같이 → [가치]), and ㄹ changes. Common problems for Vietnamese speakers: plain vs tense vs aspirated consonants (ㄱ/ㄲ/ㅋ), ㅓ vs ㅗ, ㅡ, and final consonants (patchim)."
       }
     }
   ],

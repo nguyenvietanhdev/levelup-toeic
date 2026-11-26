@@ -52,6 +52,7 @@ const BaiNgheScreen      = lazy(() => import('@components/baiNghe/BaiNgheScreen.
 const BaiHatScreen       = lazy(() => import('@components/baiHat/BaiHatScreen.jsx'));
 const HoSoHocScreen      = lazy(() => import('@components/hoSoHoc/HoSoHocScreen.jsx'));
 const NguPhapScreen      = lazy(() => import('@components/nguPhap/NguPhapScreen.jsx'));
+const PhatAmScreen       = lazy(() => import('@components/phatAm/PhatAmScreen.jsx'));
 const HoSoNangLucScreen  = lazy(() => import('@components/hoSoNangLuc/HoSoNangLucScreen.jsx'));
 const EssayScreen        = lazy(() => import('@components/essay/EssayScreen.jsx'));
 const ListeningScreen    = lazy(() => import('@components/listening/ListeningScreen.jsx'));
@@ -80,6 +81,7 @@ const LAZY_SCREENS = {
     'bai-hat-screen': BaiHatScreen,
     'ho-so-hoc-screen': HoSoHocScreen,
     'ngu-phap-screen': NguPhapScreen,
+    'phat-am-screen': PhatAmScreen,
     'ho-so-nang-luc-screen': HoSoNangLucScreen,
     'essay-screen': EssayScreen,
     'listening-screen': ListeningScreen,

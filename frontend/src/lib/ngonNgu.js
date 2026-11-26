@@ -78,3 +78,12 @@ export const luaChonNgonNguHoc = () => NGON_NGU_HOAT_DONG.map((ma) => {
     const n = layNgonNgu(ma);
     return { ma, co: n.co || '', tenViet: n.tenViet };
 });
+
+/**
+ * Lựa chọn gồm MỌI ngôn ngữ đã khai trong sổ (cả ngôn ngữ chưa mở cho người học) — cho tính năng
+ * chỉ cần AI, không cần kho nội dung (Tra cứu phát âm).
+ */
+export const luaChonMoiNgonNgu = () => MA_NGON_NGU.map((ma) => {
+    const n = layNgonNgu(ma);
+    return { ma, co: n.co || '', tenViet: n.tenViet };
+});

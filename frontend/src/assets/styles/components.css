@@ -13171,3 +13171,35 @@ button.hs-muc:not(:disabled):hover { border-color: var(--accent-color); }
 .bh-o-zh { width: 2.2em; }
 .bh-tu-py { color: var(--accent-color); font-style: italic; }
 
+/* ===== Tra cứu phát âm ===== */
+#phat-am-screen .np-lang { flex-wrap: wrap; border-radius: 14px; }
+.pa-tim { padding-right: 4px; }
+.pa-tim input { flex: 1; min-width: 0; }
+.pa-tim .btn { padding: 6px 16px; }
+.pa-loi { color: var(--danger-color, #e5484d); }
+.pa-gan-day { margin-top: 10px; }
+.pa-ket-qua { margin-top: 16px; padding: 16px; border-radius: 14px; border: 1px solid var(--border-color); background: var(--bg-secondary); }
+.pa-ket-qua h4 { margin: 16px 0 8px; }
+.pa-cau { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 1.25rem; }
+.pa-nghe { display: inline-flex; gap: 2px; }
+.pa-cham { opacity: .8; }
+.pa-dong { display: grid; gap: 8px; margin: 12px 0 0; }
+.pa-dong > div { display: grid; grid-template-columns: 160px 1fr; gap: 8px; align-items: baseline; }
+.pa-dong dt { color: var(--text-secondary); font-size: .9rem; }
+.pa-dong dd { margin: 0; overflow-wrap: anywhere; }
+.pa-chuan { font-family: 'Segoe UI', 'Noto Sans', system-ui, sans-serif; }
+.pa-viet { font-size: 1.15rem; font-weight: 600; color: var(--accent-color); }
+.pa-tu, .pa-noi-am { list-style: none; padding: 0; margin: 0; display: grid; gap: 8px; }
+.pa-tu li { display: flex; gap: 6px; align-items: flex-start; }
+.pa-tu code { font-size: .9rem; }
+.pa-tu em, .pa-truoc-sau em { font-style: normal; font-weight: 600; color: var(--accent-color); }
+.pa-tu small, .pa-noi-am small { display: block; color: var(--text-secondary); margin-top: 2px; }
+.pa-noi-am li { padding: 10px 12px; border-radius: 10px; background: var(--bg-primary); border: 1px solid var(--border-color); }
+.pa-noi-am-dau { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.pa-the { font-size: .75rem; padding: 2px 8px; border-radius: 999px; background: var(--accent-color); color: #fff; }
+.pa-truoc-sau { margin-top: 4px; }
+.pa-truoc-sau s { color: var(--text-secondary); }
+@media (max-width: 600px) {
+    .pa-dong > div { grid-template-columns: 1fr; gap: 2px; }
+}
+

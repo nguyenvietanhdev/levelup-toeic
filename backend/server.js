@@ -304,6 +304,7 @@ app.use('/api/lo-trinh', require('./routes/loTrinh')); // Lộ trình hôm nay: 
 app.use('/api/bai-nhap', require('./routes/baiNhap')); // Bài làm dở Viết/Dịch: vào lại làm tiếp, không gọi AI lấy đề mới
 app.use('/api/ho-so-nang-luc', require('./routes/hoSoNangLuc')); // Hồ sơ năng lực: gộp trình độ, kỹ năng, TOEIC, đã thuộc
 app.use('/api/ngu-phap', require('./routes/nguPhap')); // Công thức ngữ pháp: kho lõi + AI mở rộng
+app.use('/api/phat-am', require('./routes/phatAm')); // Tra cứu phát âm: phiên âm chuẩn, đọc kiểu Việt, nối âm
 app.use('/api/ho-so-hoc', require('./routes/hoSoHoc')); // Mục tiêu, trình độ theo kỹ năng, test đầu vào
 app.use('/api/phan-xa', require('./routes/phanXa')); // Phản xạ câu: nhìn câu Việt, nói/gõ câu Anh
 app.use('/api/bai-nghe', require('./routes/baiNghe')); // Bài nghe có script chạy theo (VOA Learning English)
