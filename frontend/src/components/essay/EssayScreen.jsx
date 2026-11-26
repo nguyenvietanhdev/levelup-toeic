@@ -15,7 +15,7 @@ import { useBaiNhap, TheBaiDo } from '../ai/BaiNhap.jsx';
 import { useNhamYeu, NutNhamYeu, NhanNham } from '../ai/NhamDiemYeu.jsx';
 import { useHoiKhiThoat } from '../ai/aiExitGuard.js';
 import { chuoiKhoang } from '@lib/khoangDiem.js';
-import { chuanMa, tenDonVi } from '@lib/ngonNgu.js';
+import { chuanMa, tenDonVi, demDonVi } from '@lib/ngonNgu.js';
 
 /**
  * Luyện VIẾT LUẬN — IELTS Task 2 (tiếng Anh) hoặc HSK 书写 (tiếng Trung).
@@ -46,6 +46,8 @@ const criteriaFor = (lang) => (lang === 'zh' ? CRITERIA_ZH : CRITERIA_EN);
 /** Ngưỡng mặc định khi CHƯA có đề (server sẽ gửi số thật kèm đề). */
 const MIN_EN = 250;
 const MIN_ZH = 200;
+/** Khớp `nguongCua` ở services/essayGrader.js (Nhật đếm chữ, Hàn đếm từ). */
+const MIN_THEO_NGON_NGU = { en: MIN_EN, zh: MIN_ZH, ja: 300, ko: 120 };
 
 /**
  * Đếm theo đơn vị ĐÚNG với ngôn ngữ.
@@ -55,11 +57,8 @@ const MIN_ZH = 200;
  * không bao giờ bật. Chỉ đếm chữ Hán, bỏ dấu câu để không nhồi 。，được.
  */
 function countUnits(text, lang) {
-    if (lang === 'zh') {
-        const m = String(text || '').match(/[一-鿿㐀-䶿]/g);
-        return m ? m.length : 0;
-    }
-    return String(text || '').trim().split(/\s+/).filter(Boolean).length;
+    // Đơn vị theo sổ ngôn ngữ (cùng hàm với server): Trung/Nhật đếm chữ, ngôn ngữ có khoảng trắng đếm từ.
+    return demDonVi(text, lang);
 }
 
 /**
@@ -85,7 +84,7 @@ const MUC_KHO_ZH = [
 ];
 
 /** Kiểu chấm mặc định của mỗi ngôn ngữ (khớp server). Bảng kiểu chấm và độ khó: lib/kieuCham.js. */
-const KIEU_MAC_DINH = { en: 'ielts', zh: 'hsk' };
+const KIEU_MAC_DINH = { en: 'ielts', zh: 'hsk', ja: 'giaotiep', ko: 'giaotiep' };
 
 /**
  * Kho dạng bài viết dùng chung mọi kiểu chấm (cùng cách với Đọc hiểu). Khoá khớp
@@ -174,7 +173,7 @@ export default function EssayScreen({ active }) {
     const langLocal = chuanMa(GameState.state?.settings?.vocabLang);
     const lang = prompt ? (chuanMa(prompt.lang)) : langLocal;
     const [nhamYeu, doiNhamYeu] = useNhamYeu();
-    const minUnits = Number(prompt?.minWords) || (lang === 'zh' ? MIN_ZH : MIN_EN);
+    const minUnits = Number(prompt?.minWords) || MIN_THEO_NGON_NGU[lang] || MIN_EN;
     const unit = tenDonVi(lang);
 
     // Kiểu chấm đang áp dụng: người học chọn (nếu hợp ngôn ngữ), không thì mặc định.

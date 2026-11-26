@@ -9,7 +9,7 @@
 
 /** Kiểu chấm, kèm ngôn ngữ mà kiểu đó áp dụng được. */
 export const KIEU_CHAM = [
-    { key: 'giaotiep', label: 'Giao tiếp', desc: 'Rõ ý, tự nhiên, đúng ngữ cảnh', langs: ['en', 'zh', 'bi'] },
+    { key: 'giaotiep', label: 'Giao tiếp', desc: 'Rõ ý, tự nhiên, đúng ngữ cảnh', langs: ['en', 'zh', 'ja', 'ko', 'bi'] },
     { key: 'toeic', label: 'TOEIC', desc: 'Ngữ pháp, mạch lạc, vốn từ', langs: ['en', 'bi'] },
     { key: 'ielts', label: 'IELTS', desc: 'Mạch lạc, vốn từ, ngữ pháp', langs: ['en', 'bi'] },
     { key: 'hsk', label: 'HSK', desc: 'Từ vựng, ngữ pháp, lưu loát', langs: ['zh', 'bi'] },

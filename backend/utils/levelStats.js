@@ -1,3 +1,4 @@
+const { SO } = require('../config/ngonNgu');
 /**
  * Gom phân bố ĐỘ KHÓ (A/B/C) của từ vựng theo từng nguồn.
  *
@@ -7,6 +8,10 @@
 
 /** Ba nhóm rỗng — dùng làm mốc khi một nguồn chưa có từ nào. */
 const emptyStats = () => ({ a: 0, b: 0, c: 0 });
+
+/** Cấp độ → nhóm A/B/C, dựng từ `bacCapDo` của mọi ngôn ngữ trong sổ ngôn ngữ. */
+const NHOM_THEO_CAP = new Map(SO.ngonNgu.flatMap((n) => [['easy', 'A'], ['medium', 'B'], ['hard', 'C']]
+    .flatMap(([band, nhom]) => (n.bacCapDo?.[band] || []).map((cap) => [String(cap).toUpperCase(), nhom]))));
 
 /**
  * Quy một giá trị `level` bất kỳ về MỘT nhóm A / B / C.
@@ -24,6 +29,10 @@ const emptyStats = () => ({ a: 0, b: 0, c: 0 });
 function toBand(level) {
     const s = String(level == null ? '' : level).trim().toUpperCase();
     if (!s) return null;
+
+    // Thang của mọi ngôn ngữ trong sổ (JLPT N5…N1, TOPIK1…6, HSK, CEFR): dễ → A, vừa → B, khó → C.
+    const theoSo = NHOM_THEO_CAP.get(s);
+    if (theoSo) return theoSo;
 
     // HSK phải xét TRƯỚC: nếu không, "HSK1" lọt xuống nhánh chữ cái đầu.
     // `HSK7-9` khớp chữ số đầu tiên là 7 → nhóm C, đúng như mong muốn.

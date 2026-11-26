@@ -87,7 +87,7 @@ describe('bảng dùng CHUNG, không chép rời', () => {
     test('`gameLogic` dùng chính bảng này', () => {
         // Hai bản chép rời thì thêm giọng mới ở Cài đặt phải nhớ sửa cả hai chỗ.
         const gl = readFileSync(join(__dirname, '..', 'game', 'gameLogic.js'), 'utf8');
-        expect(gl).toMatch(/import \{ MA_GIONG \} from '@lib\/giongDaChon\.js'/);
+        expect(gl).toMatch(/import \{ MA_GIONG, NGON_NGU_GIONG_SO \} from '@lib\/giongDaChon\.js'/);
         expect(gl).toMatch(/const accentMap = MA_GIONG;/);
     });
 
@@ -132,9 +132,20 @@ describe('thu âm nghe đúng ngôn ngữ', () => {
     test('chế độ Phát âm quyết theo TỪ, không theo kho', () => {
         const pm = readFileSync(join(
             __dirname, '..', 'components', 'practice', 'modes', 'pronunciationMode.js'), 'utf8');
-        const i = pm.indexOf('    _isZh() {');
+        const i = pm.indexOf('    _lang() {');
         const t = pm.slice(i, pm.indexOf('\n    },', i));
         expect(t).toMatch(/this\.questions\?\.\[this\.currentIndex\]\?\.word/);
-        expect(t).toMatch(/test\(chu\)/);
+        // Theo chữ viết của từ (sổ ngôn ngữ): kana → Nhật, Hangul → Hàn, Hán → Trung.
+        expect(t).toMatch(/nhanDienChuViet\(chu\)/);
     });
 });
+
+describe('ngôn ngữ thêm sau (sổ ngôn ngữ)', () => {
+    test('Nhật, Hàn có khoá giọng riêng trỏ tới mã BCP-47 của sổ', async () => {
+        const { MA_GIONG: M, NGON_NGU_GIONG_SO: DS } = await import('./giongDaChon.js');
+        expect(DS).toEqual(expect.arrayContaining(['ja', 'ko']));
+        expect(M.__gtts_ja__).toBe('ja-jp');
+        expect(M.__gtts_ko__).toBe('ko-kr');
+    });
+});
+

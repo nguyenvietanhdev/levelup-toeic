@@ -12,7 +12,7 @@ import LichSuMode from '../history/LichSuMode.jsx';
 import NutBatDau from '../ai/NutBatDau.jsx';
 import { useHoiKhiThoat } from '../ai/aiExitGuard.js';
 import { useBaiNhap, TheBaiDo } from '../ai/BaiNhap.jsx';
-import { chuanMa } from '@lib/ngonNgu.js';
+import { chuanMa, tenDonVi, tenVietGiuaCau } from '@lib/ngonNgu.js';
 
 /** Mức khó của đoạn nghe (khoá gửi server; server chọn dải CEFR tương ứng). */
 const MUC = [
@@ -129,8 +129,9 @@ export default function ListeningScreen({ active }) {
     const source = TopicSelector.currentTopic?.source || '';
     // Ngôn ngữ của bài đang nghe (server trả về khi mở phiên); trước khi mở thì theo
     // bộ từ đang học. Tiếng Trung chấm theo từng CHỮ HÁN, tiếng Anh theo TỪ.
-    const zh = (phien?.lang || (chuanMa(getVocabLang()))) === 'zh';
-    const donVi = zh ? 'chữ' : 'từ';
+    const langNghe = phien?.lang || chuanMa(getVocabLang());
+    const zh = langNghe === 'zh';
+    const donVi = tenDonVi(langNghe);
     const part = PartSelector.selectedPart || '';
 
     const batDau = async () => {
@@ -273,7 +274,8 @@ export default function ListeningScreen({ active }) {
                                 ))}
                             </div>
                             {/* Tiếng Trung chỉ có giọng phổ thông: không hiện lựa chọn vùng. */}
-                            {!zh && (
+                            {/* Giọng theo vùng chỉ có ở tiếng Anh; ngôn ngữ khác dùng một giọng chuẩn (sổ ngôn ngữ). */}
+                            {langNghe === 'en' && (
                                 <>
                                     <div className="ai-setup-title" style={{ marginTop: 12 }}>Giọng đọc</div>
                                     <div className="ai-setup-list tr-levels" role="group" aria-label="Giọng đọc">
@@ -345,7 +347,7 @@ export default function ListeningScreen({ active }) {
                                 maxLength={1000}
                                 value={typed}
                                 onChange={(e) => setTyped(e.target.value)}
-                                placeholder={zh ? 'Gõ đoạn bạn nghe được bằng chữ Hán…' : 'Gõ đoạn bạn nghe được bằng tiếng Anh…'}
+                                placeholder={zh ? 'Gõ đoạn bạn nghe được bằng chữ Hán…' : `Gõ đoạn bạn nghe được bằng ${tenVietGiuaCau(langNghe)}…`}
                             />
                             <div className="ai-role-actions">
                                 <button className="btn btn-primary" onClick={nop} disabled={busy || !typed.trim()}>

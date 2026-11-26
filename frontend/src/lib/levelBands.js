@@ -1,3 +1,5 @@
+import SO from '@ngonNgu';
+import { layNgonNgu, MAC_DINH } from '@lib/ngonNgu.js';
 /**
  * Ba mức độ khó (Dễ · Trung bình · Khó) theo TỪNG KHUNG NGÔN NGỮ.
  *
@@ -13,20 +15,15 @@
  * SettingsScreen, practiceManager) — sửa một chỗ là ba chỗ lệch nhau.
  */
 
-/** Mức HSK gộp vào nhóm nào — khớp với `toBand()` bên backend. */
-const HSK_BANDS = {
-    easy: ['HSK1', 'HSK2'],
-    medium: ['HSK3', 'HSK4'],
-    hard: ['HSK5', 'HSK6', 'HSK7-9'],
-    adaptive: null,
-};
+/**
+ * Thang cấp độ của từng ngôn ngữ (CEFR, HSK, JLPT, TOPIK) nằm ở sổ ngôn ngữ (`bacCapDo` trong
+ * backend/config/ngonNgu.json): thêm ngôn ngữ là tự có thang, không sửa file này.
+ */
+const bangCua = (lang) => layNgonNgu(lang).bacCapDo || layNgonNgu(MAC_DINH).bacCapDo;
 
-const CEFR_BANDS = {
-    easy: ['A1', 'A2'],
-    medium: ['B1', 'B2'],
-    hard: ['C1', 'C2'],
-    adaptive: null,
-};
+/** Cấp độ → nhóm A/B/C, dựng từ `bacCapDo` của mọi ngôn ngữ trong sổ ngôn ngữ. */
+const NHOM_THEO_CAP = new Map(SO.ngonNgu.flatMap((n) => [['easy', 'A'], ['medium', 'B'], ['hard', 'C']]
+    .flatMap(([band, nhom]) => (n.bacCapDo?.[band] || []).map((cap) => [String(cap).toUpperCase(), nhom]))));
 
 /**
  * Quy một giá trị `level` bất kỳ về MỘT nhóm A / B / C.
@@ -44,6 +41,10 @@ const CEFR_BANDS = {
 export function toBand(level) {
     const s = String(level == null ? '' : level).trim().toUpperCase();
     if (!s) return null;
+
+    // Thang của mọi ngôn ngữ trong sổ (JLPT N5…N1, TOPIK1…6, HSK, CEFR): dễ → A, vừa → B, khó → C.
+    const theoSo = NHOM_THEO_CAP.get(s);
+    if (theoSo) return theoSo;
 
     // HSK phải xét TRƯỚC: nếu không, "HSK1" lọt xuống nhánh chữ cái đầu.
     // `HSK7-9` khớp chữ số đầu tiên là 7 → nhóm C, đúng như mong muốn.
@@ -67,17 +68,16 @@ export function toBand(level) {
  * @returns {string[]|null} `null` = không lọc (lấy toàn bộ)
  */
 export function levelsFor(band, lang) {
-    const table = lang === 'zh' ? HSK_BANDS : CEFR_BANDS;
-    return table[band] ?? null;
+    return bangCua(lang)[band] ?? null;
 }
 
 /** Nhãn ngắn hiện trên ô chọn — kèm khung tương ứng để người học biết mình đang ở đâu. */
 export function bandLabel(band, lang) {
-    const isZh = lang === 'zh';
+    const nhan = bangCua(lang).nhan || {};
     switch (band) {
-        case 'easy':   return isZh ? 'Dễ (HSK1-2)' : 'Dễ (A1-A2)';
-        case 'medium': return isZh ? 'Trung bình (HSK3-4)' : 'Trung bình (B1-B2)';
-        case 'hard':   return isZh ? 'Khó (HSK5-9)' : 'Khó (C1-C2)';
+        case 'easy':   return `Dễ (${nhan.easy})`;
+        case 'medium': return `Trung bình (${nhan.medium})`;
+        case 'hard':   return `Khó (${nhan.hard})`;
         default:       return 'Toàn bộ';
     }
 }

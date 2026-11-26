@@ -1,3 +1,4 @@
+import { MA_NGON_NGU, bcp47 } from '@lib/ngonNgu.js';
 /**
  * Giọng người dùng đã CHỌN trong Cài đặt, quy về mã mà `/api/tts` hiểu.
  *
@@ -45,6 +46,13 @@ export const MA_GIONG = {
     '__gtts_vi_andrew__': 'vi-multi-andrew',
     '__gtts_vi_brian__': 'vi-multi-brian',
 };
+
+/**
+ * Ngôn ngữ thêm sau (Nhật, Hàn… — sổ ngôn ngữ): mỗi ngôn ngữ một giọng Edge, khoá `__gtts_<mã>__`.
+ * Server chọn giọng theo mã BCP-47 (routes/tts.js đọc cùng sổ).
+ */
+export const NGON_NGU_GIONG_SO = MA_NGON_NGU.filter((m) => !['en', 'zh'].includes(m));
+for (const ma of NGON_NGU_GIONG_SO) MA_GIONG[`__gtts_${ma}__`] = bcp47(ma).toLowerCase();
 
 /** Mã mặc định khi người dùng chưa chọn gì. */
 const MAC_DINH = { en: 'en-random', zh: 'zh-cn-random', vi: 'vi-random' };

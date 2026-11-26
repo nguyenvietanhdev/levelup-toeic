@@ -8,12 +8,12 @@ import { Config } from '@game/config.js';
 import { Notification } from '@ui/Toaster.jsx';
 import { PartSelector } from '@components/vocab/part/partSelector.js';
 import { logger } from '@lib/logger.js';
-import { MA_GIONG } from '@lib/giongDaChon.js';
+import { MA_GIONG, NGON_NGU_GIONG_SO } from '@lib/giongDaChon.js';
 import { giongVietTrinhDuyet } from '@lib/giongViet.js';
 import { giongTheoMa, giongCungNgonNgu } from '@lib/giongTrinhDuyet.js';
 import { batDauPhat, ketThucPhat } from '@lib/nutPhatAm.js';
 import { nhanKho, nhanKhoThuong } from '@lib/nhanKho.js';
-import { bcp47, chuanMa, layNgonNgu } from '@lib/ngonNgu.js';
+import { bcp47, chuanMa, layNgonNgu, nhanDienChuViet } from '@lib/ngonNgu.js';
 
 export function vocabLang() {
     return GameState.state?.settings?.vocabLang || getVocabLang() || 'en';
@@ -456,6 +456,15 @@ export const GameLogic = {
         // Nhận diện GIỮ LẠI làm lối lùi cho chỗ gọi không có thông tin — và cho
         // ca một từ tiếng Anh lọt vào bộ tiếng Trung.
         const maDaBiet = String(lang || '').trim();
+        // Ngôn ngữ thêm sau (Nhật, Hàn… — sổ ngôn ngữ): nhận theo mã đã biết hoặc chữ viết
+        // (kana → Nhật, Hangul → Hàn; kiểm TRƯỚC chữ Hán vì tiếng Nhật có Kanji).
+        const theoChu = nhanDienChuViet(chu);
+        const ngoaiSo = NGON_NGU_GIONG_SO.find((m) => (maDaBiet ? maDaBiet.toLowerCase().startsWith(m) : theoChu === m));
+        if (ngoaiSo) {
+            this._replayCallback = () => this.speakWord(text, maDaBiet || bcp47(ngoaiSo));
+            this._speakGoogleTTS(text, `__gtts_${ngoaiSo}__`, onEnd);
+            return;
+        }
         const heChu = maDaBiet
             ? (maDaBiet.startsWith('zh') ? 'zh' : maDaBiet.startsWith('vi') ? 'vi' : 'en')
             : (isZhText ? 'zh' : isViText ? 'vi' : 'en');
@@ -641,7 +650,9 @@ export const GameLogic = {
                 utterance.lang = 'vi-VN';
                 utterance.voice = giongViet;
             } else {
-                utterance.lang = isZhVoice ? 'zh-CN' : 'en-US';
+                // Giọng ngôn ngữ thêm sau (ja-jp, ko-kr…): dùng đúng mã đó, đừng ép về en-US.
+                const maSo = NGON_NGU_GIONG_SO.find((m) => lang.startsWith(m));
+                utterance.lang = maSo ? bcp47(maSo) : isZhVoice ? 'zh-CN' : 'en-US';
                 // Không có đúng giọng đã chọn → một giọng cùng ngôn ngữ (ưu tiên giọng
                 // tự nhiên), vẫn hơn để trình duyệt tự lấy giọng mặc định.
                 const giong = giongDaChon || giongCungNgonNgu(utterance.lang);

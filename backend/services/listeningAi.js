@@ -61,7 +61,9 @@ function tachTu(text) {
     return String(text || '')
         .toLowerCase()
         .replace(/[’`]/g, "'")
-        .match(/[\u3400-\u4dbf\u4e00-\u9fff\uf900-\ufaff]|[a-z0-9']+/g) || [];
+        // Ch\u1eef H\u00e1n v\u00e0 kana (ti\u1ebfng Nh\u1eadt): m\u1ed7i ch\u1eef m\u1ed9t \u0111\u01a1n v\u1ecb; Hangul (ti\u1ebfng H\u00e0n c\u00f3 kho\u1ea3ng tr\u1eafng) v\u00e0
+        // ch\u1eef Latin/s\u1ed1: theo t\u1eeb. Thi\u1ebfu kana/Hangul \u1edf \u0111\u00e2y l\u00e0 b\u00e0i ti\u1ebfng Nh\u1eadt/H\u00e0n m\u1ea5t h\u1ebft ch\u1eef khi ch\u1ea5m.
+        .match(/[\u3400-\u4dbf\u4e00-\u9fff\uf900-\ufaff\u3040-\u30ff\u31f0-\u31ff]|[\uac00-\ud7af\u1100-\u11ff\u3130-\u318f]+|[a-z0-9']+/g) || [];
 }
 
 /**

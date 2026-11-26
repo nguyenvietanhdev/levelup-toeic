@@ -1,5 +1,5 @@
 import { bcp47 } from './ngonNgu.js';
-import { NGON_NGU_HOAT_DONG } from '@lib/ngonNgu.js';
+import { NGON_NGU_HOAT_DONG, nhanDienChuViet } from '@lib/ngonNgu.js';
 // Xác định ngôn ngữ của một từ trong bộ "Từ vựng riêng".
 //
 // Bộ này trộn lẫn Anh–Trung: gõ `你会吗` vào ô Dịch nhanh rồi lưu thì chữ Hán
@@ -22,6 +22,9 @@ export function hasHanzi(text) {
  */
 export function wordLang(word) {
     if (NGON_NGU_HOAT_DONG.includes(word?.lang)) return word.lang;
+    // Kana / Hangul nói lên tiếng Nhật / Hàn (sổ ngôn ngữ) khi ngôn ngữ đó đã mở.
+    const theoChu = nhanDienChuViet(word?.en);
+    if (theoChu && theoChu !== 'zh' && NGON_NGU_HOAT_DONG.includes(theoChu)) return theoChu;
     return hasHanzi(word?.en) ? 'zh' : 'en';
 }
 

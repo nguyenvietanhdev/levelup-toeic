@@ -149,7 +149,7 @@ describe('cả hai chế độ đều chốt sớm', () => {
 
     test('Phát âm chốt theo CÂU khi đang đọc câu', () => {
         // Chế độ đọc câu có đích là `cauDoc`, không phải `currentWord`.
-        expect(mode).toMatch(/chotSomDuoc\(transcript, this\.cauDoc \|\| this\.currentWord, this\._isZh\(\)\)/);
+        expect(mode).toMatch(/chotSomDuoc\(transcript, this\.cauDoc \|\| this\.currentWord, this\._soTheoChu\(\)\)/);
     });
 
     test('`stop()` bọc try/catch', () => {

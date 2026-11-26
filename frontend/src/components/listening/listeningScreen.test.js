@@ -66,8 +66,9 @@ describe('nghe tiếng Trung', () => {
     });
 
     test('ngôn ngữ theo phiên (server trả), đơn vị chấm là chữ với tiếng Trung', () => {
-        expect(screen).toMatch(/const zh = \(phien\?\.lang \|\| \(chuanMa\(getVocabLang\(\)\)\)\) === 'zh';/);
-        expect(screen).toMatch(/const donVi = zh \? 'chữ' : 'từ';/);
+        expect(screen).toMatch(/const langNghe = phien\?\.lang \|\| chuanMa\(getVocabLang\(\)\);/);
+        // Đơn vị theo sổ ngôn ngữ: chữ với Trung/Nhật, từ với ngôn ngữ có khoảng trắng.
+        expect(screen).toMatch(/const donVi = tenDonVi\(langNghe\);/);
         expect(screen).toMatch(/\{ketQua\.total\} \{donVi\}/);
         expect(screen).toMatch(/zh \? 'Gõ đoạn bạn nghe được bằng chữ Hán…'/);
     });
@@ -92,7 +93,7 @@ describe('giọng đọc theo vùng', () => {
         expect(screen).toMatch(/ListeningAPI\.start\(\{ level, giong, /);
         expect(api).toMatch(/\{ level, dang, tuChon, giong \}/);
         expect(screen).toMatch(/localStorage\.setItem\(KHOA_GIONG, g\)/);
-        expect(screen).toMatch(/\{!zh && \(/);
+        expect(screen).toMatch(/\{langNghe === 'en' && \(/); // giọng theo vùng chỉ có ở tiếng Anh
     });
     test('đang nghe thì ghi rõ giọng của bài', () => {
         expect(screen).toMatch(/phien\.tenGiong \? `Giọng \$\{phien\.tenGiong\} · ` : ''/);

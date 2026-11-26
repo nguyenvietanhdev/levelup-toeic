@@ -5,7 +5,7 @@ import { Config } from '@game/config.js';
 import { Utils } from '@lib/utils.js';
 import { Notification } from '@ui/Toaster.jsx';
 import { scoreAttempt, feedbackMessage, scoreSentence, sentenceFeedback, chotSomDuoc } from './pronunciationScoring.js';
-import { bcp47, tenVietGiuaCau } from '@lib/ngonNgu.js';
+import { bcp47, tenVietGiuaCau, nhanDienChuViet, ngonNguHoc, coKhoangTrang, layNgonNgu } from '@lib/ngonNgu.js';
 
 export const PronunciationMode = {
 
@@ -37,22 +37,24 @@ export const PronunciationMode = {
     _speaking: false,
     _speakFallback: null,
 
-    _isZh() {
-        // Quyết theo TỪ đang luyện, không theo kho.
-        //
-        // Kho song ngữ (`vocabLang === 'bi'`) có cả chữ Hán lẫn chữ Latin, nên
-        // hỏi "kho này ngôn ngữ gì" là câu hỏi sai. Và với hai kho cũ thì kết
-        // quả không đổi: từ trong kho zh vốn là chữ Hán.
+    /**
+     * Ngôn ngữ của TỪ đang luyện, không theo kho: kho song ngữ (`bi`) có cả chữ Hán lẫn Latin.
+     * Theo chữ viết (sổ ngôn ngữ): kana → Nhật, Hangul → Hàn, Hán → Trung (trừ khi đang học tiếng
+     * Nhật: từ toàn Kanji như 勉強 vẫn là tiếng Nhật). Chưa có từ thì theo ngôn ngữ đang học.
+     */
+    _lang() {
         const tu = this.questions?.[this.currentIndex]?.word;
         const chu = String(tu?.en || '');
-        if (chu) return /[㐀-鿿]/.test(chu);
-        // Chưa có từ (lúc khởi tạo) thì tạm theo kho.
-        return vocabLang() === 'zh' || vocabLang() === 'bi';
+        const dangHoc = ngonNguHoc(vocabLang());
+        if (!chu) return dangHoc;
+        const theoChu = nhanDienChuViet(chu);
+        if (theoChu === 'zh' && dangHoc === 'ja') return 'ja';
+        return theoChu || 'en';
     },
 
-    /** Ngôn ngữ của từ đang luyện (theo chữ viết, xem `_isZh`). */
-    _lang() {
-        return this._isZh() ? 'zh' : 'en';
+    /** Chấm theo TỪNG CHỮ (Trung, Nhật — không có khoảng trắng giữa các từ) thay vì theo từ. */
+    _soTheoChu() {
+        return !coKhoangTrang(this._lang());
     },
 
     _recogLang() {
@@ -155,7 +157,7 @@ export const PronunciationMode = {
                 // giây). Cả quãng đó người học đã nói xong và đang nhìn màn hình
                 // đứng im. `stop()` bảo bộ nhận dạng chốt ngay — điểm vẫn chấm
                 // trên kết quả CUỐI như cũ, chỉ là kết quả cuối về sớm hơn.
-                if (chotSomDuoc(transcript, this.cauDoc || this.currentWord, this._isZh())) {
+                if (chotSomDuoc(transcript, this.cauDoc || this.currentWord, this._soTheoChu())) {
                     try { this.recognition?.stop(); } catch (_) { /* đã dừng rồi */ }
                 }
                 return;
@@ -252,7 +254,7 @@ export const PronunciationMode = {
             // Đơn vị đo khác nhau: 18 TỪ tiếng Anh, 30 CHỮ tiếng Trung. Đo câu
             // tiếng Trung bằng số "từ" thì mọi câu đều ra 1 và không câu nào bị
             // loại, kể cả câu dài 80 chữ.
-            const dungCau = cau && (this._isZh()
+            const dungCau = cau && (this._soTheoChu()
                 ? [...cau.replace(/\s/g, '')].length <= 30
                 : cau.split(/\s+/).length <= 18);
             return {
@@ -297,9 +299,10 @@ export const PronunciationMode = {
         const container = document.getElementById('practice-content');
         if (!container) return;
 
-        const isZh = this._isZh();
-        const langLabel = tenVietGiuaCau(isZh ? 'zh' : 'en');
-        const langFlag  = isZh ? '🇨🇳' : '🇬🇧';
+        const langTu = this._lang();
+        const isZh = this._soTheoChu(); // chữ to, giãn cách: Trung/Nhật đọc theo từng chữ
+        const langLabel = tenVietGiuaCau(langTu);
+        const langFlag  = layNgonNgu(langTu).co || '🇬🇧';
 
         container.innerHTML = `
             <div class="question-container pronunciation-container" style="display:flex;flex-direction:column;gap:12px;padding:0;">
@@ -529,7 +532,7 @@ export const PronunciationMode = {
             // Ngưỡng đạt 0.8: câu dài nói trượt một từ vẫn nên được đi tiếp,
             // nhưng phản hồi vẫn chỉ đích danh từ đó để lần sau sửa. Bắt phải
             // đúng 100% thì một từ khó chặn cả lượt.
-            const cau = scoreSentence(transcript, this.cauDoc, this._isZh());
+            const cau = scoreSentence(transcript, this.cauDoc, this._soTheoChu());
             const dat = cau.ratio >= 0.8;
             this._lastResult = cau;
 
@@ -539,7 +542,7 @@ export const PronunciationMode = {
             return;
         }
 
-        const result = scoreAttempt(transcript, alts, this.currentWord, this._isZh());
+        const result = scoreAttempt(transcript, alts, this.currentWord, this._soTheoChu());
         this._lastResult = result;
 
         this.showRecognitionResult(transcript, result.correct, result);
@@ -596,7 +599,7 @@ export const PronunciationMode = {
 
         // "Chưa đúng" không dạy được gì. Nói rõ máy nghe thành cái gì và sai kiểu
         // gì thì người học biết phải sửa gì ở lần sau.
-        const detail = result ? feedbackMessage(result, this.currentWord, this._isZh()) : '';
+        const detail = result ? feedbackMessage(result, this.currentWord, this._soTheoChu()) : '';
         const title = isCorrect
             ? (result?.near ? 'Gần đúng!' : 'Chính xác!')
             : 'Chưa đúng';

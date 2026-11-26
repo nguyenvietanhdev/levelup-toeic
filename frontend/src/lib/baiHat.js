@@ -7,7 +7,9 @@
  * Trung). Bản lời có mốc từng chữ (`cau.tu`) thì dùng đúng mốc đó.
  */
 
-const RE_HAN = /[一-鿿]/;
+/** Chữ tính TỪNG CHỮ khi hát (không có khoảng trắng giữa các từ): chữ Hán và kana (tiếng Nhật). */
+const RE_HAN = /[一-鿿぀-ヿㇰ-ㇿ]/;
+const RE_HANGUL = /[가-힯]/g;
 /** Một âm tiết hát mất chừng này giây; dòng ngắn mà mốc dòng sau ở xa (đoạn dạo nhạc) thì chữ
  * không bị kéo dài hết khoảng lặng. */
 export const GIAY_MOI_AM = 0.42;
@@ -25,12 +27,12 @@ export function soAmTiet(tu) {
  * từ có sẵn của trình duyệt (Intl.Segmenter); không có thì mỗi chữ là một từ. Bấm vào "朋" trong
  * "朋友" phải tra "朋友", tra riêng chữ "朋" thì nghĩa sai hoặc vô nghĩa.
  */
-export function tuCuaTungChu(text) {
+export function tuCuaTungChu(text, lang = 'zh') {
     const s = String(text || '');
     const ds = [...s];
     if (typeof Intl === 'undefined' || typeof Intl.Segmenter !== 'function') return ds.map((ch) => (RE_HAN.test(ch) ? ch : ''));
     const out = [];
-    for (const seg of new Intl.Segmenter('zh', { granularity: 'word' }).segment(s)) {
+    for (const seg of new Intl.Segmenter(lang === 'ja' ? 'ja' : 'zh', { granularity: 'word' }).segment(s)) {
         const chu = [...seg.segment];
         const coHan = RE_HAN.test(seg.segment);
         chu.forEach(() => out.push(coHan ? seg.segment : ''));
@@ -47,14 +49,18 @@ export function tachMau(text, lang = 'en') {
     const s = String(text || '');
     if (lang === 'zh' || RE_HAN.test(s)) {
         // Màu karaoke và ô trống theo TỪNG CHỮ; tra nghĩa theo cả TỪ chứa chữ đó (`tuTra`).
-        const tuTra = tuCuaTungChu(s);
+        const tuTra = tuCuaTungChu(s, lang);
         return [...s].map((ch, i) => (RE_HAN.test(ch)
             ? { hien: ch, tu: ch, nang: 1, tuTra: tuTra[i] || ch }
             : { hien: ch, tu: '', nang: 0 }));
     }
     return s.split(/(\s+)/).filter((p) => p !== '').map((p) => {
-        const tu = p.replace(/^[^A-Za-z'’]+|[^A-Za-z'’]+$/g, '');
-        return /[A-Za-z]/.test(tu) ? { hien: p, tu, nang: soAmTiet(tu) } : { hien: p, tu: '', nang: 0 };
+        // Mọi chữ cái (Latin, Hangul…), không chỉ A–Z: lời tiếng Hàn có khoảng trắng như tiếng Anh.
+        const tu = p.replace(/^[^\p{L}'’]+|[^\p{L}'’]+$/gu, '');
+        if (!/\p{L}/u.test(tu)) return { hien: p, tu: '', nang: 0 };
+        // Tiếng Hàn: mỗi khối Hangul là một âm tiết.
+        const soHangul = (tu.match(RE_HANGUL) || []).length;
+        return { hien: p, tu, nang: soHangul || soAmTiet(tu) };
     });
 }
 

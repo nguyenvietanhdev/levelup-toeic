@@ -197,3 +197,19 @@ describe('phiên nghe lưu giọng đã chọn', () => {
         expect(ctl).toMatch(/const giong = phien\.giong \|\| GIONG_THEO_NGON_NGU\[phien\.lang\] \|\| GIONG_NGHE;/);
     });
 });
+
+describe('chấm bài nghe tiếng Nhật / Hàn', () => {
+    const { chamNghe } = require('../services/listeningAi');
+    test('tiếng Nhật: kana và kanji mỗi chữ một đơn vị, không bị bỏ qua', () => {
+        const r = chamNghe('私は学生です。', '私は学生てす');
+        expect(r.total).toBe(6);
+        expect(r.correct).toBe(5);
+        expect(r.missing).toEqual(['で']);
+    });
+    test('tiếng Hàn: theo từ (có khoảng trắng)', () => {
+        const r = chamNghe('저는 학생입니다.', '저는 학생이에요');
+        expect(r.total).toBe(2);
+        expect(r.correct).toBe(1);
+        expect(r.missing).toEqual(['학생입니다']);
+    });
+});

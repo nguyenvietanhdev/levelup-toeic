@@ -16,7 +16,7 @@ import { useNhamYeu, NutNhamYeu, NhanNham } from '../ai/NhamDiemYeu.jsx';
 import { useHoiKhiThoat } from '../ai/aiExitGuard.js';
 import { GameLogic } from '@game/gameLogic.js';
 import { luuVaoTuRieng } from '@lib/luuMauCau.js';
-import { bcp47, chuanMa, tenVietGiuaCau, tenDonVi, tenNgan as tenNganCua } from '@lib/ngonNgu.js';
+import { bcp47, chuanMa, tenVietGiuaCau, tenDonVi, tenNgan as tenNganCua, demDonVi } from '@lib/ngonNgu.js';
 
 /**
  * Luyện DỊCH — đọc một đoạn tiếng Việt, viết lại bằng tiếng Anh (hoặc Trung).
@@ -69,6 +69,8 @@ const MUC_KHO = [
 /** Ngưỡng mặc định khi CHƯA có đề (server gửi số thật kèm đoạn văn). */
 const MIN_EN = 15;
 const MIN_ZH = 20;
+/** Khớp `toiThieuCua` ở services/translationGrader.js. */
+const MIN_THEO_NGON_NGU = { en: MIN_EN, zh: MIN_ZH, ja: 25, ko: 12 };
 const MIN_VI = 15; // chiều ngược: bản dịch tiếng Việt, đếm theo từ
 
 /**
@@ -79,11 +81,8 @@ const MIN_VI = 15; // chiều ngược: bản dịch tiếng Việt, đếm theo
  * không bao giờ bật. Chỉ đếm chữ Hán, bỏ dấu câu để không nhồi 。，được.
  */
 function countUnits(text, lang) {
-    if (lang === 'zh') {
-        const m = String(text || '').match(/[一-鿿㐀-䶿]/g);
-        return m ? m.length : 0;
-    }
-    return String(text || '').trim().split(/\s+/).filter(Boolean).length;
+    // Đơn vị theo sổ ngôn ngữ (cùng hàm với server): Trung/Nhật đếm chữ, ngôn ngữ có khoảng trắng đếm từ.
+    return demDonVi(text, lang);
 }
 
 /**
@@ -175,7 +174,7 @@ export default function TranslationScreen({ active }) {
     const tenNgan = tenNganCua(lang);
     // Chiều ngược bản dịch là tiếng Việt: đếm theo từ.
     const langBanDich = nguoc ? 'vi' : lang;
-    const minUnits = Number(de?.minUnits) || (nguoc ? MIN_VI : (lang === 'zh' ? MIN_ZH : MIN_EN));
+    const minUnits = Number(de?.minUnits) || (nguoc ? MIN_VI : (MIN_THEO_NGON_NGU[lang] || MIN_EN));
     const unit = tenDonVi(langBanDich);
     const tieuChi = nguoc ? CRITERIA_NGUOC : CRITERIA;
 

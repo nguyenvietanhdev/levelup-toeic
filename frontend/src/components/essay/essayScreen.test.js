@@ -13,6 +13,7 @@
  *      rất thấp mà người viết không hiểu vì sao.
  *   4. Không nói rõ band là ƯỚC LƯỢNG → người dùng tin đó là điểm thi thật.
  */
+import { demDonVi } from '@lib/ngonNgu.js';
 import { describe, test, expect, vi, beforeEach } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -145,8 +146,8 @@ describe('đếm từ và ngưỡng', () => {
         // Chấm khi bài chưa đủ — rồi server từ chối sau khi đã bấm.
         // Chạy THẬT hàm đếm, cắt ra từ nguồn: nó không được export.
         const i = src.indexOf('function countUnits');
-        const countUnits = new Function(
-            `${src.slice(i, src.indexOf('\n}', i) + 2)}; return countUnits;`)();
+        const countUnits = new Function('demDonVi',
+            `${src.slice(i, src.indexOf('\n}', i) + 2)}; return countUnits;`)(demDonVi);
         expect(countUnits('  một   hai \n\n ba  ', 'en')).toBe(3);
         expect(countUnits('', 'en')).toBe(0);
         expect(countUnits('   ', 'en')).toBe(0);
@@ -265,8 +266,8 @@ describe('tiếng Trung — ĐƠN VỊ đếm', () => {
         // Chạy THẬT hàm đếm cắt từ nguồn: tiếng Trung không có khoảng trắng nên
         // đếm theo từ ra đúng 1 cho cả bài, nút Chấm không bao giờ bật.
         const i = src.indexOf('function countUnits');
-        const countUnits = new Function(
-            `${src.slice(i, src.indexOf('\n}', i) + 2)}; return countUnits;`)();
+        const countUnits = new Function('demDonVi',
+            `${src.slice(i, src.indexOf('\n}', i) + 2)}; return countUnits;`)(demDonVi);
 
         const zh = '我认为学习外语很重要。因为语言是沟通的工具。';
         expect(countUnits(zh, 'zh')).toBe(20);
@@ -276,8 +277,8 @@ describe('tiếng Trung — ĐƠN VỊ đếm', () => {
 
     test('không đếm dấu câu — nếu không thì nhồi 。，là qua ngưỡng', () => {
         const i = src.indexOf('function countUnits');
-        const countUnits = new Function(
-            `${src.slice(i, src.indexOf('\n}', i) + 2)}; return countUnits;`)();
+        const countUnits = new Function('demDonVi',
+            `${src.slice(i, src.indexOf('\n}', i) + 2)}; return countUnits;`)(demDonVi);
         expect(countUnits('。，！？', 'zh')).toBe(0);
     });
 

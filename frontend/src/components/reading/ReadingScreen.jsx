@@ -29,7 +29,7 @@ import { chuanMa, tenVietGiuaCau } from '@lib/ngonNgu.js';
 const NHAN = ['A', 'B', 'C', 'D'];
 
 /** Mặc định theo ngôn ngữ, khớp `KIEU_DOC_MAC_DINH` ở server. */
-const KIEU_MAC_DINH = { en: 'toeic', zh: 'hsk' };
+const KIEU_MAC_DINH = { en: 'toeic', zh: 'hsk', ja: 'giaotiep', ko: 'giaotiep' };
 
 /**
  * Kho dạng bài dùng chung cho MỌI kiểu chấm — đọc hiểu không bó trong vài dạng

@@ -170,3 +170,16 @@ describe('tiếng Trung: tách từ, pinyin', () => {
         expect(pinyinTheoChu(() => [{ isZh: true, pinyin: 'x' }], '你好')).toEqual(['', '']);
     });
 });
+
+describe('lời tiếng Nhật / Hàn', () => {
+    test('tiếng Nhật: mỗi chữ (kanji, kana) một mẩu, như tiếng Trung', () => {
+        const m = tachMau('君の名は', 'ja');
+        expect(m.map((x) => x.tu)).toEqual(['君', 'の', '名', 'は']);
+        expect(m.every((x) => x.nang === 1)).toBe(true);
+    });
+    test('tiếng Hàn: theo từ (khoảng trắng), mỗi khối Hangul một âm tiết', () => {
+        const m = tachMau('사랑해 너를', 'ko').filter((x) => x.tu);
+        expect(m.map((x) => x.tu)).toEqual(['사랑해', '너를']);
+        expect(m.map((x) => x.nang)).toEqual([3, 2]);
+    });
+});

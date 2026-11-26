@@ -281,7 +281,7 @@ export default function BaiHatScreen({ active }) {
                 en: lang === 'en' ? tuChon.tu.toLowerCase() : tuChon.tu,
                 vn: tuChon.nghia,
                 lang,
-                source: lang === 'zh' ? 'bai-hat-zh' : 'bai-hat-en',
+                source: `bai-hat-${lang}`, // kho bài hát theo ngôn ngữ: bai-hat-en, bai-hat-zh, bai-hat-ja…
                 part: bai.tieuDe,
                 example: tuChon.dong,
                 phonetic: tuChon.py || '',

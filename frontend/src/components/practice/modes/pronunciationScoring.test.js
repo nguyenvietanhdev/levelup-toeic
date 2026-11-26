@@ -194,7 +194,7 @@ describe('PronunciationMode — chấm và phản hồi', () => {
         mode.wordCompleted = false;
         mode.questions = [{ word: { vn: 'xin chào' }, wordPk: '你好' }];
         mode.currentIndex = 0;
-        mode._isZh = () => true;
+        mode._soTheoChu = () => true;
         mode.handleCorrectAnswer = () => { mode._went = 'correct'; };
         mode.handleWrongAnswer = () => { mode._went = 'wrong'; };
     });
@@ -418,9 +418,9 @@ describe('chế độ đọc CÂU — nối vào PronunciationMode', () => {
         // thành sai cả câu và phản hồi ra "không nghe rõ" cho người vừa nói
         // rành rọt. Giờ hàm đó tách theo CHỮ khi `isZh`.
         const i = mode.indexOf('const docCau');
-        expect(mode.slice(i, mode.indexOf(';', i))).not.toMatch(/_isZh/);
+        expect(mode.slice(i, mode.indexOf(';', i))).not.toMatch(/_soTheoChu/);
         // Và phải TRUYỀN `isZh` xuống, nếu không nó vẫn tách theo khoảng trắng.
-        expect(mode).toMatch(/scoreSentence\(transcript, this\.cauDoc, this\._isZh\(\)\)/);
+        expect(mode).toMatch(/scoreSentence\(transcript, this\.cauDoc, this\._soTheoChu\(\)\)/);
     });
 
     test('giới hạn độ dài đo theo ĐÚNG đơn vị của mỗi ngôn ngữ', () => {
@@ -428,7 +428,7 @@ describe('chế độ đọc CÂU — nối vào PronunciationMode', () => {
         // bị loại, kể cả câu dài 80 chữ.
         const i = mode.indexOf('const dungCau');
         const khoi = mode.slice(i, mode.indexOf(';', i));
-        expect(khoi).toMatch(/_isZh\(\)/);
+        expect(khoi).toMatch(/_soTheoChu\(\)/);
         expect(khoi).toContain('<= 30');
         expect(khoi).toContain('<= 18');
     });

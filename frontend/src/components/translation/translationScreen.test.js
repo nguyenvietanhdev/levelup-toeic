@@ -10,6 +10,7 @@
  * cần giữ là các bất biến về luồng (bỏ bài cũ khi đổi đề, mở popup nạp năng
  * lượng thay vì báo lỗi suông, bản dịch tham khảo đặt sau phần lỗi).
  */
+import { demDonVi } from '@lib/ngonNgu.js';
 import { describe, test, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
@@ -27,7 +28,7 @@ const css = readFileSync(
 function napDem() {
     const i = src.indexOf('function countUnits');
     const j = src.indexOf('\n}', i) + 2;
-    return new Function(`${src.slice(i, j)}; return countUnits;`)();
+    return new Function('demDonVi', `${src.slice(i, j)}; return countUnits;`)(demDonVi);
 }
 
 describe('đếm đơn vị theo ngôn ngữ', () => {
