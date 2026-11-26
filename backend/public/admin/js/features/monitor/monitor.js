@@ -507,6 +507,31 @@ function switchWordModalTab(tab) {
     "source": "song_ngu"
   }
 ]`;
+    } else if (lang === 'ja' || lang === 'ko') {
+        if (hint) hint.textContent = `${lang}, vn, phonetic, part, type, level, synonyms, image, example, source`;
+        if (ta && !ta.value) ta.placeholder = lang === 'ja' ? `[
+  {
+    "ja": "勉強",
+    "vn": "học tập",
+    "phonetic": "べんきょう",
+    "part": "N5",
+    "type": "noun",
+    "level": "N5",
+    "example": "毎日日本語を勉強します。",
+    "source": "jlpt"
+  }
+]` : `[
+  {
+    "ko": "공부",
+    "vn": "học tập",
+    "phonetic": "gongbu",
+    "part": "A",
+    "type": "noun",
+    "level": "A",
+    "example": "매일 한국어를 공부해요.",
+    "source": "nikl"
+  }
+]`;
     } else if (lang === 'zh') {
         if (hint) hint.textContent = 'zh, vn, phonetic, part, type, level, synonyms, image, example, source';
         if (ta && !ta.value) ta.placeholder = `[

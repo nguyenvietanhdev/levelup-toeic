@@ -159,6 +159,8 @@ function searchLocalVocabulary(searchTerm = "", part = "") {
         (w.en && w.en.toLowerCase().includes(term)) ||
         (w.vn && w.vn.toLowerCase().includes(term)) ||
         (w.zh && w.zh.toLowerCase().includes(term)) ||
+        (w.ja && w.ja.includes(term)) ||
+        (w.ko && w.ko.includes(term)) ||
         (w.pinyin && w.pinyin.toLowerCase().includes(term)),
     );
   }
@@ -580,7 +582,7 @@ function capNhatCotTuVung(lang) {
     phu.textContent = "Tiếng Anh";
     phu.style.display = "";
   } else {
-    chinh.textContent = lang === "zh" ? "Tiếng Trung" : "Tiếng Anh";
+    chinh.textContent = { zh: "Tiếng Trung", ja: "Tiếng Nhật", ko: "Tiếng Hàn" }[lang] || "Tiếng Anh";
     phu.style.display = "none";
   }
 }

@@ -76,7 +76,7 @@ function displayVocabulary(words) {
         return;
     }
 
-    const visibleWords = words.filter((word) => (word.en || word.zh));
+    const visibleWords = words.filter((word) => (word.en || word.zh || word.ja || word.ko));
 
     if (visibleWords.length === 0) {
         tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; color: #999; padding: 40px;">Không có từ vựng hợp lệ nào được tìm thấy.</td></tr>`;
@@ -93,7 +93,7 @@ function displayVocabulary(words) {
             const laSongNgu = (typeof vocabCurrentLang !== 'undefined' ? vocabCurrentLang : 'en') === 'bi';
             const primaryWord = laSongNgu
                 ? (word.zh || '')
-                : (word.en || word.zh || '');
+                : (word.en || word.zh || word.ja || word.ko || '');
             const wordSafe = primaryWord.replace(/"/g, '&quot;');
             // Phiên âm của kho song ngữ tách đôi theo ngôn ngữ.
             const phienAmChinh = laSongNgu ? (word.phoneticZh || '') : (word.phonetic || '');
@@ -484,7 +484,8 @@ function openScanDuplicatesDialog() {
     const existing = document.getElementById('scan-dup-dialog');
     if (existing) existing.remove();
 
-    const pk = (vocabCurrentLang || 'en') === 'zh' ? 'zh' : 'en';
+    // Trường mặt chữ của kho: zh / ja / ko (kho ngoại ngữ), còn lại en.
+    const pk = ['zh', 'ja', 'ko'].includes(vocabCurrentLang) ? vocabCurrentLang : 'en';
     const FIELDS = [
         { value: 'source', label: 'Nguồn (source)' },
         { value: 'part',   label: 'Part' },
@@ -585,7 +586,7 @@ async function scanDuplicates(filterSource, filterPart, extraFilters) {
             const scope = src || part
                 ? `(lọc: ${[src, part].filter(Boolean).join(' / ')})`
                 : '(toàn bộ database)';
-            const pk = (vocabCurrentLang||'en') === 'zh' ? 'zh' : 'en';
+            const pk = ['zh', 'ja', 'ko'].includes(vocabCurrentLang) ? vocabCurrentLang : 'en';
             alert(`✅ Không tìm thấy từ trùng lặp ${scope} theo key source + part + ${pk}!`);
             return;
         }
@@ -1286,7 +1287,7 @@ function openEditWordModal(wordData) {
     dongBoNhanOTu(modal, currentLang);
 
     // Điền dữ liệu vào form
-    document.getElementById("word-en").value = wordData.en || wordData.zh || '';
+    document.getElementById("word-en").value = wordData.en || wordData.zh || wordData.ja || wordData.ko || '';
     document.getElementById("word-vn").value = wordData.vn || '';
     document.getElementById("word-phonetic").value = wordData.phonetic || '';
     document.getElementById("word-part").value = wordData.part || '';
@@ -1313,7 +1314,7 @@ function openEditWordModal(wordData) {
 
     // Lưu trạng thái edit mode
     modal.dataset.editMode = 'true';
-    modal.dataset.originalEn = wordData.en || wordData.zh;
+    modal.dataset.originalEn = wordData.en || wordData.zh || wordData.ja || wordData.ko;
 
     // Hiển thị modal
     modal.style.display = "flex";

@@ -19,6 +19,8 @@ const NHAN_O_TU = {
     // tiếng Việt. Để nhãn "Tiếng Việt" ở đó là người nhập gõ nhầm ngôn ngữ vào
     // đúng ô làm đáp án.
     bi: { tu: 'Từ Tiếng Trung (ZH)', vd: 'vd: 你好', nghia: 'Nghĩa Tiếng Anh', vdNghia: 'ex: hello' },
+    ja: { tu: 'Từ Tiếng Nhật (JA)', vd: 'vd: 勉強', nghia: 'Tiếng Việt', vdNghia: 'học tập' },
+    ko: { tu: 'Từ Tiếng Hàn (KO)', vd: 'vd: 공부', nghia: 'Tiếng Việt', vdNghia: 'học tập' },
 };
 
 function dongBoNhanOTu(modal, lang) {
@@ -42,6 +44,8 @@ function huyHieuNgonNgu(lang) {
         `<span style="margin-left:8px;font-size:11px;padding:2px 8px;border-radius:12px;background:${nen};color:${chu};border:1px solid ${vien};font-weight:700">${nhan}</span>`;
     if (lang === 'zh') return ve('#f0fdf4', '#16a34a', '#bbf7d0', '🇨🇳 Chinese');
     if (lang === 'bi') return ve('#faf5ff', '#7c3aed', '#e9d5ff', '🔀 Trung–Anh');
+    if (lang === 'ja') return ve('#fff1f2', '#e11d48', '#fecdd3', '🇯🇵 Japanese');
+    if (lang === 'ko') return ve('#f0f9ff', '#0369a1', '#bae6fd', '🇰🇷 Korean');
     return ve('#eff6ff', '#2563eb', '#bfdbfe', '🇬🇧 English');
 }
 
