@@ -78,3 +78,32 @@ describe('tra cứu phát âm', () => {
         expect((await screen.findByRole('alert')).textContent).toMatch(/hết 20 lượt/);
     });
 });
+
+describe('bảng âm có sẵn (không gọi AI)', () => {
+    test('mọi ngôn ngữ trong sổ có bảng; ô nào cũng có ký hiệu, ví dụ để đọc, cách đọc kiểu Việt', async () => {
+        const { BANG_AM } = await import('./bangAm.js');
+        const { MA_NGON_NGU } = await import('@lib/ngonNgu.js');
+        for (const ma of MA_NGON_NGU) {
+            expect([ma, !!BANG_AM[ma]]).toEqual([ma, true]);
+            for (const nh of BANG_AM[ma].nhom) {
+                for (const o of nh.o) expect([ma, o.kh, !!o.vd, !!o.viet]).toEqual([ma, o.kh, true, true]);
+            }
+        }
+    });
+
+    test('hiện bảng IPA khi chưa tra; bấm ô đọc từ ví dụ bằng giọng Anh, không tốn lượt AI', async () => {
+        render(<PhatAmScreen active />);
+        expect(screen.getByText(/Bảng phiên âm IPA/)).toBeTruthy();
+        fireEvent.click(screen.getByRole('button', { name: 'Nghe θ: think' }));
+        expect(audioSrc.at(-1)).toMatch(/text=think&lang=en-us/);
+        expect(api.tra).not.toHaveBeenCalled();
+    });
+
+    test('đổi sang tiếng Hàn: bảng Hangul, đọc âm tiết ví dụ bằng giọng Hàn', () => {
+        render(<PhatAmScreen active />);
+        fireEvent.click(screen.getByRole('button', { name: /Tiếng Hàn/ }));
+        expect(screen.getByText(/Bảng chữ Hangul/)).toBeTruthy();
+        fireEvent.click(screen.getByRole('button', { name: 'Nghe ㄲ: 까' }));
+        expect(audioSrc.at(-1)).toMatch(/lang=ko-kr/);
+    });
+});

@@ -13202,4 +13202,16 @@ button.hs-muc:not(:disabled):hover { border-color: var(--accent-color); }
 @media (max-width: 600px) {
     .pa-dong > div { grid-template-columns: 1fr; gap: 2px; }
 }
+.pa-bang { margin-top: 18px; padding: 12px 14px; border-radius: 14px; border: 1px solid var(--border-color); background: var(--bg-secondary); }
+.pa-bang > summary { cursor: pointer; font-weight: 600; }
+.pa-bang-nhom h4 { margin: 14px 0 8px; }
+.pa-bang-luoi { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
+.pa-o { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; text-align: left; padding: 10px; border-radius: 10px; border: 1px solid var(--border-color); background: var(--bg-primary); color: inherit; cursor: pointer; font: inherit; }
+.pa-o:hover { border-color: var(--accent-color); }
+.pa-o-kh { font-size: 1.5rem; font-weight: 700; line-height: 1.2; }
+.pa-o-phu { font-size: .8rem; color: var(--text-secondary); }
+.pa-o-viet { font-weight: 600; color: var(--accent-color); }
+.pa-o-vd { font-size: .85rem; }
+.pa-o-luu-y { font-size: .75rem; color: var(--text-secondary); }
+@media (max-width: 600px) { .pa-bang-luoi { grid-template-columns: repeat(2, 1fr); } }
 

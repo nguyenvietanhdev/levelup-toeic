@@ -3,7 +3,8 @@ import { useGame } from '@game/GameContext.jsx';
 import { useAuth } from '@components/auth/AuthContext.jsx';
 import { PhatAmAPI } from '@api/phatAm.js';
 import { getVocabLang } from '@api/vocabulary.js';
-import { bcp47, ngonNguHoc, luaChonMoiNgonNgu, MA_NGON_NGU, nhanDienChuViet } from '@lib/ngonNgu.js';
+import { bcp47, ngonNguHoc, luaChonMoiNgonNgu, MA_NGON_NGU, nhanDienChuViet, tenVietGiuaCau } from '@lib/ngonNgu.js';
+import { BANG_AM } from './bangAm.js';
 
 const KHOA_LANG = 'levelup.phatAm.lang';
 const KHOA_GAN_DAY = 'levelup.phatAm.ganDay';
@@ -129,6 +130,47 @@ export function KetQuaPhatAm({ kq }) {
     );
 }
 
+/**
+ * Bảng âm có sẵn (không gọi AI): ký hiệu, ví dụ, đọc gần giống gì trong tiếng Việt. Bấm một ô để
+ * nghe ví dụ — máy đọc không phát được phụ âm đứng riêng nên luôn đọc từ / âm tiết ví dụ.
+ */
+export function BangAm({ lang, moSan }) {
+    const bang = BANG_AM[lang];
+    if (!bang) return null;
+    return (
+        <details className="pa-bang" open={moSan}>
+            <summary><i className="fas fa-table-cells"></i> {bang.ten} — đọc gần giống gì trong tiếng Việt</summary>
+            <p className="px-goi-y">{bang.moTa}</p>
+            {bang.nhom.map((nh) => (
+                <section key={nh.ten} className="pa-bang-nhom" aria-label={nh.ten}>
+                    <h4>{nh.ten}</h4>
+                    <div className="pa-bang-luoi">
+                        {nh.o.map((o) => (
+                            <button
+                                key={`${nh.ten}${o.kh}`}
+                                type="button"
+                                className="pa-o"
+                                aria-label={`Nghe ${o.kh}: ${o.vd}`}
+                                title={o.luuY || undefined}
+                                onClick={() => phat(o.vd, lang)}
+                            >
+                                <span className="pa-o-kh" lang={bcp47(lang)}>{o.kh}</span>
+                                {o.phu && <span className="pa-o-phu">{o.phu}</span>}
+                                <span className="pa-o-viet">≈ {o.viet}</span>
+                                {o.vd !== o.kh.split(' ')[0] && (
+                                    <span className="pa-o-vd"><i className="fas fa-volume-low"></i> <b lang={bcp47(lang)}>{o.vd}</b>{o.vdNghia ? ` ${o.vdNghia}` : ''}</span>
+                                )}
+                                {o.luuY && <small className="pa-o-luu-y">{o.luuY}</small>}
+                            </button>
+                        ))}
+                    </div>
+                </section>
+            ))}
+            <p className="px-goi-y">Cách đọc kiểu tiếng Việt chỉ là điểm bắt đầu — nhiều âm {tenVietGiuaCau(lang)} không có trong tiếng Việt, hãy bấm nghe và nhại theo.</p>
+        </details>
+    );
+}
+
 /** Màn Tra cứu phát âm: mọi ngôn ngữ trong sổ. */
 export default function PhatAmScreen({ active }) {
     const { showScreen } = useGame();
@@ -228,6 +270,8 @@ export default function PhatAmScreen({ active }) {
 
                         {loi && <p className="px-mo-ta pa-loi" role="alert">{loi}</p>}
                         {kq && <KetQuaPhatAm kq={kq} />}
+                        {/* Đóng sẵn khi đang xem kết quả tra; đổi ngôn ngữ thì dựng lại (key) để mở/đóng đúng. */}
+                        <BangAm key={`${lang}-${!!kq}`} lang={lang} moSan={!kq} />
                     </>
                 )}
             </div>
