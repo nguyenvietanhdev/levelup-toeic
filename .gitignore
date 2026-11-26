@@ -43,3 +43,7 @@ backend/eval/**/ket-qua/
 # Ảnh, trace của test E2E (Playwright) — chỉ dùng để xem khi test hỏng.
 e2e/ket-qua/
 playwright-report/
+
+# Kho từ Nhật/Hàn: dữ liệu nguồn tải về và JSON sinh ra (scripts/taoKhoNhatHan.js) — không commit
+backend/scripts/data/nguon-nhat-han/
+backend/scripts/data/kho-nhat-han/

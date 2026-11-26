@@ -21,3 +21,25 @@ test('bỏ trùng theo mặt chữ + gốc Hán + Part (từ đồng âm khác g
     const ds = [tuNikl('1\t가구03\t명\t家口\tC'), tuNikl('2\t가구04\t명\t家具\tC'), tuNikl('3\t가구04\t명\t家具\tC')];
     expect(boTrung(ds, 'ko')).toHaveLength(2);
 });
+
+describe('bước dịch nghĩa (--dich)', () => {
+    const { khoaTu, promptLo, docKetQuaLo } = require('../scripts/taoKhoNhatHan');
+    test('khoá phân biệt từ đồng âm theo gốc Hán / cách đọc', () => {
+        expect(khoaTu({ ko: '가구', synonyms: '家口' })).not.toBe(khoaTu({ ko: '가구', synonyms: '家具' }));
+    });
+    test('prompt đánh số, kèm cách đọc (Nhật) / gốc Hán (Hàn), tiếng Hàn xin thêm romaja', () => {
+        const ja = promptLo('ja', [{ ja: '勉強', phonetic: 'べんきょう' }]);
+        expect(ja[1].content).toBe('0\t勉強\tべんきょう');
+        const ko = promptLo('ko', [{ ko: '가구', synonyms: '家具' }]);
+        expect(ko[0].content).toMatch(/Revised Romanization/);
+        expect(ko[1].content).toBe('0\t가구\t家具');
+    });
+    test('đọc kết quả: bỏ chỉ số sai, nghĩa rỗng, loại từ lạ; chịu được rào ```json', () => {
+        const m = docKetQuaLo('```json\n[{"i":0,"vn":"Học Tập","type":"noun"},{"i":5,"vn":"x"},{"i":1,"vn":"","type":"verb"},{"i":2,"vn":"đồ đạc","type":"lạ"}]\n```', 3);
+        expect(m.get(0)).toEqual({ vn: 'học tập', type: 'noun', phonetic: '' });
+        expect(m.has(1)).toBe(false);
+        expect(m.has(5)).toBe(false);
+        expect(m.get(2).type).toBe('');
+        expect(docKetQuaLo('không phải JSON', 3).size).toBe(0);
+    });
+});
